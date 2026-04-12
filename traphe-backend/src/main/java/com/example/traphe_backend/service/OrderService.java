@@ -19,8 +19,10 @@ import com.example.traphe_backend.entity.OrderItemTopping;
 import com.example.traphe_backend.entity.Topping;
 import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.enums.MenuItemStatus;
+import com.example.traphe_backend.enums.OrderStatus;
 import com.example.traphe_backend.enums.OrderType;
 import com.example.traphe_backend.enums.PaymentMethod;
+import com.example.traphe_backend.enums.PaymentStatus;
 import com.example.traphe_backend.exception.BranchNotActiveException;
 import com.example.traphe_backend.exception.ResourceNotFoundException;
 import com.example.traphe_backend.repository.BranchMenuItemRepository;
@@ -35,6 +37,7 @@ import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,13 +45,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -309,17 +315,169 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         // ========== 10. Build response ==========
-        return OrderResponse.builder()
-                .orderId(savedOrder.getId())
-                .orderNumber(savedOrder.getOrderNumber())
-                .status(savedOrder.getStatus().name())
-                .estimatedReadyTime(savedOrder.getEstimatedReadyTime())
-                .finalAmount(savedOrder.getFinalAmount())
-                .paymentUrl(null) // TODO: integrate payment gateway
-                .build();
+        return mapToOrderResponse(savedOrder);
+    }
+
+    // ==========================================
+    // PUT /api/orders/:id/status
+    // ==========================================
+
+    /**
+     * Valid transitions:
+     *   PENDING   → CONFIRMED
+     *   CONFIRMED → COMPLETED
+     * 
+     * CANCELLED is NOT allowed here — use cancelOrder() via DELETE endpoint.
+     */
+    private static final Map<OrderStatus, Set<OrderStatus>> VALID_TRANSITIONS = Map.of(
+            OrderStatus.PENDING,   EnumSet.of(OrderStatus.CONFIRMED),
+            OrderStatus.CONFIRMED, EnumSet.of(OrderStatus.COMPLETED)
+    );
+
+    @Transactional
+    public OrderResponse updateOrderStatus(UUID orderId, String newStatusStr, String userEmail) {
+
+        // 1. Parse target status
+        OrderStatus newStatus;
+        try {
+            newStatus = OrderStatus.valueOf(newStatusStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    "Trạng thái không hợp lệ: '" + newStatusStr
+                    + "'. Chấp nhận: PENDING, CONFIRMED, COMPLETED, CANCELLED");
+        }
+
+        if (newStatus == OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException(
+                    "Không thể chuyển sang CANCELLED qua endpoint này. Sử dụng DELETE /api/orders/{id} để huỷ đơn.");
+        }
+
+        // 2. Find order
+        Order order = findActiveOrder(orderId);
+
+        // 3. Validate transition
+        OrderStatus currentStatus = order.getStatus();
+        Set<OrderStatus> allowedTargets = VALID_TRANSITIONS.getOrDefault(currentStatus, EnumSet.noneOf(OrderStatus.class));
+
+        if (!allowedTargets.contains(newStatus)) {
+            throw new IllegalArgumentException(
+                    "Không thể chuyển trạng thái từ " + currentStatus + " sang " + newStatus + "."
+                    + " Chuyển trạng thái hợp lệ: PENDING → CONFIRMED → COMPLETED.");
+        }
+
+        // 4. Update
+        order.setStatus(newStatus);
+
+        // If CONFIRMED → update payment_status if needed
+        if (newStatus == OrderStatus.COMPLETED && order.getPaymentStatus() == PaymentStatus.PENDING) {
+            order.setPaymentStatus(PaymentStatus.COMPLETED);
+        }
+
+        Order saved = orderRepository.save(order);
+        log.info("Order {} status updated: {} → {}", saved.getOrderNumber(), currentStatus, newStatus);
+
+        return mapToOrderResponse(saved);
+    }
+
+    // ==========================================
+    // DELETE /api/orders/:id (cancel)
+    // ==========================================
+
+    @Transactional
+    public OrderResponse cancelOrder(UUID orderId, String userEmail) {
+
+        // 1. Find order
+        Order order = findActiveOrder(orderId);
+
+        // 2. Verify ownership — only the customer who placed the order can cancel
+        User customer = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (order.getCustomer() != null && !order.getCustomer().getId().equals(customer.getId())) {
+            throw new IllegalArgumentException("Bạn không có quyền huỷ đơn hàng này.");
+        }
+
+        // 3. Validate cancellable status
+        OrderStatus currentStatus = order.getStatus();
+
+        if (currentStatus == OrderStatus.COMPLETED) {
+            throw new IllegalArgumentException(
+                    "Đơn hàng " + order.getOrderNumber() + " đã hoàn thành, không thể huỷ.");
+        }
+
+        if (currentStatus == OrderStatus.CANCELLED) {
+            throw new IllegalArgumentException(
+                    "Đơn hàng " + order.getOrderNumber() + " đã được huỷ trước đó.");
+        }
+
+        // 4. Process refunds
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        int pointsRefunded = 0;
+
+        // 4a. Refund loyalty points if used
+        if (order.getLoyaltyPointsUsed() > 0) {
+            pointsRefunded = order.getLoyaltyPointsUsed();
+            // TODO: When loyalty_points table exists:
+            //   UPDATE loyalty_points SET points_available = points_available + :pointsRefunded
+            //   INSERT INTO loyalty_point_transactions (type='REFUNDED', points=:pointsRefunded, order_id=:orderId)
+            log.info("Order {} — Refunding {} loyalty points to customer {}",
+                    order.getOrderNumber(), pointsRefunded,
+                    order.getCustomer() != null ? order.getCustomer().getEmail() : "anonymous");
+        }
+
+        // 4b. Refund payment if already completed
+        if (order.getPaymentStatus() == PaymentStatus.COMPLETED) {
+            refundAmount = order.getFinalAmount();
+            order.setPaymentStatus(PaymentStatus.REFUNDED);
+            // TODO: When payment gateway is integrated:
+            //   Call refund API (VNPAY/MOMO) with refundAmount
+            //   INSERT INTO payment_transactions (type='REFUND', amount=:refundAmount, order_id=:orderId)
+            log.info("Order {} — Initiating refund of {} VND. Payment status → REFUNDED",
+                    order.getOrderNumber(), refundAmount);
+        }
+
+        // 5. Cancel the order
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setDeleted(true);
+
+        Order saved = orderRepository.save(order);
+
+        log.info("Order {} CANCELLED. Previous status: {}. Points refunded: {}. Amount refunded: {}",
+                saved.getOrderNumber(), currentStatus, pointsRefunded, refundAmount);
+
+        return mapToOrderResponse(saved);
     }
 
     // ---- Helpers ----
+
+    /**
+     * Find an order by ID, ensuring it exists and is not soft-deleted.
+     */
+    private Order findActiveOrder(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Đơn hàng không tồn tại với ID: " + orderId));
+
+        if (order.isDeleted() && order.getStatus() != OrderStatus.CANCELLED) {
+            throw new ResourceNotFoundException("Đơn hàng không tồn tại với ID: " + orderId);
+        }
+
+        return order;
+    }
+
+    /**
+     * Map Order entity to OrderResponse DTO.
+     */
+    private OrderResponse mapToOrderResponse(Order order) {
+        return OrderResponse.builder()
+                .orderId(order.getId())
+                .orderNumber(order.getOrderNumber())
+                .status(order.getStatus().name())
+                .estimatedReadyTime(order.getEstimatedReadyTime())
+                .finalAmount(order.getFinalAmount())
+                .paymentUrl(null)
+                .build();
+    }
 
     /**
      * Validate that all required option groups for the menu item have been
