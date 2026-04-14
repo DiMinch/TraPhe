@@ -1,0 +1,18 @@
+package com.example.traphe_backend.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class RegisterRequest {
+    @NotBlank(message = "Email is required")
+    @Email(message = "Format must be a valid email address")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    private String password;
+
+    @NotBlank(message = "Full name is required")
+    private String fullName;
+}
