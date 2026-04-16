@@ -17,5 +17,7 @@ public interface MenuItemToppingRepository extends JpaRepository<MenuItemTopping
            "WHERE mit.menuItem.id = :menuItemId AND t.isDeleted = false")
     List<MenuItemTopping> findByMenuItemIdWithTopping(UUID menuItemId);
 
+    List<MenuItemTopping> findByMenuItemIdIn(java.util.Set<UUID> menuItemIds);
+
     void deleteAllByMenuItemId(UUID menuItemId);
 }

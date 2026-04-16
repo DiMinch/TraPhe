@@ -14,5 +14,7 @@ public interface MenuItemOptionGroupRepository extends JpaRepository<MenuItemOpt
 
     List<MenuItemOptionGroup> findByMenuItemId(UUID menuItemId);
 
+    List<MenuItemOptionGroup> findByMenuItemIdIn(java.util.Set<UUID> menuItemIds);
+
     void deleteAllByMenuItemId(UUID menuItemId);
 }
