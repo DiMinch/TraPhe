@@ -32,8 +32,4 @@ public class Topping extends BaseEntity {
 
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
-
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    private boolean isDeleted = false;
 }

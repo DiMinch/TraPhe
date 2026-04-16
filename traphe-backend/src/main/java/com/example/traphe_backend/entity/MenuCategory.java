@@ -2,6 +2,9 @@ package com.example.traphe_backend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +24,18 @@ public class MenuCategory extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private MenuCategory parent;
+
+    @Column(name = "display_order")
+    @Builder.Default
+    private int displayOrder = 0;
+
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
+    @Column(name = "is_drink_category", nullable = false)
+    @Builder.Default
+    private boolean isDrinkCategory = false;
 }

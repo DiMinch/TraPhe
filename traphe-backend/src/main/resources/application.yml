@@ -12,9 +12,20 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-please-do-not-use-this-in-prod}
     access-token-expiration: 900000       # 15 minutes in ms
     refresh-token-expiration: 604800000   # 7 days in ms
+
+supabase:
+  url: ${SUPABASE_URL:https://irzskouxozoygfjbgkuq.supabase.co}
+  service-key: ${SUPABASE_SERVICE_KEY:}
+  storage:
+    bucket: menu-images
+
