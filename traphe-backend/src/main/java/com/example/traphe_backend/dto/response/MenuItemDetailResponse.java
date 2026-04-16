@@ -31,4 +31,9 @@ public class MenuItemDetailResponse {
     private List<ToppingResponse> availableToppings;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    // Branch-specific fields (populated when branchId is provided)
+    private Boolean branchAvailable;
+    private BigDecimal effectivePrice;
+    private String unavailableReason;
 }

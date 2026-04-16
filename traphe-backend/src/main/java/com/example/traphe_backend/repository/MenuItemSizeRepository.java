@@ -13,5 +13,10 @@ public interface MenuItemSizeRepository extends JpaRepository<MenuItemSize, UUID
 
     List<MenuItemSize> findByMenuItemIdAndIsDeletedFalseOrderByDisplayOrderAsc(UUID menuItemId);
 
+    /**
+     * Batch-fetch sizes for multiple menu items (N+1 fix).
+     */
+    List<MenuItemSize> findByMenuItemIdInAndIsDeletedFalse(List<UUID> menuItemIds);
+
     Optional<MenuItemSize> findByIdAndMenuItemId(UUID id, UUID menuItemId);
 }

@@ -4,6 +4,7 @@ import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.dto.response.MenuCategoryResponse;
 import com.example.traphe_backend.dto.response.MenuItemDetailResponse;
 import com.example.traphe_backend.dto.response.MenuItemResponse;
+import com.example.traphe_backend.dto.response.MenuTreeResponse;
 import com.example.traphe_backend.dto.response.PageResponse;
 import com.example.traphe_backend.dto.response.ToppingResponse;
 import com.example.traphe_backend.service.MenuService;
@@ -34,6 +35,7 @@ public class MenuController {
 
     /**
      * GET /api/menu — Danh sách menu items với filter, sort, phân trang.
+     * Nếu có branchId: thêm branch availability + custom price.
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<MenuItemResponse>>> getMenuItems(
@@ -54,11 +56,27 @@ public class MenuController {
     }
 
     /**
+     * GET /api/menu/tree — Menu dạng cây: categories → items → subcategories (recursive).
+     * Nếu có branchId: thêm branch availability + custom price cho mỗi item.
+     */
+    @GetMapping("/tree")
+    public ResponseEntity<ApiResponse<List<MenuTreeResponse>>> getMenuTree(
+            @RequestParam(required = false) UUID branchId) {
+
+        List<MenuTreeResponse> result = menuService.getMenuTree(branchId);
+        return ResponseEntity.ok(ApiResponse.success(result, "Menu tree retrieved successfully"));
+    }
+
+    /**
      * GET /api/menu/{id} — Chi tiết menu item kèm sizes, options, toppings.
+     * Nếu có branchId: áp dụng custom_price và branch availability.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<MenuItemDetailResponse>> getMenuItemById(@PathVariable UUID id) {
-        MenuItemDetailResponse result = menuService.getMenuItemById(id);
+    public ResponseEntity<ApiResponse<MenuItemDetailResponse>> getMenuItemById(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID branchId) {
+
+        MenuItemDetailResponse result = menuService.getMenuItemById(id, branchId);
         return ResponseEntity.ok(ApiResponse.success(result, "Menu item retrieved successfully"));
     }
 

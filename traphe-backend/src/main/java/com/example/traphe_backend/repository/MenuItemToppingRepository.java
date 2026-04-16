@@ -16,4 +16,6 @@ public interface MenuItemToppingRepository extends JpaRepository<MenuItemTopping
     @Query("SELECT mit FROM MenuItemTopping mit JOIN FETCH mit.topping t " +
            "WHERE mit.menuItem.id = :menuItemId AND t.isDeleted = false")
     List<MenuItemTopping> findByMenuItemIdWithTopping(UUID menuItemId);
+
+    void deleteAllByMenuItemId(UUID menuItemId);
 }

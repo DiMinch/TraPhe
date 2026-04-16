@@ -28,4 +28,9 @@ public class MenuItemResponse {
     private boolean allowToppings;
     private List<MenuItemSizeResponse> sizes;
     private LocalDateTime createdAt;
+
+    // Branch-specific fields (populated when branchId is provided)
+    private Boolean branchAvailable;
+    private BigDecimal effectivePrice; // custom_price or base_price fallback
+    private String unavailableReason;
 }

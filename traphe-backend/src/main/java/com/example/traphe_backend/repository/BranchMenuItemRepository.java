@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,11 +16,42 @@ public interface BranchMenuItemRepository extends JpaRepository<BranchMenuItem, 
 
     Optional<BranchMenuItem> findByBranchIdAndMenuItemId(UUID branchId, UUID menuItemId);
 
+    /**
+     * Find all branch-menu-item mappings for a branch (with menu item eagerly fetched).
+     */
     @Query("SELECT bmi FROM BranchMenuItem bmi JOIN FETCH bmi.menuItem mi " +
            "WHERE bmi.branch.id = :branchId AND mi.isDeleted = false")
     Page<BranchMenuItem> findAllByBranchIdWithMenuItem(UUID branchId, Pageable pageable);
 
+    /**
+     * Find branch-menu-item mappings filtered by availability.
+     */
     @Query("SELECT bmi FROM BranchMenuItem bmi JOIN FETCH bmi.menuItem mi " +
            "WHERE bmi.branch.id = :branchId AND bmi.isAvailable = :isAvailable AND mi.isDeleted = false")
     Page<BranchMenuItem> findAllByBranchIdAndIsAvailableWithMenuItem(UUID branchId, boolean isAvailable, Pageable pageable);
+
+    /**
+     * Find branch-menu-item mappings with search on menu item name.
+     */
+    @Query("SELECT bmi FROM BranchMenuItem bmi JOIN FETCH bmi.menuItem mi " +
+           "WHERE bmi.branch.id = :branchId AND mi.isDeleted = false " +
+           "AND LOWER(mi.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<BranchMenuItem> findAllByBranchIdAndSearchWithMenuItem(UUID branchId, String search, Pageable pageable);
+
+    /**
+     * Find branch-menu-item mappings with search + availability filter.
+     */
+    @Query("SELECT bmi FROM BranchMenuItem bmi JOIN FETCH bmi.menuItem mi " +
+           "WHERE bmi.branch.id = :branchId AND bmi.isAvailable = :isAvailable " +
+           "AND mi.isDeleted = false AND LOWER(mi.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<BranchMenuItem> findAllByBranchIdAndIsAvailableAndSearchWithMenuItem(
+            UUID branchId, boolean isAvailable, String search, Pageable pageable);
+
+    /**
+     * Batch-fetch all branch-menu-items for a given branch and a list of menu item IDs.
+     * Used to avoid N+1 when applying branch overlay to menu queries.
+     */
+    @Query("SELECT bmi FROM BranchMenuItem bmi WHERE bmi.branch.id = :branchId " +
+           "AND bmi.menuItem.id IN :menuItemIds")
+    List<BranchMenuItem> findAllByBranchIdAndMenuItemIdIn(UUID branchId, List<UUID> menuItemIds);
 }

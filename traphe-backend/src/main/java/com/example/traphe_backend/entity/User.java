@@ -48,6 +48,13 @@ public class User extends BaseEntity {
     @Builder.Default
     private boolean isEmailVerified = false;
 
+    /**
+     * Chi nhánh được gán (dùng cho BRANCH_MANAGER).
+     * Nullable — chỉ có giá trị khi user là BRANCH_MANAGER.
+     */
+    @Column(name = "branch_id")
+    private java.util.UUID branchId;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
