@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/menu")
 @RequiredArgsConstructor
+@Tag(name = "Menu", description = "API Xem Menu Công khai (Dành cho Khách hàng/Frontend App) - Phân trang, tìm kiếm và có overlay theo chi nhánh (branch).")
 public class MenuController {
 
     private final MenuService menuService;
@@ -38,6 +41,8 @@ public class MenuController {
      * Nếu có branchId: thêm branch availability + custom price.
      */
     @GetMapping
+    @Operation(summary = "Lấy danh sách sản phẩm (Paginated)", description = "Lấy danh sách món ăn/đồ uống có phân trang. Có thể filter theo danh mục (categoryId), trạng thái,... Nếu truyền branchId thì món sẽ có giá riêng và availability của nhánh đó.")
+
     public ResponseEntity<ApiResponse<PageResponse<MenuItemResponse>>> getMenuItems(
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String search,
@@ -60,6 +65,8 @@ public class MenuController {
      * Nếu có branchId: thêm branch availability + custom price cho mỗi item.
      */
     @GetMapping("/tree")
+    @Operation(summary = "Lấy Menu dạng cấp bậc (Tree)", description = "Trả về danh sách tất cả các nhóm món và món ăn lồng nhau (categories -> subcategories -> items) rất tiện cho Frontend build giao diện Menu bar. Hỗ trợ truyền branchId.")
+
     public ResponseEntity<ApiResponse<List<MenuTreeResponse>>> getMenuTree(
             @RequestParam(required = false) UUID branchId) {
 
@@ -72,6 +79,8 @@ public class MenuController {
      * Nếu có branchId: áp dụng custom_price và branch availability.
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Xem chi tiết một sản phẩm", description = "Lấy dữ liệu đầy đủ của một món bao gồm các cấu hình kích thước (sizes), tuỳ chọn (options: đường, đá) và topping. Nếu có branchId thì sẽ render giá riêng.")
+
     public ResponseEntity<ApiResponse<MenuItemDetailResponse>> getMenuItemById(
             @PathVariable UUID id,
             @RequestParam(required = false) UUID branchId) {
@@ -84,6 +93,8 @@ public class MenuController {
      * GET /api/menu/categories — Danh sách danh mục.
      */
     @GetMapping("/categories")
+    @Operation(summary = "Lấy danh sách danh mục sản phẩm", description = "Truy vấn danh sách categories. Có thể truyền parentId để lấy các subcategories.")
+
     public ResponseEntity<ApiResponse<List<MenuCategoryResponse>>> getCategories(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID parentId,
@@ -98,6 +109,8 @@ public class MenuController {
      * GET /api/menu/toppings — Danh sách topping.
      */
     @GetMapping("/toppings")
+    @Operation(summary = "Lấy danh sách Topping (Paginated)", description = "Lấy tất cả các loại topping khả dụng.")
+
     public ResponseEntity<ApiResponse<PageResponse<ToppingResponse>>> getToppings(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isAvailable,
@@ -113,6 +126,8 @@ public class MenuController {
      */
     @PostMapping("/upload-image")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Upload ảnh lên Storage (Admin)", description = "Cho phép upload ảnh sản phẩm/phân loại lên Storage (Supabase) và trả về URL public.")
+
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadImage(
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "menu-items") String folder) {
@@ -127,6 +142,8 @@ public class MenuController {
      */
     @DeleteMapping("/images")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xóa ảnh trên Storage (Admin)", description = "Xóa ảnh không còn dùng đến thông qua filePath URL đã cấp trước đó.")
+
     public ResponseEntity<ApiResponse<Void>> deleteImage(@RequestParam String filePath) {
         storageService.deleteFile(filePath);
         return ResponseEntity.ok(ApiResponse.success(null, "Image deleted successfully"));

@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Duration;
 import java.util.Map;
@@ -35,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "API Xác thực người dùng và Quản lý tài khoản (Đăng ký, Đăng nhập, Quên mật khẩu, Xác thực email). Tất cả các route public không cần token ngoại trừ /me, /change-password, /logout.")
 public class AuthController {
 
     private final AuthService authService;
@@ -50,6 +53,8 @@ public class AuthController {
      * Trả về tokens ngay sau đăng ký. OTP xác thực email được gửi qua email.
      */
     @PostMapping("/register")
+    @Operation(summary = "Đăng ký tài khoản", description = "Tạo một tài khoản Customer mới trên hệ thống. Hệ thống sẽ trả về luôn token đăng nhập đồng thời gửi kèm một mã OTP về email để verify tài khoản.")
+
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
             HttpServletRequest servletRequest
@@ -74,6 +79,8 @@ public class AuthController {
      * Trả về accessToken (15 phút) và refreshToken (7 ngày).
      */
     @PostMapping("/login")
+    @Operation(summary = "Đăng nhập", description = "Đăng nhập bằng Email và Password. Nếu thành công sẽ trả về bộ đôi Access Token (15p) và Refresh Token (7 ngày).")
+
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest servletRequest
@@ -97,6 +104,8 @@ public class AuthController {
      * Yêu cầu JWT access token.
      */
     @GetMapping("/me")
+    @Operation(summary = "Lấy profile của User hiện tại đang đăng nhập", description = "Dựa vào Access Token gắn trên Header, BE sẽ bóc tách và trả về thông tin chi tiết user (cùng toàn bộ Role). Route này FE nên gọi ngay khi app khởi động để lấy data user.")
+
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
         UserResponse user = authService.getCurrentUser(email);
@@ -109,6 +118,8 @@ public class AuthController {
      * POST /api/auth/refresh — Làm mới access token bằng refresh token.
      */
     @PostMapping("/refresh")
+    @Operation(summary = "Gia hạn (Refresh) Token mới", description = "Dùng Refresh Token cũ cấp đổi lấy một bộ Access Token + Refresh Token hoàn toàn mới. Thường tự trigger ngầm ở Axios interceptors mỗi khi Access Token cũ hết hạn (Mã 401).")
+
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request,
             HttpServletRequest servletRequest
@@ -132,6 +143,8 @@ public class AuthController {
      * Refresh token sẽ được thêm vào blacklist trong Redis.
      */
     @PostMapping("/logout")
+    @Operation(summary = "Đăng xuất", description = "Huỷ bỏ hiệu lực của Refresh Token hiện tại (Lưu vào Redis Blacklist). Yêu cầu phải gửi lên Refresh Token đang dùng trong body.")
+
     public ResponseEntity<ApiResponse<Void>> logout(
             @Valid @RequestBody LogoutRequest request
     ) {
@@ -146,6 +159,8 @@ public class AuthController {
      * Yêu cầu mật khẩu hiện tại + mật khẩu mới.
      */
     @PutMapping("/change-password")
+    @Operation(summary = "Đổi mật khẩu (dành cho User đang login)", description = "Sửa mật khẩu mới, yêu cầu nhập đúng mật khẩu cũ. Yêu cầu truyền Access Token trên header.")
+
     public ResponseEntity<ApiResponse<Void>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication
@@ -162,6 +177,8 @@ public class AuthController {
      * Luôn trả về 200 để tránh email enumeration.
      */
     @PostMapping("/forgot-password")
+    @Operation(summary = "Quên mật khẩu (Gửi bước 1)", description = "Yêu cầu gửi một mã OTP khôi phục mật khẩu vào Email. Sau bước này FE chuyển qua trang nhập OTP.")
+
     public ResponseEntity<ApiResponse<Void>> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequest request,
             HttpServletRequest servletRequest
@@ -186,6 +203,8 @@ public class AuthController {
      * Yêu cầu email + OTP + mật khẩu mới.
      */
     @PostMapping("/reset-password")
+    @Operation(summary = "Khôi phục mật khẩu (Gửi bước 2)", description = "Hoàn tất luồng quên mật khẩu: Gửi kèm Email, mã OTP vừa lấy được, và Mật khẩu mới để hệ thống cập nhật.")
+
     public ResponseEntity<ApiResponse<Void>> resetPassword(
             @Valid @RequestBody ResetPasswordRequest request,
             HttpServletRequest servletRequest
@@ -210,6 +229,8 @@ public class AuthController {
      * OTP được gửi tự động khi đăng ký.
      */
     @PostMapping("/verify-email")
+    @Operation(summary = "Xác nhận Email", description = "Dùng mã OTP đã nhận được lúc đăng ký để kích hoạt email của tài khoản đang đăng nhập.")
+
     public ResponseEntity<ApiResponse<Void>> verifyEmail(
             @Valid @RequestBody VerifyOtpRequest request,
             HttpServletRequest servletRequest
@@ -234,6 +255,8 @@ public class AuthController {
      * Hỗ trợ type: EMAIL_VERIFY, PASSWORD_RESET.
      */
     @PostMapping("/resend-otp")
+    @Operation(summary = "Resend gửi lại mã OTP", description = "Gửi lại một mã OTP mới nếu mã cũ hết hạn. Truyền type = EMAIL_VERIFY hoặc PASSWORD_RESET tuỳ luồng.")
+
     public ResponseEntity<ApiResponse<Void>> resendOtp(
             @Valid @RequestBody ResendOtpRequest request,
             HttpServletRequest servletRequest

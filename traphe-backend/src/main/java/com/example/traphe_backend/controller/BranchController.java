@@ -17,12 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/branches")
 @RequiredArgsConstructor
+@Tag(name = "Branch", description = "API Danh sách Chi nhánh và Quản lý Menu của từng chi nhánh.")
 public class BranchController {
 
     private final BranchService branchService;
@@ -31,6 +34,8 @@ public class BranchController {
      * GET /api/branches — Danh sách chi nhánh với filter, sort, phân trang.
      */
     @GetMapping
+    @Operation(summary = "Lấy danh sách các cơ sở (Paginated)", description = "Trả về danh sách hệ thống chi nhánh, cho phép search theo tên/địa chỉ và trạng thái isActive.")
+
     public ResponseEntity<ApiResponse<PageResponse<BranchResponse>>> getBranches(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive,
@@ -49,6 +54,8 @@ public class BranchController {
      * GET /api/branches/{id} — Chi tiết chi nhánh kèm giờ mở cửa.
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Lấy chi tiết một chi nhánh", description = "Lấy các thông tin chi tiết tên, toạ độ địa lý, cùng với khung giờ mở cửa trong tuần của cơ sở đó.")
+
     public ResponseEntity<ApiResponse<BranchResponse>> getBranchById(@PathVariable UUID id) {
         BranchResponse result = branchService.getBranchById(id);
         return ResponseEntity.ok(ApiResponse.success(result, "Branch retrieved successfully"));
@@ -58,6 +65,8 @@ public class BranchController {
      * GET /api/branches/{id}/menu — Menu của chi nhánh cụ thể.
      */
     @GetMapping("/{id}/menu")
+    @Operation(summary = "Lấy danh sách các thay đổi Menu tại chi nhánh (Paginated)", description = "Dành cho Quản lý / Admin xem trực tiếp danh sách các món ăn đã được setting giá hoặc trạng thái tại một cơ sở.")
+
     public ResponseEntity<ApiResponse<PageResponse<BranchMenuItemResponse>>> getBranchMenuItems(
             @PathVariable UUID id,
             @RequestParam(required = false) Boolean isAvailable,
@@ -76,6 +85,8 @@ public class BranchController {
      */
     @PutMapping("/{id}/menu")
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
+    @Operation(summary = "Sửa/Cập nhật setting Menu riêng tại chi nhánh", description = "Cấp quyền cho Admin hoặc Branch Manager (Chỉ được cấu hình branch của bản thân). Bật/tắt món do hết nguyên liệu, hay setup giá custom. ")
+
     public ResponseEntity<ApiResponse<BranchMenuItemResponse>> updateBranchMenuItem(
             @PathVariable UUID id,
             @Valid @RequestBody BranchMenuItemRequest request) {
