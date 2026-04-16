@@ -7,21 +7,20 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class RegisterRequest {
+public class ResetPasswordRequest {
+
     @NotBlank(message = "Email is required")
     @Email(message = "Format must be a valid email address")
     private String email;
 
-    @NotBlank(message = "Password is required")
+    @NotBlank(message = "OTP code is required")
+    private String otp;
+
+    @NotBlank(message = "New password is required")
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
             message = "Password must contain at least one uppercase letter, one lowercase letter, and one digit"
     )
-    private String password;
-
-    @NotBlank(message = "Full name is required")
-    private String fullName;
-
-    private String phoneNumber;
+    private String newPassword;
 }

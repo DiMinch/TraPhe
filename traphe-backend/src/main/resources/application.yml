@@ -2,11 +2,11 @@ spring:
   datasource:
     url: jdbc:postgresql://aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
     username: postgres.irzskouxozoygfjbgkuq
-    password: ${DB_PASSWORD:postgres} # Should be provided as environment variable
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     properties:
       hibernate:
@@ -17,15 +17,38 @@ spring:
       max-file-size: 5MB
       max-request-size: 10MB
 
+  # Redis — Upstash free tier (or local)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
+
+  # Mail — Mailtrap sandbox (no real emails sent)
+  mail:
+    host: ${MAIL_HOST:sandbox.smtp.mailtrap.io}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 app:
   jwt:
     secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-please-do-not-use-this-in-prod}
     access-token-expiration: 900000       # 15 minutes in ms
     refresh-token-expiration: 604800000   # 7 days in ms
+  otp:
+    expiration: 300    # 5 minutes in seconds
+    length: 6          # 6-digit OTP
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
 
 supabase:
   url: ${SUPABASE_URL:https://irzskouxozoygfjbgkuq.supabase.co}
   service-key: ${SUPABASE_SERVICE_KEY:}
   storage:
     bucket: menu-images
-

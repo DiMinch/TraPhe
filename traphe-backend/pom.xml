@@ -96,6 +96,18 @@
 			</exclusions>
 		</dependency>
 
+		<!-- Redis for token blacklist & OTP storage -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Email for OTP delivery -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- Bucket4j for Rate Limiting -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>

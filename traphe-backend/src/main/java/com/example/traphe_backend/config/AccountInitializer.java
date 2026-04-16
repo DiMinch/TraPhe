@@ -94,6 +94,7 @@ public class AccountInitializer implements CommandLineRunner {
                 .email(email)
                 .password(passwordEncoder.encode(DEFAULT_PASSWORD))
                 .fullName(fullName)
+                .isEmailVerified(true) // Seed accounts are pre-verified
                 .roles(roles)
                 .build();
 
