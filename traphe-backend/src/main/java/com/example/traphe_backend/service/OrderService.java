@@ -70,6 +70,8 @@ public class OrderService {
     private final ToppingRepository toppingRepository;
     private final MenuItemToppingRepository menuItemToppingRepository;
     private final UserRepository userRepository;
+    private final LoyaltyService loyaltyService;
+    private final PaymentService paymentService;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -417,10 +419,12 @@ public class OrderService {
         // 4a. Refund loyalty points if used
         if (order.getLoyaltyPointsUsed() > 0) {
             pointsRefunded = order.getLoyaltyPointsUsed();
-            // TODO: When loyalty_points table exists:
-            //   UPDATE loyalty_points SET points_available = points_available + :pointsRefunded
-            //   INSERT INTO loyalty_point_transactions (type='REFUNDED', points=:pointsRefunded, order_id=:orderId)
-            log.info("Order {} — Refunding {} loyalty points to customer {}",
+            
+            if (order.getCustomer() != null) {
+                loyaltyService.refundPointsForOrder(order.getCustomer(), order, pointsRefunded);
+            }
+
+            log.info("Order {} — Refunded {} loyalty points to customer {}",
                     order.getOrderNumber(), pointsRefunded,
                     order.getCustomer() != null ? order.getCustomer().getEmail() : "anonymous");
         }
@@ -429,10 +433,10 @@ public class OrderService {
         if (order.getPaymentStatus() == PaymentStatus.COMPLETED) {
             refundAmount = order.getFinalAmount();
             order.setPaymentStatus(PaymentStatus.REFUNDED);
-            // TODO: When payment gateway is integrated:
-            //   Call refund API (VNPAY/MOMO) with refundAmount
-            //   INSERT INTO payment_transactions (type='REFUND', amount=:refundAmount, order_id=:orderId)
-            log.info("Order {} — Initiating refund of {} VND. Payment status → REFUNDED",
+            
+            paymentService.processRefund(order, refundAmount);
+
+            log.info("Order {} — Initiated mock refund of {} VND. Payment status → REFUNDED",
                     order.getOrderNumber(), refundAmount);
         }
 
