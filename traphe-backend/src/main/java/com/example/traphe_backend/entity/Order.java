@@ -61,6 +61,11 @@ public class Order extends BaseEntity {
     private OrderStatus status = OrderStatus.PENDING;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "brewing_status", nullable = false, length = 20)
+    @Builder.Default
+    private com.example.traphe_backend.enums.BrewingStatus brewingStatus = com.example.traphe_backend.enums.BrewingStatus.WAITING;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", length = 20)
     private PaymentMethod paymentMethod;
 

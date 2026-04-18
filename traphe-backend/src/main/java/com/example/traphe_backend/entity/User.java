@@ -28,6 +28,9 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "phone_number", unique = true, length = 20)
+    private String phoneNumber;
+
     @Column(nullable = true) // Nullable for OAuth users
     private String password;
 
