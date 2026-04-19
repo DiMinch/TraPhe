@@ -1,0 +1,84 @@
+[
+  {
+    "id": 1,
+    "image": "/logo.svg",
+    "name": "MacBook Pro M1 2020",
+    "variants": "3 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 5,
+    "status": "Active",
+    "minStockThreshold": 5,
+    "generalSpec": {
+      "Screen_Size": "1920x1080",
+      "Battery": "60Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "MB-M1-GR-256",
+        "barcode": "1155464853",
+        "spec": {
+          "RAM": "8GB"
+        },
+        "purchasePrice": "$1,000",
+        "sellingPrice": "$3,000",
+        "inventory": 5,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "MB-M1-SL-512",
+        "barcode": "0511554894",
+        "spec": {
+          "RAM": "12GB"
+        },
+        "purchasePrice": "$2,000",
+        "sellingPrice": "$5,000",
+        "inventory": 0,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "image": "¥",
+    "name": "ZADEZ Mouse Gaming 2025",
+    "variants": "2 variants",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 10,
+    "status": "Active",
+    "minStockThreshold": 3,
+    "generalSpec": {
+      "DPI": "16000",
+      "Buttons": "8"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "ZD-MS-BK",
+        "barcode": "2255464853",
+        "spec": {
+          "Color": "Black"
+        },
+        "purchasePrice": "$20",
+        "sellingPrice": "$50",
+        "inventory": 5,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "ZD-MS-WH",
+        "barcode": "2255464854",
+        "spec": {
+          "Color": "White"
+        },
+        "purchasePrice": "$20",
+        "sellingPrice": "$50",
+        "inventory": 5,
+        "status": "Active"
+      }
+    ]
+  }
+]
