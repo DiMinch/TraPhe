@@ -29,6 +29,12 @@ public class Ingredient extends BaseEntity {
     @Column(name = "min_stock_alert", precision = 10, scale = 2)
     private BigDecimal minStockAlert;
 
+    @Column(length = 50, unique = true)
+    private String barcode;
+
+    @Column(length = 50, unique = true)
+    private String sku;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;

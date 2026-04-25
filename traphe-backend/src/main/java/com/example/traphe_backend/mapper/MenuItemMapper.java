@@ -26,6 +26,7 @@ public interface MenuItemMapper {
     @Mapping(target = "basePrice", source = "item.basePrice")
     @Mapping(target = "preparationTime", source = "item.preparationTime")
     @Mapping(target = "allowToppings", source = "item.allowToppings")
+    @Mapping(target = "ingredientId", source = "item.ingredient.id")
     @Mapping(target = "sizes", source = "sizes")
     @Mapping(target = "createdAt", source = "item.createdAt")
     MenuItemResponse toResponse(MenuItem item, List<MenuItemSize> sizes);
@@ -41,6 +42,7 @@ public interface MenuItemMapper {
     @Mapping(target = "basePrice", source = "item.basePrice")
     @Mapping(target = "preparationTime", source = "item.preparationTime")
     @Mapping(target = "allowToppings", source = "item.allowToppings")
+    @Mapping(target = "ingredientId", source = "item.ingredient.id")
     @Mapping(target = "sizes", source = "sizes")
     @Mapping(target = "optionGroups", source = "optionGroups")
     @Mapping(target = "availableToppings", source = "toppings")

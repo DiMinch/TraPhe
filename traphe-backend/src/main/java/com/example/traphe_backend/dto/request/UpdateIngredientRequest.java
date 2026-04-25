@@ -15,4 +15,6 @@ public class UpdateIngredientRequest {
     private String unit;
     private BigDecimal minStockAlert;
     private Boolean isActive;
+    private String barcode;
+    private String sku;
 }

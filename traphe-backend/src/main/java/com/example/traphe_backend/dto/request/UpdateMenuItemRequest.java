@@ -31,6 +31,8 @@ public class UpdateMenuItemRequest {
 
     private Boolean allowToppings;
 
+    private UUID ingredientId;
+
     /**
      * If provided, replaces all sizes. Set to null to keep existing.
      */

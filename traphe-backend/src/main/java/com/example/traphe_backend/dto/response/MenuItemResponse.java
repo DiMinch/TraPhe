@@ -27,6 +27,7 @@ public class MenuItemResponse {
     private Integer preparationTime;
     private boolean allowToppings;
     private List<MenuItemSizeResponse> sizes;
+    private UUID ingredientId;
     private LocalDateTime createdAt;
 
     // Branch-specific fields (populated when branchId is provided)

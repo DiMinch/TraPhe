@@ -78,59 +78,71 @@ public class InventoryDeductionServiceImpl implements InventoryDeductionService 
             return;
         }
 
-        // 1. Collect menu item IDs
-        Set<UUID> menuItemIds = orderItems.stream()
+        // 1. Separate drink items and merchandise items
+        Set<UUID> drinkMenuItemIds = orderItems.stream()
+                .filter(oi -> oi.getMenuItem().isDrink())
                 .map(oi -> oi.getMenuItem().getId())
                 .collect(Collectors.toSet());
 
-        // 2. Batch-fetch all active recipes for these menu items
-        List<Recipe> recipes = recipeRepository.findActiveByMenuItemIdIn(menuItemIds);
-        if (recipes.isEmpty()) {
-            log.info("No recipes found for order {} items — skipping stock deduction.", order.getOrderNumber());
-            return;
-        }
-
-        // 3. Batch-fetch recipe items
-        Set<UUID> recipeIds = recipes.stream().map(Recipe::getId).collect(Collectors.toSet());
-        List<RecipeItem> allRecipeItems = recipeItemRepository.findByRecipeIdIn(recipeIds);
-        Map<UUID, List<RecipeItem>> recipeItemsByRecipeId = allRecipeItems.stream()
-                .collect(Collectors.groupingBy(ri -> ri.getRecipe().getId()));
-
-        // 4. Build recipe lookup: key = "menuItemId|size" or "menuItemId|NULL"
-        Map<String, Recipe> recipeLookup = new HashMap<>();
-        for (Recipe recipe : recipes) {
-            String key = recipe.getMenuItem().getId() + "|" + (recipe.getSize() != null ? recipe.getSize() : "NULL");
-            recipeLookup.put(key, recipe);
-        }
-
-        // 5. Aggregate total required per ingredient
+        // 2. Map tracking total requirements
         Map<UUID, BigDecimal> totalRequired = new HashMap<>();
 
+        // 3. Add merchandise directly
         for (OrderItem orderItem : orderItems) {
-            UUID menuItemId = orderItem.getMenuItem().getId();
-            String sizeName = orderItem.getMenuItemSize() != null
-                    ? orderItem.getMenuItemSize().getSizeName().toUpperCase()
-                    : null;
-
-            // Try exact size match first, then fallback to NULL (general recipe)
-            String exactKey = menuItemId + "|" + (sizeName != null ? sizeName : "NULL");
-            String fallbackKey = menuItemId + "|NULL";
-
-            Recipe recipe = recipeLookup.get(exactKey);
-            if (recipe == null && sizeName != null) {
-                recipe = recipeLookup.get(fallbackKey);
+            if (!orderItem.getMenuItem().isDrink()) {
+                Ingredient ingredient = orderItem.getMenuItem().getIngredient();
+                if (ingredient != null) {
+                    totalRequired.merge(ingredient.getId(),
+                            BigDecimal.valueOf(orderItem.getQuantity()), BigDecimal::add);
+                } else {
+                    log.warn("Merchandise item '{}' has no mapped ingredient for deduction.",
+                            orderItem.getMenuItem().getName());
+                }
             }
+        }
 
-            if (recipe == null) {
-                log.debug("No recipe for menuItem {} size {} — skipping deduction for this item.",
-                        menuItemId, sizeName);
-                continue;
-            }
+        // 4. Process recipes for drinks
+        if (!drinkMenuItemIds.isEmpty()) {
+            List<Recipe> recipes = recipeRepository.findActiveByMenuItemIdIn(drinkMenuItemIds);
 
-            List<RecipeItem> recipeItems = recipeItemsByRecipeId.getOrDefault(recipe.getId(), List.of());
-            for (RecipeItem ri : recipeItems) {
-                BigDecimal required = ri.getQuantity().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
-                totalRequired.merge(ri.getIngredient().getId(), required, BigDecimal::add);
+            if (!recipes.isEmpty()) {
+                Set<UUID> recipeIds = recipes.stream().map(Recipe::getId).collect(Collectors.toSet());
+                List<RecipeItem> allRecipeItems = recipeItemRepository.findByRecipeIdIn(recipeIds);
+                Map<UUID, List<RecipeItem>> recipeItemsByRecipeId = allRecipeItems.stream()
+                        .collect(Collectors.groupingBy(ri -> ri.getRecipe().getId()));
+
+                Map<String, Recipe> recipeLookup = new HashMap<>();
+                for (Recipe recipe : recipes) {
+                    String key = recipe.getMenuItem().getId() + "|" + (recipe.getSize() != null ? recipe.getSize() : "NULL");
+                    recipeLookup.put(key, recipe);
+                }
+
+                for (OrderItem orderItem : orderItems) {
+                    if (!orderItem.getMenuItem().isDrink()) continue;
+
+                    UUID menuItemId = orderItem.getMenuItem().getId();
+                    String sizeName = orderItem.getMenuItemSize() != null
+                            ? orderItem.getMenuItemSize().getSizeName().toUpperCase()
+                            : null;
+
+                    String exactKey = menuItemId + "|" + (sizeName != null ? sizeName : "NULL");
+                    String fallbackKey = menuItemId + "|NULL";
+
+                    Recipe recipe = recipeLookup.get(exactKey);
+                    if (recipe == null && sizeName != null) {
+                        recipe = recipeLookup.get(fallbackKey);
+                    }
+
+                    if (recipe != null) {
+                        List<RecipeItem> recipeItems = recipeItemsByRecipeId.getOrDefault(recipe.getId(), List.of());
+                        for (RecipeItem ri : recipeItems) {
+                            BigDecimal required = ri.getQuantity().multiply(BigDecimal.valueOf(orderItem.getQuantity()));
+                            totalRequired.merge(ri.getIngredient().getId(), required, BigDecimal::add);
+                        }
+                    } else {
+                        log.debug("No recipe for menuItem {} size {} — skipping.", menuItemId, sizeName);
+                    }
+                }
             }
         }
 

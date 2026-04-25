@@ -90,6 +90,20 @@ public class MenuController {
     }
 
     /**
+     * GET /api/menu/scan — POS barcode scan → returns MenuItemDetailResponse.
+     */
+    @GetMapping("/scan")
+    @Operation(summary = "Quét barcode tại POS",
+            description = "Máy quét mã vạch tại quầy gọi API này. Trả về MenuItemDetailResponse tương ứng để add vào đơn hàng ngay.")
+    public ResponseEntity<ApiResponse<MenuItemDetailResponse>> scanBarcode(
+            @RequestParam String barcode,
+            @RequestParam(required = false) UUID branchId) {
+
+        MenuItemDetailResponse result = menuService.findMenuItemByBarcode(barcode, branchId);
+        return ResponseEntity.ok(ApiResponse.success(result, "Tìm thấy sản phẩm"));
+    }
+
+    /**
      * GET /api/menu/categories — Danh sách danh mục.
      */
     @GetMapping("/categories")

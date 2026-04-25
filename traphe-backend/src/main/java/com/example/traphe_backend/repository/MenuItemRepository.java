@@ -16,4 +16,7 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, UUID>, JpaSp
 
     @Query("SELECT COUNT(m) FROM MenuItem m WHERE m.isDeleted = false AND m.category.id = :categoryId")
     long countByCategoryId(UUID categoryId);
+
+    @Query("SELECT m FROM MenuItem m JOIN FETCH m.ingredient i WHERE i.barcode = :barcode AND m.isDeleted = false AND i.isDeleted = false")
+    Optional<MenuItem> findByIngredientBarcodeAndIsDeletedFalse(String barcode);
 }

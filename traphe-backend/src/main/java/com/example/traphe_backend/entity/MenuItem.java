@@ -57,4 +57,8 @@ public class MenuItem extends BaseEntity {
 
     @Column(name = "base_price", precision = 12, scale = 2)
     private BigDecimal basePrice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ingredient_id")
+    private Ingredient ingredient;
 }

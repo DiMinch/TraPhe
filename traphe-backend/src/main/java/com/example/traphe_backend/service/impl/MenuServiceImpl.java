@@ -354,4 +354,12 @@ public class MenuServiceImpl implements MenuService {
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(direction, field);
     }
+
+    @Override
+    public MenuItemDetailResponse findMenuItemByBarcode(String barcode, UUID branchId) {
+        MenuItem item = menuItemRepository.findByIngredientBarcodeAndIsDeletedFalse(barcode)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy sản phẩm với barcode: " + barcode));
+        return getMenuItemById(item.getId(), branchId);
+    }
 }

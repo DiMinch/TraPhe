@@ -18,6 +18,8 @@ public class IngredientResponse {
     private String name;
     private String unit;
     private BigDecimal minStockAlert;
+    private String barcode;
+    private String sku;
     private boolean isActive;
     private LocalDateTime createdAt;
 }

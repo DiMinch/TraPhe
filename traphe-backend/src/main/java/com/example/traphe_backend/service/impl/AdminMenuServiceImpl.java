@@ -26,6 +26,8 @@ import com.example.traphe_backend.repository.MenuItemToppingRepository;
 import com.example.traphe_backend.repository.OptionGroupRepository;
 import com.example.traphe_backend.repository.OptionValueRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
+import com.example.traphe_backend.repository.IngredientRepository;
+import com.example.traphe_backend.entity.Ingredient;
 import com.example.traphe_backend.service.AdminMenuService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +53,7 @@ public class AdminMenuServiceImpl implements AdminMenuService {
     private final OptionGroupRepository optionGroupRepository;
     private final OptionValueRepository optionValueRepository;
     private final ToppingRepository toppingRepository;
+    private final IngredientRepository ingredientRepository;
 
     private final MenuItemMapper menuItemMapper;
     private final OptionGroupMapper optionGroupMapper;
@@ -72,6 +75,14 @@ public class AdminMenuServiceImpl implements AdminMenuService {
                             "Category not found with id: " + request.getCategoryId()));
         }
 
+        // Resolve ingredient explicitly if provided
+        Ingredient ingredient = null;
+        if (request.getIngredientId() != null) {
+            ingredient = ingredientRepository.findById(request.getIngredientId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Ingredient not found with id: " + request.getIngredientId()));
+        }
+
         // Build menu item
         MenuItem item = MenuItem.builder()
                 .name(request.getName())
@@ -80,6 +91,7 @@ public class AdminMenuServiceImpl implements AdminMenuService {
                 .description(request.getDescription())
                 .isDrink(Boolean.TRUE.equals(request.getIsDrink()))
                 .basePrice(request.getBasePrice())
+                .ingredient(ingredient)
                 .preparationTime(request.getPreparationTime())
                 .allowToppings(request.getAllowToppings() != null ? request.getAllowToppings() : true)
                 .status(MenuItemStatus.ACTIVE)
@@ -178,6 +190,12 @@ public class AdminMenuServiceImpl implements AdminMenuService {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Category not found: " + request.getCategoryId()));
             item.setCategory(cat);
+        }
+        if (request.getIngredientId() != null) {
+            Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Ingredient not found: " + request.getIngredientId()));
+            item.setIngredient(ingredient);
         }
 
         menuItemRepository.save(item);

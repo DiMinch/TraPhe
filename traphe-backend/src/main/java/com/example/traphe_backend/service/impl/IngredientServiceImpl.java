@@ -32,6 +32,8 @@ public class IngredientServiceImpl implements IngredientService {
                 .name(request.getName().trim())
                 .unit(request.getUnit().trim())
                 .minStockAlert(request.getMinStockAlert())
+                .barcode(request.getBarcode() != null ? request.getBarcode().trim() : null)
+                .sku(request.getSku() != null ? request.getSku().trim() : null)
                 .build();
 
         Ingredient saved = ingredientRepository.save(ingredient);
@@ -72,6 +74,12 @@ public class IngredientServiceImpl implements IngredientService {
         if (request.getIsActive() != null) {
             ingredient.setActive(request.getIsActive());
         }
+        if (request.getBarcode() != null) {
+            ingredient.setBarcode(request.getBarcode().trim());
+        }
+        if (request.getSku() != null) {
+            ingredient.setSku(request.getSku().trim());
+        }
 
         Ingredient saved = ingredientRepository.save(ingredient);
         log.info("Ingredient updated: {}", saved.getName());
@@ -88,5 +96,23 @@ public class IngredientServiceImpl implements IngredientService {
         ingredient.setDeletedAt(LocalDateTime.now());
         ingredientRepository.save(ingredient);
         log.info("Ingredient soft-deleted: {}", ingredient.getName());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public IngredientResponse findByBarcode(String barcode) {
+        Ingredient ingredient = ingredientRepository.findByBarcodeAndIsDeletedFalse(barcode)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy nguyên liệu với barcode: " + barcode));
+        return ingredientMapper.toResponse(ingredient);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public IngredientResponse findBySku(String sku) {
+        Ingredient ingredient = ingredientRepository.findBySkuAndIsDeletedFalse(sku)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy nguyên liệu với SKU: " + sku));
+        return ingredientMapper.toResponse(ingredient);
     }
 }

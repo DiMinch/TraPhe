@@ -34,6 +34,11 @@ public class CreateMenuItemRequest {
     private Boolean allowToppings;
 
     /**
+     * Optional: direct ingredient reference for merchandise.
+     */
+    private UUID ingredientId;
+
+    /**
      * Optional: create sizes inline.
      */
     private List<SizeRequest> sizes;

@@ -18,4 +18,8 @@ public interface IngredientService {
     IngredientResponse updateIngredient(UUID id, UpdateIngredientRequest request);
 
     void softDeleteIngredient(UUID id);
+
+    IngredientResponse findByBarcode(String barcode);
+
+    IngredientResponse findBySku(String sku);
 }

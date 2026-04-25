@@ -17,4 +17,8 @@ public interface IngredientRepository extends JpaRepository<Ingredient, UUID> {
     List<Ingredient> findAllByIdInAndIsDeletedFalse(Collection<UUID> ids);
 
     List<Ingredient> findByIsActiveTrueAndIsDeletedFalse();
+
+    Optional<Ingredient> findByBarcodeAndIsDeletedFalse(String barcode);
+
+    Optional<Ingredient> findBySkuAndIsDeletedFalse(String sku);
 }

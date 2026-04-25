@@ -27,6 +27,7 @@ public class MenuItemDetailResponse {
     private Integer preparationTime;
     private boolean allowToppings;
     private List<MenuItemSizeResponse> sizes;
+    private UUID ingredientId;
     private List<OptionGroupResponse> optionGroups;
     private List<ToppingResponse> availableToppings;
     private LocalDateTime createdAt;

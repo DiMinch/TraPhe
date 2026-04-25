@@ -4,10 +4,12 @@ import com.example.traphe_backend.dto.request.AdjustStockRequest;
 import com.example.traphe_backend.dto.request.ImportStockRequest;
 import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.dto.response.ImportStockResponse;
+import com.example.traphe_backend.dto.response.IngredientResponse;
 import com.example.traphe_backend.dto.response.IngredientStockResponse;
 import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.exception.ResourceNotFoundException;
 import com.example.traphe_backend.repository.UserRepository;
+import com.example.traphe_backend.service.IngredientService;
 import com.example.traphe_backend.service.StockService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +36,7 @@ import java.util.UUID;
 public class BranchStockController {
 
     private final StockService stockService;
+    private final IngredientService ingredientService;
     private final UserRepository userRepository;
 
     /**
@@ -84,6 +87,31 @@ public class BranchStockController {
         String userEmail = authentication.getName();
         IngredientStockResponse result = stockService.adjustStock(resolvedBranchId, request, userEmail);
         return ResponseEntity.ok(ApiResponse.success(result, "Điều chỉnh kho thành công"));
+    }
+
+    /**
+     * GET /api/branch/ingredients/scan — Quét barcode/SKU để tìm nguyên liệu (Branch Manager).
+     */
+    @GetMapping("/ingredients/scan")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
+    @Operation(summary = "Quét barcode/SKU nguyên liệu",
+            description = "Dùng cho Scanner/App nhập kho. Truyền barcode hoặc sku để tra cứu nguyên liệu tương ứng.")
+    public ResponseEntity<ApiResponse<IngredientResponse>> scanIngredient(
+            @RequestParam(required = false) String barcode,
+            @RequestParam(required = false) String sku) {
+
+        if ((barcode == null || barcode.isBlank()) && (sku == null || sku.isBlank())) {
+            throw new IllegalArgumentException("Vui lòng truyền barcode hoặc sku để tra cứu.");
+        }
+
+        IngredientResponse result;
+        if (barcode != null && !barcode.isBlank()) {
+            result = ingredientService.findByBarcode(barcode);
+        } else {
+            result = ingredientService.findBySku(sku);
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Tìm thấy nguyên liệu"));
     }
 
     // ==================== Helper ====================

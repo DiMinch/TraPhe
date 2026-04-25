@@ -19,4 +19,8 @@ public class CreateIngredientRequest {
     private String unit;
 
     private BigDecimal minStockAlert;
+
+    private String barcode;
+
+    private String sku;
 }

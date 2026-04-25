@@ -23,4 +23,6 @@ public interface MenuService {
     PageResponse<ToppingResponse> getToppings(String search, Boolean isAvailable, int page, int size);
 
     List<MenuTreeResponse> getMenuTree(UUID branchId);
+
+    MenuItemDetailResponse findMenuItemByBarcode(String barcode, UUID branchId);
 }
