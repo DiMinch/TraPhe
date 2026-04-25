@@ -3,6 +3,7 @@ package com.example.traphe_backend.service.impl;
 import com.example.traphe_backend.dto.request.CreateMerchandiseOrderRequest;
 import com.example.traphe_backend.dto.request.MerchandiseOrderItemRequest;
 import com.example.traphe_backend.dto.response.MerchandiseOrderResponse;
+import com.example.traphe_backend.entity.Branch;
 import com.example.traphe_backend.entity.MenuItem;
 import com.example.traphe_backend.entity.Order;
 import com.example.traphe_backend.entity.OrderItem;
@@ -10,6 +11,7 @@ import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.enums.MenuItemStatus;
 import com.example.traphe_backend.enums.OrderType;
 import com.example.traphe_backend.exception.ResourceNotFoundException;
+import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.MenuItemRepository;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.UserRepository;
@@ -36,6 +38,7 @@ public class MerchandiseOrderServiceImpl implements MerchandiseOrderService {
     private final OrderRepository orderRepository;
     private final MenuItemRepository menuItemRepository;
     private final UserRepository userRepository;
+    private final BranchRepository branchRepository;
 
     @Override
     @Transactional
@@ -53,10 +56,15 @@ public class MerchandiseOrderServiceImpl implements MerchandiseOrderService {
         Map<UUID, MenuItem> menuItemMap = menuItemRepository.findAllById(menuItemIds).stream()
                 .collect(Collectors.toMap(MenuItem::getId, item -> item));
 
-        // ========== 3. Build Order ==========
+        // ========== 3. Resolve branch ==========
+        Branch branch = branchRepository.findById(request.getBranchId())
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found: " + request.getBranchId()));
+
+        // ========== 4. Build Order ==========
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
                 .customer(customer)
+                .branch(branch)
                 .orderType(OrderType.MERCHANDISE)
                 .build();
 

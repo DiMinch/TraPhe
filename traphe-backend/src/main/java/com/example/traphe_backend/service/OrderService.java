@@ -71,6 +71,7 @@ public class OrderService {
     private final ToppingRepository toppingRepository;
     private final MenuItemToppingRepository menuItemToppingRepository;
     private final UserRepository userRepository;
+    private final InventoryDeductionService inventoryDeductionService;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -425,6 +426,16 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
         log.info("Order {} status updated: {} → {}", saved.getOrderNumber(), currentStatus, newStatus);
+
+        // 5. Trigger inventory deduction when order is completed (drink orders only)
+        if (newStatus == OrderStatus.COMPLETED) {
+            try {
+                inventoryDeductionService.deductStockForOrder(saved, userEmail);
+            } catch (Exception e) {
+                log.error("Stock deduction failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                throw e; // Re-throw to rollback the transaction
+            }
+        }
 
         return mapToOrderResponse(saved);
     }
