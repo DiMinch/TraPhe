@@ -4,33 +4,24 @@ import com.example.traphe_backend.dto.response.BranchHourResponse;
 import com.example.traphe_backend.dto.response.BranchResponse;
 import com.example.traphe_backend.entity.Branch;
 import com.example.traphe_backend.entity.BranchHour;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Component
-public class BranchMapper {
+@Mapper(componentModel = "spring")
+public interface BranchMapper {
 
-    public BranchResponse toResponse(Branch branch, List<BranchHour> hours) {
-        return BranchResponse.builder()
-                .id(branch.getId())
-                .name(branch.getName())
-                .address(branch.getAddress())
-                .lat(branch.getLat())
-                .lng(branch.getLng())
-                .phone(branch.getPhone())
-                .isActive(branch.isActive())
-                .hours(hours != null ? hours.stream().map(this::toHourResponse).toList() : List.of())
-                .build();
-    }
+    @Mapping(target = "id", source = "branch.id")
+    @Mapping(target = "name", source = "branch.name")
+    @Mapping(target = "address", source = "branch.address")
+    @Mapping(target = "lat", source = "branch.lat")
+    @Mapping(target = "lng", source = "branch.lng")
+    @Mapping(target = "phone", source = "branch.phone")
+    @Mapping(target = "isActive", source = "branch.active")
+    @Mapping(target = "hours", source = "hours")
+    BranchResponse toResponse(Branch branch, List<BranchHour> hours);
 
-    public BranchHourResponse toHourResponse(BranchHour hour) {
-        return BranchHourResponse.builder()
-                .id(hour.getId())
-                .dayOfWeek(hour.getDayOfWeek())
-                .openTime(hour.getOpenTime())
-                .closeTime(hour.getCloseTime())
-                .isClosed(hour.isClosed())
-                .build();
-    }
+    @Mapping(target = "isClosed", source = "closed")
+    BranchHourResponse toHourResponse(BranchHour hour);
 }

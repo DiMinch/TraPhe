@@ -2,18 +2,10 @@ package com.example.traphe_backend.mapper;
 
 import com.example.traphe_backend.dto.response.ToppingResponse;
 import com.example.traphe_backend.entity.Topping;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
-public class ToppingMapper {
+@Mapper(componentModel = "spring")
+public interface ToppingMapper {
 
-    public ToppingResponse toResponse(Topping topping) {
-        return ToppingResponse.builder()
-                .id(topping.getId())
-                .name(topping.getName())
-                .extraPrice(topping.getExtraPrice())
-                .imageUrl(topping.getImageUrl())
-                .isAvailable(topping.isAvailable())
-                .build();
-    }
+    ToppingResponse toResponse(Topping topping);
 }

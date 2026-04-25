@@ -4,30 +4,22 @@ import com.example.traphe_backend.dto.response.OptionGroupResponse;
 import com.example.traphe_backend.dto.response.OptionValueResponse;
 import com.example.traphe_backend.entity.OptionGroup;
 import com.example.traphe_backend.entity.OptionValue;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Component
-public class OptionGroupMapper {
+@Mapper(componentModel = "spring")
+public interface OptionGroupMapper {
 
-    public OptionGroupResponse toResponse(OptionGroup group, List<OptionValue> values) {
-        return OptionGroupResponse.builder()
-                .id(group.getId())
-                .name(group.getName())
-                .type(group.getType().name())
-                .isRequired(group.isRequired())
-                .displayOrder(group.getDisplayOrder())
-                .values(values.stream().map(this::toValueResponse).toList())
-                .build();
-    }
+    @Mapping(target = "id", source = "group.id")
+    @Mapping(target = "name", source = "group.name")
+    @Mapping(target = "type", source = "group.type")
+    @Mapping(target = "isRequired", source = "group.required")
+    @Mapping(target = "displayOrder", source = "group.displayOrder")
+    @Mapping(target = "values", source = "values")
+    OptionGroupResponse toResponse(OptionGroup group, List<OptionValue> values);
 
-    public OptionValueResponse toValueResponse(OptionValue value) {
-        return OptionValueResponse.builder()
-                .id(value.getId())
-                .label(value.getLabel())
-                .isDefault(value.isDefault())
-                .sortOrder(value.getSortOrder())
-                .build();
-    }
+    @Mapping(target = "isDefault", source = "default")
+    OptionValueResponse toValueResponse(OptionValue value);
 }

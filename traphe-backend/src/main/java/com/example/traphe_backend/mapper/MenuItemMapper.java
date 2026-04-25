@@ -7,61 +7,53 @@ import com.example.traphe_backend.dto.response.OptionGroupResponse;
 import com.example.traphe_backend.dto.response.ToppingResponse;
 import com.example.traphe_backend.entity.MenuItem;
 import com.example.traphe_backend.entity.MenuItemSize;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Component
-public class MenuItemMapper {
+@Mapper(componentModel = "spring")
+public interface MenuItemMapper {
 
-    public MenuItemResponse toResponse(MenuItem item, List<MenuItemSize> sizes) {
-        return MenuItemResponse.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .categoryId(item.getCategory() != null ? item.getCategory().getId() : null)
-                .categoryName(item.getCategory() != null ? item.getCategory().getName() : null)
-                .imageUrl(item.getImageUrl())
-                .description(item.getDescription())
-                .status(item.getStatus().name())
-                .isDrink(item.isDrink())
-                .basePrice(item.getBasePrice())
-                .preparationTime(item.getPreparationTime())
-                .allowToppings(item.isAllowToppings())
-                .sizes(sizes.stream().map(this::toSizeResponse).toList())
-                .createdAt(item.getCreatedAt())
-                .build();
-    }
+    @Mapping(target = "categoryId", source = "item.category.id")
+    @Mapping(target = "categoryName", source = "item.category.name")
+    @Mapping(target = "id", source = "item.id")
+    @Mapping(target = "name", source = "item.name")
+    @Mapping(target = "imageUrl", source = "item.imageUrl")
+    @Mapping(target = "description", source = "item.description")
+    @Mapping(target = "status", source = "item.status")
+    @Mapping(target = "isDrink", source = "item.drink")
+    @Mapping(target = "basePrice", source = "item.basePrice")
+    @Mapping(target = "preparationTime", source = "item.preparationTime")
+    @Mapping(target = "allowToppings", source = "item.allowToppings")
+    @Mapping(target = "sizes", source = "sizes")
+    @Mapping(target = "createdAt", source = "item.createdAt")
+    MenuItemResponse toResponse(MenuItem item, List<MenuItemSize> sizes);
 
-    public MenuItemDetailResponse toDetailResponse(MenuItem item,
-                                                    List<MenuItemSize> sizes,
-                                                    List<OptionGroupResponse> optionGroups,
-                                                    List<ToppingResponse> toppings) {
-        return MenuItemDetailResponse.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .categoryId(item.getCategory() != null ? item.getCategory().getId() : null)
-                .categoryName(item.getCategory() != null ? item.getCategory().getName() : null)
-                .imageUrl(item.getImageUrl())
-                .description(item.getDescription())
-                .status(item.getStatus().name())
-                .isDrink(item.isDrink())
-                .basePrice(item.getBasePrice())
-                .preparationTime(item.getPreparationTime())
-                .allowToppings(item.isAllowToppings())
-                .sizes(sizes.stream().map(this::toSizeResponse).toList())
-                .optionGroups(optionGroups)
-                .availableToppings(toppings)
-                .createdAt(item.getCreatedAt())
-                .updatedAt(item.getUpdatedAt())
-                .build();
-    }
+    @Mapping(target = "categoryId", source = "item.category.id")
+    @Mapping(target = "categoryName", source = "item.category.name")
+    @Mapping(target = "id", source = "item.id")
+    @Mapping(target = "name", source = "item.name")
+    @Mapping(target = "imageUrl", source = "item.imageUrl")
+    @Mapping(target = "description", source = "item.description")
+    @Mapping(target = "status", source = "item.status")
+    @Mapping(target = "isDrink", source = "item.drink")
+    @Mapping(target = "basePrice", source = "item.basePrice")
+    @Mapping(target = "preparationTime", source = "item.preparationTime")
+    @Mapping(target = "allowToppings", source = "item.allowToppings")
+    @Mapping(target = "sizes", source = "sizes")
+    @Mapping(target = "optionGroups", source = "optionGroups")
+    @Mapping(target = "availableToppings", source = "toppings")
+    @Mapping(target = "createdAt", source = "item.createdAt")
+    @Mapping(target = "updatedAt", source = "item.updatedAt")
+    MenuItemDetailResponse toDetailResponse(MenuItem item,
+                                            List<MenuItemSize> sizes,
+                                            List<OptionGroupResponse> optionGroups,
+                                            List<ToppingResponse> toppings);
 
-    public MenuItemSizeResponse toSizeResponse(MenuItemSize size) {
-        return MenuItemSizeResponse.builder()
-                .id(size.getId())
-                .sizeName(size.getSizeName())
-                .sellingPrice(size.getSellingPrice())
-                .displayOrder(size.getDisplayOrder())
-                .build();
-    }
+    @Mapping(target = "sizeName", source = "sizeName")
+    @Mapping(target = "sellingPrice", source = "sellingPrice")
+    @Mapping(target = "displayOrder", source = "displayOrder")
+    @Mapping(target = "id", source = "id")
+    MenuItemSizeResponse toSizeResponse(MenuItemSize size);
 }
