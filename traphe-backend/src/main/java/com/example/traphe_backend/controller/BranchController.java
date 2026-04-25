@@ -36,7 +36,7 @@ public class BranchController {
     @GetMapping
     @Operation(summary = "Lấy danh sách các cơ sở (Paginated)", description = "Trả về danh sách hệ thống chi nhánh, cho phép search theo tên/địa chỉ và trạng thái isActive.")
 
-    public ResponseEntity<ApiResponse<PageResponse<BranchResponse>>> getBranches(
+    public ResponseEntity<ApiResponse<java.util.List<BranchResponse>>> getBranches(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
@@ -47,7 +47,7 @@ public class BranchController {
         PageResponse<BranchResponse> result = branchService.getBranches(
                 search, isActive, page, size, sortBy, sortDir);
 
-        return ResponseEntity.ok(ApiResponse.success(result, "Branches retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.successPagination(result, "Branches retrieved successfully"));
     }
 
     /**
@@ -67,7 +67,7 @@ public class BranchController {
     @GetMapping("/{id}/menu")
     @Operation(summary = "Lấy danh sách các thay đổi Menu tại chi nhánh (Paginated)", description = "Dành cho Quản lý / Admin xem trực tiếp danh sách các món ăn đã được setting giá hoặc trạng thái tại một cơ sở.")
 
-    public ResponseEntity<ApiResponse<PageResponse<BranchMenuItemResponse>>> getBranchMenuItems(
+    public ResponseEntity<ApiResponse<java.util.List<BranchMenuItemResponse>>> getBranchMenuItems(
             @PathVariable UUID id,
             @RequestParam(required = false) Boolean isAvailable,
             @RequestParam(required = false) String search,
@@ -77,7 +77,7 @@ public class BranchController {
         PageResponse<BranchMenuItemResponse> result = branchService.getBranchMenuItems(
                 id, isAvailable, search, page, size);
 
-        return ResponseEntity.ok(ApiResponse.success(result, "Branch menu items retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.successPagination(result, "Branch menu items retrieved successfully"));
     }
 
     /**

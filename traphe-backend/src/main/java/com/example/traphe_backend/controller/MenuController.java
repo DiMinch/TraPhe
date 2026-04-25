@@ -43,7 +43,7 @@ public class MenuController {
     @GetMapping
     @Operation(summary = "Lấy danh sách sản phẩm (Paginated)", description = "Lấy danh sách món ăn/đồ uống có phân trang. Có thể filter theo danh mục (categoryId), trạng thái,... Nếu truyền branchId thì món sẽ có giá riêng và availability của nhánh đó.")
 
-    public ResponseEntity<ApiResponse<PageResponse<MenuItemResponse>>> getMenuItems(
+    public ResponseEntity<ApiResponse<java.util.List<MenuItemResponse>>> getMenuItems(
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
@@ -57,7 +57,7 @@ public class MenuController {
         PageResponse<MenuItemResponse> result = menuService.getMenuItems(
                 categoryId, search, status, isDrink, branchId, page, size, sortBy, sortDir);
 
-        return ResponseEntity.ok(ApiResponse.success(result, "Menu items retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.successPagination(result, "Menu items retrieved successfully"));
     }
 
     /**
@@ -125,14 +125,14 @@ public class MenuController {
     @GetMapping("/toppings")
     @Operation(summary = "Lấy danh sách Topping (Paginated)", description = "Lấy tất cả các loại topping khả dụng.")
 
-    public ResponseEntity<ApiResponse<PageResponse<ToppingResponse>>> getToppings(
+    public ResponseEntity<ApiResponse<java.util.List<ToppingResponse>>> getToppings(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isAvailable,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         PageResponse<ToppingResponse> result = menuService.getToppings(search, isAvailable, page, size);
-        return ResponseEntity.ok(ApiResponse.success(result, "Toppings retrieved successfully"));
+        return ResponseEntity.ok(ApiResponse.successPagination(result, "Toppings retrieved successfully"));
     }
 
     /**
