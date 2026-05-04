@@ -1,5 +1,4 @@
-import { Routes, Route, Navigate, Outlet } from "react-router";
-import Navigation from "./components/Navigation";
+import { Routes, Route, Navigate } from "react-router";
 
 // Auth Pages
 import SignUpPage from "./pages/auth/sign-up";
@@ -11,23 +10,16 @@ import CustomerPage from "./pages/dashboard/Customer/Customer";
 import ProductListPage from "./pages/dashboard/Product/ProductList";
 import ProductDetailPage from "./pages/dashboard/Product/ProductDetail";
 import UserPage from "./pages/dashboard/User";
+import AdminLayout from "./components/layout/AdminLayout";
 
 // Client Pages
 import HomePage from "./pages/client/home/HomePage";
 import ClientLayout from "./components/layout/ClientLayout";
-
+import ClientProductPage from "./pages/client/product/ClientProductPage";
+import ClientProductDetailPage from "./pages/client/product-detail/ClientProductDetailPage";
 import "./App.css";
-
-const AdminLayout = () => {
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Navigation />
-      <main className="flex-1 overflow-y-auto bg-gray-50">
-        <Outlet />
-      </main>
-    </div>
-  );
-};
+import ShopPage from "./pages/client/shop/ShopPage";
+import ContactPage from "./pages/client/contact/ContactPage";
 
 function App() {
   return (
@@ -37,6 +29,10 @@ function App() {
 
       <Route element={<ClientLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/products" element={<ClientProductPage />} />
+        <Route path="/products/:id" element={<ClientProductDetailPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Route>
 
       <Route element={<AdminLayout />}>

@@ -1,8 +1,8 @@
-import Banner from "./components/Banner";
+import Banner from "@/components/common/banner/Banner";
 import CategorySection from "./components/CategorySection";
 import ProductSection from "./components/ProductSection";
 import FeatureSection from "./components/FeatureSection";
-import SubscribeSection from "./components/SubscribeSection";
+import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 
 export default function HomePage() {
   return (

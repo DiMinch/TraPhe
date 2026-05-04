@@ -6,10 +6,10 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="text-xl font-bold tracking-widest border-r border-gray-600 pr-8 hidden md:block">
-            VITI
+            TraPhe
           </div>
           <div className="text-xl font-bold tracking-widest md:hidden">
-            VITI
+            TraPhe
           </div>
 
           <div className="text-sm text-gray-400">Laptop Store</div>
@@ -24,9 +24,7 @@ export default function Footer() {
             <a href="#" className="hover:text-white transition-colors">
               Product
             </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Blog
-            </a>
+
             <a href="#" className="hover:text-white transition-colors">
               Contact Us
             </a>
@@ -46,7 +44,7 @@ export default function Footer() {
             </a>
           </div>
           <div className="text-xs text-gray-500">
-            Copyright © 2025 VITI. All rights reserved
+            Copyright © 2025 TraPhe. All rights reserved
           </div>
           <div className="flex gap-4 text-xs font-bold text-gray-300">
             <a href="#">Privacy Policy</a>

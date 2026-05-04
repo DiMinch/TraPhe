@@ -11,7 +11,7 @@ export default function Header() {
           <div className="w-12 h-12 overflow-hidden flex items-center justify-center">
             <img
               src="/logo.svg"
-              alt="Viti"
+              alt="TraPhe Logo"
               className="w-full h-full object-cover scale-250"
             />
           </div>
@@ -22,7 +22,7 @@ export default function Header() {
             <Link
               key={link.title}
               to={link.path}
-              className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
+              className="font-medium text-gray-600 hover:text-black transition-colors"
             >
               {link.title}
             </Link>

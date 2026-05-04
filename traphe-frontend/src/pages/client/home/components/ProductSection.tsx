@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { newArrivals } from "@/data/mockData";
-import { ProductCard } from "@/components/common/product/ProductCard";
+import ProductCard from "@/components/common/product/ProductCard";
 
 export default function ProductSection() {
   return (
