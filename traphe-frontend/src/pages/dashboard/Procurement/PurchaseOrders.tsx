@@ -48,29 +48,40 @@ import {
   Check,
   BellIcon,
   X,
+  RefreshCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import OrderItemsTable from "./OrderItemsTable";
 import { format } from "date-fns";
 import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { dashboardPurchaseOrders } from "@/data/mockData";
+import {
+  purchaseOrderService,
+  type PurchaseOrderResponse,
+  type PurchaseOrderRequest,
+} from "@/services/purchase-order.service";
+import {
+  supplierService,
+  type SupplierResponse,
+} from "@/services/supplier.service";
 
 interface PurchaseOrder {
-  id: number;
-  poNumber: number;
+  id: string;
+  poNumber: string;
+  supplierId: string;
   supplier: string;
   contactName: string;
   createdDate: string;
   expectedDate: string;
   actualDate: string;
   totalAmount: string;
-  status: "ORDERED" | "RECEIVED" | "CLOSED" | "PENDING";
+  status: "DRAFT" | "RECEIVED" | "CLOSED";
 }
 
 interface OrderItem {
   id: number;
+  productVariantId: string;
   product: string;
   sku: string;
   referenceTicket: string;
@@ -78,6 +89,7 @@ interface OrderItem {
   quantityReceived: number;
   unitPrice: string;
   subtotal: string;
+  warrantyPeriod: number;
 }
 
 export default function PurchaseOrdersPage() {
@@ -86,8 +98,8 @@ export default function PurchaseOrdersPage() {
   const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<{
-    id: number;
-    poNumber: number;
+    id: string;
+    poNumber: string;
   } | null>(null);
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
@@ -96,28 +108,113 @@ export default function PurchaseOrdersPage() {
     from: undefined,
     to: undefined,
   });
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(
-    dashboardPurchaseOrders,
-  );
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all-status");
+  const [supplierFilter, setSupplierFilter] = useState("all-suppliers");
   const itemsPerPage = 8;
 
+  // Transform backend response to frontend format
+  const transformPurchaseOrder = (
+    po: PurchaseOrderResponse,
+  ): PurchaseOrder => ({
+    id: po.id,
+    poNumber: po.poNumber,
+    supplierId: po.supplier?.id || "",
+    supplier: po.supplier?.name || "N/A",
+    contactName: po.supplier?.contactName || "",
+    createdDate: po.createdAt
+      ? new Date(po.createdAt).toLocaleDateString("en-GB")
+      : "",
+    expectedDate: po.expectedDeliveryDate
+      ? new Date(po.expectedDeliveryDate).toLocaleDateString("en-GB")
+      : "",
+    actualDate: po.actualDeliveryDate
+      ? new Date(po.actualDeliveryDate).toLocaleDateString("en-GB")
+      : "",
+    totalAmount: po.totalAmount ? `$${po.totalAmount.toLocaleString()}` : "$0",
+    status: po.status,
+  });
+
+  // Fetch purchase orders from API
+  const fetchPurchaseOrders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await purchaseOrderService.getAllPurchaseOrders();
+      const transformedData = response.data.map(transformPurchaseOrder);
+      setPurchaseOrders(transformedData);
+    } catch (err: any) {
+      console.error("Error fetching purchase orders:", err);
+      if (err.response?.status === 401) {
+        setError("Authentication required. Please sign in.");
+      } else if (err.response?.status === 403) {
+        setError("You don't have permission to view purchase orders.");
+      } else if (err.response?.status === 400) {
+        setError(
+          "Backend data error. Some purchase order items may have invalid data.",
+        );
+      } else {
+        setError(
+          err.response?.data?.message || "Failed to fetch purchase orders",
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch suppliers for dropdown
+  const fetchSuppliers = async () => {
+    try {
+      const response = await supplierService.getAllSuppliers();
+      setSuppliers(response.data);
+    } catch (err) {
+      console.error("Error fetching suppliers:", err);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchPurchaseOrders();
+    fetchSuppliers();
+  }, []);
+
+  // Filter purchase orders
+  const filteredOrders = purchaseOrders.filter((order) => {
+    const matchesSearch =
+      order.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.contactName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all-status" ||
+      order.status.toLowerCase() === statusFilter.toLowerCase();
+
+    const matchesSupplier =
+      supplierFilter === "all-suppliers" || order.supplierId === supplierFilter;
+
+    return matchesSearch && matchesStatus && matchesSupplier;
+  });
+
   // Calculate pagination
-  const totalPages = Math.ceil(purchaseOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentOrders = purchaseOrders.slice(startIndex, endIndex);
+  const currentOrders = filteredOrders.slice(startIndex, endIndex);
 
   const [newOrder, setNewOrder] = useState({
-    poNumber: "",
-    supplier: "",
-    createdDate: "",
+    supplierId: "",
     expectedDate: "",
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([
     {
       id: 1,
+      productVariantId: "",
       product: "",
       sku: "",
       referenceTicket: "",
@@ -125,12 +222,14 @@ export default function PurchaseOrdersPage() {
       quantityReceived: 0,
       unitPrice: "",
       subtotal: "",
+      warrantyPeriod: 0,
     },
   ]);
 
   const handleAddItem = () => {
     const newItem: OrderItem = {
       id: orderItems.length + 1,
+      productVariantId: "",
       product: "",
       sku: "",
       referenceTicket: "",
@@ -138,6 +237,7 @@ export default function PurchaseOrdersPage() {
       quantityReceived: 0,
       unitPrice: "",
       subtotal: "",
+      warrantyPeriod: 0,
     };
     setOrderItems([...orderItems, newItem]);
   };
@@ -158,38 +258,122 @@ export default function PurchaseOrdersPage() {
     );
   };
 
-  const handleSaveDraft = () => {
-    console.log("Saving draft...", newOrder, orderItems);
-    setIsNewOrderOpen(false);
+  const handleSaveDraft = async () => {
+    try {
+      // Validate
+      if (!newOrder.supplierId) {
+        alert("Please select a supplier");
+        return;
+      }
+      if (orderItems.length === 0 || !orderItems[0].productVariantId) {
+        alert("Please add at least one item");
+        return;
+      }
+
+      const request: PurchaseOrderRequest = {
+        supplierId: newOrder.supplierId,
+        expectedDeliveryDate: newOrder.expectedDate || undefined,
+        items: orderItems
+          .filter((item) => item.productVariantId)
+          .map((item) => ({
+            productVariantId: item.productVariantId,
+            quantityOrdered: item.quantityOrdered,
+            unitPrice: parseFloat(item.unitPrice) || 0,
+            warrantyPeriod: item.warrantyPeriod || 0,
+            referenceTicketId: item.referenceTicket || undefined,
+          })),
+      };
+
+      await purchaseOrderService.createPurchaseOrder(request);
+      setIsNewOrderOpen(false);
+      resetNewOrderForm();
+      fetchPurchaseOrders();
+    } catch (err: any) {
+      console.error("Error creating purchase order:", err);
+      alert(err.response?.data?.message || "Failed to create purchase order");
+    }
+  };
+
+  const resetNewOrderForm = () => {
+    setNewOrder({
+      supplierId: "",
+      expectedDate: "",
+    });
+    setOrderItems([
+      {
+        id: 1,
+        productVariantId: "",
+        product: "",
+        sku: "",
+        referenceTicket: "",
+        quantityOrdered: 0,
+        quantityReceived: 0,
+        unitPrice: "",
+        subtotal: "",
+        warrantyPeriod: 0,
+      },
+    ]);
   };
 
   const handleMarkAsOrdered = () => {
-    console.log("Marking as ordered...", newOrder, orderItems);
-    setIsNewOrderOpen(false);
+    // For now, this just saves as draft since backend creates in DRAFT status
+    handleSaveDraft();
   };
 
-  const handleDeleteClick = (order: { id: number; poNumber: number }) => {
+  const handleDeleteClick = (order: { id: string; poNumber: string }) => {
     setOrderToDelete(order);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (orderToDelete) {
-      setPurchaseOrders(
-        purchaseOrders.filter((o) => o.id !== orderToDelete.id),
-      );
-      setIsDeleteDialogOpen(false);
-      setOrderToDelete(null);
+      try {
+        await purchaseOrderService.deletePurchaseOrder(orderToDelete.id);
+        setIsDeleteDialogOpen(false);
+        setOrderToDelete(null);
+        fetchPurchaseOrders();
+      } catch (err: any) {
+        console.error("Error deleting purchase order:", err);
+        alert(
+          err.response?.data?.message ||
+            "Failed to delete purchase order. Only DRAFT orders can be deleted.",
+        );
+      }
     }
   };
 
-  // Filter purchase orders by search term
-  const filteredOrders = purchaseOrders.filter(
-    (order) =>
-      order.poNumber.toString().includes(searchTerm) ||
-      order.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.contactName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const handleReceiveGoods = async (orderId: string) => {
+    try {
+      // For simplicity, receive all ordered quantities
+      const order = purchaseOrders.find((po) => po.id === orderId);
+      if (!order) return;
+
+      // Get the full order details to get items
+      const response = await purchaseOrderService.getPurchaseOrderById(orderId);
+      const items = response.data.items
+        .filter((item) => item.productVariant)
+        .map((item) => ({
+          productVariantId: item.productVariant!.id,
+          quantityReceived: item.quantityOrdered,
+        }));
+
+      await purchaseOrderService.receiveGoods(orderId, { items });
+      fetchPurchaseOrders();
+    } catch (err: any) {
+      console.error("Error receiving goods:", err);
+      alert(err.response?.data?.message || "Failed to receive goods");
+    }
+  };
+
+  const handleCloseOrder = async (orderId: string) => {
+    try {
+      await purchaseOrderService.closePurchaseOrder(orderId);
+      fetchPurchaseOrders();
+    } catch (err: any) {
+      console.error("Error closing order:", err);
+      alert(err.response?.data?.message || "Failed to close purchase order");
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -210,7 +394,17 @@ export default function PurchaseOrdersPage() {
       </div>
 
       {/* Action Button */}
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end gap-3 mb-6">
+        <Button
+          variant="outline"
+          onClick={fetchPurchaseOrders}
+          disabled={loading}
+        >
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
+          Refresh
+        </Button>
         <Button
           className="bg-indigo-900 hover:bg-indigo-800 text-white"
           onClick={() => setIsNewOrderOpen(true)}
@@ -219,6 +413,13 @@ export default function PurchaseOrdersPage() {
           New Purchase Order
         </Button>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
 
       {/* Main Card */}
       <Card className="shadow-md">
@@ -273,126 +474,169 @@ export default function PurchaseOrdersPage() {
               </PopoverContent>
             </Popover>
 
-            <Select defaultValue="all-suppliers">
+            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="All suppliers" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-suppliers">All suppliers</SelectItem>
-                <SelectItem value="abc">ABC</SelectItem>
-                <SelectItem value="lem">LeM</SelectItem>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <Select defaultValue="all-status">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-status">All status</SelectItem>
-                <SelectItem value="ordered">Ordered</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="received">Received</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Table */}
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>PO Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead>Created Date</TableHead>
-                <TableHead>Expected Date</TableHead>
-                <TableHead>Actual Date</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentOrders.map((po) => (
-                <TableRow key={po.id}>
-                  <TableCell>
-                    <button
-                      onClick={() =>
-                        navigate(`/procurement/purchase-orders/${po.poNumber}`)
-                      }
-                      className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                    >
-                      {po.poNumber}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {po.supplier}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {po.contactName}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gray-700">
-                    {po.createdDate}
-                  </TableCell>
-                  <TableCell className="text-gray-700">
-                    {po.expectedDate}
-                  </TableCell>
-                  <TableCell className="text-gray-700">
-                    {po.actualDate}
-                  </TableCell>
-                  <TableCell className="font-medium text-gray-900">
-                    {po.totalAmount}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        po.status === "ORDERED"
-                          ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                          : po.status === "RECEIVED"
-                            ? "bg-green-100 text-green-700 hover:bg-green-100"
-                            : po.status === "CLOSED"
-                              ? "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                              : "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                      }
-                    >
-                      {po.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          handleDeleteClick({
-                            id: po.id,
-                            poNumber: po.poNumber,
-                          })
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-green-600"
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
+              <span className="ml-2 text-gray-600">
+                Loading purchase orders...
+              </span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead>PO Number</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead>Expected Date</TableHead>
+                  <TableHead>Actual Date</TableHead>
+                  <TableHead>Total Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-gray-500"
+                    >
+                      No purchase orders found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  currentOrders.map((po) => (
+                    <TableRow key={po.id}>
+                      <TableCell>
+                        <button
+                          onClick={() =>
+                            navigate(`/procurement/purchase-orders/${po.id}`)
+                          }
+                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                        >
+                          {po.poNumber}
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {po.supplier}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {po.contactName}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {po.createdDate}
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {po.expectedDate}
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {po.actualDate}
+                      </TableCell>
+                      <TableCell className="font-medium text-gray-900">
+                        {po.totalAmount}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            po.status === "DRAFT"
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                              : po.status === "RECEIVED"
+                                ? "bg-green-100 text-green-700 hover:bg-green-100"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                          }
+                        >
+                          {po.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          {po.status === "DRAFT" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: po.id,
+                                  poNumber: po.poNumber,
+                                })
+                              }
+                              title="Delete (DRAFT only)"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {po.status === "DRAFT" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-600"
+                              onClick={() => handleReceiveGoods(po.id)}
+                              title="Receive Goods"
+                            >
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {po.status === "RECEIVED" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600"
+                              onClick={() => handleCloseOrder(po.id)}
+                              title="Close Order"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-6">
@@ -462,66 +706,38 @@ export default function PurchaseOrdersPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  PO Number
-                </Label>
-                <Input
-                  value={newOrder.poNumber}
-                  onChange={(e) =>
-                    setNewOrder({ ...newOrder, poNumber: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Supplier
+                  Supplier *
                 </Label>
                 <Select
-                  value={newOrder.supplier}
+                  value={newOrder.supplierId}
                   onValueChange={(value) =>
-                    setNewOrder({ ...newOrder, supplier: value })
+                    setNewOrder({ ...newOrder, supplierId: value })
                   }
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ABC">ABC</SelectItem>
-                    <SelectItem value="LeM">LeM</SelectItem>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700">
-                  Created Date
+                  Expected Delivery Date
                 </Label>
                 <div className="relative mt-1">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
-                    value={newOrder.createdDate}
-                    onChange={(e) =>
-                      setNewOrder({ ...newOrder, createdDate: e.target.value })
-                    }
-                    placeholder="DD/MM/YYYY"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Expected Date
-                </Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
+                    type="datetime-local"
                     value={newOrder.expectedDate}
                     onChange={(e) =>
                       setNewOrder({ ...newOrder, expectedDate: e.target.value })
                     }
-                    placeholder="DD/MM/YYYY"
                     className="pl-10"
                   />
                 </div>
@@ -564,7 +780,7 @@ export default function PurchaseOrdersPage() {
       <DeleteConfirmDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        itemName={`PO #${orderToDelete?.poNumber}` || ""}
+        itemName={`PO #${orderToDelete?.poNumber || ""}`}
         onConfirm={handleDeleteConfirm}
         contextMessage="from the purchase orders"
       />

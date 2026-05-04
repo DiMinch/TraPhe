@@ -1,0 +1,57 @@
+import axiosClient from "@/lib/axios-client";
+import type { ApiResponse } from "@/types/api";
+
+export interface InventoryResponse {
+  id: string;
+  productVariant: {
+    id: string;
+    sku: string;
+    variantName: string;
+    productName: string;
+  };
+  quantityPhysical: number;
+  quantityReserved: number;
+  quantityAvailable: number;
+  minThreshold: number;
+  lastCountedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const inventoryService = {
+  // Get all inventory items
+  getAllInventory: async () => {
+    return axiosClient.get<any, ApiResponse<InventoryResponse[]>>("/inventory");
+  },
+
+  // Get inventory by product variant ID
+  getInventoryByVariantId: async (productVariantId: string) => {
+    return axiosClient.get<any, ApiResponse<InventoryResponse>>(
+      `/inventory/variant/${productVariantId}`,
+    );
+  },
+
+  // Get serials by product variant ID
+  getSerialsByVariantId: async (productVariantId: string, status?: string) => {
+    const params = status ? { status } : {};
+    return axiosClient.get<any, ApiResponse<any[]>>(
+      `/inventory/variant/${productVariantId}/serials`,
+      { params },
+    );
+  },
+
+  // Get serials by status
+  getSerialsByStatus: async (status: string) => {
+    return axiosClient.get<any, ApiResponse<any[]>>(
+      `/inventory/serials/status/${status}`,
+    );
+  },
+
+  // Update serial status
+  updateSerialStatus: async (serialNumber: string, status: string) => {
+    return axiosClient.put<any, ApiResponse<any>>(
+      `/inventory/serials/${serialNumber}/status`,
+      { status },
+    );
+  },
+};

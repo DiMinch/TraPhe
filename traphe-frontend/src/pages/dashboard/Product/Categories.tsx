@@ -221,7 +221,9 @@ export default function CategoriesPage() {
                         <button
                           onClick={() =>
                             navigate(
-                              `/product/categories/${category.name}/attributes`,
+                              `/product?category=${encodeURIComponent(
+                                category.name,
+                              )}`,
                             )
                           }
                           className="font-medium text-indigo-900 hover:underline cursor-pointer"

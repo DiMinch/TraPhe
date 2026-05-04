@@ -1,6 +1,12 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api";
-import type { UserInfo, UserAddress, CreateAddressRequest, Province, Commune } from "@/types/user";
+import type {
+  UserInfo,
+  UserAddress,
+  CreateAddressRequest,
+  Province,
+  Commune,
+} from "@/types/user";
 
 export interface Address {
   id: string;
@@ -34,7 +40,7 @@ export const userService = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
   },
 
@@ -46,12 +52,13 @@ export const userService = {
   addAddress: async (data: AddAddressRequest) => {
     return axiosClient.post<unknown, ApiResponse<Address>>(
       "/users/addresses",
-      data
+      data,
     );
   },
 
   deleteAddress: async (addressId: string) => {
     return axiosClient.delete<unknown, ApiResponse<void>>(
-      `/users/addresses/${addressId}`
+      `/users/addresses/${addressId}`,
     );
   },
+};

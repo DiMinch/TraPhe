@@ -43,15 +43,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CURRENT_USER } from "@/constants/user";
 import {
-  inventoryProductVariants,
-  inventoryPartsComponents,
-} from "@/data/mockData";
+  inventoryService,
+  type InventoryResponse,
+} from "@/services/inventory.service";
 
 interface InventoryItem {
-  id: number;
+  id: string;
   name: string;
   sku: string;
   category: string;
@@ -72,9 +72,76 @@ export default function AllInventoryPage() {
   const [activeTab, setActiveTab] = useState("variants");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
+  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const productVariants: InventoryItem[] = inventoryProductVariants;
-  const partsComponents: InventoryItem[] = inventoryPartsComponents;
+  // Fetch inventory data from API
+  const fetchInventory = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await inventoryService.getAllInventory();
+
+      // Transform API response to match InventoryItem interface
+      const transformedData: InventoryItem[] = response.data.map(
+        (item: InventoryResponse) => ({
+          id: item.id,
+          name: item.productVariant?.variantName
+            ? `${item.productVariant.productName} - ${item.productVariant.variantName}`
+            : item.productVariant?.productName || "Unknown Product",
+          sku: item.productVariant?.sku || "N/A",
+          category: "Product Variant",
+          supplier: "N/A",
+          physical: item.quantityPhysical || 0,
+          reserved: item.quantityReserved || 0,
+          available: item.quantityAvailable || 0,
+          status: "Active" as const,
+        }),
+      );
+
+      setInventoryData(transformedData);
+    } catch (err: any) {
+      console.error("Error fetching inventory:", err);
+
+      // Handle different error types
+      if (err.response) {
+        const status = err.response.status;
+        if (status === 401) {
+          setError("Authentication required. Please sign in.");
+        } else if (status === 403) {
+          setError(
+            "You don't have permission to view inventory. ADMIN or EMPLOYEE role required.",
+          );
+        } else if (status === 400) {
+          setError(
+            "Invalid request. Please check your authentication and try again.",
+          );
+        } else {
+          setError(
+            `Server error (${status}): ${
+              err.response.data?.message || "Failed to fetch inventory"
+            }`,
+          );
+        }
+      } else if (err.request) {
+        setError(
+          "Cannot connect to server. Please check if the backend is running.",
+        );
+      } else {
+        setError(err.message || "Failed to fetch inventory data");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const productVariants: InventoryItem[] = inventoryData;
+  const partsComponents: InventoryItem[] = []; // This can be filtered or fetched separately
 
   // Filter items by search term
   const filteredVariants = productVariants.filter(
@@ -217,95 +284,147 @@ export default function AllInventoryPage() {
       {/* Main Card */}
       <Card className="shadow-md">
         <CardContent className="p-6">
-          {/* Table */}
-          <div className="rounded-md ">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Suppliers</TableHead>
-                  <TableHead>Physical</TableHead>
-                  <TableHead>Reserved</TableHead>
-                  <TableHead>Available</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(activeTab === "variants"
-                  ? filteredVariants
-                  : filteredParts
-                ).map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-gray-500">{item.sku}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {item.category}
-                    </TableCell>
-                    <TableCell>{item.supplier}</TableCell>
-                    <TableCell>{item.physical}</TableCell>
-                    <TableCell>{item.reserved}</TableCell>
-                    <TableCell>{item.available}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          item.status === "Active"
-                            ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                        }
-                      >
-                        {item.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleStockAdjustment(item)}
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEditClick(item)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-gray-400" />
+                <p className="text-gray-600">Loading inventory data...</p>
+              </div>
+            </div>
+          )}
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          {/* Error State */}
+          {error && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center max-w-md">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                  <p className="text-red-600 font-semibold mb-2">
+                    Error Loading Inventory
+                  </p>
+                  <p className="text-red-700 text-sm mb-4">{error}</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      onClick={fetchInventory}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry
+                    </Button>
+                    {error.includes("Authentication") && (
+                      <Button
+                        onClick={() => (window.location.href = "/sign-in")}
+                        size="sm"
+                      >
+                        Sign In
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-gray-500 text-xs">
+                  Make sure you're logged in with ADMIN or EMPLOYEE role and the
+                  backend server is running on port 8080.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          {!loading && !error && (
+            <>
+              <div className="rounded-md ">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Suppliers</TableHead>
+                      <TableHead>Physical</TableHead>
+                      <TableHead>Reserved</TableHead>
+                      <TableHead>Available</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(activeTab === "variants"
+                      ? filteredVariants
+                      : filteredParts
+                    ).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-500">
+                              {item.sku}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-gray-600">
+                          {item.category}
+                        </TableCell>
+                        <TableCell>{item.supplier}</TableCell>
+                        <TableCell>{item.physical}</TableCell>
+                        <TableCell>{item.reserved}</TableCell>
+                        <TableCell>{item.available}</TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              item.status === "Active"
+                                ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                            }
+                          >
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleStockAdjustment(item)}
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEditClick(item)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious href="#" />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink href="#" isActive>
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext href="#" />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

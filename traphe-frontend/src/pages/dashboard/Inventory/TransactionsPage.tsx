@@ -24,18 +24,205 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BellIcon, Filter } from "lucide-react";
+import { BellIcon, Filter, RefreshCw } from "lucide-react";
 import { CURRENT_USER } from "@/constants/user";
-import { inventoryTransactions } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import {
+  purchaseOrderService,
+  type PurchaseOrderResponse,
+} from "@/services/purchase-order.service";
+
+interface Transaction {
+  id: string;
+  time: string;
+  date: string;
+  type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "RETURN" | "TRANSFER";
+  product: string;
+  quantity: number;
+  reference: string;
+  reasons: string;
+  note: string;
+}
 
 export default function TransactionsPage() {
-  const transactions = inventoryTransactions;
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>("all-types");
+  const [filterDateRange, setFilterDateRange] = useState<string>("all-days");
+  const [filterCategory, setFilterCategory] = useState<string>("both");
+
+  // Fetch stock transactions from Purchase Orders API
+  const fetchTransactions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await purchaseOrderService.getAllPurchaseOrders();
+
+      // Transform Purchase Orders to transactions (only RECEIVED orders create stock transactions)
+      const transformedData: Transaction[] = [];
+
+      response.data.forEach((po: PurchaseOrderResponse) => {
+        if (po.status === "RECEIVED" || po.status === "CLOSED") {
+          po.items.forEach((item) => {
+            // Skip items without product variant or with zero quantity
+            if (!item.productVariant || item.quantityReceived <= 0) {
+              return;
+            }
+
+            const receivedDate = po.actualDeliveryDate
+              ? new Date(po.actualDeliveryDate)
+              : new Date(po.updatedAt);
+
+            const productName =
+              item.productVariant.productName || "Unknown Product";
+            const variantName = item.productVariant.variantName || "";
+            const sku = item.productVariant.sku || "N/A";
+            const productDisplay = variantName
+              ? `${productName} - ${variantName} (${sku})`
+              : `${productName} (${sku})`;
+
+            transformedData.push({
+              id: `${po.id}-${item.id}`,
+              time: receivedDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              }),
+              date: receivedDate.toLocaleDateString("en-GB"),
+              type: "STOCK_IN",
+              product: productDisplay,
+              quantity: item.quantityReceived,
+              reference: po.poNumber,
+              reasons:
+                po.status === "RECEIVED"
+                  ? "Purchase Order Received"
+                  : "Purchase Order Completed",
+              note: `Supplier: ${po.supplier?.name || "N/A"}`,
+            });
+          });
+        }
+      });
+
+      // Sort by date descending (newest first)
+      transformedData.sort((a, b) => {
+        const dateA = new Date(
+          a.date.split("/").reverse().join("-") + " " + a.time,
+        );
+        const dateB = new Date(
+          b.date.split("/").reverse().join("-") + " " + b.time,
+        );
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setTransactions(transformedData);
+    } catch (err: any) {
+      console.error("Error fetching transactions:", err);
+
+      // Handle different error types
+      if (err.response) {
+        const status = err.response.status;
+        if (status === 401) {
+          setError("Authentication required. Please sign in.");
+        } else if (status === 403) {
+          setError(
+            "You don't have permission to view purchase orders. ADMIN or EMPLOYEE role required.",
+          );
+        } else if (status === 400) {
+          // Backend has data integrity issue - show specific error
+          setError(
+            "Backend data error: Some purchase order items have missing product variants. Please fix the database data.",
+          );
+        } else if (status === 500) {
+          setError(
+            "Server error: The backend encountered an issue processing purchase orders. Check server logs.",
+          );
+        } else {
+          setError(
+            `Server error (${status}): ${
+              err.response.data?.message || "Failed to fetch transactions"
+            }`,
+          );
+        }
+      } else if (err.request) {
+        setError(
+          "Cannot connect to server. Please check if the backend is running.",
+        );
+      } else {
+        setError(err.message || "Failed to fetch stock transactions");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  // Filter transactions based on selected filters
+  const filteredTransactions = transactions.filter((transaction) => {
+    // Filter by type
+    if (filterType !== "all-types") {
+      const typeMap: Record<string, string> = {
+        "stock-in": "STOCK_IN",
+        "stock-out": "STOCK_OUT",
+        adjustment: "ADJUSTMENT",
+        return: "RETURN",
+        transfer: "TRANSFER",
+      };
+      if (transaction.type !== typeMap[filterType]) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // Get badge color based on transaction type
+  const getBadgeColor = (type: string) => {
+    switch (type) {
+      case "STOCK_IN":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "STOCK_OUT":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "ADJUSTMENT":
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      case "RETURN":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "TRANSFER":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Stock Transactions</h1>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchTransactions}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+          <Button
+            className="bg-yellow-500 hover:bg-yellow-600 text-gray-900"
+            size="sm"
+          >
+            Export Excel
+          </Button>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="invisible"></div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
             Welcome {CURRENT_USER.role} {CURRENT_USER.name}
@@ -55,7 +242,7 @@ export default function TransactionsPage() {
           <Filter className="w-4 h-4" />
         </Button>
 
-        <Select defaultValue="all-days">
+        <Select value={filterDateRange} onValueChange={setFilterDateRange}>
           <SelectTrigger className="w-[140px] bg-white borderColor:#E5E5E5">
             <SelectValue placeholder="All days" />
           </SelectTrigger>
@@ -67,7 +254,7 @@ export default function TransactionsPage() {
           </SelectContent>
         </Select>
 
-        <Select defaultValue="all-types">
+        <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-[200px] bg-white">
             <SelectValue placeholder="All Transactions Type" />
           </SelectTrigger>
@@ -76,10 +263,12 @@ export default function TransactionsPage() {
             <SelectItem value="stock-in">Stock In</SelectItem>
             <SelectItem value="stock-out">Stock Out</SelectItem>
             <SelectItem value="adjustment">Adjustment</SelectItem>
+            <SelectItem value="return">Return</SelectItem>
+            <SelectItem value="transfer">Transfer</SelectItem>
           </SelectContent>
         </Select>
 
-        <Select defaultValue="both">
+        <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="w-[240px] bg-white">
             <SelectValue placeholder="Both Product & Components" />
           </SelectTrigger>
@@ -94,94 +283,153 @@ export default function TransactionsPage() {
       {/* Main Card */}
       <Card className="shadow-md bg-white">
         <CardContent className="p-2 px-10">
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-gray-400" />
+                <p className="text-gray-600">Loading transactions...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center max-w-md">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                  <p className="text-red-600 font-semibold mb-2">
+                    Error Loading Transactions
+                  </p>
+                  <p className="text-red-700 text-sm mb-4">{error}</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      onClick={fetchTransactions}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry
+                    </Button>
+                    {error.includes("Authentication") && (
+                      <Button
+                        onClick={() => (window.location.href = "/sign-in")}
+                        size="sm"
+                      >
+                        Sign In
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-gray-500 text-xs">
+                  Make sure you're logged in with ADMIN or EMPLOYEE role and the
+                  backend server is running on port 8080.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Table */}
-          <div className="overflow-hidden rounded-lg">
-            <Table>
-              <TableHeader className="p-2">
-                <TableRow
-                  className="bg-gray-50"
-                  style={{ borderColor: "#E5E5E5" }}
-                >
-                  <TableHead className="font-medium text-gray-700">
-                    Time
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Transactions Type
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Product/Component
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Quantity
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Reference
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Reasons
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Note
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((transaction) => (
+          {!loading && (
+            <div className="overflow-hidden rounded-lg">
+              <Table>
+                <TableHeader className="p-2">
                   <TableRow
-                    key={transaction.id}
-                    className="border-b last:border-b-0"
+                    className="bg-gray-50"
+                    style={{ borderColor: "#E5E5E5" }}
                   >
-                    <TableCell className="py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {transaction.time}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {transaction.date}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <Badge
-                        variant="outline"
-                        className={
-                          transaction.type === "STOCK_IN"
-                            ? "bg-blue-50 text-blue-700 border-blue-200 font-normal"
-                            : "bg-purple-50 text-purple-700 border-purple-200 font-normal"
-                        }
-                      >
-                        {transaction.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium text-gray-900 py-4">
-                      {transaction.product}
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <span
-                        className={`font-semibold ${
-                          transaction.quantity > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {transaction.quantity > 0 ? "+ " : ""}
-                        {transaction.quantity}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-gray-700 py-4">
-                      {transaction.reference}
-                    </TableCell>
-                    <TableCell className="text-gray-700 py-4">
-                      {transaction.reasons || "-"}
-                    </TableCell>
-                    <TableCell className="text-gray-700 py-4">
-                      {transaction.note}
-                    </TableCell>
+                    <TableHead className="font-medium text-gray-700">
+                      Time
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Transactions Type
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Product/Component
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Quantity
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Reference
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Reasons
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Note
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12">
+                        <div className="text-gray-500">
+                          <p className="font-medium">No transactions found</p>
+                          <p className="text-sm mt-1">
+                            Try adjusting your filters or add new transactions
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredTransactions.map((transaction) => (
+                      <TableRow
+                        key={transaction.id}
+                        className="border-b last:border-b-0"
+                      >
+                        <TableCell className="py-4">
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {transaction.time}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {transaction.date}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <Badge
+                            variant="outline"
+                            className={`${getBadgeColor(
+                              transaction.type,
+                            )} font-normal`}
+                          >
+                            {transaction.type.replace(/_/g, " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium text-gray-900 py-4">
+                          {transaction.product}
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <span
+                            className={`font-semibold ${
+                              transaction.quantity > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {transaction.quantity > 0 ? "+ " : ""}
+                            {transaction.quantity}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-gray-700 py-4">
+                          {transaction.reference}
+                        </TableCell>
+                        <TableCell className="text-gray-700 py-4">
+                          {transaction.reasons || "-"}
+                        </TableCell>
+                        <TableCell className="text-gray-700 py-4">
+                          {transaction.note || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="flex items-center justify-between p-6 border-t">

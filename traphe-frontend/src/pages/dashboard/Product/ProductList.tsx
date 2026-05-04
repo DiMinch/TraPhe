@@ -25,7 +25,7 @@ import {
   MoreHorizontal,
   BellIcon,
 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { CURRENT_USER } from "@/constants/user";
 import { useState, useEffect } from "react";
 import NewProductDialog from "./NewProduct";
@@ -36,6 +36,8 @@ import { toast } from "sonner";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const categoryFilter = searchParams.get("category");
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{
@@ -43,6 +45,7 @@ export default function ProductListPage() {
     name: string;
   } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
@@ -50,14 +53,28 @@ export default function ProductListPage() {
   // Fetch products from API
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [categoryFilter]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       const response = await productService.getAllProducts();
       if (response.data) {
-        setProducts(response.data);
+        setAllProducts(response.data);
+
+        // Filter products by category if category filter is provided
+        if (categoryFilter) {
+          const filtered = response.data.filter((product) => {
+            // Match products where category name or parent category name matches
+            return (
+              product.categoryName === categoryFilter ||
+              product.parentCategoryName === categoryFilter
+            );
+          });
+          setProducts(filtered);
+        } else {
+          setProducts(response.data);
+        }
       }
     } catch (error: unknown) {
       const errorMsg =
