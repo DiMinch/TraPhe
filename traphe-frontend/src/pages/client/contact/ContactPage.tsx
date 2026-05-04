@@ -45,7 +45,7 @@ export default function ContactPage() {
             <p className="text-gray-500 text-sm leading-relaxed">
               Phone: +84 909 123 456
               <br />
-              Email: support@TraPhe.store
+              Email: support@viti.store
             </p>
           </div>
 
@@ -104,7 +104,7 @@ export default function ContactPage() {
                 />
               </div>
 
-              <Button className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white px-8 py-6 rounded-md">
+              <Button className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white px-8 py-6 rounded-md cursor-pointer">
                 Send Message <Send className="w-4 h-4 ml-2" />
               </Button>
             </form>
@@ -127,7 +127,9 @@ export default function ContactPage() {
           </h2>
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
-              <AccordionTrigger>How do I track my order?</AccordionTrigger>
+              <AccordionTrigger className="cursor-pointer">
+                How do I track my order?
+              </AccordionTrigger>
               <AccordionContent className="text-gray-600">
                 You can track your order by clicking the tracking link in your
                 shipping confirmation email, or by logging into your account and
@@ -135,7 +137,9 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-              <AccordionTrigger>What is your return policy?</AccordionTrigger>
+              <AccordionTrigger className="cursor-pointer">
+                What is your return policy?
+              </AccordionTrigger>
               <AccordionContent className="text-gray-600">
                 We accept returns within 30 days of purchase. Items must be in
                 their original condition and packaging. Please visit our Returns
@@ -143,7 +147,7 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
-              <AccordionTrigger>
+              <AccordionTrigger className="cursor-pointer">
                 Do you offer international shipping?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600">
@@ -152,7 +156,9 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4">
-              <AccordionTrigger>Are the laptops brand new?</AccordionTrigger>
+              <AccordionTrigger className="cursor-pointer">
+                Are the laptops brand new?
+              </AccordionTrigger>
               <AccordionContent className="text-gray-600">
                 Yes, all our products are 100% brand new, sealed, and come with
                 a full manufacturer warranty unless explicitly stated as

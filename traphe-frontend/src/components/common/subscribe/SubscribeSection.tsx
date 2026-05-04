@@ -22,7 +22,7 @@ export default function SubscribeSection() {
           <Button
             type="submit"
             variant="ghost"
-            className="text-gray-500 font-medium hover:bg-transparent hover:text-black p-0 h-auto"
+            className="text-gray-500 font-medium hover:bg-transparent hover:text-black p-0 h-auto cursor-pointer"
           >
             Signup
           </Button>

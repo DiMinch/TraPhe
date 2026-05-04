@@ -23,5 +23,15 @@ export const CategoryCard = ({
     </div>
 
     <div className="absolute right-0 bottom-0 w-2/3 h-full mix-blend-multiply opacity-10 bg-black group-hover:scale-105 transition-transform duration-500"></div>
+    <div className="absolute right-0 top-0 bottom-0 w-1/2 h-full overflow-hidden">
+      <div className="absolute inset-0 bg-linear-to-r from-gray-100 via-transparent to-transparent z-10"></div>
+
+      <img
+        src={category.image}
+        alt={category.name}
+        className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+        loading="lazy"
+      />
+    </div>
   </div>
 );

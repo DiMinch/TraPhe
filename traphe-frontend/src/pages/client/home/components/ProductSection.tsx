@@ -20,7 +20,9 @@ export default function ProductSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
         {newArrivals.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <Link key={product.id} to={`/products/${product.id}`}>
+            <ProductCard product={product} />
+          </Link>
         ))}
       </div>
     </section>

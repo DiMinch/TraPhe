@@ -17,7 +17,7 @@ export default function SpecsSheet() {
         <SheetTrigger asChild>
           <Button
             variant="outline"
-            className="mt-8 px-8 py-6 rounded-md border-black text-black hover:bg-black hover:text-white transition-colors w-full md:w-auto font-medium"
+            className="mt-8 px-8 py-6 rounded-md border-black text-black hover:bg-black hover:text-white transition-colors w-full md:w-auto font-medium cursor-pointer"
           >
             Display All Spec
           </Button>

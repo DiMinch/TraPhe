@@ -17,9 +17,11 @@ import HomePage from "./pages/client/home/HomePage";
 import ClientLayout from "./components/layout/ClientLayout";
 import ClientProductPage from "./pages/client/product/ClientProductPage";
 import ClientProductDetailPage from "./pages/client/product-detail/ClientProductDetailPage";
-import "./App.css";
 import ShopPage from "./pages/client/shop/ShopPage";
 import ContactPage from "./pages/client/contact/ContactPage";
+import CartPage from "./pages/client/cart/CartPage";
+import ProfilePage from "./pages/client/profile/ProfilePage";
+import "./App.css";
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
         <Route path="/products" element={<ClientProductPage />} />
         <Route path="/products/:id" element={<ClientProductDetailPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
       <Route element={<AdminLayout />}>
