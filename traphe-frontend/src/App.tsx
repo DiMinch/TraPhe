@@ -12,6 +12,9 @@ import CustomerTierPage from "./pages/dashboard/Customer/CustomerTier";
 import CustomerDetailPage from "./pages/dashboard/Customer/CustomerDetail";
 import ProductListPage from "./pages/dashboard/Product/ProductList";
 import ProductDetailPage from "./pages/dashboard/Product/ProductDetail";
+import ProductEditPage from "./pages/dashboard/Product/ProductEdit";
+import CategoryPage from "./pages/dashboard/Category/Category";
+import CategoryEditPage from "./pages/dashboard/Category/CategoryEdit";
 import CategoriesPage from "./pages/dashboard/Product/Categories";
 import AttributesPage from "./pages/dashboard/Product/Attributes";
 import InventoryOverviewPage from "./pages/dashboard/Inventory/InventoryOverview";
@@ -76,12 +79,17 @@ function App() {
 
           <Route path="/product" element={<ProductListPage />} />
           <Route path="/product/productlist" element={<ProductListPage />} />
+          <Route path="/product/detail/:id" element={<ProductDetailPage />} />
+          <Route path="/product/edit/:id" element={<ProductEditPage />} />
+
+          <Route path="/category" element={<CategoryPage />} />
+          <Route path="/category/:id/edit" element={<CategoryEditPage />} />
+
           <Route path="/product/categories" element={<CategoriesPage />} />
           <Route
             path="/product/categories/:categoryName/attributes"
             element={<AttributesPage />}
           />
-          <Route path="/product/detail/:id" element={<ProductDetailPage />} />
 
           <Route path="/inventory" element={<InventoryOverviewPage />} />
           <Route
