@@ -35,7 +35,7 @@ export default function Navigation() {
 
       {/* Logo */}
       <div className="flex flex-col items-center justify-center  px-6">
-        <img src="/public/logo.svg" alt="logo" width={200} height={200} />
+        <img src="/logo.svg" alt="logo" width={200} height={200} />
       </div>
 
       {/* Navigation Label */}

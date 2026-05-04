@@ -33,13 +33,17 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Edit, Trash2 } from "lucide-react";
-import { useState } from "react";
-import productsData from "@/data/products.json";
+import { useState, useEffect } from "react";
+import { productService } from "@/services/product.service";
+import { categoryService } from "@/services/category.service";
+import type { Product } from "@/types/product";
+import type { Category } from "@/types/category";
+import { toast } from "sonner";
 
 interface NewProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (product: (typeof productsData)[0]) => void;
+  onAdd: (product: Product) => void;
 }
 
 export default function NewProductDialog({
@@ -49,39 +53,81 @@ export default function NewProductDialog({
 }: NewProductDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
-    category: "",
-    status: "",
-    supplier: "",
-    inventory: "",
+    categoryId: "",
+    supplierId: "",
+    description: "",
     minStockThreshold: "",
-    generalSpec: "",
+    warrantyPeriod: "",
+    commonSpecs: "",
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  const handleAdd = () => {
-    const newProduct = {
-      id: Date.now(),
-      image: "📦",
-      name: formData.name,
-      variants: "0 variants",
-      category: formData.category,
-      suppliers: formData.supplier,
-      inventory: Number(formData.inventory) || 0,
-      status: formData.status,
-      minStockThreshold: Number(formData.minStockThreshold) || 0,
-      generalSpec: formData.generalSpec ? JSON.parse(formData.generalSpec) : {},
-      variantList: [],
-    };
-    onAdd(newProduct);
-    setFormData({
-      name: "",
-      category: "",
-      status: "",
-      supplier: "",
-      inventory: "",
-      minStockThreshold: "",
-      generalSpec: "",
-    });
-    onOpenChange(false);
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryService.getAllCategories();
+      if (response.data) {
+        setCategories(response.data);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load categories:", error);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!formData.name || !formData.categoryId || !formData.supplierId) {
+      toast.error("Please fill in required fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await productService.createProduct(
+        {
+          name: formData.name,
+          categoryId: formData.categoryId,
+          supplierId: formData.supplierId,
+          description: formData.description || undefined,
+          minStockThreshold: formData.minStockThreshold
+            ? Number(formData.minStockThreshold)
+            : undefined,
+          warrantyPeriod: formData.warrantyPeriod
+            ? Number(formData.warrantyPeriod)
+            : undefined,
+          commonSpecs: formData.commonSpecs || undefined,
+        },
+        imageFile || undefined,
+      );
+
+      if (response.data) {
+        onAdd(response.data);
+        toast.success("Product created successfully");
+        setFormData({
+          name: "",
+          categoryId: "",
+          supplierId: "",
+          description: "",
+          minStockThreshold: "",
+          warrantyPeriod: "",
+          commonSpecs: "",
+        });
+        setImageFile(null);
+        onOpenChange(false);
+      }
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to create product";
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,11 +138,11 @@ export default function NewProductDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 ">
+        <div className="space-y-6">
           {/* Product Information */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
                 placeholder="MacBook Pro M1 2020"
@@ -108,68 +154,50 @@ export default function NewProductDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Category *</Label>
               <Select
-                value={formData.category}
+                value={formData.categoryId}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
+                  setFormData({ ...formData, categoryId: value })
                 }
               >
-                <SelectTrigger className="bg-white w-full">
-                  <SelectValue placeholder="Laptop" />
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="laptop">Laptop</SelectItem>
-                  <SelectItem value="mouse">Mouse</SelectItem>
-                  <SelectItem value="keyboard">Keyboard</SelectItem>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, status: value })
+              <Label htmlFor="warranty">Warranty (months)</Label>
+              <Input
+                id="warranty"
+                type="number"
+                placeholder="12"
+                className="bg-white"
+                value={formData.warrantyPeriod}
+                onChange={(e) =>
+                  setFormData({ ...formData, warrantyPeriod: e.target.value })
                 }
-              >
-                <SelectTrigger className="bg-white w-full">
-                  <SelectValue placeholder="Active" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier</Label>
-              <Select
-                value={formData.supplier}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, supplier: value })
-                }
-              >
-                <SelectTrigger className="bg-white w-full">
-                  <SelectValue placeholder="ABC" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="abc">ABC</SelectItem>
-                  <SelectItem value="lem">LeM</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="inventory">Inventory</Label>
+              <Label htmlFor="supplier">Supplier ID *</Label>
               <Input
-                id="inventory"
+                id="supplier"
+                placeholder="Enter supplier UUID"
                 className="bg-white"
-                value={formData.inventory}
+                value={formData.supplierId}
                 onChange={(e) =>
-                  setFormData({ ...formData, inventory: e.target.value })
+                  setFormData({ ...formData, supplierId: e.target.value })
                 }
               />
             </div>
@@ -177,6 +205,7 @@ export default function NewProductDialog({
               <Label htmlFor="threshold">Min Stock Threshold</Label>
               <Input
                 id="threshold"
+                type="number"
                 placeholder="5"
                 className="bg-white"
                 value={formData.minStockThreshold}
@@ -190,22 +219,50 @@ export default function NewProductDialog({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              className="bg-white"
+              placeholder="Product description..."
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4 ">
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center bg-white h-[132px] flex items-center justify-center">
                 <div>
-                  <Button variant="outline" size="sm">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setImageFile(file);
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => document.getElementById("image")?.click()}
+                  >
                     Choose File
                   </Button>
                   <span className="text-sm text-gray-500 ml-2">
-                    No file chosen
+                    {imageFile ? imageFile.name : "No file chosen"}
                   </span>
                 </div>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="spec">General Spec</Label>
+              <Label htmlFor="spec">Common Specs (JSON)</Label>
               <Textarea
                 id="spec"
                 className="h-[132px] bg-white font-mono text-sm resize-none"
@@ -213,9 +270,9 @@ export default function NewProductDialog({
   "Screen_Size": "1920x1080",
   "Battery": "60Wh"
 }`}
-                value={formData.generalSpec}
+                value={formData.commonSpecs}
                 onChange={(e) =>
-                  setFormData({ ...formData, generalSpec: e.target.value })
+                  setFormData({ ...formData, commonSpecs: e.target.value })
                 }
               />
             </div>
@@ -312,14 +369,19 @@ export default function NewProductDialog({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
               Cancel
             </Button>
             <Button
               className="bg-indigo-900 hover:bg-indigo-800 text-white"
               onClick={handleAdd}
+              disabled={loading}
             >
-              Add
+              {loading ? "Creating..." : "Add"}
             </Button>
           </div>
         </div>

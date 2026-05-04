@@ -17,16 +17,11 @@ import {
   MoreHorizontal,
   BellIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { dashboardRolePermissions, dashboardRoles } from "@/data/mockData";
-
-interface Role {
-  id: number;
-  name: string;
-  permissions: string;
-}
+import { adminService, type Role } from "@/services/admin.service";
+import { toast } from "sonner";
 
 interface Permission {
   id: string;
@@ -41,26 +36,142 @@ interface PermissionModule {
 }
 
 export default function RolesPermissionsPage() {
-  const [selectedRole, setSelectedRole] = useState<number>(
-    dashboardRoles[0]?.id ?? 1,
-  );
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<{
-    id: number;
+    id: string;
     name: string;
   } | null>(null);
   const [rolePermissions, setRolePermissions] = useState<
-    Record<number, PermissionModule[]>
-  >(dashboardRolePermissions);
+    Record<string, PermissionModule[]>
+  >({});
 
-  const roles: Role[] = dashboardRoles;
+  useEffect(() => {
+    fetchRoles();
+  }, []);
 
-  const permissionModules = rolePermissions[selectedRole] || [];
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const response = await adminService.getAllRoles();
+
+      if (response.success && response.data) {
+        setRoles(response.data);
+        // Initialize permissions for each role
+        const initialPermissions: Record<string, PermissionModule[]> = {};
+        response.data.forEach((role) => {
+          initialPermissions[role.id] = getDefaultPermissions();
+        });
+        setRolePermissions(initialPermissions);
+        toast.success("Roles loaded successfully");
+      } else {
+        toast.error("Failed to load roles");
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      toast.error("Failed to load roles from server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDefaultPermissions = (): PermissionModule[] => {
+    return [
+      {
+        name: "User Management",
+        permissions: [
+          {
+            id: "user.view",
+            name: "View Users",
+            description: "Can view user list and details",
+            checked: false,
+          },
+          {
+            id: "user.create",
+            name: "Create Users",
+            description: "Can create new users",
+            checked: false,
+          },
+          {
+            id: "user.edit",
+            name: "Edit Users",
+            description: "Can edit user information",
+            checked: false,
+          },
+          {
+            id: "user.delete",
+            name: "Delete Users",
+            description: "Can delete users",
+            checked: false,
+          },
+        ],
+      },
+      {
+        name: "Product Management",
+        permissions: [
+          {
+            id: "product.view",
+            name: "View Products",
+            description: "Can view product list",
+            checked: false,
+          },
+          {
+            id: "product.create",
+            name: "Create Products",
+            description: "Can create new products",
+            checked: false,
+          },
+          {
+            id: "product.edit",
+            name: "Edit Products",
+            description: "Can edit product information",
+            checked: false,
+          },
+          {
+            id: "product.delete",
+            name: "Delete Products",
+            description: "Can delete products",
+            checked: false,
+          },
+        ],
+      },
+      {
+        name: "Order Management",
+        permissions: [
+          {
+            id: "order.view",
+            name: "View Orders",
+            description: "Can view order list",
+            checked: false,
+          },
+          {
+            id: "order.manage",
+            name: "Manage Orders",
+            description: "Can update order status",
+            checked: false,
+          },
+          {
+            id: "order.cancel",
+            name: "Cancel Orders",
+            description: "Can cancel orders",
+            checked: false,
+          },
+        ],
+      },
+    ];
+  };
+
+  const permissionModules = selectedRole
+    ? rolePermissions[selectedRole] || getDefaultPermissions()
+    : [];
 
   const handlePermissionToggle = (
     moduleIndex: number,
     permissionId: string,
   ) => {
+    if (!selectedRole) return;
     const updatedModules = [...permissionModules];
     const permission = updatedModules[moduleIndex].permissions.find(
       (p) => p.id === permissionId,
@@ -71,18 +182,18 @@ export default function RolesPermissionsPage() {
         ...rolePermissions,
         [selectedRole]: updatedModules,
       });
+      toast.success("Permission updated (Note: Backend integration pending)");
     }
   };
 
-  const handleDeleteClick = (role: { id: number; name: string }) => {
+  const handleDeleteClick = (role: { id: string; name: string }) => {
     setRoleToDelete(role);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = () => {
     if (roleToDelete) {
-      // In a real app, you would delete the role from the list
-      // For now, just close the dialog
+      toast.info("Role deletion - Backend endpoint not yet available");
       setIsDeleteDialogOpen(false);
       setRoleToDelete(null);
     }
@@ -137,50 +248,77 @@ export default function RolesPermissionsPage() {
             <Table className="">
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Permissions</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {roles.map((role) => (
-                  <TableRow
-                    key={role.id}
-                    className={`cursor-pointer ${
-                      selectedRole === role.id ? "bg-gray-100" : ""
-                    }`}
-                    onClick={() => setSelectedRole(role.id)}
-                  >
-                    <TableCell className="font-medium">{role.name}</TableCell>
-                    <TableCell className="text-gray-600">
-                      {role.permissions}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <Edit />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick({
-                              id: role.id,
-                              name: role.name,
-                            });
-                          }}
-                        >
-                          <Trash2 />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal />
-                        </Button>
-                      </div>
+                {loading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center py-10 text-gray-500"
+                    >
+                      Loading roles...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : roles.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-center py-10 text-gray-500"
+                    >
+                      No roles found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  roles.map((role) => (
+                    <TableRow
+                      key={role.id}
+                      className={`cursor-pointer ${
+                        selectedRole === role.id ? "bg-gray-100" : ""
+                      }`}
+                      onClick={() => setSelectedRole(role.id)}
+                    >
+                      <TableCell className="font-medium">{role.name}</TableCell>
+                      <TableCell className="text-gray-600">
+                        {role.description || "No description"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                          >
+                            <Edit />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick({
+                                id: role.id,
+                                name: role.name,
+                              });
+                            }}
+                          >
+                            <Trash2 />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                          >
+                            <MoreHorizontal />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

@@ -35,59 +35,122 @@ import {
   BellIcon,
   Filter,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { dashboardUserAccounts } from "@/data/mockData";
-
-interface UserAccount {
-  id: number;
-  name: string;
-  username: string;
-  phone: string;
-  email: string;
-  roles: string[];
-  lastLogin: string;
-  status: "ACTIVE" | "INACTIVE";
-}
+import { adminService, type UserAccount } from "@/services/admin.service";
+import { toast } from "sonner";
 
 export default function UserAccountsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{
-    id: number;
+    id: string;
     name: string;
   } | null>(null);
-  const [userAccounts, setUserAccounts] = useState<UserAccount[]>(
-    dashboardUserAccounts,
-  );
+  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserAccount[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all-status");
+  const [roleFilter, setRoleFilter] = useState("all-role");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    filterUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, statusFilter, roleFilter, userAccounts]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await adminService.getAllUsers();
+      if (response.data) {
+        setUserAccounts(response.data);
+        setFilteredUsers(response.data);
+      }
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to load users";
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterUsers = () => {
+    let filtered = [...userAccounts];
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (user) =>
+          user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.phone?.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all-status") {
+      filtered = filtered.filter(
+        (user) => user.status.toLowerCase() === statusFilter,
+      );
+    }
+
+    // Role filter
+    if (roleFilter !== "all-role") {
+      filtered = filtered.filter((user) =>
+        user.roles?.some((role) =>
+          role.toLowerCase().includes(roleFilter.toLowerCase()),
+        ),
+      );
+    }
+
+    setFilteredUsers(filtered);
+    setCurrentPage(1);
+  };
+
   // Calculate pagination
-  const totalPages = Math.ceil(userAccounts.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentUsers = userAccounts.slice(startIndex, endIndex);
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const statusUpper = status?.toUpperCase();
+    switch (statusUpper) {
       case "ACTIVE":
         return "bg-green-100 text-green-800 hover:bg-green-100";
       case "INACTIVE":
+      case "PENDING":
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
       default:
         return "bg-gray-100 text-gray-800 hover:bg-gray-100";
     }
   };
 
-  const handleDeleteClick = (user: { id: number; name: string }) => {
+  const handleDeleteClick = (user: { id: string; name: string }) => {
     setUserToDelete(user);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (userToDelete) {
-      setUserAccounts(userAccounts.filter((u) => u.id !== userToDelete.id));
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await adminService.deleteUser(userToDelete.id);
+      toast.success("User deleted successfully");
+      fetchUsers();
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to delete user";
+      toast.error(errorMsg);
+    } finally {
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
     }
@@ -128,15 +191,17 @@ export default function UserAccountsPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-md">
+      <Card>
         <CardContent className="p-6">
           {/* Filters */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Search by Name, Email or Phone"
-                className="pl-10 bg-white"
+                placeholder="Search by name, email, or phone..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
@@ -144,7 +209,7 @@ export default function UserAccountsPage() {
               <Filter />
             </Button>
 
-            <Select defaultValue="all-status">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
@@ -155,15 +220,15 @@ export default function UserAccountsPage() {
               </SelectContent>
             </Select>
 
-            <Select defaultValue="all-role">
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="All role" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-role">All role</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="cashier">Cashier</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
+                <SelectItem value="employee">Employee</SelectItem>
+                <SelectItem value="customer">Customer</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,78 +236,96 @@ export default function UserAccountsPage() {
           {/* Table */}
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Name</TableHead>
+              <TableRow>
+                <TableHead>Name/Username</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {user.username}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.phone}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.roles.map((role, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="bg-blue-100 text-blue-800 hover:bg-blue-100"
-                        >
-                          {role}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="whitespace-pre-line">
-                    {user.lastLogin}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={getStatusColor(user.status)}
-                      variant="secondary"
-                    >
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          handleDeleteClick({
-                            id: user.id,
-                            name: user.name,
-                          })
-                        }
-                      >
-                        <Trash2 />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal />
-                      </Button>
-                    </div>
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-10 text-gray-500"
+                  >
+                    Loading users...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : currentUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="text-center py-10 text-gray-500"
+                  >
+                    No users found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                currentUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">
+                          {user.fullName || "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {user.username}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{user.phone || "N/A"}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles?.map((role, index) => (
+                          <Badge
+                            key={index}
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800 hover:bg-blue-100"
+                          >
+                            {role.replace("ROLE_", "")}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={getStatusColor(user.status)}
+                        variant="secondary"
+                      >
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Edit />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() =>
+                            handleDeleteClick({
+                              id: user.id,
+                              name: user.fullName || user.username,
+                            })
+                          }
+                        >
+                          <Trash2 />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
 

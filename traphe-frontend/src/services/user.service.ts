@@ -1,54 +1,57 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api";
-import type {
-  UserInfo,
-  UserAddress,
-  CreateAddressRequest,
-  Province,
-  Commune,
-} from "@/types/user";
+import type { UserInfo, UserAddress, CreateAddressRequest, Province, Commune } from "@/types/user";
+
+export interface Address {
+  id: string;
+  userId: string;
+  province: string;
+  district: string;
+  commune: string;
+  detail: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AddAddressRequest {
+  province: string;
+  district: string;
+  commune: string;
+  detail: string;
+}
 
 export const userService = {
   getProfile: async () => {
-    return axiosClient.get<any, ApiResponse<UserInfo>>("/users/profile");
+    return axiosClient.get<unknown, ApiResponse<UserInfo>>("/users/profile");
   },
 
   updateProfile: async (formData: FormData) => {
-    return axiosClient.put<any, ApiResponse<UserInfo>>(
+    return axiosClient.put<unknown, ApiResponse<UserInfo>>(
       "/users/profile",
       formData,
       {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      },
+      }
     );
   },
 
+  // Address management
   getAddresses: async () => {
-    return axiosClient.get<any, ApiResponse<UserAddress[]>>("/users/addresses");
+    return axiosClient.get<unknown, ApiResponse<Address[]>>("/users/addresses");
   },
 
-  addAddress: async (data: CreateAddressRequest) => {
-    return axiosClient.post<any, ApiResponse<UserAddress>>(
+  addAddress: async (data: AddAddressRequest) => {
+    return axiosClient.post<unknown, ApiResponse<Address>>(
       "/users/addresses",
-      data,
+      data
     );
   },
 
   deleteAddress: async (addressId: string) => {
-    return axiosClient.delete<any, ApiResponse<null>>(
-      `/users/addresses/${addressId}`,
+    return axiosClient.delete<unknown, ApiResponse<void>>(
+      `/users/addresses/${addressId}`
     );
   },
-
-  getProvinces: async () => {
-    return axiosClient.get<any, ApiResponse<Province[]>>("/address/provinces");
-  },
-
-  getCommunes: async (provinceCode: string) => {
-    return axiosClient.get<any, ApiResponse<Commune[]>>("/address/communes", {
-      params: { provinceCode },
-    });
-  },
-};

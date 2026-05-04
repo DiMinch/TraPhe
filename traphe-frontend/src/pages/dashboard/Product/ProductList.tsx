@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Pagination,
   PaginationContent,
@@ -27,23 +26,47 @@ import {
   BellIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router";
-import productsData from "@/data/products.json";
 import { CURRENT_USER } from "@/constants/user";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NewProductDialog from "./NewProduct";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
+import { productService } from "@/services/product.service";
+import type { Product } from "@/types/product";
+import { toast } from "sonner";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<{
-    id: number;
+    id: string;
     name: string;
   } | null>(null);
-  const [products, setProducts] = useState(productsData);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
+
+  // Fetch products from API
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await productService.getAllProducts();
+      if (response.data) {
+        setProducts(response.data);
+      }
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to load products";
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate pagination
   const totalPages = Math.ceil(products.length / itemsPerPage);
@@ -51,21 +74,31 @@ export default function ProductListPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = products.slice(startIndex, endIndex);
 
-  const handleDeleteClick = (product: { id: number; name: string }) => {
+  const handleDeleteClick = (product: { id: string; name: string }) => {
     setProductToDelete(product);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (productToDelete) {
-      setProducts(products.filter((p) => p.id !== productToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
+      try {
+        await productService.deleteProduct(productToDelete.id);
+        setProducts(products.filter((p) => p.id !== productToDelete.id));
+        toast.success("Product deleted successfully");
+      } catch (error: unknown) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Failed to delete product";
+        toast.error(errorMsg);
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setProductToDelete(null);
+      }
     }
   };
 
-  const handleAddProduct = (newProduct: (typeof productsData)[0]) => {
+  const handleAddProduct = (newProduct: Product) => {
     setProducts([...products, newProduct]);
+    fetchProducts(); // Refresh list
   };
 
   return (
@@ -111,154 +144,177 @@ export default function ProductListPage() {
           <CardTitle className="text-lg font-semibold">List</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table className="">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Image</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Suppliers</TableHead>
-                <TableHead>Inventory</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentProducts.map((product) => (
-                <TableRow
-                  key={product.id}
-                  className="cursor-pointer hover:bg-gray-50"
-                  onClick={() => navigate(`/product/detail/${product.id}`)}
-                >
-                  <TableCell>
-                    <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
-                      {product.image.startsWith("/") ? (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-xl">{product.image}</span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {product.variants}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-100 text-blue-700 hover:bg-blue-100"
+          {loading ? (
+            <div className="text-center py-10">Loading products...</div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">
+              No products found
+            </div>
+          ) : (
+            <>
+              <Table className="">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Image</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Variants</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentProducts.map((product) => (
+                    <TableRow
+                      key={product.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => navigate(`/product/detail/${product.id}`)}
                     >
-                      {product.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className="bg-purple-100 text-purple-700 hover:bg-purple-100"
-                    >
-                      {product.suppliers}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{product.inventory}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="secondary"
-                      className="bg-green-100 text-green-700 hover:bg-green-100"
-                    >
-                      {product.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className="flex items-center gap-2"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-amber-50 hover:border"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-red-50 hover:border"
-                        onClick={() =>
-                          handleDeleteClick({
-                            id: product.id,
-                            name: product.name,
-                          })
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-gray-100 hover:border"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      <TableCell>
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-xl">📦</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {product.warrantyPeriod
+                              ? `${product.warrantyPeriod} months warranty`
+                              : "No warranty"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-100"
+                        >
+                          {product.categoryName || "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-purple-100 text-purple-700 hover:bg-purple-100"
+                        >
+                          {product.supplierName || "N/A"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {product.variants?.length || 0} variant(s)
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            product.status === "ACTIVE"
+                              ? "bg-green-100 text-green-700 hover:bg-green-100"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                          }
+                        >
+                          {product.status || "ACTIVE"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-amber-50 hover:border"
+                            onClick={() =>
+                              navigate(`/product/edit/${product.id}`)
+                            }
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-red-50 hover:border"
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: product.id,
+                                name: product.name,
+                              })
+                            }
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-gray-100 hover:border"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-          {/* Pagination */}
-          <div className="mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
+              {/* Pagination */}
+              <div className="mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(1, prev - 1))
+                        }
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
                     </PaginationItem>
-                  ),
-                )}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ),
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(totalPages, prev + 1),
+                          )
+                        }
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

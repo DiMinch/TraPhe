@@ -1,5 +1,3 @@
-import { ProductStatus } from "../enums/product.js";
-
 export interface ProductVariant {
   id: string;
   sku: string;
@@ -14,7 +12,7 @@ export interface Product {
   name: string;
   imageUrl: string;
   description: string;
-  status: ProductStatus;
+  status: string;
   categoryName: string;
   categoryId: string;
   supplierName: string;
@@ -22,4 +20,43 @@ export interface Product {
   warrantyPeriod: number;
   commonSpecs: string;
   variants: ProductVariant[];
+}
+
+export interface CreateProductRequest {
+  name: string;
+  categoryId: string;
+  supplierId: string;
+  description?: string;
+  minStockThreshold?: number;
+  warrantyPeriod?: number;
+  commonSpecs?: string;
+}
+
+export interface UpdateProductRequest {
+  name?: string;
+  categoryId?: string;
+  supplierId?: string;
+  description?: string;
+  minStockThreshold?: number;
+  warrantyPeriod?: number;
+  commonSpecs?: string;
+}
+
+export interface CreateVariantRequest {
+  productId: string;
+  sku: string;
+  barcode?: string;
+  variantName: string;
+  variantSpecs: string;
+  purchasePriceAvg?: number;
+  sellingPrice: number;
+}
+
+export interface UpdateVariantRequest {
+  sku?: string;
+  barcode?: string;
+  variantName?: string;
+  variantSpecs?: string;
+  purchasePriceAvg?: number;
+  sellingPrice?: number;
 }

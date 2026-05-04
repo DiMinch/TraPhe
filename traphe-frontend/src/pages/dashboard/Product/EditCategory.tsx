@@ -16,6 +16,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { categoryService } from "@/services/category.service";
+import type { Category as ApiCategory } from "@/types/category";
+import { toast } from "sonner";
 
 interface Category {
   id: number;
@@ -30,8 +33,9 @@ interface Category {
 interface EditCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdate: (category: Category) => void;
+  onUpdate: () => void;
   category: Category | null;
+  categoryId?: string;
 }
 
 export default function EditCategoryDialog({
@@ -39,6 +43,7 @@ export default function EditCategoryDialog({
   onOpenChange,
   onUpdate,
   category,
+  categoryId,
 }: EditCategoryDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
@@ -46,29 +51,92 @@ export default function EditCategoryDialog({
     parent: "none",
     status: "Active",
   });
+  const [allCategories, setAllCategories] = useState<ApiCategory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (category) {
-      setFormData({
-        name: category.name,
-        description: category.description,
-        parent: category.parent || "none",
-        status: category.status,
-      });
+    if (open) {
+      fetchCategories();
+      if (category) {
+        setFormData({
+          name: category.name,
+          description: category.description,
+          parent: category.parent || "none",
+          status: category.status,
+        });
+        setImagePreview(category.image || "");
+      }
     }
-  }, [category]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, category]);
 
-  const handleUpdate = () => {
-    if (category) {
-      const updatedCategory: Category = {
-        ...category,
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await categoryService.getAllCategories();
+      if (response.data) {
+        setAllCategories(response.data);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
+    if (!categoryId) {
+      toast.error("Category ID is missing");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const categoryData = {
         name: formData.name,
         description: formData.description,
-        parent: formData.parent === "none" ? "" : formData.parent,
-        status: formData.status as "Active" | "Inactive",
+        parentId: formData.parent === "none" ? undefined : formData.parent,
       };
-      onUpdate(updatedCategory);
+
+      await categoryService.updateCategory(
+        categoryId,
+        categoryData,
+        imageFile || undefined,
+      );
+      toast.success("Category updated successfully");
+
+      // Reset form
+      setImageFile(null);
+      setImagePreview("");
+
+      onUpdate(); // Refresh the parent list
       onOpenChange(false);
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to update category";
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -108,10 +176,12 @@ export default function EditCategoryDialog({
                   <SelectValue placeholder="Select parent (optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="Laptop">Laptop</SelectItem>
-                  <SelectItem value="Mouse">Mouse</SelectItem>
-                  <SelectItem value="Keyboard">Keyboard</SelectItem>
+                  <SelectItem value="none">None (Root Category)</SelectItem>
+                  {allCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -137,13 +207,47 @@ export default function EditCategoryDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-2 text-center bg-white flex items-center justify-center">
-                <Button variant="outline" size="sm">
-                  Choose File
-                </Button>
-                <span className="text-sm text-gray-500 ml-2">
-                  No file chosen
-                </span>
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-2 text-center bg-white">
+                {imagePreview ? (
+                  <div className="space-y-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview("");
+                      }}
+                    >
+                      Remove Image
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById("image")?.click()}
+                      type="button"
+                    >
+                      Choose File
+                    </Button>
+                    <span className="text-sm text-gray-500 ml-2">
+                      No file chosen
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -163,14 +267,19 @@ export default function EditCategoryDialog({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
             <Button
               className="bg-indigo-900 hover:bg-indigo-800 text-white"
               onClick={handleUpdate}
+              disabled={submitting}
             >
-              Update
+              {submitting ? "Updating..." : "Update"}
             </Button>
           </div>
         </div>

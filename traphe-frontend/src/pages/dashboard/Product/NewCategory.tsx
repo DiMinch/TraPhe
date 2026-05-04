@@ -15,22 +15,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-interface Category {
-  id: number;
-  name: string;
-  description: string;
-  parent: string;
-  productCount: number;
-  status: "Active" | "Inactive";
-  image?: string;
-}
+import { useState, useEffect } from "react";
+import { categoryService } from "@/services/category.service";
+import type { Category as ApiCategory } from "@/types/category";
+import { toast } from "sonner";
 
 interface NewCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (category: Category) => void;
+  onAdd: () => void;
 }
 
 export default function NewCategoryDialog({
@@ -44,24 +37,80 @@ export default function NewCategoryDialog({
     parent: "none",
     status: "Active",
   });
+  const [allCategories, setAllCategories] = useState<ApiCategory[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleAdd = () => {
-    const newCategory: Category = {
-      id: Date.now(),
-      name: formData.name,
-      description: formData.description,
-      parent: formData.parent === "none" ? "" : formData.parent,
-      productCount: 0,
-      status: formData.status as "Active" | "Inactive",
-    };
-    onAdd(newCategory);
-    setFormData({
-      name: "",
-      description: "",
-      parent: "none",
-      status: "Active",
-    });
-    onOpenChange(false);
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoryService.getAllCategories();
+      if (response.data) {
+        setAllCategories(response.data);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load categories:", error);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const categoryData = {
+        name: formData.name,
+        description: formData.description,
+        parentId: formData.parent === "none" ? undefined : formData.parent,
+      };
+
+      await categoryService.createCategory(
+        categoryData,
+        imageFile || undefined,
+      );
+      toast.success("Category created successfully");
+
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        parent: "none",
+        status: "Active",
+      });
+      setImageFile(null);
+      setImagePreview("");
+
+      onAdd(); // Refresh the parent list
+      onOpenChange(false);
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to create category";
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -75,8 +124,8 @@ export default function NewCategoryDialog({
 
         <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-150px)] py-4">
           {/* Category Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-4 pl-1">
+            <div className="space-y-2 ">
               <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
@@ -93,20 +142,19 @@ export default function NewCategoryDialog({
               <Select
                 value={formData.parent}
                 onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    parent: value === "none" ? "" : value,
-                  })
+                  setFormData({ ...formData, parent: value })
                 }
               >
                 <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder="Select parent (optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-white">
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="Laptop">Laptop</SelectItem>
-                  <SelectItem value="Mouse">Mouse</SelectItem>
-                  <SelectItem value="Keyboard">Keyboard</SelectItem>
+                  <SelectItem value="none">None (Root Category)</SelectItem>
+                  {allCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -132,13 +180,47 @@ export default function NewCategoryDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-2 text-center bg-white flex items-center justify-center">
-                <Button variant="outline" size="sm">
-                  Choose File
-                </Button>
-                <span className="text-sm text-gray-500 ml-2">
-                  No file chosen
-                </span>
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-2 text-center bg-white">
+                {imagePreview ? (
+                  <div className="space-y-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-32 object-cover rounded"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview("");
+                      }}
+                    >
+                      Remove Image
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById("image")?.click()}
+                      type="button"
+                    >
+                      Choose File
+                    </Button>
+                    <span className="text-sm text-gray-500 ml-2">
+                      No file chosen
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -158,14 +240,19 @@ export default function NewCategoryDialog({
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={submitting}
+            >
               Cancel
             </Button>
             <Button
               className="bg-indigo-900 hover:bg-indigo-800 text-white"
               onClick={handleAdd}
+              disabled={submitting}
             >
-              Add
+              {submitting ? "Creating..." : "Add"}
             </Button>
           </div>
         </div>
