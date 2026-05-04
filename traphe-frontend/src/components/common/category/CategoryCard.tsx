@@ -1,14 +1,10 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
-import { categories } from "@/data/mockData";
+import type { DisplayCategory } from "@/types/category";
 
-export const CategoryCard = ({
-  category,
-}: {
-  category: (typeof categories)[0];
-}) => (
+export const CategoryCard = ({ category }: { category: DisplayCategory }) => (
   <div
-    className={`relative h-[300px] p-8 flex flex-col justify-center ${category.className} rounded-sm group overflow-hidden`}
+    className={`relative h-[300px] p-8 flex flex-col justify-center ${category.className || "bg-gray-100"} rounded-sm group overflow-hidden`}
   >
     <div className="z-10 relative">
       <h3 className="text-3xl font-medium mb-4 text-gray-900">

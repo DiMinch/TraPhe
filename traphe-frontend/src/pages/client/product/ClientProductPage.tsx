@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutGrid,
   Grid,
   StretchHorizontal,
   AlignJustify,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -16,10 +17,30 @@ import Banner from "@/components/common/banner/Banner";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
-import { shopProducts } from "@/data/mockData";
+import { productService } from "@/services/product.service";
+import type { Product } from "@/types/product";
+import { Link } from "react-router";
 
 export default function ClientProductPage() {
   const [gridCols, setGridCols] = useState<number>(3);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await productService.getAllProducts();
+        if (res.statusCode === 200 && res.data) {
+          setProducts(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch products", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   return (
     <div className="bg-white min-h-screen">
@@ -81,27 +102,51 @@ export default function ClientProductPage() {
             </div>
           </div>
 
-          <div
-            className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
-             ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
-             ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
-             ${gridCols === 2 ? "grid-cols-2" : ""}
-             ${gridCols === 1 ? "grid-cols-1" : ""}
-          `}
-          >
-            {shopProducts.map((product) => (
-              <div
-                key={`prod-page-${product.id}`}
-                className={
-                  gridCols === 1
-                    ? "flex gap-6 items-center border-b pb-4 last:border-0"
-                    : ""
-                }
-              >
-                <ProductCard product={product} />
-              </div>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div
+              className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
+               ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
+               ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
+               ${gridCols === 2 ? "grid-cols-2" : ""}
+               ${gridCols === 1 ? "grid-cols-1" : ""}
+            `}
+            >
+              {products.map((product) => {
+                const displayPrice = product.variants?.[0]?.sellingPrice || 0;
+
+                return (
+                  <Link
+                    key={product.id}
+                    to={`/products/${product.id}`}
+                    className={gridCols === 1 ? "w-full" : ""}
+                  >
+                    <div
+                      className={
+                        gridCols === 1
+                          ? "flex gap-6 items-center border-b pb-4 last:border-0"
+                          : ""
+                      }
+                    >
+                      <ProductCard
+                        product={{
+                          id: product.id,
+                          name: product.name,
+                          price: displayPrice,
+                          image: product.imageUrl,
+                          rating: 5,
+                          isNew: false,
+                        }}
+                      />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

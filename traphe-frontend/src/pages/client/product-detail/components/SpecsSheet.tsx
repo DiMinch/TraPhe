@@ -7,10 +7,43 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { productDetail } from "@/data/mockData";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Product, ProductVariant } from "@/types/product";
 
-export default function SpecsSheet() {
+interface SpecsSheetProps {
+  product: Product;
+  selectedVariant: ProductVariant | null;
+}
+
+export default function SpecsSheet({
+  product,
+  selectedVariant,
+}: SpecsSheetProps) {
+  const parseSpecs = (jsonStr: string) => {
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const common = parseSpecs(product.commonSpecs);
+  const variant = selectedVariant
+    ? parseSpecs(selectedVariant.variantSpecs)
+    : {};
+  const allSpecs = { ...common, ...variant };
+
+  const specsArray = Object.entries(allSpecs).map(([key, value]) => ({
+    label: key,
+    value: String(value),
+  }));
+
+  specsArray.push({
+    label: "Warranty",
+    value: `${product.warrantyPeriod} Months`,
+  });
+  specsArray.push({ label: "Supplier", value: product.supplierName });
+
   return (
     <ScrollArea>
       <Sheet>
@@ -29,10 +62,8 @@ export default function SpecsSheet() {
                 Technical Specifications
               </SheetTitle>
               <SheetDescription className="text-gray-500 mt-1">
-                Detailed configuration for{" "}
-                <span className="font-medium text-black">
-                  {productDetail.name}
-                </span>
+                Configuration for{" "}
+                <span className="font-medium text-black">{product.name}</span>
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -40,15 +71,14 @@ export default function SpecsSheet() {
           <div className="flex-1 overflow-y-auto p-6 bg-white">
             <table className="w-full text-sm text-left border-collapse">
               <tbody>
-                {productDetail.specs.map((spec, index) => (
+                {specsArray.map((spec, index) => (
                   <tr
                     key={index}
                     className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors group"
                   >
-                    <td className="py-4 pr-4 font-semibold text-gray-500 w-1/3 align-top group-hover:text-gray-700">
+                    <td className="py-4 pr-4 font-semibold text-gray-500 w-1/3 align-top group-hover:text-gray-700 capitalize">
                       {spec.label}
                     </td>
-
                     <td className="py-4 pl-4 text-gray-900 font-medium leading-relaxed align-top">
                       {spec.value}
                     </td>
