@@ -38,6 +38,11 @@ export const navItems: NavItem[] = [
     title: "Inventory",
     path: "/inventory",
     icon: ShoppingCart,
+    subItems: [
+      { title: "Overview", path: "/inventory/overview" },
+      { title: "All Inventory", path: "/inventory/all" },
+      { title: "Transactions", path: "/inventory/transactions" },
+    ],
   },
   {
     title: "Procurement",

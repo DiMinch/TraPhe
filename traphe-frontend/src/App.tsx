@@ -9,6 +9,11 @@ import DashboardPage from "./pages/dashboard/Dashboard";
 import CustomerPage from "./pages/dashboard/Customer/Customer";
 import ProductListPage from "./pages/dashboard/Product/ProductList";
 import ProductDetailPage from "./pages/dashboard/Product/ProductDetail";
+import CategoriesPage from "./pages/dashboard/Product/Categories";
+import AttributesPage from "./pages/dashboard/Product/Attributes";
+import InventoryOverviewPage from "./pages/dashboard/Inventory/InventoryOverview";
+import AllInventoryPage from "./pages/dashboard/Inventory/AllInventory";
+import TransactionsPage from "./pages/dashboard/Inventory/TransactionsPage";
 import UserPage from "./pages/dashboard/User";
 import AdminLayout from "./components/layout/AdminLayout";
 
@@ -44,7 +49,16 @@ function App() {
         <Route path="/customer" element={<CustomerPage />} />
         <Route path="/product" element={<ProductListPage />} />
         <Route path="/product/productlist" element={<ProductListPage />} />
+        <Route path="/product/categories" element={<CategoriesPage />} />
+        <Route
+          path="/product/categories/:categoryName/attributes"
+          element={<AttributesPage />}
+        />
         <Route path="/product/detail/:id" element={<ProductDetailPage />} />
+        <Route path="/inventory" element={<InventoryOverviewPage />} />
+        <Route path="/inventory/overview" element={<InventoryOverviewPage />} />
+        <Route path="/inventory/all" element={<AllInventoryPage />} />
+        <Route path="/inventory/transactions" element={<TransactionsPage />} />
         <Route path="/user" element={<UserPage />} />
       </Route>
 
