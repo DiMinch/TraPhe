@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router";
+import { Toaster } from "./components/ui/sonner";
 
 // Auth Pages
 import SignUpPage from "./pages/auth/sign-up";
@@ -9,11 +10,6 @@ import DashboardPage from "./pages/dashboard/Dashboard";
 import CustomerPage from "./pages/dashboard/Customer/Customer";
 import ProductListPage from "./pages/dashboard/Product/ProductList";
 import ProductDetailPage from "./pages/dashboard/Product/ProductDetail";
-import CategoriesPage from "./pages/dashboard/Product/Categories";
-import AttributesPage from "./pages/dashboard/Product/Attributes";
-import InventoryOverviewPage from "./pages/dashboard/Inventory/InventoryOverview";
-import AllInventoryPage from "./pages/dashboard/Inventory/AllInventory";
-import TransactionsPage from "./pages/dashboard/Inventory/TransactionsPage";
 import UserPage from "./pages/dashboard/User";
 import AdminLayout from "./components/layout/AdminLayout";
 
@@ -30,40 +26,34 @@ import "./App.css";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/sign-in" element={<SignInPage />} />
+    <>
+      <Routes>
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/sign-in" element={<SignInPage />} />
 
-      <Route element={<ClientLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/shop" element={<ShopPage />} />
-        <Route path="/products" element={<ClientProductPage />} />
-        <Route path="/products/:id" element={<ClientProductDetailPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Route>
+        <Route element={<ClientLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/products" element={<ClientProductPage />} />
+          <Route path="/products/:id" element={<ClientProductDetailPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
 
-      <Route element={<AdminLayout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/customer" element={<CustomerPage />} />
-        <Route path="/product" element={<ProductListPage />} />
-        <Route path="/product/productlist" element={<ProductListPage />} />
-        <Route path="/product/categories" element={<CategoriesPage />} />
-        <Route
-          path="/product/categories/:categoryName/attributes"
-          element={<AttributesPage />}
-        />
-        <Route path="/product/detail/:id" element={<ProductDetailPage />} />
-        <Route path="/inventory" element={<InventoryOverviewPage />} />
-        <Route path="/inventory/overview" element={<InventoryOverviewPage />} />
-        <Route path="/inventory/all" element={<AllInventoryPage />} />
-        <Route path="/inventory/transactions" element={<TransactionsPage />} />
-        <Route path="/user" element={<UserPage />} />
-      </Route>
+        <Route element={<AdminLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/customer" element={<CustomerPage />} />
+          <Route path="/product" element={<ProductListPage />} />
+          <Route path="/product/productlist" element={<ProductListPage />} />
+          <Route path="/product/detail/:id" element={<ProductDetailPage />} />
+          <Route path="/user" element={<UserPage />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster position="top-right" />
+    </>
   );
 }
 

@@ -48,6 +48,10 @@ export const navItems: NavItem[] = [
     title: "Procurement",
     path: "/procurement",
     icon: Clipboard,
+    subItems: [
+      { title: "Suppliers", path: "/procurement/suppliers" },
+      { title: "Purchase Orders", path: "/procurement/purchase-orders" },
+    ],
   },
   {
     title: "Sales",
