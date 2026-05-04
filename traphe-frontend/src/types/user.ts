@@ -1,5 +1,5 @@
 import { UserRole } from "@/enums/roles";
-import { UserStatus } from "@/enums/user";
+import { UserStatus, LinkingStatus } from "@/enums/user";
 
 export interface UserInfo {
   id: string;
@@ -11,4 +11,7 @@ export interface UserInfo {
   phone?: string;
   avatar?: string;
   status?: UserStatus;
+  hasEmailProvider?: boolean;
+  shouldPromptLinking?: boolean;
+  linkingStatus?: LinkingStatus;
 }

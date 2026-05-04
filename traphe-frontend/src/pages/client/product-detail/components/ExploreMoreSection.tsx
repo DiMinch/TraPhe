@@ -28,32 +28,37 @@ export default function ExploreMoreSection() {
   if (isLoading) {
     return (
       <section className="mb-20">
-         <Skeleton className="h-8 w-48 mb-8" />
-         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[1,2,3,4].map(i => <Skeleton key={i} className="h-[300px] w-full" />)}
-         </div>
+        <Skeleton className="h-8 w-48 mb-8" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-[300px] w-full" />
+          ))}
+        </div>
       </section>
     );
   }
 
-return (
-<section className="mb-20">
-<h2 className="text-3xl font-semibold mb-8 text-black">Explore more</h2>
-<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+  return (
+    <section className="mb-20">
+      <h2 className="text-3xl font-semibold mb-8 text-black">Explore more</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {products.map((product) => {
-           const displayPrice = product.variants?.[0]?.sellingPrice || 0;
-           return (
-             <Link key={product.id} to={`/products/${product.id}`}>
-                <ProductCard product={{
-                    id: product.id,
-                    name: product.name,
-                    price: displayPrice,
-                    image: product.imageUrl,
-                    rating: 5
-                }} />
-             </Link>
-           );
+          const displayPrice = product.variants?.[0]?.sellingPrice || 0;
+          return (
+            <Link key={product.id} to={`/products/${product.id}`}>
+              <ProductCard
+                product={{
+                  id: product.id,
+                  name: product.name,
+                  price: displayPrice,
+                  image: product.imageUrl,
+                  rating: 5,
+                }}
+              />
+            </Link>
+          );
         })}
-</div>
-</section>
-);
+      </div>
+    </section>
+  );
+}

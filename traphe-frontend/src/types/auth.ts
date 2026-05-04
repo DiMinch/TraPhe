@@ -1,5 +1,14 @@
 import type { UserInfo } from "./user";
 
+export interface GoogleLoginRequest {
+  idToken: string;
+}
+
+export interface CreatePasswordRequest {
+  password: string;
+  confirmPassword: string;
+}
+
 export interface LoginRequest {
   email?: string;
   password?: string;

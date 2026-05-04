@@ -6,6 +6,8 @@ import type {
   LoginRequest,
   RegisterRequest,
   VerifyOtpRequest,
+  GoogleLoginRequest,
+  CreatePasswordRequest,
 } from "@/types/auth";
 import type { UserInfo } from "@/types/user";
 
@@ -39,6 +41,24 @@ export const authService = {
     const userStr = localStorage.getItem("user");
     if (userStr) return JSON.parse(userStr);
     return null;
+  },
+
+  loginGoogle: async (payload: GoogleLoginRequest) => {
+    return axiosClient.post<any, ApiResponse<AuthResponseData>>(
+      "/auth/google",
+      payload,
+    );
+  },
+
+  createPassword: async (payload: CreatePasswordRequest) => {
+    return axiosClient.post<any, ApiResponse<null>>(
+      "/auth/create-password",
+      payload,
+    );
+  },
+
+  skipLinking: async () => {
+    return axiosClient.post<any, ApiResponse<null>>("/auth/skip-linking");
   },
 
   logout: async () => {
