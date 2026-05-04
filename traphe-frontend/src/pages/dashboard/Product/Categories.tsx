@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Pagination,
   PaginationContent,
@@ -24,81 +23,55 @@ import {
   MoreHorizontal,
   BellIcon,
   ArrowUpDown,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import NewCategoryDialog from "./NewCategory";
-import EditCategoryDialog from "./EditCategory";
-import DeleteCategoryDialog from "./DeleteCategory";
+import { attributes as initialAttributes } from "@/data/mockData";
+import { useParams, useNavigate } from "react-router";
+import { CURRENT_USER } from "@/constants/user";
+import NewAttributeDialog from "./NewAttributeDialog";
+import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 
-interface Category {
+interface Attribute {
   id: number;
   name: string;
-  description: string;
-  parent: string;
-  productCount: number;
-  status: "Active" | "Inactive";
-  image?: string;
+  key: string;
+  type: string;
+  required: string;
+  highlight: number;
+  order: number;
 }
 
-export default function CategoriesPage() {
+export default function AttributesPage() {
+  const { categoryName } = useParams();
   const navigate = useNavigate();
-  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
-  const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-    null,
-  );
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: 1,
-      name: "Laptop",
-      description: "Lorem ipsum dolor sit amet consectetur adipiscing elit.",
-      parent: "",
-      productCount: 500,
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Laptop Gaming",
-      description: "Lorem ipsum dolor sit amet consectetur adipiscing elit.",
-      parent: "Laptop",
-      productCount: 121,
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Laptop Student",
-      description: "Lorem ipsum dolor sit amet consectetur adipiscing elit.",
-      parent: "Laptop",
-      productCount: 10,
-      status: "Inactive",
-    },
-  ]);
+  const [attributeToDelete, setAttributeToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [attributes, setAttributes] = useState<Attribute[]>(initialAttributes);
 
-  const handleEdit = (category: Category) => {
-    setSelectedCategory(category);
-    setIsEditCategoryOpen(true);
+  const handleAddAttribute = (newAttribute: Omit<Attribute, "id">) => {
+    const attribute: Attribute = {
+      id: attributes.length + 1,
+      ...newAttribute,
+    };
+    setAttributes([...attributes, attribute]);
+    setIsDialogOpen(false);
   };
 
-  const handleDelete = (category: Category) => {
-    setSelectedCategory(category);
+  const handleDeleteClick = (attribute: { id: number; name: string }) => {
+    setAttributeToDelete(attribute);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleUpdateCategory = (updatedCategory: Category) => {
-    setCategories(
-      categories.map((cat) =>
-        cat.id === updatedCategory.id ? updatedCategory : cat,
-      ),
-    );
-  };
-
   const handleDeleteConfirm = () => {
-    if (selectedCategory) {
-      setCategories(categories.filter((cat) => cat.id !== selectedCategory.id));
+    if (attributeToDelete) {
+      setAttributes(attributes.filter((a) => a.id !== attributeToDelete.id));
       setIsDeleteDialogOpen(false);
-      setSelectedCategory(null);
+      setAttributeToDelete(null);
     }
   };
 
@@ -107,11 +80,11 @@ export default function CategoriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold">Categories</h1>
+          <h1 className="text-2xl font-semibold">Attributes</h1>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -122,119 +95,115 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* New Category Button */}
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
+        <button
+          onClick={() => navigate("/product/categories")}
+          className="hover:text-gray-900"
+        >
+          {categoryName || "Laptop Gaming"}
+        </button>
+        <ChevronRight className="w-4 h-4" />
+        <span className="text-gray-900 font-medium">Attributes</span>
+      </div>
+
+      {/* New Attribute Button */}
       <div className="flex justify-end mb-4">
         <Button
           className="bg-indigo-900 hover:bg-indigo-800 text-white"
-          onClick={() => setIsNewCategoryOpen(true)}
+          onClick={() => setIsDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
-          New Category
+          New Attribute
         </Button>
       </div>
 
       {/* Main Card */}
       <Card className="shadow-md">
-        <CardContent className="p-6 pt-0">
+        <CardContent className="p-6">
           {/* List Title */}
           <h2 className="text-lg font-semibold mb-6">List</h2>
 
           {/* Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-[250px]">
-                    <div className="flex items-center gap-2">Name</div>
-                  </TableHead>
-                  <TableHead className="w-[300px]">Description</TableHead>
-                  <TableHead className="w-[150px]">
-                    <div className="flex items-center gap-2">
-                      Parent
-                      <ArrowUpDown className="w-4 h-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[150px]">
-                    <div className="flex items-center gap-2">
-                      Number of Product
-                      <ArrowUpDown className="w-4 h-4" />
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px] text-center">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0" />
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `/product/categories/${category.name}/attributes`,
-                            )
-                          }
-                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                        >
-                          {category.name}
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {category.description}
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {category.parent || "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {category.productCount}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          category.status === "Active" ? "default" : "secondary"
-                        }
-                        className={
-                          category.status === "Active"
-                            ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead className="w-[150px]">Key</TableHead>
+                <TableHead className="w-[150px]">
+                  <div className="flex items-center gap-2">
+                    Type
+                    <ArrowUpDown className="w-4 h-4" />
+                  </div>
+                </TableHead>
+                <TableHead className="w-[150px]">Required</TableHead>
+                <TableHead className="w-[120px]">Highlight</TableHead>
+                <TableHead className="w-[120px]">
+                  <div className="flex items-center gap-2">
+                    Order
+                    <ArrowUpDown className="w-4 h-4" />
+                  </div>
+                </TableHead>
+                <TableHead className="w-[120px] text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attributes.map((attribute) => (
+                <TableRow key={attribute.id}>
+                  <TableCell>
+                    <button
+                      onClick={() =>
+                        navigate(
+                          `/product/categories/${categoryName}/attributes/${attribute.name}`,
+                        )
+                      }
+                      className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                    >
+                      {attribute.name}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {attribute.key}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {attribute.type}
+                  </TableCell>
+                  <TableCell className="text-gray-600">
+                    {attribute.required}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {attribute.highlight}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {attribute.order}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() =>
+                          handleDeleteClick({
+                            id: attribute.id,
+                            name: attribute.name,
+                          })
                         }
                       >
-                        {category.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(category)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleDelete(category)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-6">
@@ -257,27 +226,18 @@ export default function CategoriesPage() {
         </CardContent>
       </Card>
 
-      {/* New Category Dialog */}
-      <NewCategoryDialog
-        open={isNewCategoryOpen}
-        onOpenChange={setIsNewCategoryOpen}
-        onAdd={(newCategory) => setCategories([...categories, newCategory])}
+      <NewAttributeDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onAdd={handleAddAttribute}
       />
 
-      {/* Edit Category Dialog */}
-      <EditCategoryDialog
-        open={isEditCategoryOpen}
-        onOpenChange={setIsEditCategoryOpen}
-        onUpdate={handleUpdateCategory}
-        category={selectedCategory}
-      />
-
-      {/* Delete Category Dialog */}
-      <DeleteCategoryDialog
+      <DeleteConfirmDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
+        itemName={attributeToDelete?.name || ""}
         onConfirm={handleDeleteConfirm}
-        categoryName={selectedCategory?.name || ""}
+        contextMessage="from the attribute list"
       />
     </div>
   );

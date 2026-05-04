@@ -1,5 +1,7 @@
 @import "tailwindcss";
+@import "@fontsource/geist-mono";
+
 @import "tw-animate-css";
 body {
-  font-family: "Geist";
+  font-family: "Geist Mono";
 }

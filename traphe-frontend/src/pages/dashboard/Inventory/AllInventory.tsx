@@ -44,6 +44,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { CURRENT_USER } from "@/constants/user";
+import {
+  inventoryProductVariants,
+  inventoryPartsComponents,
+} from "@/data/mockData";
 
 interface InventoryItem {
   id: number;
@@ -58,30 +63,45 @@ interface InventoryItem {
 }
 
 export default function AllInventoryPage() {
+  const [searchTerm, setSearchTerm] = useState("");
   const [isStockAdjustmentOpen, setIsStockAdjustmentOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [newQuantity, setNewQuantity] = useState(0);
   const [reason, setReason] = useState("Data Entry Error");
   const [note, setNote] = useState("");
+  const [activeTab, setActiveTab] = useState("variants");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<InventoryItem | null>(null);
 
-  const inventoryItems: InventoryItem[] = [
-    {
-      id: 1,
-      name: "LCD Screen",
-      sku: "MS-M1-GR-256",
-      category: "Screen",
-      supplier: "ABC",
-      physical: 45,
-      reserved: 40,
-      available: 5,
-      status: "Active",
-    },
-  ];
+  const productVariants: InventoryItem[] = inventoryProductVariants;
+  const partsComponents: InventoryItem[] = inventoryPartsComponents;
+
+  // Filter items by search term
+  const filteredVariants = productVariants.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.supplier.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const filteredParts = partsComponents.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.supplier.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   const handleStockAdjustment = (item: InventoryItem) => {
     setSelectedItem(item);
     setNewQuantity(item.physical);
     setIsStockAdjustmentOpen(true);
+  };
+
+  const handleEditClick = (item: InventoryItem) => {
+    setEditItem(item);
+    setIsEditDialogOpen(true);
   };
 
   const handleUpdate = () => {
@@ -98,6 +118,8 @@ export default function AllInventoryPage() {
 
   const difference = selectedItem ? newQuantity - selectedItem.physical : 0;
 
+  const items = activeTab === "variants" ? productVariants : partsComponents;
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -105,7 +127,7 @@ export default function AllInventoryPage() {
         <h1 className="text-2xl font-semibold">Inventory</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -115,9 +137,21 @@ export default function AllInventoryPage() {
           </Button>
         </div>
       </div>
-
+      <div className="flex items-center justify-end gap-3">
+        <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
+          Export Excel
+        </Button>
+        <Button className="bg-gray-900 hover:bg-gray-800 text-white">
+          Stock Adjustment
+        </Button>
+      </div>
       {/* Tabs */}
-      <Tabs defaultValue="variants" className="mb-4">
+      <Tabs
+        defaultValue="variants"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="mb-4"
+      >
         <TabsList className="bg-white">
           <TabsTrigger value="variants">Product Variants</TabsTrigger>
           <TabsTrigger value="components">Parts Component</TabsTrigger>
@@ -130,7 +164,12 @@ export default function AllInventoryPage() {
           {/* Search Bar */}
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="Search" className="pl-10 bg-white" />
+            <Input
+              placeholder="Search"
+              className="pl-10 bg-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
 
           {/* Filters */}
@@ -173,19 +212,13 @@ export default function AllInventoryPage() {
             </SelectContent>
           </Select>
         </div>
-
-        <div className="flex items-center gap-3">
-          <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
-            Export Excel
-          </Button>
-        </div>
       </div>
 
       {/* Main Card */}
       <Card className="shadow-md">
         <CardContent className="p-6">
           {/* Table */}
-          <div className="rounded-md border">
+          <div className="rounded-md ">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
@@ -200,7 +233,10 @@ export default function AllInventoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inventoryItems.map((item) => (
+                {(activeTab === "variants"
+                  ? filteredVariants
+                  : filteredParts
+                ).map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div>
@@ -236,7 +272,12 @@ export default function AllInventoryPage() {
                         >
                           <RefreshCw className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleEditClick(item)}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
                       </div>
@@ -394,6 +435,158 @@ export default function AllInventoryPage() {
               <Button
                 className="bg-indigo-900 hover:bg-indigo-800 text-white"
                 onClick={handleUpdate}
+              >
+                Update
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-[600px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">
+              Edit Item
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={editItem?.name || ""}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev ? { ...prev, name: e.target.value } : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>SKU</Label>
+                <Input
+                  value={editItem?.sku || ""}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev ? { ...prev, sku: e.target.value } : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Input
+                  value={editItem?.category || ""}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev ? { ...prev, category: e.target.value } : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Supplier</Label>
+                <Input
+                  value={editItem?.supplier || ""}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev ? { ...prev, supplier: e.target.value } : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Physical</Label>
+                <Input
+                  type="number"
+                  value={editItem?.physical ?? 0}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev
+                        ? { ...prev, physical: parseInt(e.target.value) || 0 }
+                        : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Reserved</Label>
+                <Input
+                  type="number"
+                  value={editItem?.reserved ?? 0}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev
+                        ? { ...prev, reserved: parseInt(e.target.value) || 0 }
+                        : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Available</Label>
+                <Input
+                  type="number"
+                  value={editItem?.available ?? 0}
+                  onChange={(e) =>
+                    setEditItem((prev) =>
+                      prev
+                        ? { ...prev, available: parseInt(e.target.value) || 0 }
+                        : prev,
+                    )
+                  }
+                  className="bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select
+                value={editItem?.status || "Active"}
+                onValueChange={(val) =>
+                  setEditItem((prev) =>
+                    prev
+                      ? { ...prev, status: val as "Active" | "Inactive" }
+                      : prev,
+                  )
+                }
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+                onClick={() => setIsEditDialogOpen(false)}
               >
                 Update
               </Button>

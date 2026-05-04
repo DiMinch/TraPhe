@@ -28,9 +28,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import productsData from "@/data/products.json";
+import { CURRENT_USER } from "@/constants/user";
 import { useState } from "react";
 import NewProductDialog from "./NewProduct";
-import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -41,6 +42,14 @@ export default function ProductListPage() {
     name: string;
   } | null>(null);
   const [products, setProducts] = useState(productsData);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
+
+  // Calculate pagination
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProducts = products.slice(startIndex, endIndex);
 
   const handleDeleteClick = (product: { id: number; name: string }) => {
     setProductToDelete(product);
@@ -66,7 +75,7 @@ export default function ProductListPage() {
         <h1 className="text-2xl font-semibold">Product List</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin: Nguyen Van A
+            Welcome {CURRENT_USER.role}: {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -74,16 +83,11 @@ export default function ProductListPage() {
           <Button variant="outline" size="sm">
             CN
           </Button>
-          <Avatar>
-            <AvatarFallback className="bg-green-600 text-white">
-              M
-            </AvatarFallback>
-          </Avatar>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6 justify-end">
         <Button
           className="bg-indigo-900 hover:bg-indigo-800 text-white"
           onClick={() => setIsNewProductOpen(true)}
@@ -120,7 +124,7 @@ export default function ProductListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => (
+              {currentProducts.map((product) => (
                 <TableRow
                   key={product.id}
                   className="cursor-pointer hover:bg-gray-50"
@@ -204,11 +208,6 @@ export default function ProductListPage() {
                       >
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-green-600 text-white text-xs">
-                          M
-                        </AvatarFallback>
-                      </Avatar>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -221,15 +220,41 @@ export default function ProductListPage() {
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious href="#" />
+                  <PaginationPrevious
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    className={
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
                 </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ),
+                )}
                 <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
+                  <PaginationNext
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
@@ -250,6 +275,7 @@ export default function ProductListPage() {
         onOpenChange={setIsDeleteDialogOpen}
         itemName={productToDelete?.name || ""}
         onConfirm={handleDeleteConfirm}
+        contextMessage="from the product list"
       />
     </div>
   );

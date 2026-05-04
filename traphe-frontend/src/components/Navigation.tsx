@@ -22,7 +22,7 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="flex flex-col w-[281px] min-h-screen bg-white border-r shadow-sm">
+    <nav className="flex flex-col w-[281px] min-h-screen bg-white border-r-3 border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
       {/* Header */}
       <div className="flex items-center justify-between p-6 pb-0 ">
         <h1 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -35,7 +35,7 @@ export default function Navigation() {
 
       {/* Logo */}
       <div className="flex flex-col items-center justify-center  px-6">
-        <img src="/logo.svg" alt="logo" width={200} height={200} />
+        <img src="/public/logo.svg" alt="logo" width={200} height={200} />
       </div>
 
       {/* Navigation Label */}

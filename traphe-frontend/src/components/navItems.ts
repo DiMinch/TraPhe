@@ -9,6 +9,7 @@ import {
   Settings,
   UserCog,
   ClipboardList,
+  Wrench,
 } from "lucide-react";
 
 export interface NavItem {
@@ -31,7 +32,6 @@ export const navItems: NavItem[] = [
     subItems: [
       { title: "Product List", path: "/product/productlist" },
       { title: "Categories", path: "/product/categories" },
-      { title: "Attributes", path: "/product/attributes" },
     ],
   },
   {
@@ -57,17 +57,33 @@ export const navItems: NavItem[] = [
     title: "Sales",
     path: "/sales",
     icon: ChartBar,
+    subItems: [
+      { title: "POS", path: "/sales/pos" },
+      { title: "Orders", path: "/sales/orders" },
+    ],
   },
+
   {
     title: "Customers",
     path: "/customer",
     icon: Users,
+    subItems: [
+      { title: "Customer List", path: "/customer" },
+      { title: "Customer Tiers", path: "/customer/tiers" },
+    ],
   },
+
   {
-    title: "Marketing & Ads",
-    path: "/marketing",
-    icon: Tag,
+    title: "Warranty & Service",
+    path: "/warranty",
+    icon: Wrench,
+    subItems: [
+      { title: "Warranty Tickets", path: "/warranty/tickets" },
+      { title: "Service Types", path: "/warranty/service-types" },
+      { title: "Parts & Components", path: "/warranty/parts-components" },
+    ],
   },
+
   {
     title: "Promotions",
     path: "/promotions",
@@ -77,11 +93,16 @@ export const navItems: NavItem[] = [
     title: "System",
     path: "/system",
     icon: Settings,
+    subItems: [{ title: "Configurations", path: "/system/configurations" }],
   },
   {
     title: "Users & Roles",
     path: "/users-roles",
     icon: UserCog,
+    subItems: [
+      { title: "User Accounts", path: "/users-roles/user-accounts" },
+      { title: "Roles & Permissions", path: "/users-roles/roles-permissions" },
+    ],
   },
   {
     title: "Audit Logs",

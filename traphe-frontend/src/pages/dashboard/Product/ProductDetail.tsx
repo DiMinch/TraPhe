@@ -40,6 +40,7 @@ import { Edit, Trash2, MoreHorizontal, Bell } from "lucide-react";
 import { useParams } from "react-router";
 import productsData from "@/data/products.json";
 import { useState } from "react";
+import { CURRENT_USER } from "@/constants/user";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -77,7 +78,7 @@ export default function ProductDetailPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin: Nguyen Van A
+            Welcome {CURRENT_USER.role}: {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <Bell className="w-4 h-4" />

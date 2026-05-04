@@ -8,8 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -17,137 +15,126 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
+import { ChevronDown, Bell, ChevronLeft, ChevronRight } from "lucide-react";
+import { CURRENT_USER } from "@/constants/user";
+import { useState } from "react";
+import {
+  dashboardTopSellingProducts,
+  dashboardLowStockAlert,
+  dashboardPendingOrders,
+  dashboardWarrantyTickets,
+  dashboardAuditLogs,
+  dashboardChartData,
+} from "@/data/mockData";
+
+const chartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "#f97316",
+  },
+  grossProfit: {
+    label: "Gross Profit",
+    color: "#14b8a6",
+  },
+} satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const keyMetrics = [
-    {
-      title: "Revenue",
-      value: "$510.0",
-      change: "25% vs last 3 months",
-      trend: "up",
-      color: "bg-orange-500",
-    },
-    {
-      title: "Gross Profit",
-      value: "$250.0",
-      change: "25% vs last 3 months",
-      trend: "down",
-      color: "bg-teal-500",
-    },
-  ];
-
-  const topSellingProducts = [
-    {
-      id: "P0024",
-      product: "Lenovo ThinkPad",
-      totalOrders: 1037,
-      totalSales: "$960,000",
-    },
-    { id: "P027", product: "ASUS", totalOrders: 1024, totalSales: "$826,000" },
-    {
-      id: "P0073",
-      product: "ZADEZ Mouse",
-      totalOrders: 2038,
-      totalSales: "$726,500",
-    },
-    {
-      id: "P0246",
-      product: "LCD Screen",
-      totalOrders: 543,
-      totalSales: "$691,000",
-    },
-    {
-      id: "P0001",
-      product: "LEN Mouse",
-      totalOrders: 500,
-      totalSales: "$327,120",
-    },
-  ];
-
-  const lowStockAlert = [
-    { id: "P0024", product: "ThinkPad", quantity: 1037 },
-    { id: "P027", product: "ASUS", quantity: 1024 },
-    { id: "P0073", product: "ZADEZ Mouse", quantity: 2038 },
-    { id: "P0246", product: "LCD Screen", quantity: 543 },
-    { id: "P0001", product: "LEN Mouse", quantity: 500 },
-  ];
-
-  const pendingOrders = [
-    { id: "O12", customer: "Nguyen Minh A", total: "$1,000" },
-    { id: "O367", customer: "Pham Quoc B", total: "$500" },
-    { id: "O9r2", customer: "Pham Ha Anh T", total: "$30" },
-    { id: "O13", customer: "Luu Minh D", total: "$549" },
-    { id: "O59", customer: "Pham Duy E", total: "$200,000" },
-  ];
-
-  const warrantyTickets = [
-    { id: "O12", technician: "Nguyen Minh A", status: "Waiting For Parts" },
-    { id: "O367", technician: "Pham Quoc B", status: "Processing" },
-    { id: "O9r2", technician: "Pham Ha Anh T", status: "Processing" },
-    { id: "O13", technician: "Luu Minh D", status: "Processing" },
-    { id: "O59", technician: "Pham Duy E", status: "Completed" },
-  ];
-
-  const auditLogs = [
-    { text: "Luu Minh D added a new category", time: "8:35 PM 23/1/2025" },
-    {
-      text: "Pham Ha Anh T changed the status of Ticket #032 to Processing",
-      time: "8:38 PM 23/1/2025",
-    },
-  ];
-
-  const categories = [
-    { name: "Best Seller", value: 4567, color: "bg-yellow-500" },
-    { name: "Slow Moving", value: 1845, color: "bg-teal-600" },
-    { name: "Fast Moving", value: 3167, color: "bg-orange-600" },
-  ];
+  const [showRevenue, setShowRevenue] = useState(true);
+  const [showGrossProfit, setShowGrossProfit] = useState(true);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-4 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">
-            Welcome Admin: Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
-          <Button variant="outline" size="sm">
-            EN
+          <Button variant="ghost" size="icon">
+            <Bell className="w-5 h-5" />
           </Button>
           <Button variant="outline" size="sm">
             CN
           </Button>
-          <Avatar>
-            <AvatarFallback className="bg-green-600 text-white">
-              M
-            </AvatarFallback>
-          </Avatar>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {keyMetrics.map((metric) => (
-          <Card key={metric.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {metric.title}
-              </CardTitle>
-              <div className={`w-3 h-3 rounded-full ${metric.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{metric.change}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Key Metrics + Chart Row */}
+      <div className="grid grid-cols-12 gap-4 mb-4">
+        {/* Key Metrics Card */}
+        <Card className="col-span-12 md:col-span-5 lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Key Metrics
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+            {/* Revenue Card */}
+            <div className="border-2 border-orange-400 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Revenue
+                </span>
+                <Checkbox
+                  checked={showRevenue}
+                  onCheckedChange={(checked) =>
+                    setShowRevenue(checked as boolean)
+                  }
+                  className="w-5 h-5 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                />
+              </div>
+              <div className="text-2xl font-bold mt-1">$ 510.0</div>
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <span className="text-green-500">↑</span>
+                25% (vs last 3 months)
+              </p>
+            </div>
+
+            {/* Gross Profit Card */}
+            <div className="border-2 border-teal-400 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  Gross Profit
+                </span>
+                <Checkbox
+                  checked={showGrossProfit}
+                  onCheckedChange={(checked) =>
+                    setShowGrossProfit(checked as boolean)
+                  }
+                  className="w-5 h-5 border-teal-400 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                />
+              </div>
+              <div className="text-2xl font-bold mt-1">$ 260.0</div>
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <span className="text-green-500">↑</span>
+                25% (vs last 3 months)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Chart Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="col-span-12 md:col-span-7 lg:col-span-9 relative">
+          {/* Green Avatar */}
+
+          <CardHeader className="flex flex-row items-center justify-end pb-2">
             <Select defaultValue="month">
-              <SelectTrigger className="w-32 h-8">
+              <SelectTrigger className="w-28 h-8 text-xs">
                 <SelectValue placeholder="By Month" />
               </SelectTrigger>
               <SelectContent>
@@ -156,35 +143,57 @@ export default function DashboardPage() {
                 <SelectItem value="year">By Year</SelectItem>
               </SelectContent>
             </Select>
-            <Avatar>
-              <AvatarFallback className="bg-green-600 text-white">
-                M
-              </AvatarFallback>
-            </Avatar>
           </CardHeader>
-          <CardContent>
-            <div className="h-32 flex items-end justify-between gap-2">
-              {[40, 20, -20, 30, 50, 40, 45, 38].map((val, i) => (
-                <div
-                  key={i}
-                  className="flex-1 flex flex-col items-center justify-end"
-                >
-                  <div
-                    className={`w-full ${
-                      val > 0 ? "bg-red-400" : "bg-green-400"
-                    } rounded-t`}
-                    style={{ height: `${Math.abs(val)}%` }}
+          <CardContent className="pb-3">
+            <ChartContainer config={chartConfig} className="h-44 w-full">
+              <LineChart
+                data={dashboardChartData}
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={12}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={12}
+                  domain={[-60, 60]}
+                  ticks={[-60, -20, 20, 60]}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {showRevenue && (
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--color-revenue)"
+                    strokeWidth={2}
+                    dot={false}
                   />
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-4 mt-4 text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-400" />
+                )}
+                {showGrossProfit && (
+                  <Line
+                    type="monotone"
+                    dataKey="grossProfit"
+                    stroke="var(--color-grossProfit)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                )}
+              </LineChart>
+            </ChartContainer>
+            <div className="flex items-center justify-center gap-6 text-xs mt-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-orange-500" />
                 <span>Revenue</span>
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-green-400" />
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-teal-500" />
                 <span>Gross Profit</span>
               </div>
             </div>
@@ -192,170 +201,121 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      {/* Top Selling Categories + Top Selling Products Row */}
+      <div className="grid grid-cols-12 gap-4 mb-4 relative">
+        {/* Green Avatar positioned between sections */}
+
         {/* Top Selling Categories */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
+        <Card className="col-span-12 lg:col-span-5">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">
               Top Selling Categories
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center h-64 relative">
-              {categories.map((cat, idx) => {
-                const size = 120 + idx * 40;
-                const positions = [
-                  { left: "20%", top: "10%" },
-                  { left: "45%", top: "-5%" },
-                  { left: "35%", top: "20%" },
-                ];
-                return (
-                  <div
-                    key={cat.name}
-                    className={`absolute rounded-full ${cat.color} flex items-center justify-center text-white font-semibold opacity-80`}
-                    style={{
-                      width: `${size}px`,
-                      height: `${size}px`,
-                      ...positions[idx],
-                    }}
-                  >
-                    <div className="text-center">
-                      <div className="text-xl">
-                        {cat.value.toLocaleString()}
-                      </div>
-                      <div className="text-xs">{cat.name}</div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <ChevronDown className="w-4 h-4 text-gray-400" />
             </div>
+          </CardHeader>
+          <CardContent className="pb-3">
+            <TooltipProvider>
+              <div className="flex items-center justify-center h-48 relative">
+                {/* Laptop - Yellow circle (largest) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute w-36 h-36 rounded-full bg-yellow-400 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity z-10"
+                      style={{ left: "10%", top: "25%" }}
+                    >
+                      <div className="text-center text-white">
+                        <div className="text-xs">Laptop</div>
+                        <div className="text-xl font-bold">4,567</div>
+                        <div className="text-xs">Per Day</div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Laptop: 4,567 sales per day</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Screen - Teal circle (smaller) */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute w-24 h-24 rounded-full bg-teal-500 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity z-20"
+                      style={{ left: "45%", top: "15%" }}
+                    >
+                      <div className="text-center text-white">
+                        <div className="text-xs">Screen</div>
+                        <div className="text-lg font-bold">1,845</div>
+                        <div className="text-xs">Per Day</div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Screen: 1,845 sales per day</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Mouse - Orange circle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute w-28 h-28 rounded-full bg-orange-500 flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity z-30"
+                      style={{ left: "50%", top: "40%" }}
+                    >
+                      <div className="text-center text-white">
+                        <div className="text-xs">Mouse</div>
+                        <div className="text-lg font-bold">3,167</div>
+                        <div className="text-xs">Per Day</div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Mouse: 3,167 sales per day</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
 
         {/* Top Selling Products */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">
+        <Card className="col-span-12 lg:col-span-7">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">
               Top Selling Products
             </CardTitle>
-            <ChevronDown className="w-5 h-5" />
+            <ChevronDown className="w-4 h-4 text-gray-400" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0 px-4 pb-2">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Total Orders</TableHead>
-                  <TableHead>Total Sales</TableHead>
+                <TableRow className="text-xs">
+                  <TableHead className="py-2 text-gray-500">ID</TableHead>
+                  <TableHead className="py-2 text-gray-500">Product</TableHead>
+                  <TableHead className="py-2 text-right text-gray-500">
+                    Total Orders
+                  </TableHead>
+                  <TableHead className="py-2 text-right text-gray-500">
+                    Total Sales
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {topSellingProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell className="font-medium">{product.id}</TableCell>
-                    <TableCell>{product.product}</TableCell>
-                    <TableCell>{product.totalOrders}</TableCell>
-                    <TableCell>{product.totalSales}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                {dashboardTopSellingProducts.map((product) => (
+                  <TableRow key={product.id} className="text-sm">
+                    <TableCell className="py-2 text-gray-500">
+                      {product.id}
+                    </TableCell>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Low Stock Alert */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Low Stock Alert
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Quantity Available</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lowStockAlert.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.id}</TableCell>
-                    <TableCell>{item.product}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Pending Orders */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Pending Orders
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{order.total}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Warranty Tickets */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Warranty Tickets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Technician</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {warrantyTickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-medium">{ticket.id}</TableCell>
-                    <TableCell>{ticket.technician}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          ticket.status === "Completed"
-                            ? "default"
-                            : "secondary"
-                        }
-                      >
-                        {ticket.status}
-                      </Badge>
+                    <TableCell className="py-2 text-gray-500">
+                      {product.product}
+                    </TableCell>
+                    <TableCell className="py-2 text-right">
+                      {product.totalOrders.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="py-2 text-right">
+                      {product.totalSales}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -365,19 +325,129 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* System Warnings and Audit Logs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Low Stock, Pending Orders, Warranty Tickets Row */}
+      <div className="grid grid-cols-12 gap-4 mb-4">
+        {/* Low Stock Alert */}
+        <Card className="col-span-12 lg:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Low Stock Alert
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 px-4 pb-2">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs">
+                  <TableHead className="py-2 text-gray-500">ID</TableHead>
+                  <TableHead className="py-2 text-gray-500">Product</TableHead>
+                  <TableHead className="py-2 text-right text-gray-500">
+                    Quantity Available
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dashboardLowStockAlert.map((item, idx) => (
+                  <TableRow key={idx} className="text-sm">
+                    <TableCell className="py-2">
+                      <div className="text-gray-500">{item.id}</div>
+                    </TableCell>
+                    <TableCell className="py-2">{item.product}</TableCell>
+                    <TableCell className="py-2 text-right">
+                      {item.quantity.toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Pending Orders */}
+        <Card className="col-span-12 lg:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Pending Orders
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 px-4 pb-2">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs">
+                  <TableHead className="py-2 text-gray-500">ID</TableHead>
+                  <TableHead className="py-2 text-gray-500">Customer</TableHead>
+                  <TableHead className="py-2 text-right text-gray-500">
+                    Total
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dashboardPendingOrders.map((order) => (
+                  <TableRow key={order.id} className="text-sm">
+                    <TableCell className="py-2 text-gray-500">
+                      {order.id}
+                    </TableCell>
+                    <TableCell className="py-2">{order.customer}</TableCell>
+                    <TableCell className="py-2 text-right">
+                      {order.total}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Warranty Tickets */}
+        <Card className="col-span-12 lg:col-span-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Warranty Tickets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 px-4 pb-2">
+            <Table>
+              <TableHeader>
+                <TableRow className="text-xs">
+                  <TableHead className="py-2 text-gray-500">ID</TableHead>
+                  <TableHead className="py-2 text-gray-500">
+                    Technician
+                  </TableHead>
+                  <TableHead className="py-2 text-right text-gray-500">
+                    Status
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dashboardWarrantyTickets.map((ticket) => (
+                  <TableRow key={ticket.id} className="text-sm">
+                    <TableCell className="py-2 text-gray-500">
+                      {ticket.id}
+                    </TableCell>
+                    <TableCell className="py-2">{ticket.technician}</TableCell>
+                    <TableCell className="py-2 text-right text-sm">
+                      {ticket.status}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Warnings and Audit Logs Row */}
+      <div className="grid grid-cols-12 gap-4">
         {/* System Warnings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
+        <Card className="col-span-12 lg:col-span-5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
               System Warnings
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-2">
               <span className="text-red-500 text-sm">Audit Log conflicts</span>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="text-xs h-8">
                 Find out
               </Button>
             </div>
@@ -385,28 +455,32 @@ export default function DashboardPage() {
         </Card>
 
         {/* Audit Logs */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Audit Logs</CardTitle>
+        <Card className="col-span-12 lg:col-span-7">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">
+              Audit Logs
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {auditLogs.map((log, idx) => (
-                <div key={idx} className="text-sm">
-                  <p className="text-gray-700">{log.text}</p>
-                  <p className="text-gray-400 text-xs">{log.time}</p>
+              {dashboardAuditLogs.map((log, idx) => (
+                <div key={idx} className="border-l-2 border-gray-200 pl-3 py-1">
+                  <p className="text-sm text-gray-500">{log.text}</p>
+                  <p className="text-xs text-gray-400">{log.time}</p>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <Button variant="ghost" size="sm">
+            <div className="flex items-center justify-center gap-4 mt-4 text-sm">
+              <Button variant="ghost" size="sm" className="text-gray-400 gap-1">
+                <ChevronLeft className="w-4 h-4" />
                 Previous
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-8 h-8 p-0">
                 1
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="gap-1">
                 Next
+                <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
           </CardContent>

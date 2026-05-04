@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CURRENT_USER } from "@/constants/user";
 import {
   Select,
   SelectContent,
@@ -24,41 +25,14 @@ import {
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { BellIcon, Package } from "lucide-react";
+import {
+  inventoryLowStockProducts,
+  inventoryLowStockComponents,
+} from "@/data/mockData";
 
 export default function InventoryOverviewPage() {
-  const lowStockProducts = [
-    {
-      id: 1,
-      variant: "MacBook Pro M1 2020 MB-M1-GR-256",
-      supplier: "ABC",
-      inventory: 5,
-      threshold: 15,
-    },
-    {
-      id: 2,
-      variant: "ZADEZ Mouse Gaming... ZM-M1-GR-25",
-      supplier: "LeM",
-      inventory: 10,
-      threshold: 20,
-    },
-  ];
-
-  const lowStockComponents = [
-    {
-      id: 1,
-      component: "2GB Register",
-      supplier: "ABC",
-      inventory: 5,
-      threshold: 15,
-    },
-    {
-      id: 2,
-      component: "HDD Storage",
-      supplier: "LeM",
-      inventory: 10,
-      threshold: 20,
-    },
-  ];
+  const lowStockProducts = inventoryLowStockProducts;
+  const lowStockComponents = inventoryLowStockComponents;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -67,7 +41,7 @@ export default function InventoryOverviewPage() {
         <h1 className="text-2xl font-semibold">Overview</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -216,7 +190,7 @@ export default function InventoryOverviewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md ">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
@@ -268,7 +242,7 @@ export default function InventoryOverviewPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md ">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">

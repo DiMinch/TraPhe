@@ -4,8 +4,18 @@
   :root {
     --destructive: 0 84% 60%;
   }
+
+  *:not(button *):not(button) {
+    font-family: "Inter", sans-serif;
+    color: #1e1b4b;
+  }
 }
 
 :root {
-  font-family: "Geist";
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: #1e1b4b;
 }

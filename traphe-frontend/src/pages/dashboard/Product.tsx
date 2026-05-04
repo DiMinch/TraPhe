@@ -19,6 +19,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { Plus, Upload, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { CURRENT_USER } from "@/constants/user";
 
 export default function ProductPage() {
   const products = [
@@ -51,7 +52,7 @@ export default function ProductPage() {
         <h1 className="text-2xl font-semibold">Product List</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin: Nguyen Van A
+            Welcome {CURRENT_USER.role}: {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <svg

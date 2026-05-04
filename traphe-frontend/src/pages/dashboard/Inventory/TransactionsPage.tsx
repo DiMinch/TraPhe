@@ -25,32 +25,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BellIcon, Filter } from "lucide-react";
+import { CURRENT_USER } from "@/constants/user";
+import { inventoryTransactions } from "@/data/mockData";
 
 export default function TransactionsPage() {
-  const transactions = [
-    {
-      id: 1,
-      time: "6:00 PM",
-      date: "23/11/2025",
-      type: "STOCK_IN",
-      product: "MacBook Pro M1 2020",
-      quantity: 500,
-      reference: "PO#0042",
-      reasons: "",
-      note: "Done",
-    },
-    {
-      id: 2,
-      time: "6:00 PM",
-      date: "23/11/2025",
-      type: "ADJUSTMENT",
-      product: "SSD 1TB",
-      quantity: -2,
-      reference: "Order#512",
-      reasons: "Mistaken",
-      note: "Compensation",
-    },
-  ];
+  const transactions = inventoryTransactions;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -59,7 +38,7 @@ export default function TransactionsPage() {
         <h1 className="text-2xl font-semibold">Stock Transactions</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />

@@ -27,7 +27,9 @@ axiosClient.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response ? error.response.status : null;
+
+    if (status === 401 || status === 403) {
       localStorage.clear();
       window.location.href = "/sign-in";
     }

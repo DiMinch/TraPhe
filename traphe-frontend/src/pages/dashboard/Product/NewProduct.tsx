@@ -221,10 +221,10 @@ export default function NewProductDialog({
             </div>
           </div>
 
-          {/* Variant List */}
+          {/*  */}
           <Card className="bg-white">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
+            <CardContent className="">
+              <div className="flex items-center justify-between ">
                 <h3 className="font-semibold">Variant List</h3>
               </div>
 

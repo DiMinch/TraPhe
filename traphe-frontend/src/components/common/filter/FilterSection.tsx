@@ -143,7 +143,11 @@ export default function FilterSection({ className }: FilterSectionProps) {
               </span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] overflow-y-auto">
+
+          <SheetContent
+            side="left"
+            className="w-[300px] overflow-y-auto bg-white z-[100] p-4"
+          >
             <SheetHeader className="mb-6 text-left">
               <SheetTitle className="text-xl font-bold flex items-center gap-2">
                 <Filter className="w-5 h-5" /> Filters

@@ -39,12 +39,13 @@ import {
   BellIcon,
   ChevronRight,
   Calendar,
-  X,
-  Plus,
   Check,
+  Save,
 } from "lucide-react";
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { purchaseOrderItems as initialItems } from "@/data/mockData";
+import { useNavigate } from "react-router";
+import { CURRENT_USER } from "@/constants/user";
 
 interface OrderItem {
   id: number;
@@ -58,7 +59,6 @@ interface OrderItem {
 }
 
 export default function PurchaseOrderDetailPage() {
-  const { poNumber } = useParams();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -72,22 +72,7 @@ export default function PurchaseOrderDetailPage() {
     actualDate: "23/11/2025",
   });
 
-  const [editData, setEditData] = useState(orderData);
-
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([
-    {
-      id: 1,
-      product: "MacBook Pro M1 2020",
-      sku: "MBP-M1-2020",
-      referenceTicket: "REF-001",
-      quantityOrdered: 25,
-      quantityReceived: 20,
-      unitPrice: "$ 1,000",
-      subtotal: "$ 20,000",
-    },
-  ]);
-
-  const [editItems, setEditItems] = useState<OrderItem[]>(orderItems);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>(initialItems);
 
   const totalQuantity = orderItems.reduce(
     (sum, item) => sum + item.quantityReceived,
@@ -98,21 +83,8 @@ export default function PurchaseOrderDetailPage() {
     return sum + subtotal;
   }, 0);
 
-  const handleEdit = () => {
-    setEditData(orderData);
-    setEditItems([...orderItems]);
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
-    setEditData(orderData);
-    setEditItems([...orderItems]);
-    setIsEditing(false);
-  };
-
-  const handleSaveChanges = () => {
-    setOrderData(editData);
-    setOrderItems(editItems);
+  const handleSave = () => {
+    console.log("Saving purchase order changes...");
     setIsEditing(false);
   };
 
@@ -133,7 +105,7 @@ export default function PurchaseOrderDetailPage() {
 
   const handleAddItem = () => {
     const newItem: OrderItem = {
-      id: editItems.length + 1,
+      id: orderItems.length + 1,
       product: "",
       sku: "",
       referenceTicket: "",
@@ -142,16 +114,20 @@ export default function PurchaseOrderDetailPage() {
       unitPrice: "",
       subtotal: "",
     };
-    setEditItems([...editItems, newItem]);
+    setOrderItems([...orderItems, newItem]);
   };
 
   const handleRemoveItem = (id: number) => {
-    setEditItems(editItems.filter((item) => item.id !== id));
+    setOrderItems(orderItems.filter((item) => item.id !== id));
   };
 
-  const handleItemChange = (id: number, field: keyof OrderItem, value: any) => {
-    setEditItems(
-      editItems.map((item) =>
+  const handleItemChange = (
+    id: number,
+    field: keyof OrderItem,
+    value: unknown,
+  ) => {
+    setOrderItems(
+      orderItems.map((item) =>
         item.id === id ? { ...item, [field]: value } : item,
       ),
     );
@@ -164,7 +140,7 @@ export default function PurchaseOrderDetailPage() {
         <h1 className="text-2xl font-semibold">Purchase Order Detail</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -189,11 +165,19 @@ export default function PurchaseOrderDetailPage() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        {!isEditing ? (
+        {isEditing ? (
+          <Button
+            className="bg-indigo-900 hover:bg-indigo-800 text-white"
+            onClick={handleSave}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </Button>
+        ) : (
           <>
             <Button
               className="bg-indigo-900 hover:bg-indigo-800 text-white"
-              onClick={handleEdit}
+              onClick={() => setIsEditing(true)}
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit
@@ -205,32 +189,15 @@ export default function PurchaseOrderDetailPage() {
               <Check className="w-4 h-4 mr-2" />
               Close Purchase Order
             </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleDelete}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
-              onClick={handleSaveChanges}
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Save Changes
-            </Button>
-            <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
-              <Check className="w-4 h-4 mr-2" />
-              Received Goods
-            </Button>
           </>
         )}
+        <Button
+          className="bg-red-600 hover:bg-red-700 text-white"
+          onClick={handleDelete}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete
+        </Button>
       </div>
 
       {/* Order Information Card */}
@@ -242,9 +209,9 @@ export default function PurchaseOrderDetailPage() {
                 PO Number
               </Label>
               <Input
-                value={isEditing ? editData.poNumber : orderData.poNumber}
+                value={orderData.poNumber}
                 onChange={(e) =>
-                  setEditData({ ...editData, poNumber: e.target.value })
+                  setOrderData({ ...orderData, poNumber: e.target.value })
                 }
                 disabled={!isEditing}
                 className="mt-1 bg-gray-50"
@@ -255,9 +222,9 @@ export default function PurchaseOrderDetailPage() {
                 Supplier
               </Label>
               <Select
-                value={isEditing ? editData.supplier : orderData.supplier}
+                value={orderData.supplier}
                 onValueChange={(value) =>
-                  setEditData({ ...editData, supplier: value })
+                  setOrderData({ ...orderData, supplier: value })
                 }
                 disabled={!isEditing}
               >
@@ -275,9 +242,9 @@ export default function PurchaseOrderDetailPage() {
                 Status
               </Label>
               <Select
-                value={isEditing ? editData.status : orderData.status}
+                value={orderData.status}
                 onValueChange={(value) =>
-                  setEditData({ ...editData, status: value })
+                  setOrderData({ ...orderData, status: value })
                 }
                 disabled={!isEditing}
               >
@@ -302,11 +269,9 @@ export default function PurchaseOrderDetailPage() {
               <div className="relative mt-1">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  value={
-                    isEditing ? editData.createdDate : orderData.createdDate
-                  }
+                  value={orderData.createdDate}
                   onChange={(e) =>
-                    setEditData({ ...editData, createdDate: e.target.value })
+                    setOrderData({ ...orderData, createdDate: e.target.value })
                   }
                   disabled={!isEditing}
                   className="pl-10 bg-gray-50"
@@ -320,11 +285,9 @@ export default function PurchaseOrderDetailPage() {
               <div className="relative mt-1">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  value={
-                    isEditing ? editData.expectedDate : orderData.expectedDate
-                  }
+                  value={orderData.expectedDate}
                   onChange={(e) =>
-                    setEditData({ ...editData, expectedDate: e.target.value })
+                    setOrderData({ ...orderData, expectedDate: e.target.value })
                   }
                   disabled={!isEditing}
                   className="pl-10 bg-gray-50"
@@ -338,9 +301,9 @@ export default function PurchaseOrderDetailPage() {
               <div className="relative mt-1">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
-                  value={isEditing ? editData.actualDate : orderData.actualDate}
+                  value={orderData.actualDate}
                   onChange={(e) =>
-                    setEditData({ ...editData, actualDate: e.target.value })
+                    setOrderData({ ...orderData, actualDate: e.target.value })
                   }
                   disabled={!isEditing}
                   placeholder={isEditing ? "Select" : ""}
@@ -373,127 +336,88 @@ export default function PurchaseOrderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(isEditing ? editItems : orderItems).map((item) => (
+                {orderItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={item.product}
-                          onChange={(e) =>
-                            handleItemChange(item.id, "product", e.target.value)
-                          }
-                          placeholder="Product name"
-                        />
-                      ) : (
-                        <span className="font-medium text-gray-900">
-                          {item.product}
-                        </span>
-                      )}
+                      <Input
+                        value={item.product}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "product", e.target.value)
+                        }
+                        placeholder="Product name"
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={item.sku}
-                          onChange={(e) =>
-                            handleItemChange(item.id, "sku", e.target.value)
-                          }
-                          placeholder="SKU"
-                        />
-                      ) : (
-                        <span className="text-gray-700">{item.sku}</span>
-                      )}
+                      <Input
+                        value={item.sku}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "sku", e.target.value)
+                        }
+                        placeholder="SKU"
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={item.referenceTicket}
-                          onChange={(e) =>
-                            handleItemChange(
-                              item.id,
-                              "referenceTicket",
-                              e.target.value,
-                            )
-                          }
-                          placeholder="Ticket #"
-                        />
-                      ) : (
-                        <span className="text-gray-700">
-                          {item.referenceTicket}
-                        </span>
-                      )}
+                      <Input
+                        value={item.referenceTicket}
+                        onChange={(e) =>
+                          handleItemChange(
+                            item.id,
+                            "referenceTicket",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Ticket #"
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          value={item.quantityOrdered}
-                          onChange={(e) =>
-                            handleItemChange(
-                              item.id,
-                              "quantityOrdered",
-                              parseInt(e.target.value),
-                            )
-                          }
-                        />
-                      ) : (
-                        <span className="text-gray-700">
-                          {item.quantityOrdered}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        value={item.quantityOrdered}
+                        onChange={(e) =>
+                          handleItemChange(
+                            item.id,
+                            "quantityOrdered",
+                            parseInt(e.target.value),
+                          )
+                        }
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          value={item.quantityReceived || ""}
-                          onChange={(e) => {
-                            const val =
-                              e.target.value === ""
-                                ? 0
-                                : parseInt(e.target.value) || 0;
-                            handleItemChange(item.id, "quantityReceived", val);
-                          }}
-                          placeholder="Unknown"
-                        />
-                      ) : (
-                        <span className="text-gray-700">
-                          {item.quantityReceived}
-                        </span>
-                      )}
+                      <Input
+                        type="number"
+                        value={item.quantityReceived || ""}
+                        onChange={(e) => {
+                          const val =
+                            e.target.value === ""
+                              ? 0
+                              : parseInt(e.target.value) || 0;
+                          handleItemChange(item.id, "quantityReceived", val);
+                        }}
+                        placeholder="Unknown"
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            handleItemChange(
-                              item.id,
-                              "unitPrice",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      ) : (
-                        <span className="text-gray-700">{item.unitPrice}</span>
-                      )}
+                      <Input
+                        value={item.unitPrice}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "unitPrice", e.target.value)
+                        }
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={item.subtotal}
-                          onChange={(e) =>
-                            handleItemChange(
-                              item.id,
-                              "subtotal",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      ) : (
-                        <span className="font-medium text-gray-900">
-                          {item.subtotal}
-                        </span>
-                      )}
+                      <Input
+                        value={item.subtotal}
+                        onChange={(e) =>
+                          handleItemChange(item.id, "subtotal", e.target.value)
+                        }
+                        disabled={!isEditing}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-2">
@@ -506,24 +430,6 @@ export default function PurchaseOrderDetailPage() {
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        )}
-                        {!isEditing && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
                         )}
                       </div>
                     </TableCell>

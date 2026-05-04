@@ -27,13 +27,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
@@ -47,9 +40,11 @@ import {
   MoreHorizontal,
   BellIcon,
   ChevronRight,
+  Save,
 } from "lucide-react";
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
+import { CURRENT_USER } from "@/constants/user";
 
 interface PurchaseOrder {
   id: number;
@@ -62,9 +57,9 @@ interface PurchaseOrder {
 }
 
 export default function SupplierDetailPage() {
-  const { supplierName } = useParams();
+  // const { supplierName } = useParams();
   const navigate = useNavigate();
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const [supplierData, setSupplierData] = useState({
@@ -79,8 +74,6 @@ export default function SupplierDetailPage() {
     street: "",
   });
 
-  const [editData, setEditData] = useState(supplierData);
-
   const purchaseHistory: PurchaseOrder[] = [
     {
       id: 1,
@@ -93,14 +86,9 @@ export default function SupplierDetailPage() {
     },
   ];
 
-  const handleEdit = () => {
-    setEditData(supplierData);
-    setIsEditOpen(true);
-  };
-
-  const handleSaveEdit = () => {
-    setSupplierData(editData);
-    setIsEditOpen(false);
+  const handleSave = () => {
+    console.log("Saving supplier changes...");
+    setIsEditing(false);
   };
 
   const handleDelete = () => {
@@ -121,7 +109,7 @@ export default function SupplierDetailPage() {
         <h1 className="text-2xl font-semibold">Supplier Detail</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">
-            Welcome Admin Nguyen Van A
+            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
           </span>
           <Button variant="outline" size="icon">
             <BellIcon className="w-4 h-4" />
@@ -146,13 +134,23 @@ export default function SupplierDetailPage() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
-          onClick={handleEdit}
-        >
-          <Edit className="w-4 h-4 mr-2" />
-          Edit
-        </Button>
+        {isEditing ? (
+          <Button
+            className="bg-indigo-900 hover:bg-indigo-800 text-white"
+            onClick={handleSave}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </Button>
+        ) : (
+          <Button
+            className="bg-indigo-900 hover:bg-indigo-800 text-white"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+        )}
         <Button
           className="bg-red-600 hover:bg-red-700 text-white"
           onClick={handleDelete}
@@ -174,7 +172,10 @@ export default function SupplierDetailPage() {
                 </Label>
                 <Input
                   value={supplierData.name}
-                  disabled
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setSupplierData({ ...supplierData, name: e.target.value })
+                  }
                   className="mt-1 bg-gray-50"
                 />
               </div>
@@ -182,7 +183,13 @@ export default function SupplierDetailPage() {
                 <Label className="text-sm font-medium text-gray-700">
                   Status
                 </Label>
-                <Select value={supplierData.status} disabled>
+                <Select
+                  value={supplierData.status}
+                  disabled={!isEditing}
+                  onValueChange={(value) =>
+                    setSupplierData({ ...supplierData, status: value })
+                  }
+                >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
                   </SelectTrigger>
@@ -202,7 +209,13 @@ export default function SupplierDetailPage() {
                 </Label>
                 <Input
                   value={supplierData.contactName}
-                  disabled
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setSupplierData({
+                      ...supplierData,
+                      contactName: e.target.value,
+                    })
+                  }
                   className="mt-1 bg-gray-50"
                 />
               </div>
@@ -212,7 +225,10 @@ export default function SupplierDetailPage() {
                 </Label>
                 <Input
                   value={supplierData.phone}
-                  disabled
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setSupplierData({ ...supplierData, phone: e.target.value })
+                  }
                   className="mt-1 bg-gray-50"
                 />
               </div>
@@ -222,7 +238,10 @@ export default function SupplierDetailPage() {
                 </Label>
                 <Input
                   value={supplierData.email}
-                  disabled
+                  disabled={!isEditing}
+                  onChange={(e) =>
+                    setSupplierData({ ...supplierData, email: e.target.value })
+                  }
                   className="mt-1 bg-gray-50"
                 />
               </div>
@@ -238,25 +257,37 @@ export default function SupplierDetailPage() {
               <Input
                 placeholder="Province"
                 value={supplierData.province}
-                disabled
+                disabled={!isEditing}
+                onChange={(e) =>
+                  setSupplierData({ ...supplierData, province: e.target.value })
+                }
                 className="bg-gray-50"
               />
               <Input
                 placeholder="District"
                 value={supplierData.district}
-                disabled
+                disabled={!isEditing}
+                onChange={(e) =>
+                  setSupplierData({ ...supplierData, district: e.target.value })
+                }
                 className="bg-gray-50"
               />
               <Input
                 placeholder="Commune"
                 value={supplierData.commune}
-                disabled
+                disabled={!isEditing}
+                onChange={(e) =>
+                  setSupplierData({ ...supplierData, commune: e.target.value })
+                }
                 className="bg-gray-50"
               />
               <Input
                 placeholder="Street"
                 value={supplierData.street}
-                disabled
+                disabled={!isEditing}
+                onChange={(e) =>
+                  setSupplierData({ ...supplierData, street: e.target.value })
+                }
                 className="bg-gray-50"
               />
             </div>
@@ -270,66 +301,64 @@ export default function SupplierDetailPage() {
           <h2 className="text-lg font-semibold mb-6">Purchase History</h2>
 
           {/* Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>PO Number</TableHead>
-                  <TableHead>Created Date</TableHead>
-                  <TableHead>Expected Date</TableHead>
-                  <TableHead>Actual Date</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead>PO Number</TableHead>
+                <TableHead>Created Date</TableHead>
+                <TableHead>Expected Date</TableHead>
+                <TableHead>Actual Date</TableHead>
+                <TableHead>Total Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {purchaseHistory.map((po) => (
+                <TableRow key={po.id}>
+                  <TableCell className="font-medium">{po.poNumber}</TableCell>
+                  <TableCell className="text-gray-700">
+                    {po.createdDate}
+                  </TableCell>
+                  <TableCell className="text-gray-700">
+                    {po.expectedDate}
+                  </TableCell>
+                  <TableCell className="text-gray-700">
+                    {po.actualDate}
+                  </TableCell>
+                  <TableCell className="font-medium text-gray-900">
+                    {po.totalAmount}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        po.status === "CLOSED"
+                          ? "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                          : po.status === "PENDING"
+                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                            : "bg-green-100 text-green-700 hover:bg-green-100"
+                      }
+                    >
+                      {po.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {purchaseHistory.map((po) => (
-                  <TableRow key={po.id}>
-                    <TableCell className="font-medium">{po.poNumber}</TableCell>
-                    <TableCell className="text-gray-700">
-                      {po.createdDate}
-                    </TableCell>
-                    <TableCell className="text-gray-700">
-                      {po.expectedDate}
-                    </TableCell>
-                    <TableCell className="text-gray-700">
-                      {po.actualDate}
-                    </TableCell>
-                    <TableCell className="font-medium text-gray-900">
-                      {po.totalAmount}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          po.status === "CLOSED"
-                            ? "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                            : po.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                              : "bg-green-100 text-green-700 hover:bg-green-100"
-                        }
-                      >
-                        {po.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-6">
@@ -351,129 +380,6 @@ export default function SupplierDetailPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[700px] bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              Edit Supplier
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input
-                  value={editData.name}
-                  onChange={(e) =>
-                    setEditData({ ...editData, name: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select
-                  value={editData.status}
-                  onValueChange={(value) =>
-                    setEditData({ ...editData, status: value })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Contact Name</Label>
-                <Input
-                  value={editData.contactName}
-                  onChange={(e) =>
-                    setEditData({ ...editData, contactName: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Phone</Label>
-                <Input
-                  value={editData.phone}
-                  onChange={(e) =>
-                    setEditData({ ...editData, phone: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Email</Label>
-              <Input
-                value={editData.email}
-                onChange={(e) =>
-                  setEditData({ ...editData, email: e.target.value })
-                }
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Address</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  placeholder="Province"
-                  value={editData.province}
-                  onChange={(e) =>
-                    setEditData({ ...editData, province: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="District"
-                  value={editData.district}
-                  onChange={(e) =>
-                    setEditData({ ...editData, district: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Commune"
-                  value={editData.commune}
-                  onChange={(e) =>
-                    setEditData({ ...editData, commune: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Street"
-                  value={editData.street}
-                  onChange={(e) =>
-                    setEditData({ ...editData, street: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
-              onClick={handleSaveEdit}
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
