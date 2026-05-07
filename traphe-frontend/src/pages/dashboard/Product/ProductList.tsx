@@ -31,7 +31,7 @@ import { useState, useEffect } from "react";
 import NewProductDialog from "./NewProduct";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { productService } from "@/services/product.service";
-import type { Product } from "@/types/product";
+import type { Product } from "@/types/product.types";
 import { toast } from "sonner";
 
 export default function ProductListPage() {

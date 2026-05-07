@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 
 // Enums matching backend
 export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT" | "BUY_X_GET_Y";

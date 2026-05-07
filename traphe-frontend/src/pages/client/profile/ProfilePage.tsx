@@ -11,7 +11,7 @@ import AddressTab from "./components/AddressTab";
 import OrderTab from "./components/OrderTab";
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service"; // Import user service
-import type { UserInfo } from "@/types/user";
+import type { UserInfo } from "@/types/user.types"; // Import UserInfo type
 
 type TabType = "account" | "address" | "orders";
 

@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 
 export interface StockTransactionResponse {
   id: string;

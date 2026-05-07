@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 
 // Supplier response from backend (matches Supplier entity)
 export interface SupplierResponse {

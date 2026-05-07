@@ -31,7 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { categoryService } from "@/services/category.service";
-import type { Category, CreateCategoryRequest } from "@/types/category";
+import type { Category, CreateCategoryRequest } from "@/types/category.types";
 import { toast } from "sonner";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 

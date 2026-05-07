@@ -1,5 +1,5 @@
-import { UserRole } from "@/enums/roles";
-import { UserStatus, LinkingStatus } from "@/enums/user";
+import { UserRole } from "@/enums/roles.enum";
+import { UserStatus, LinkingStatus } from "@/enums/user.enum";
 
 export interface UserInfo {
   id: string;

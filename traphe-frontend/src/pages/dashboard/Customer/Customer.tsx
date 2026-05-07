@@ -49,7 +49,7 @@ import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { customerService } from "@/services/customer.service";
 import { customerTierService } from "@/services/customer-tier.service";
-import type { Customer, CustomerTier } from "@/types/customer";
+import type { Customer, CustomerTier } from "@/types/customer.types";
 import { toast } from "sonner";
 import { format } from "date-fns";
 

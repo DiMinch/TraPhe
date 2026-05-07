@@ -18,7 +18,7 @@ import { ChevronRight, BellIcon, Edit, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { customerService } from "@/services/customer.service";
-import type { Customer } from "@/types/customer";
+import type { Customer } from "@/types/customer.types";
 import { toast } from "sonner";
 import { CURRENT_USER } from "@/constants/user"; //TODO: call user from localStorage
 

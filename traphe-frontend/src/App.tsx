@@ -124,7 +124,7 @@ function App() {
           <Route path="/warranty" element={<WarrantyTicketsPage />} />
           <Route path="/warranty/tickets" element={<WarrantyTicketsPage />} />
           <Route
-            path="/warranty/tickets/:ticketNo"
+            path="/warranty/tickets/:id"
             element={<WarrantyTicketDetailPage />}
           />
           <Route

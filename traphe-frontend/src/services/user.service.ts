@@ -1,12 +1,12 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 import type {
   UserInfo,
   UserAddress,
   CreateAddressRequest,
   Province,
   Commune,
-} from "@/types/user";
+} from "@/types/user.types";
 
 export interface Address {
   id: string;

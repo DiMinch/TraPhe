@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { categoryService } from "@/services/category.service";
-import type { Category } from "@/types/category";
+import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 

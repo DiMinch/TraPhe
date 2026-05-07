@@ -1,12 +1,12 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 import type {
   Category,
   CreateCategoryRequest,
   UpdateCategoryRequest,
   CategorySpec,
   CreateCategorySpecRequest,
-} from "@/types/category";
+} from "@/types/category.types";
 
 export const categoryService = {
   getAllCategories: async () => {

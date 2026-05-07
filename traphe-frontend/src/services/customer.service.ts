@@ -1,10 +1,10 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 import type {
   CreateCustomerRequest,
   Customer,
   UpdateCustomerRequest,
-} from "@/types/customer";
+} from "@/types/customer.types";
 
 export const customerService = {
   getCustomers: async () => {

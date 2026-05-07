@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CategoryCard } from "@/components/common/category/CategoryCard";
 import { categoryService } from "@/services/category.service";
-import type { Category, DisplayCategory } from "@/types/category";
+import type { Category, DisplayCategory } from "@/types/category.types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CategorySection() {

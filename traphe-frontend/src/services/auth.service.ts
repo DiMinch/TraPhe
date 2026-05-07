@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 import type {
   AuthResponseData,
   ChangePasswordRequest,
@@ -8,8 +8,8 @@ import type {
   VerifyOtpRequest,
   GoogleLoginRequest,
   CreatePasswordRequest,
-} from "@/types/auth";
-import type { UserInfo } from "@/types/user";
+} from "@/types/auth.types";
+import type { UserInfo } from "@/types/user.types";
 
 export const authService = {
   login: async (payload: LoginRequest) => {

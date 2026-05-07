@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { productService } from "@/services/product.service";
-import type { Product, ProductVariant } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product.types";
 import ProductSection from "./components/ProductSection";
 import ExploreMoreSection from "./components/ExploreMoreSection";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";

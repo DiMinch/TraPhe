@@ -1,6 +1,6 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
-import type { CustomerTier, CustomerTierRequest } from "@/types/customer";
+import type { ApiResponse } from "@/types/api.types";
+import type { CustomerTier, CustomerTierRequest } from "@/types/customer.types";
 
 export const customerTierService = {
   getAllTiers: async () => {

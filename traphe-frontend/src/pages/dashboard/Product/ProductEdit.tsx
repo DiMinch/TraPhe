@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { productService } from "@/services/product.service";
 import { categoryService } from "@/services/category.service";
-import type { Product } from "@/types/product";
-import type { Category } from "@/types/category";
+import type { Product } from "@/types/product.types";
+import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 

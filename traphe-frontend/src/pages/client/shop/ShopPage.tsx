@@ -12,7 +12,7 @@ import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
 import { productService } from "@/services/product.service";
-import type { Product } from "@/types/product";
+import type { Product } from "@/types/product.types";
 import { Link } from "react-router";
 import {
   DropdownMenu,

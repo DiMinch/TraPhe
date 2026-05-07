@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { categoryService } from "@/services/category.service";
-import type { Category as ApiCategory } from "@/types/category";
+import type { Category as ApiCategory } from "@/types/category.types";
 import { toast } from "sonner";
 
 interface NewCategoryDialogProps {

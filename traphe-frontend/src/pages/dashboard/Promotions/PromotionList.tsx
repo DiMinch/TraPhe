@@ -63,8 +63,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
-import type { Category } from "@/types/category";
-import type { Product } from "@/types/product";
+import type { Category } from "@/types/category.types";
+import type { Product } from "@/types/product.types";
 
 export default function PromotionListPage() {
   const navigate = useNavigate();

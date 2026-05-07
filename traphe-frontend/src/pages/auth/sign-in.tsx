@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { authService } from "@/services/auth.service";
-import { UserRole } from "@/enums/roles";
+import { UserRole } from "@/enums/roles.enum";
 import { toast } from "sonner";
 
 export default function SignInPage() {

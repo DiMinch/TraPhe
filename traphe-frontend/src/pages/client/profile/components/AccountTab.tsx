@@ -6,7 +6,7 @@ import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
-import type { UserInfo } from "@/types/user";
+import type { UserInfo } from "@/types/user.types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AccountTabProps {

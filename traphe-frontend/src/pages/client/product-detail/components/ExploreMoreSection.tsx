@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import ProductCard from "@/components/common/product/ProductCard";
 import { productService } from "@/services/product.service";
-import type { Product } from "@/types/product";
+import type { Product } from "@/types/product.types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ExploreMoreSection() {

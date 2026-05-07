@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -10,280 +11,241 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Search,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  Plus,
-  Filter,
-} from "lucide-react";
-import { useState } from "react";
-import { warrantyTickets as initialTickets } from "@/data/mockData";
+import { Search, Edit, Trash2, Plus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { warrantyService } from "@/services/warranty.service";
+import type { WarrantyTicket } from "@/types/warranty.types";
+import { WarrantyStatus } from "@/enums/warranty.enum";
+import CreateTicketDialog from "./components/CreateTicketDialog";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 
-interface WarrantyTicket {
-  ticketNo: string;
-  customer: {
-    name: string;
-    phone: string;
-  };
-  product: {
-    name: string;
-    serialNumber: string;
-  };
-  technician: {
-    name: string;
-    receivedDate: string;
-  };
-  expectedReturnDate: string;
-  status: string;
-  totalCost: number;
-}
+const getStatusBadge = (status: WarrantyStatus) => {
+  switch (status) {
+    case WarrantyStatus.RECEIVED:
+      return (
+        <Badge
+          variant="outline"
+          className="text-purple-600 border-purple-600 bg-purple-50"
+        >
+          Received
+        </Badge>
+      );
+    case WarrantyStatus.PENDING:
+      return (
+        <Badge
+          variant="outline"
+          className="text-yellow-600 border-yellow-600 bg-yellow-50"
+        >
+          Pending
+        </Badge>
+      );
+    case WarrantyStatus.IN_PROGRESS:
+      return (
+        <Badge
+          variant="outline"
+          className="text-blue-600 border-blue-600 bg-blue-50"
+        >
+          Processing
+        </Badge>
+      );
+    case WarrantyStatus.COMPLETED:
+      return (
+        <Badge
+          variant="outline"
+          className="text-green-600 border-green-600 bg-green-50"
+        >
+          Completed
+        </Badge>
+      );
+    case WarrantyStatus.RETURNED:
+      return (
+        <Badge
+          variant="outline"
+          className="text-gray-600 border-gray-600 bg-gray-50"
+        >
+          Returned
+        </Badge>
+      );
+    case WarrantyStatus.CANCELED:
+      return <Badge variant="destructive">Canceled</Badge>;
+    default:
+      return <Badge>{status}</Badge>;
+  }
+};
 
 export default function WarrantyTicketsPage() {
   const navigate = useNavigate();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [ticketToDelete, setTicketToDelete] = useState<{
-    ticketNo: string;
-  } | null>(null);
-  const [tickets, setTickets] = useState<WarrantyTicket[]>(initialTickets);
+  const [tickets, setTickets] = useState<WarrantyTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleDeleteClick = (ticket: { ticketNo: string }) => {
-    setTicketToDelete(ticket);
-    setIsDeleteDialogOpen(true);
-  };
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState<WarrantyTicket | null>(
+    null,
+  );
 
-  const handleDeleteConfirm = () => {
-    if (ticketToDelete) {
-      setTickets(tickets.filter((t) => t.ticketNo !== ticketToDelete.ticketNo));
-      setIsDeleteDialogOpen(false);
-      setTicketToDelete(null);
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    try {
+      const res = await warrantyService.getAllTickets();
+      if (res.statusCode === 200 && res.data) {
+        setTickets(res.data);
+      }
+    } catch (error) {
+      toast.error("Failed to load warranty tickets");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const handleDeleteConfirm = async () => {
+    if (!ticketToDelete) return;
+    try {
+      await warrantyService.deleteTicket(ticketToDelete.id);
+      toast.success("Ticket deleted");
+      fetchTickets();
+    } catch (error) {
+      toast.error("Failed to delete ticket");
+    }
+    setIsDeleteOpen(false);
+  };
+
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Warranty Tickets</h1>
-        <div className="flex items-center gap-3">
-          <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            New Ticket
-          </Button>
-          <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white">
-            Bulk Update
-          </Button>
-        </div>
+        <Button
+          className="bg-indigo-900 cursor-pointer text-white"
+          onClick={() => setIsCreateOpen(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Ticket
+        </Button>
       </div>
 
-      <Card className="border-[#E5E5E5]">
-        <CardContent className="p-6">
-          {/* Search and Filters */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <Card className="shadow-md">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by Ticket No, Phone or Serial"
-                className="pl-10 bg-white"
+                placeholder="Search by Ticket No, Serial, Customer..."
+                className="pl-9 bg-white"
               />
             </div>
-
-            <Button variant="outline" className="shrink-0">
-              <Filter className="w-4 h-4 mr-2" />
-              All status
-            </Button>
-
-            <Select defaultValue="all-technician">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-technician">All technician</SelectItem>
-                <SelectItem value="technician-1">Technician 1</SelectItem>
-                <SelectItem value="technician-2">Technician 2</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  <TableHead className="font-semibold text-gray-700">
-                    Ticket No.
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Customer
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Product
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Technician
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Expected Return Date
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Status
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Total Cost
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Actions
-                  </TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead>Ticket No</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Product / Serial</TableHead>
+                  <TableHead>Received Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Technician</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tickets.map((ticket) => (
-                  <TableRow
-                    key={ticket.ticketNo}
-                    className="cursor-pointer hover:bg-gray-50"
-                    onClick={() =>
-                      navigate(
-                        `/warranty/tickets/${encodeURIComponent(
-                          ticket.ticketNo,
-                        )}`,
-                      )
-                    }
-                  >
-                    <TableCell className="font-medium">
-                      {ticket.ticketNo}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {ticket.customer.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {ticket.customer.phone}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {ticket.product.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {ticket.product.serialNumber}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {ticket.technician.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          Received: {ticket.technician.receivedDate}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{ticket.expectedReturnDate}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-                      >
-                        {ticket.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      $ {ticket.totalCost}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(
-                              `/warranty/tickets/${encodeURIComponent(
-                                ticket.ticketNo,
-                              )}`,
-                            );
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick({
-                              ticketNo: ticket.ticketNo,
-                            });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      <Loader2 className="animate-spin inline" />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : tickets.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-10 text-gray-500"
+                    >
+                      No tickets found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  tickets.map((ticket) => (
+                    <TableRow
+                      key={ticket.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => navigate(`/warranty/tickets/${ticket.id}`)}
+                    >
+                      <TableCell className="font-medium text-indigo-600">
+                        {ticket.ticketNumber}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{ticket.customerName}</div>
+                        <div className="text-xs text-gray-500">
+                          {ticket.customerPhone}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="truncate max-w-[150px]">
+                          {ticket.productName}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {ticket.serialNumber}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(ticket.receivedDate), "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                      <TableCell>
+                        {ticket.technicianName || "Unassigned"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation(); /* Edit logic */
+                            }}
+                          >
+                            <Edit className="w-4 h-4 text-gray-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTicketToDelete(ticket);
+                              setIsDeleteOpen(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
           </div>
         </CardContent>
       </Card>
 
+      <CreateTicketDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onSuccess={fetchTickets}
+      />
+
       <DeleteConfirmDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        itemName={ticketToDelete?.ticketNo || ""}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        itemName={ticketToDelete?.ticketNumber || ""}
         onConfirm={handleDeleteConfirm}
-        contextMessage="warranty ticket"
+        contextMessage="ticket"
       />
     </div>
   );

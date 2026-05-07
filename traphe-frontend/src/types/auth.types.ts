@@ -1,4 +1,4 @@
-import type { UserInfo } from "./user";
+import type { UserInfo } from "./user.types";
 
 export interface GoogleLoginRequest {
   idToken: string;

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Product, ProductVariant } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product.types";
 
 interface SpecsSheetProps {
   product: Product;

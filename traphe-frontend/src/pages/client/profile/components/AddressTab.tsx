@@ -21,7 +21,7 @@ import {
 import { Plus, Trash2, MapPin, Loader2, Home, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { userService } from "@/services/user.service";
-import type { UserAddress, Province, Commune } from "@/types/user";
+import type { UserAddress, Province, Commune } from "@/types/user.types";
 
 export default function AddressTab() {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);

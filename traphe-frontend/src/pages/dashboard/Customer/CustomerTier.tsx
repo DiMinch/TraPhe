@@ -30,7 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"; // Import Pagination components
 import { customerTierService } from "@/services/customer-tier.service";
-import type { CustomerTier } from "@/types/customer";
+import type { CustomerTier } from "@/types/customer.types";
 import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 

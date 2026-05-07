@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SpecsSheet from "./SpecsSheet";
-import type { Product, ProductVariant } from "@/types/product";
+import type { Product, ProductVariant } from "@/types/product.types";
 import { cn } from "@/lib/utils";
 
 interface ProductSectionProps {

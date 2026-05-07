@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api";
+import type { ApiResponse } from "@/types/api.types";
 import type {
   Product,
   CreateProductRequest,
@@ -7,7 +7,7 @@ import type {
   ProductVariant,
   CreateVariantRequest,
   UpdateVariantRequest,
-} from "@/types/product";
+} from "@/types/product.types";
 
 export const productService = {
   // Product CRUD

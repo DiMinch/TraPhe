@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
-import type { DisplayCategory } from "@/types/category";
+import type { DisplayCategory } from "@/types/category.types";
 
 export const CategoryCard = ({ category }: { category: DisplayCategory }) => (
   <div
