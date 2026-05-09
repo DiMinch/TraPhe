@@ -45,6 +45,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -70,6 +71,7 @@ public class OrderService {
     private final ToppingRepository toppingRepository;
     private final MenuItemToppingRepository menuItemToppingRepository;
     private final UserRepository userRepository;
+    private final InventoryDeductionService inventoryDeductionService;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -117,7 +119,64 @@ public class OrderService {
             }
         }
 
-        // ========== 5. Build Order ==========
+        // ========== 5. PRE-FETCH DATA (BATCHING TO FIX N+1) ==========
+        Set<UUID> menuItemIds = new HashSet<>();
+        Set<UUID> sizeIds = new HashSet<>();
+        Set<UUID> optionGroupIds = new HashSet<>();
+        Set<UUID> optionValueIds = new HashSet<>();
+        Set<UUID> toppingIds = new HashSet<>();
+
+        for (OrderItemRequest itemReq : request.getItems()) {
+            menuItemIds.add(itemReq.getMenuItemId());
+            if (itemReq.getMenuItemSizeId() != null) {
+                sizeIds.add(itemReq.getMenuItemSizeId());
+            }
+            if (itemReq.getOptions() != null) {
+                for (OrderItemOptionRequest optReq : itemReq.getOptions()) {
+                    optionGroupIds.add(optReq.getOptionGroupId());
+                    optionValueIds.add(optReq.getOptionValueId());
+                }
+            }
+            if (itemReq.getToppings() != null) {
+                for (OrderItemToppingRequest topReq : itemReq.getToppings()) {
+                    toppingIds.add(topReq.getToppingId());
+                }
+            }
+        }
+
+        // Fetch Maps
+        Map<UUID, MenuItem> menuItemMap = menuItemRepository.findAllById(menuItemIds).stream()
+                .collect(Collectors.toMap(MenuItem::getId, item -> item));
+
+        Map<UUID, BranchMenuItem> branchMenuItemMap = branchMenuItemRepository
+                .findAllByBranchIdAndMenuItemIdIn(branch.getId(), new ArrayList<>(menuItemIds)).stream()
+                .collect(Collectors.toMap(bmi -> bmi.getMenuItem().getId(), bmi -> bmi));
+
+        Map<UUID, MenuItemSize> sizeMap = menuItemSizeRepository.findAllById(sizeIds).stream()
+                .collect(Collectors.toMap(MenuItemSize::getId, size -> size));
+
+        Map<UUID, OptionGroup> optionGroupMap = optionGroupRepository.findAllById(optionGroupIds).stream()
+                .collect(Collectors.toMap(OptionGroup::getId, og -> og));
+
+        Map<UUID, OptionValue> optionValueMap = optionValueRepository.findAllById(optionValueIds).stream()
+                .collect(Collectors.toMap(OptionValue::getId, ov -> ov));
+
+        Map<UUID, Topping> toppingMap = toppingRepository.findAllById(toppingIds).stream()
+                .collect(Collectors.toMap(Topping::getId, top -> top));
+
+        // Validation mapping maps
+        Map<UUID, List<MenuItemOptionGroup>> itemOptionGroupsMap = menuItemOptionGroupRepository
+                .findByMenuItemIdIn(menuItemIds).stream()
+                .collect(Collectors.groupingBy(miog -> miog.getMenuItem().getId()));
+
+        Map<UUID, Set<UUID>> itemToppingsMap = menuItemToppingRepository
+                .findByMenuItemIdIn(menuItemIds).stream()
+                .collect(Collectors.groupingBy(
+                        mit -> mit.getMenuItem().getId(),
+                        Collectors.mapping(mit -> mit.getTopping().getId(), Collectors.toSet())
+                ));
+
+        // ========== 6. Build Order ==========
         Order order = Order.builder()
                 .orderNumber(generateOrderNumber())
                 .customer(customer)
@@ -130,54 +189,47 @@ public class OrderService {
         BigDecimal subtotal = BigDecimal.ZERO;
         int maxPreparationTime = 0;
 
-        // ========== 6. Process each item with full validation ==========
+        // ========== 7. Process each item with full validation using Maps ==========
         for (OrderItemRequest itemReq : request.getItems()) {
 
-            // --- 6a. Validate menu item ---
-            MenuItem menuItem = menuItemRepository.findById(itemReq.getMenuItemId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Menu item not found with ID: " + itemReq.getMenuItemId()));
+            // --- 7a. Validate menu item ---
+            MenuItem menuItem = menuItemMap.get(itemReq.getMenuItemId());
+            if (menuItem == null) {
+                throw new ResourceNotFoundException("Menu item not found with ID: " + itemReq.getMenuItemId());
+            }
 
             if (menuItem.isDeleted() || menuItem.getStatus() != MenuItemStatus.ACTIVE) {
-                throw new IllegalArgumentException(
-                        "Món '" + menuItem.getName() + "' đã ẩn hoặc không còn bán.");
+                throw new IllegalArgumentException("Món '" + menuItem.getName() + "' đã ẩn hoặc không còn bán.");
             }
 
             if (!menuItem.isDrink()) {
-                throw new IllegalArgumentException(
-                        "Món '" + menuItem.getName() + "' không phải đồ uống. Vui lòng sử dụng API phù hợp.");
+                throw new IllegalArgumentException("Món '" + menuItem.getName() + "' không phải đồ uống. Vui lòng sử dụng API phù hợp.");
             }
 
-            // --- 6b. Validate branch has this menu item ---
-            BranchMenuItem branchMenuItem = branchMenuItemRepository
-                    .findByBranchIdAndMenuItemId(branch.getId(), menuItem.getId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Món '" + menuItem.getName() + "' không có tại chi nhánh '" + branch.getName() + "'."));
+            // --- 7b. Validate branch has this menu item ---
+            BranchMenuItem branchMenuItem = branchMenuItemMap.get(menuItem.getId());
+            if (branchMenuItem == null) {
+                throw new IllegalArgumentException("Món '" + menuItem.getName() + "' không có tại chi nhánh '" + branch.getName() + "'.");
+            }
 
             if (!branchMenuItem.isAvailable()) {
-                String reason = branchMenuItem.getUnavailableReason() != null
-                        ? " Lý do: " + branchMenuItem.getUnavailableReason()
-                        : "";
-                throw new IllegalArgumentException(
-                        "Món '" + menuItem.getName() + "' hiện không bán tại chi nhánh này." + reason);
+                String reason = branchMenuItem.getUnavailableReason() != null ? " Lý do: " + branchMenuItem.getUnavailableReason() : "";
+                throw new IllegalArgumentException("Món '" + menuItem.getName() + "' hiện không bán tại chi nhánh này." + reason);
             }
 
-            // --- 6c. Validate & resolve size ---
+            // --- 7c. Validate & resolve size ---
             MenuItemSize menuItemSize = null;
             if (itemReq.getMenuItemSizeId() != null) {
-                menuItemSize = menuItemSizeRepository
-                        .findByIdAndMenuItemId(itemReq.getMenuItemSizeId(), menuItem.getId())
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Size không hợp lệ cho món '" + menuItem.getName() + "'."));
-
+                menuItemSize = sizeMap.get(itemReq.getMenuItemSizeId());
+                if (menuItemSize == null || !menuItemSize.getMenuItem().getId().equals(menuItem.getId())) {
+                    throw new IllegalArgumentException("Size không hợp lệ cho món '" + menuItem.getName() + "'.");
+                }
                 if (menuItemSize.isDeleted()) {
-                    throw new IllegalArgumentException(
-                            "Size '" + menuItemSize.getSizeName() + "' không còn khả dụng.");
+                    throw new IllegalArgumentException("Size '" + menuItemSize.getSizeName() + "' không còn khả dụng.");
                 }
             }
 
-            // --- 6d. Calculate unit price ---
-            // Priority: custom_price (branch) → selling_price (size) → base_price (item)
+            // --- 7d. Calculate unit price ---
             BigDecimal unitPrice;
             if (branchMenuItem.getCustomPrice() != null) {
                 unitPrice = branchMenuItem.getCustomPrice();
@@ -186,8 +238,7 @@ public class OrderService {
             } else if (menuItem.getBasePrice() != null) {
                 unitPrice = menuItem.getBasePrice();
             } else {
-                throw new IllegalArgumentException(
-                        "Không thể xác định giá cho món '" + menuItem.getName() + "'. Chưa có size hoặc giá gốc.");
+                throw new IllegalArgumentException("Không thể xác định giá cho món '" + menuItem.getName() + "'. Chưa có size hoặc giá gốc.");
             }
 
             // --- Build OrderItem ---
@@ -201,28 +252,28 @@ public class OrderService {
                     .notes(itemReq.getNotes())
                     .build();
 
-            // --- 6e. Validate & save options (sugar / ice / temperature) ---
+            // --- 7e. Validate & save options (sugar / ice / temperature) ---
+            List<MenuItemOptionGroup> validOptionsForThisItem = itemOptionGroupsMap.getOrDefault(menuItem.getId(), new ArrayList<>());
+            Set<UUID> validOptionGroupIds = validOptionsForThisItem.stream().map(og -> og.getOptionGroup().getId()).collect(Collectors.toSet());
+            
+            Set<UUID> providedGroupIds = new HashSet<>();
+
             if (itemReq.getOptions() != null && !itemReq.getOptions().isEmpty()) {
                 for (OrderItemOptionRequest optReq : itemReq.getOptions()) {
-                    // Check option group belongs to this menu item
-                    boolean groupBelongsToItem = menuItemOptionGroupRepository
-                            .existsByMenuItemIdAndOptionGroupId(menuItem.getId(), optReq.getOptionGroupId());
-
-                    if (!groupBelongsToItem) {
-                        OptionGroup og = optionGroupRepository.findById(optReq.getOptionGroupId()).orElse(null);
+                    
+                    if (!validOptionGroupIds.contains(optReq.getOptionGroupId())) {
+                        OptionGroup og = optionGroupMap.get(optReq.getOptionGroupId());
                         String groupName = og != null ? og.getName() : optReq.getOptionGroupId().toString();
-                        throw new IllegalArgumentException(
-                                "Tuỳ chọn nhóm '" + groupName + "' không hợp lệ cho món '" + menuItem.getName() + "'.");
+                        throw new IllegalArgumentException("Tuỳ chọn nhóm '" + groupName + "' không hợp lệ cho món '" + menuItem.getName() + "'.");
                     }
 
-                    // Check option value belongs to this option group
-                    OptionValue optionValue = optionValueRepository
-                            .findByIdAndOptionGroupId(optReq.getOptionValueId(), optReq.getOptionGroupId())
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    "Giá trị tuỳ chọn không hợp lệ cho nhóm tuỳ chọn đã chọn."));
+                    OptionValue optionValue = optionValueMap.get(optReq.getOptionValueId());
+                    if (optionValue == null || !optionValue.getOptionGroup().getId().equals(optReq.getOptionGroupId())) {
+                        throw new IllegalArgumentException("Giá trị tuỳ chọn không hợp lệ cho nhóm tuỳ chọn đã chọn.");
+                    }
 
-                    OptionGroup optionGroup = optionGroupRepository.findById(optReq.getOptionGroupId())
-                            .orElseThrow(() -> new ResourceNotFoundException("Option group not found"));
+                    OptionGroup optionGroup = optionGroupMap.get(optReq.getOptionGroupId());
+                    providedGroupIds.add(optionGroup.getId());
 
                     OrderItemOption itemOption = OrderItemOption.builder()
                             .orderItem(orderItem)
@@ -235,33 +286,34 @@ public class OrderService {
             }
 
             // Check required option groups are provided
-            validateRequiredOptionGroups(menuItem, itemReq.getOptions());
+            for (MenuItemOptionGroup miog : validOptionsForThisItem) {
+                OptionGroup group = miog.getOptionGroup();
+                if (group.isRequired() && !providedGroupIds.contains(group.getId())) {
+                    throw new IllegalArgumentException("Thiếu tuỳ chọn bắt buộc: '" + group.getName() + "' cho món '" + menuItem.getName() + "'.");
+                }
+            }
 
-            // --- 6f. Validate & save toppings ---
-            BigDecimal toppingTotal = BigDecimal.ZERO;
+            // --- 7f. Validate & save toppings ---
+            BigDecimal toppingTotalPerCup = BigDecimal.ZERO;
             if (itemReq.getToppings() != null && !itemReq.getToppings().isEmpty()) {
                 if (!menuItem.isAllowToppings()) {
-                    throw new IllegalArgumentException(
-                            "Món '" + menuItem.getName() + "' không cho phép thêm topping.");
+                    throw new IllegalArgumentException("Món '" + menuItem.getName() + "' không cho phép thêm topping.");
                 }
 
-                for (OrderItemToppingRequest topReq : itemReq.getToppings()) {
-                    Topping topping = toppingRepository.findById(topReq.getToppingId())
-                            .orElseThrow(() -> new ResourceNotFoundException(
-                                    "Topping not found with ID: " + topReq.getToppingId()));
+                Set<UUID> validToppingsForThisItem = itemToppingsMap.getOrDefault(menuItem.getId(), new HashSet<>());
 
-                    if (!topping.isAvailable() || topping.isDeleted()) {
-                        throw new IllegalArgumentException(
-                                "Topping '" + topping.getName() + "' hiện không khả dụng.");
+                for (OrderItemToppingRequest topReq : itemReq.getToppings()) {
+                    Topping topping = toppingMap.get(topReq.getToppingId());
+                    if (topping == null) {
+                        throw new ResourceNotFoundException("Topping not found with ID: " + topReq.getToppingId());
                     }
 
-                    // Check topping is valid for this menu item
-                    boolean toppingForItem = menuItemToppingRepository
-                            .existsByMenuItemIdAndToppingId(menuItem.getId(), topping.getId());
+                    if (!topping.isAvailable() || topping.isDeleted()) {
+                        throw new IllegalArgumentException("Topping '" + topping.getName() + "' hiện không khả dụng.");
+                    }
 
-                    if (!toppingForItem) {
-                        throw new IllegalArgumentException(
-                                "Topping '" + topping.getName() + "' không có cho món '" + menuItem.getName() + "'.");
+                    if (!validToppingsForThisItem.contains(topping.getId())) {
+                        throw new IllegalArgumentException("Topping '" + topping.getName() + "' không có cho món '" + menuItem.getName() + "'.");
                     }
 
                     OrderItemTopping itemTopping = OrderItemTopping.builder()
@@ -273,15 +325,14 @@ public class OrderService {
 
                     orderItem.getSelectedToppings().add(itemTopping);
 
-                    toppingTotal = toppingTotal.add(
-                            topping.getExtraPrice().multiply(BigDecimal.valueOf(topReq.getQuantity())));
+                    // Topping price added to the per-cup cumulative total
+                    toppingTotalPerCup = toppingTotalPerCup.add(topping.getExtraPrice().multiply(BigDecimal.valueOf(topReq.getQuantity())));
                 }
             }
 
-            // --- 6g. Calculate item subtotal ---
-            BigDecimal itemSubtotal = unitPrice
-                    .multiply(BigDecimal.valueOf(itemReq.getQuantity()))
-                    .add(toppingTotal);
+            // --- 7g. Calculate item subtotal (FIXED PRICING MATH) ---
+            // Item subtotal = quantity * (unitPrice + SUM(toppingPrice * toppingQty_per_cup))
+            BigDecimal itemSubtotal = unitPrice.add(toppingTotalPerCup).multiply(BigDecimal.valueOf(itemReq.getQuantity()));
             orderItem.setSubtotal(itemSubtotal);
 
             subtotal = subtotal.add(itemSubtotal);
@@ -293,7 +344,7 @@ public class OrderService {
             }
         }
 
-        // ========== 7. Calculate totals ==========
+        // ========== 8. Calculate totals ==========
         // MVP: discount = 0, shipping = 0 for PICKUP
         BigDecimal totalDiscount = BigDecimal.ZERO;
         BigDecimal shippingFee = orderType == OrderType.DRINK_DELIVERY
@@ -306,15 +357,15 @@ public class OrderService {
         order.setShippingFee(shippingFee);
         order.setFinalAmount(finalAmount);
 
-        // ========== 8. Set estimated ready time ==========
+        // ========== 9. Set estimated ready time ==========
         if (maxPreparationTime > 0) {
             order.setEstimatedReadyTime(LocalDateTime.now().plusMinutes(maxPreparationTime));
         }
 
-        // ========== 9. Save (cascades to items, options, toppings) ==========
+        // ========== 10. Save (cascades to items, options, toppings) ==========
         Order savedOrder = orderRepository.save(order);
 
-        // ========== 10. Build response ==========
+        // ========== 11. Build response ==========
         return mapToOrderResponse(savedOrder);
     }
 
@@ -375,6 +426,16 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
         log.info("Order {} status updated: {} → {}", saved.getOrderNumber(), currentStatus, newStatus);
+
+        // 5. Trigger inventory deduction when order is completed (drink orders only)
+        if (newStatus == OrderStatus.COMPLETED) {
+            try {
+                inventoryDeductionService.deductStockForOrder(saved, userEmail);
+            } catch (Exception e) {
+                log.error("Stock deduction failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                throw e; // Re-throw to rollback the transaction
+            }
+        }
 
         return mapToOrderResponse(saved);
     }
@@ -477,32 +538,6 @@ public class OrderService {
                 .finalAmount(order.getFinalAmount())
                 .paymentUrl(null)
                 .build();
-    }
-
-    /**
-     * Validate that all required option groups for the menu item have been
-     * provided.
-     */
-    private void validateRequiredOptionGroups(MenuItem menuItem, List<OrderItemOptionRequest> providedOptions) {
-        List<MenuItemOptionGroup> itemOptionGroups = menuItemOptionGroupRepository
-                .findByMenuItemId(menuItem.getId());
-
-        // Collect provided option group IDs
-        Set<UUID> providedGroupIds = new HashSet<>();
-        if (providedOptions != null) {
-            providedGroupIds = providedOptions.stream()
-                    .map(OrderItemOptionRequest::getOptionGroupId)
-                    .collect(Collectors.toSet());
-        }
-
-        // Check each required group
-        for (MenuItemOptionGroup miog : itemOptionGroups) {
-            OptionGroup group = miog.getOptionGroup();
-            if (group.isRequired() && !providedGroupIds.contains(group.getId())) {
-                throw new IllegalArgumentException(
-                        "Thiếu tuỳ chọn bắt buộc: '" + group.getName() + "' cho món '" + menuItem.getName() + "'.");
-            }
-        }
     }
 
     /**
