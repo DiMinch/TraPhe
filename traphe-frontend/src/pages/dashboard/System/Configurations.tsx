@@ -18,18 +18,15 @@ import {
 } from "@/components/ui/pagination";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Search,
-  Plus,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  BellIcon,
-} from "lucide-react";
+import { Search, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { useState } from "react";
 import { configurations as initialConfigs } from "@/data/mockData";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface Configuration {
   id: number;
@@ -74,37 +71,26 @@ export default function ConfigurationsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Configurations</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Configurations"
+        subtitle="Manage system configuration settings"
+      />
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+          <Plus className="mr-2 w-4 h-4" />
           New Key
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+          <Plus className="mr-2 w-4 h-4" />
           Import CSV
         </Button>
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">
           {/* Search */}
           <div className="mb-6">
@@ -112,7 +98,7 @@ export default function ConfigurationsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search by Key"
-                className="pl-10 bg-white"
+                className="pl-10 bg-white border-slate-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -120,56 +106,93 @@ export default function ConfigurationsPage() {
           </div>
 
           {/* Table */}
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead>Key</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead>Data Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Is Encrypted</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredConfigurations.map((config) => (
-                <TableRow key={config.id}>
-                  <TableCell className="font-medium">{config.key}</TableCell>
-                  <TableCell>{config.value}</TableCell>
-                  <TableCell>{config.dataType}</TableCell>
-                  <TableCell>{config.description}</TableCell>
-                  <TableCell>
-                    <Checkbox checked={config.isEncrypted} disabled />
-                  </TableCell>
-                  <TableCell>{config.createdBy}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          handleDeleteClick({
-                            id: config.id,
-                            key: config.key,
-                          })
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {filteredConfigurations.length === 0 ? (
+            <EmptyState
+              icon={<Settings className="w-8 h-8 text-slate-400" />}
+              title="No configurations found"
+              description="Add a new configuration key to get started"
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                  <TableHead className="font-semibold text-slate-600">
+                    Key
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Value
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Data Type
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Description
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Is Encrypted
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Created By
+                  </TableHead>
+                  <TableHead className="text-center font-semibold text-slate-600">
+                    Actions
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredConfigurations.map((config) => (
+                  <TableRow key={config.id} className="hover:bg-slate-50/50">
+                    <TableCell className="font-medium text-slate-800">
+                      {config.key}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {config.value}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {config.dataType}
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {config.description}
+                    </TableCell>
+                    <TableCell>
+                      <Checkbox
+                        checked={config.isEncrypted}
+                        disabled
+                        className="border-slate-300"
+                      />
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {config.createdBy}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-slate-100"
+                        >
+                          <Edit className="w-4 h-4 text-slate-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-red-50"
+                          onClick={() =>
+                            handleDeleteClick({
+                              id: config.id,
+                              key: config.key,
+                            })
+                          }
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
 
           {/* Pagination */}
           <div className="mt-6">
@@ -199,6 +222,6 @@ export default function ConfigurationsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="configuration"
       />
-    </div>
+    </PageContainer>
   );
 }

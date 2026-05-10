@@ -24,13 +24,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BellIcon, Filter, RefreshCw } from "lucide-react";
-import { CURRENT_USER } from "@/constants/user";
+import { Filter, Loader2, ArrowLeftRight, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   purchaseOrderService,
   type PurchaseOrderResponse,
 } from "@/services/purchase-order.service";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface Transaction {
   id: string;
@@ -197,53 +201,35 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Stock Transactions</h1>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTransactions}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
-          <Button
-            className="bg-yellow-500 hover:bg-yellow-600 text-gray-900"
-            size="sm"
-          >
-            Export Excel
-          </Button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="invisible"></div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Stock Transactions"
+        subtitle="Track all inventory movements and stock changes"
+        onRefresh={fetchTransactions}
+      />
+
+      <div className="flex items-center justify-end mb-6">
+        <Button
+          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg"
+          size="sm"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Excel
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center justify-end gap-3 mb-6">
-        <Button variant="outline" size="icon" className="shrink-0 bg-white">
+      <div className="flex flex-wrap items-center justify-end gap-3 mb-6">
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0 bg-white border-slate-200 hover:bg-slate-50"
+        >
           <Filter className="w-4 h-4" />
         </Button>
 
         <Select value={filterDateRange} onValueChange={setFilterDateRange}>
-          <SelectTrigger className="w-[140px] bg-white borderColor:#E5E5E5">
+          <SelectTrigger className="w-[140px] bg-white border-slate-200">
             <SelectValue placeholder="All days" />
           </SelectTrigger>
           <SelectContent>
@@ -255,7 +241,7 @@ export default function TransactionsPage() {
         </Select>
 
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-[200px] bg-white">
+          <SelectTrigger className="w-[200px] bg-white border-slate-200">
             <SelectValue placeholder="All Transactions Type" />
           </SelectTrigger>
           <SelectContent>
@@ -269,7 +255,7 @@ export default function TransactionsPage() {
         </Select>
 
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-[240px] bg-white">
+          <SelectTrigger className="w-[240px] bg-white border-slate-200">
             <SelectValue placeholder="Both Product & Components" />
           </SelectTrigger>
           <SelectContent>
@@ -281,15 +267,13 @@ export default function TransactionsPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-md bg-white">
-        <CardContent className="p-2 px-10">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-gray-400" />
-                <p className="text-gray-600">Loading transactions...</p>
-              </div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="mt-3 text-slate-600">Loading transactions...</p>
             </div>
           )}
 
@@ -308,83 +292,72 @@ export default function TransactionsPage() {
                       variant="outline"
                       size="sm"
                     >
-                      <RefreshCw className="w-4 h-4 mr-2" />
                       Retry
                     </Button>
                     {error.includes("Authentication") && (
                       <Button
                         onClick={() => (window.location.href = "/sign-in")}
                         size="sm"
+                        className="bg-gradient-to-r from-indigo-600 to-indigo-700"
                       >
                         Sign In
                       </Button>
                     )}
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs">
-                  Make sure you're logged in with ADMIN or EMPLOYEE role and the
-                  backend server is running on port 8080.
-                </p>
               </div>
             </div>
           )}
 
           {/* Table */}
-          {!loading && (
-            <div className="overflow-hidden rounded-lg">
-              <Table>
-                <TableHeader className="p-2">
-                  <TableRow
-                    className="bg-gray-50"
-                    style={{ borderColor: "#E5E5E5" }}
-                  >
-                    <TableHead className="font-medium text-gray-700">
-                      Time
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Transactions Type
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Product/Component
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Quantity
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Reference
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Reasons
-                    </TableHead>
-                    <TableHead className="font-medium text-gray-700">
-                      Note
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12">
-                        <div className="text-gray-500">
-                          <p className="font-medium">No transactions found</p>
-                          <p className="text-sm mt-1">
-                            Try adjusting your filters or add new transactions
-                          </p>
-                        </div>
-                      </TableCell>
+          {!loading && !error && filteredTransactions.length === 0 ? (
+            <EmptyState
+              icon={<ArrowLeftRight className="w-8 h-8 text-slate-400" />}
+              title="No transactions found"
+              description="Stock transactions will appear here when orders are received"
+            />
+          ) : (
+            !loading &&
+            !error && (
+              <div className="overflow-hidden rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                      <TableHead className="font-semibold text-slate-600">
+                        Time
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Transaction Type
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Product/Component
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Quantity
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Reference
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Reasons
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Note
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    filteredTransactions.map((transaction) => (
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTransactions.map((transaction) => (
                       <TableRow
                         key={transaction.id}
-                        className="border-b last:border-b-0"
+                        className="hover:bg-slate-50/50 border-b last:border-b-0"
                       >
                         <TableCell className="py-4">
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-slate-800">
                               {transaction.time}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-slate-500">
                               {transaction.date}
                             </div>
                           </div>
@@ -392,21 +365,19 @@ export default function TransactionsPage() {
                         <TableCell className="py-4">
                           <Badge
                             variant="outline"
-                            className={`${getBadgeColor(
-                              transaction.type,
-                            )} font-normal`}
+                            className={`${getBadgeColor(transaction.type)} font-normal`}
                           >
                             {transaction.type.replace(/_/g, " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-medium text-gray-900 py-4">
+                        <TableCell className="font-medium text-slate-800 py-4">
                           {transaction.product}
                         </TableCell>
                         <TableCell className="py-4">
                           <span
                             className={`font-semibold ${
                               transaction.quantity > 0
-                                ? "text-green-600"
+                                ? "text-emerald-600"
                                 : "text-red-600"
                             }`}
                           >
@@ -414,25 +385,25 @@ export default function TransactionsPage() {
                             {transaction.quantity}
                           </span>
                         </TableCell>
-                        <TableCell className="text-gray-700 py-4">
+                        <TableCell className="text-slate-600 py-4">
                           {transaction.reference}
                         </TableCell>
-                        <TableCell className="text-gray-700 py-4">
+                        <TableCell className="text-slate-600 py-4">
                           {transaction.reasons || "-"}
                         </TableCell>
-                        <TableCell className="text-gray-700 py-4">
+                        <TableCell className="text-slate-600 py-4">
                           {transaction.note || "-"}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )
           )}
 
           {/* Pagination */}
-          <div className="flex items-center justify-between p-6 border-t">
+          <div className="flex items-center justify-between pt-6 border-t mt-6">
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -451,6 +422,6 @@ export default function TransactionsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

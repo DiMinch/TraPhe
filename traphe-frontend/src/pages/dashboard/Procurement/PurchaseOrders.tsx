@@ -46,16 +46,20 @@ import {
   Edit,
   Trash2,
   Check,
-  BellIcon,
   X,
-  RefreshCw,
+  Loader2,
+  ShoppingCart,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import OrderItemsTable from "./OrderItemsTable";
 import { format } from "date-fns";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 import {
   purchaseOrderService,
   type PurchaseOrderResponse,
@@ -376,37 +380,17 @@ export default function PurchaseOrdersPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Purchase Orders</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Purchase Orders"
+        subtitle="Manage and track your purchase orders"
+        onRefresh={fetchPurchaseOrders}
+      />
 
       {/* Action Button */}
       <div className="flex justify-end gap-3 mb-6">
         <Button
-          variant="outline"
-          onClick={fetchPurchaseOrders}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
-        <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg"
           onClick={() => setIsNewOrderOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -416,33 +400,40 @@ export default function PurchaseOrdersPage() {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg shadow-sm">
           {error}
         </div>
       )}
 
       {/* Main Card */}
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6 pt-0">
           {/* Filters */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-wrap items-center gap-3 mb-6 pt-6">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search"
-                className="pl-10 bg-white"
+                placeholder="Search by PO number, supplier..."
+                className="pl-10 bg-white border-slate-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <Button variant="outline" size="icon" className="shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 border-slate-200 hover:bg-slate-50"
+            >
               <Filter className="w-4 h-4" />
             </Button>
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="shrink-0 h-9">
+                <Button
+                  variant="outline"
+                  className="shrink-0 h-9 border-slate-200 hover:bg-slate-50"
+                >
                   <Calendar className="w-4 h-4 mr-2" />
                   {dateRange.from ? (
                     dateRange.to ? (
@@ -503,137 +494,148 @@ export default function PurchaseOrdersPage() {
 
           {/* Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600">
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-gray-600">
                 Loading purchase orders...
               </span>
             </div>
+          ) : currentOrders.length === 0 ? (
+            <EmptyState
+              icon={<ShoppingCart className="w-8 h-8 text-slate-400" />}
+              title="No purchase orders found"
+              description="Create a new purchase order to get started"
+            />
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>PO Number</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Created Date</TableHead>
-                  <TableHead>Expected Date</TableHead>
-                  <TableHead>Actual Date</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                  <TableHead className="font-semibold text-slate-600">
+                    PO Number
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Supplier
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Created Date
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Expected Date
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Actual Date
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Total Amount
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-center font-semibold text-slate-600">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      No purchase orders found
+                {currentOrders.map((po) => (
+                  <TableRow key={po.id}>
+                    <TableCell>
+                      <button
+                        onClick={() =>
+                          navigate(`/procurement/purchase-orders/${po.id}`)
+                        }
+                        className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                      >
+                        {po.poNumber}
+                      </button>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  currentOrders.map((po) => (
-                    <TableRow key={po.id}>
-                      <TableCell>
-                        <button
-                          onClick={() =>
-                            navigate(`/procurement/purchase-orders/${po.id}`)
-                          }
-                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                        >
-                          {po.poNumber}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {po.supplier}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {po.contactName}
-                          </div>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {po.supplier}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {po.createdDate}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {po.expectedDate}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {po.actualDate}
-                      </TableCell>
-                      <TableCell className="font-medium text-gray-900">
-                        {po.totalAmount}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            po.status === "DRAFT"
-                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                              : po.status === "RECEIVED"
-                                ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                          }
+                        <div className="text-sm text-gray-500">
+                          {po.contactName}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {po.createdDate}
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {po.expectedDate}
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {po.actualDate}
+                    </TableCell>
+                    <TableCell className="font-medium text-gray-900">
+                      {po.totalAmount}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={
+                          po.status === "DRAFT"
+                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                            : po.status === "RECEIVED"
+                              ? "bg-green-100 text-green-700 hover:bg-green-100"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                        }
+                      >
+                        {po.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Edit"
                         >
-                          {po.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        {po.status === "DRAFT" && (
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            title="Edit"
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: po.id,
+                                poNumber: po.poNumber,
+                              })
+                            }
+                            title="Delete (DRAFT only)"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
-                          {po.status === "DRAFT" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                handleDeleteClick({
-                                  id: po.id,
-                                  poNumber: po.poNumber,
-                                })
-                              }
-                              title="Delete (DRAFT only)"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {po.status === "DRAFT" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-green-600"
-                              onClick={() => handleReceiveGoods(po.id)}
-                              title="Receive Goods"
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {po.status === "RECEIVED" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600"
-                              onClick={() => handleCloseOrder(po.id)}
-                              title="Close Order"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                        )}
+                        {po.status === "DRAFT" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-green-600"
+                            onClick={() => handleReceiveGoods(po.id)}
+                            title="Receive Goods"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {po.status === "RECEIVED" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600"
+                            onClick={() => handleCloseOrder(po.id)}
+                            title="Close Order"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
@@ -761,13 +763,13 @@ export default function PurchaseOrdersPage() {
                 Cancel
               </Button>
               <Button
-                className="bg-indigo-900 hover:bg-indigo-800 text-white"
+                className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
                 onClick={handleSaveDraft}
               >
                 Save Draft
               </Button>
               <Button
-                className="bg-yellow-500 hover:bg-yellow-600 text-gray-900"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
                 onClick={handleMarkAsOrdered}
               >
                 Mark as Ordered
@@ -784,6 +786,6 @@ export default function PurchaseOrdersPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the purchase orders"
       />
-    </div>
+    </PageContainer>
   );
 }

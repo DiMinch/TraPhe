@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,20 @@ import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { categoryService } from "@/services/category.service";
 import type { Category, CreateCategoryRequest } from "@/types/category.types";
 import { toast } from "sonner";
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  FolderTree,
+  Loader2,
+} from "lucide-react";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function CategoryPage() {
   const navigate = useNavigate();
@@ -131,11 +144,15 @@ export default function CategoryPage() {
   const rootCategories = categories.filter((cat) => !cat.parentId);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Category Management</h1>
+    <PageContainer>
+      <PageHeader
+        title="Category Management"
+        subtitle="Organize your product categories"
+        onRefresh={fetchCategories}
+      />
+      <div className="flex justify-end mb-6">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -143,91 +160,113 @@ export default function CategoryPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>All Categories</CardTitle>
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-slate-800">
+              All Categories
+            </h3>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-slate-200 focus:border-primary"
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {loading && categories.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              Loading categories...
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading categories...
+              </span>
             </div>
+          ) : filteredCategories.length === 0 ? (
+            <EmptyState
+              icon={<FolderTree className="w-8 h-8 text-slate-400" />}
+              title="No categories found"
+              description="Start by adding your first category"
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Parent</TableHead>
-                  <TableHead>Specs</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCategories.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-gray-500"
-                    >
-                      No categories found
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Image
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Description
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Parent
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Specs
+                    </TableHead>
+                    <TableHead className="text-right font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  filteredCategories.map((category) => (
-                    <TableRow key={category.id}>
+                </TableHeader>
+                <TableBody>
+                  {filteredCategories.map((category) => (
+                    <TableRow
+                      key={category.id}
+                      className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                    >
                       <TableCell>
                         {category.imageUrl ? (
                           <img
                             src={category.imageUrl}
                             alt={category.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-12 h-12 object-cover rounded-lg shadow-sm"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-gray-400">
-                            No img
+                          <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg flex items-center justify-center">
+                            <FolderTree className="w-5 h-5 text-slate-400" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium text-slate-800">
                         {category.name}
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs truncate">
+                        <div className="max-w-xs truncate text-slate-600">
                           {category.description || "-"}
                         </div>
                       </TableCell>
                       <TableCell>
                         {category.parentName ? (
-                          <Badge variant="outline">{category.parentName}</Badge>
+                          <Badge variant="outline" className="bg-slate-50">
+                            {category.parentName}
+                          </Badge>
                         ) : (
-                          <Badge className="bg-blue-100 text-blue-800">
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">
                             Root
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">
+                        <Badge
+                          variant="outline"
+                          className="bg-purple-50 text-purple-700 border-purple-200"
+                        >
                           {category.specs?.length || 0} specs
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-primary/10"
                             onClick={() => navigate(`/category/${category.id}`)}
                           >
                             <Eye className="w-4 h-4" />
@@ -235,6 +274,7 @@ export default function CategoryPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 text-slate-600 hover:text-amber-600 hover:bg-amber-50"
                             onClick={() =>
                               navigate(`/category/${category.id}/edit`)
                             }
@@ -244,20 +284,21 @@ export default function CategoryPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 text-slate-600 hover:text-red-600 hover:bg-red-50"
                             onClick={() => {
                               setSelectedCategory(category);
                               setShowDeleteDialog(true);
                             }}
                           >
-                            <Trash2 className="w-4 h-4 text-red-600" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -351,7 +392,7 @@ export default function CategoryPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
               onClick={handleCreate}
               disabled={loading}
             >
@@ -368,6 +409,6 @@ export default function CategoryPage() {
         onConfirm={handleDeleteConfirm}
         itemName={selectedCategory?.name || "this category"}
       />
-    </div>
+    </PageContainer>
   );
 }

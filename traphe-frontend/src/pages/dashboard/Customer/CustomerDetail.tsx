@@ -14,13 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronRight, BellIcon, Edit, Trash2, Loader2 } from "lucide-react";
+import { ChevronRight, Edit, Trash2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { customerService } from "@/services/customer.service";
 import type { Customer } from "@/types/customer.types";
 import { toast } from "sonner";
-import { CURRENT_USER } from "@/constants/user"; //TODO: call user from localStorage
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
@@ -63,19 +63,11 @@ export default function CustomerDetailPage() {
   if (!customer) return null;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Customer Detail</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Customer Detail"
+        subtitle="View and manage customer information"
+      />
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
@@ -93,7 +85,7 @@ export default function CustomerDetailPage() {
         {/* Left Side - Customer Info */}
         <div>
           {/* Identity Section */}
-          <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm p-6 mb-6">
             <h3 className="text-base font-semibold mb-4">Identity</h3>
 
             <div className="mb-6">
@@ -167,7 +159,7 @@ export default function CustomerDetailPage() {
                 className="min-h-[120px] resize-none"
               />
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Side - Tabs */}
@@ -186,7 +178,7 @@ export default function CustomerDetailPage() {
             </TabsList>
 
             <TabsContent value="order-history">
-              <Card className="shadow-md">
+              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <div className="text-center py-10 text-gray-500">
                     No orders found for this customer.
@@ -196,13 +188,13 @@ export default function CustomerDetailPage() {
             </TabsContent>
 
             <TabsContent value="address">
-              <Card className="shadow-md">
+              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6">
                   {/* Table */}
-                  <div className="rounded-md border">
+                  <div className="rounded-md border border-slate-200">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-gray-50">
+                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
                           <TableHead className="w-[80px]">Primary</TableHead>
                           <TableHead>Address</TableHead>
                           <TableHead className="text-center">Actions</TableHead>
@@ -256,7 +248,7 @@ export default function CustomerDetailPage() {
             </TabsContent>
 
             <TabsContent value="loyalty">
-              <Card className="shadow-md">
+              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6">
                   <p className="text-gray-600">
                     Total Points Earned:{" "}
@@ -271,6 +263,6 @@ export default function CustomerDetailPage() {
           </Tabs>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

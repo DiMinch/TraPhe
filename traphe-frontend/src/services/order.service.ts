@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api.types";
+import type { ApiResponse, PageResponse } from "@/types/api.types";
 
 // Order response from backend
 export interface OrderResponse {
@@ -64,8 +64,13 @@ export interface CreateOrderRequest {
 
 export const orderService = {
   // Get all orders
-  getAllOrders: async () => {
-    return axiosClient.get<any, ApiResponse<OrderResponse[]>>("/orders");
+  getAllOrders: async (page: number = 0, size: number = 100) => {
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      "/orders",
+      {
+        params: { page, size },
+      },
+    );
   },
 
   // Get order by ID

@@ -30,16 +30,21 @@ import {
   Filter,
   Trash2,
   Eye,
-  BellIcon,
   RefreshCw,
   CheckCircle,
   XCircle,
+  ShoppingCart,
+  Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-// import { useNavigate } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { orderService, type OrderResponse } from "@/services/order.service";
+import {
+  PageContainer,
+  PageHeader,
+  PageError,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface Order {
   id: string;
@@ -84,7 +89,7 @@ export default function OrdersPage() {
     setError(null);
     try {
       const response = await orderService.getAllOrders();
-      const transformedData = response.data.map(transformOrder);
+      const transformedData = (response.data.content || []).map(transformOrder);
       setOrders(transformedData);
     } catch (err: any) {
       console.error("Error fetching orders:", err);
@@ -166,63 +171,42 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Order List</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Order List"
+        subtitle="Manage and track all customer orders"
+        onRefresh={fetchOrders}
+        isLoading={loading}
+      />
 
       {/* Error Display */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
+      {error && <PageError message={error} onRetry={fetchOrders} />}
 
       {/* Main Card */}
-      <Card className="shadow-md">
-        <CardContent className="p-6">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-4 md:p-6">
           {/* Filters */}
-          <div className="flex items-center gap-3 mb-6">
-            <Button
-              variant="outline"
-              onClick={fetchOrders}
-              disabled={loading}
-              className="shrink-0"
-            >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="Search"
-                className="pl-10 bg-white"
+                placeholder="Search orders..."
+                className="pl-10 bg-white border-slate-200 focus:ring-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter className="w-4 h-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 border-slate-200 hover:bg-slate-50"
+            >
+              <Filter className="w-4 h-4 text-slate-600" />
             </Button>
 
             <Select defaultValue="all-days">
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[130px] border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -233,7 +217,7 @@ export default function OrdersPage() {
             </Select>
 
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[130px] border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -244,7 +228,7 @@ export default function OrdersPage() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[130px] border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -259,58 +243,82 @@ export default function OrdersPage() {
 
           {/* Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600">Loading orders...</span>
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading orders...
+              </span>
             </div>
+          ) : filteredOrders.length === 0 ? (
+            <EmptyState
+              icon={<ShoppingCart className="w-8 h-8 text-slate-400" />}
+              title="No orders found"
+              description="Try adjusting your search or filter criteria"
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Order No.</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Order Type</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead>Created Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      No orders found
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Order No.
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Customer
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Order Type
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Total Amount
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Created Date
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="text-gray-700">
-                        {order.orderNumber}
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                    >
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="font-mono bg-slate-50"
+                        >
+                          {order.orderNumber}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-slate-800">
                             {order.customer}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-slate-500">
                             {order.phone}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">
+                        <Badge
+                          variant="secondary"
+                          className="bg-slate-100 text-slate-700"
+                        >
                           {order.orderType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium text-gray-900">
+                      <TableCell className="font-semibold text-slate-800">
                         {order.totalAmount}
                       </TableCell>
-                      <TableCell className="text-gray-700">
+                      <TableCell className="text-slate-600">
                         {order.date}
                       </TableCell>
                       <TableCell>
@@ -321,7 +329,7 @@ export default function OrdersPage() {
                               : order.status === "CONFIRMED"
                                 ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
                                 : order.status === "PENDING"
-                                  ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
+                                  ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
                                   : "bg-red-100 text-red-700 hover:bg-red-100"
                           }
                         >
@@ -329,20 +337,20 @@ export default function OrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 hover:bg-slate-100"
                             title="View details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-4 h-4 text-slate-600" />
                           </Button>
                           {order.status === "PENDING" && (
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-green-600"
+                              className="h-8 w-8 hover:bg-green-50 text-green-600"
                               onClick={() => handleConfirmOrder(order.id)}
                               title="Confirm order"
                             >
@@ -354,7 +362,7 @@ export default function OrdersPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-red-600"
+                              className="h-8 w-8 hover:bg-red-50 text-red-600"
                               onClick={() => handleCancelOrder(order.id)}
                               title="Cancel order"
                             >
@@ -364,7 +372,7 @@ export default function OrdersPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 hover:bg-red-50 text-slate-600 hover:text-red-600"
                             onClick={() =>
                               handleDeleteClick({
                                 id: order.id,
@@ -378,26 +386,35 @@ export default function OrdersPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <p className="text-sm text-slate-500">
+              Showing{" "}
+              <span className="font-medium">{filteredOrders.length}</span>{" "}
+              orders
+            </p>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious href="#" />
+                  <PaginationPrevious href="#" className="hover:bg-slate-100" />
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationLink href="#" isActive>
+                  <PaginationLink
+                    href="#"
+                    isActive
+                    className="bg-primary text-white hover:bg-primary/90"
+                  >
                     1
                   </PaginationLink>
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationNext href="#" />
+                  <PaginationNext href="#" className="hover:bg-slate-100" />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
@@ -412,6 +429,6 @@ export default function OrdersPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the order list"
       />
-    </div>
+    </PageContainer>
   );
 }

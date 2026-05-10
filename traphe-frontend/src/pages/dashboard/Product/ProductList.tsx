@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -22,17 +22,22 @@ import {
   Upload,
   Edit,
   Trash2,
-  MoreHorizontal,
-  BellIcon,
+  Package,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
 import { useState, useEffect } from "react";
 import NewProductDialog from "./NewProduct";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { toast } from "sonner";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -119,173 +124,194 @@ export default function ProductListPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Product List</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role}: {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Product List"
+        subtitle={
+          categoryFilter
+            ? `Filtered by: ${categoryFilter}`
+            : "Manage your products"
+        }
+        onRefresh={fetchProducts}
+      />
 
       {/* Action Buttons */}
-      <div className="flex gap-3 mb-6 justify-end">
+      <div className="flex flex-wrap gap-3 mb-6 justify-end">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewProductOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Product
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
+        <Button
+          variant="outline"
+          className="border-slate-200 hover:bg-slate-50"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Import CSV
         </Button>
-        <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
           <Upload className="w-4 h-4 mr-2" />
           Bulk Update
         </Button>
       </div>
 
       {/* Product List Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">List</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
           {loading ? (
-            <div className="text-center py-10">Loading products...</div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-10 text-gray-500">
-              No products found
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading products...
+              </span>
             </div>
+          ) : products.length === 0 ? (
+            <EmptyState
+              icon={<Package className="w-8 h-8 text-slate-400" />}
+              title="No products found"
+              description={
+                categoryFilter
+                  ? "Try clearing the category filter"
+                  : "Start by adding your first product"
+              }
+            />
           ) : (
             <>
-              <Table className="">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Variants</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentProducts.map((product) => (
-                    <TableRow
-                      key={product.id}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => navigate(`/product/detail/${product.id}`)}
-                    >
-                      <TableCell>
-                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
-                          {product.imageUrl ? (
-                            <img
-                              src={product.imageUrl}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xl">📦</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {product.warrantyPeriod
-                              ? `${product.warrantyPeriod} months warranty`
-                              : "No warranty"}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className="bg-blue-100 text-blue-700 hover:bg-blue-100"
-                        >
-                          {product.categoryName || "N/A"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className="bg-purple-100 text-purple-700 hover:bg-purple-100"
-                        >
-                          {product.supplierName || "N/A"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {product.variants?.length || 0} variant(s)
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={
-                            product.status === "ACTIVE"
-                              ? "bg-green-100 text-green-700 hover:bg-green-100"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                          }
-                        >
-                          {product.status || "ACTIVE"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className="flex items-center gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-amber-50 hover:border"
-                            onClick={() =>
-                              navigate(`/product/edit/${product.id}`)
-                            }
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-red-50 hover:border"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: product.id,
-                                name: product.name,
-                              })
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-gray-100 hover:border"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                      <TableHead className="font-semibold text-slate-600">
+                        Image
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Category
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Supplier
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Variants
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Status
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentProducts.map((product) => (
+                      <TableRow
+                        key={product.id}
+                        className="cursor-pointer border-slate-50 hover:bg-slate-50/50 transition-colors"
+                        onClick={() =>
+                          navigate(`/product/detail/${product.id}`)
+                        }
+                      >
+                        <TableCell>
+                          <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                            {product.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-slate-800">
+                              {product.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {product.warrantyPeriod
+                                ? `${product.warrantyPeriod} months warranty`
+                                : "No warranty"}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">
+                            {product.categoryName || "N/A"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0">
+                            {product.supplierName || "N/A"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-slate-600">
+                            {product.variants?.length || 0} variant(s)
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              product.status === "ACTIVE"
+                                ? "bg-green-100 text-green-700 hover:bg-green-100 border-0"
+                                : "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0"
+                            }
+                          >
+                            {product.status || "ACTIVE"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div
+                            className="flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-amber-50 text-slate-600 hover:text-amber-600"
+                              onClick={() =>
+                                navigate(`/product/edit/${product.id}`)
+                              }
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-red-50 text-slate-600 hover:text-red-600"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: product.id,
+                                  name: product.name,
+                                })
+                              }
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
-              <div className="mt-6">
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+                <p className="text-sm text-slate-500">
+                  Showing{" "}
+                  <span className="font-medium">
+                    {startIndex + 1}-{Math.min(endIndex, products.length)}
+                  </span>{" "}
+                  of <span className="font-medium">{products.length}</span>{" "}
+                  products
+                </p>
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
@@ -293,11 +319,11 @@ export default function ProductListPage() {
                         onClick={() =>
                           setCurrentPage((prev) => Math.max(1, prev - 1))
                         }
-                        className={
+                        className={`hover:bg-slate-100 ${
                           currentPage === 1
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"
-                        }
+                        }`}
                       />
                     </PaginationItem>
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(
@@ -306,7 +332,7 @@ export default function ProductListPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className="cursor-pointer"
+                            className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : ""}`}
                           >
                             {page}
                           </PaginationLink>
@@ -320,11 +346,11 @@ export default function ProductListPage() {
                             Math.min(totalPages, prev + 1),
                           )
                         }
-                        className={
+                        className={`hover:bg-slate-100 ${
                           currentPage === totalPages
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"
-                        }
+                        }`}
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -350,6 +376,6 @@ export default function ProductListPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the product list"
       />
-    </div>
+    </PageContainer>
   );
 }

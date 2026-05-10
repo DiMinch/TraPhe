@@ -38,20 +38,26 @@ import {
   Upload,
   Edit,
   Trash2,
-  MoreHorizontal,
-  BellIcon,
   TrendingUp,
   Loader2,
+  Users,
+  UserPlus,
+  Crown,
+  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { customerService } from "@/services/customer.service";
 import { customerTierService } from "@/services/customer-tier.service";
 import type { Customer, CustomerTier } from "@/types/customer.types";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function CustomerPage() {
   const navigate = useNavigate();
@@ -160,186 +166,208 @@ export default function CustomerPage() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Customer List</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Customer List"
+        subtitle="Manage your customers and memberships"
+        onRefresh={fetchData}
+      />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
-        <Card className="shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Customer</p>
-                <p className="text-3xl font-bold text-gray-900">500</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="w-3 h-3 text-green-600" />
-                  <span className="text-xs text-green-600">
-                    25% (vs last 3 months)
-                  </span>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden">
+          <CardContent className="p-6 relative">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Users className="w-5 h-5" />
                 </div>
+                <p className="text-sm text-blue-100">Total Customer</p>
               </div>
-              <Button variant="ghost" size="icon" className="text-gray-400">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              <p className="text-3xl font-bold">{customers.length}</p>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="w-3 h-3" />
+                <span className="text-xs text-blue-100">
+                  25% (vs last 3 months)
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">New Customer</p>
-                <p className="text-3xl font-bold text-gray-900">10</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp className="w-3 h-3 text-green-600" />
-                  <span className="text-xs text-green-600">
-                    25% (vs last 3 months)
-                  </span>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white overflow-hidden">
+          <CardContent className="p-6 relative">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <UserPlus className="w-5 h-5" />
                 </div>
+                <p className="text-sm text-emerald-100">New Customer</p>
               </div>
-              <Button variant="ghost" size="icon" className="text-gray-400">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              <p className="text-3xl font-bold">10</p>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="w-3 h-3" />
+                <span className="text-xs text-emerald-100">
+                  25% (vs last 3 months)
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">VIP Customer</p>
-                <p className="text-3xl font-bold text-gray-900">2</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <span className="text-xs text-gray-600">
-                    0% (vs last 3 months)
-                  </span>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-amber-500 to-amber-600 text-white overflow-hidden">
+          <CardContent className="p-6 relative">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Crown className="w-5 h-5" />
                 </div>
+                <p className="text-sm text-amber-100">VIP Customer</p>
               </div>
-              <Button variant="ghost" size="icon" className="text-gray-400">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              <p className="text-3xl font-bold">2</p>
+              <div className="flex items-center gap-1 mt-2">
+                <span className="text-xs text-amber-100">
+                  0% (vs last 3 months)
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
+      <div className="flex flex-wrap justify-end gap-3 mb-6">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewCustomerOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Customer
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
+        <Button
+          variant="outline"
+          className="border-slate-200 hover:bg-slate-50"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Import CSV
         </Button>
-        <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
           <Upload className="w-4 h-4 mr-2" />
           Bulk Update
         </Button>
       </div>
 
       {/* Main Table */}
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">
           {/* Search */}
           <div className="flex items-center gap-3 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search by Name, Phone or Email"
-                className="pl-10 bg-white"
+                className="pl-10 bg-white border-slate-200 focus:border-primary"
               />
             </div>
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="animate-spin" />
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading customers...
+              </span>
             </div>
+          ) : customers.length === 0 ? (
+            <EmptyState
+              icon={<Users className="w-8 h-8 text-slate-400" />}
+              title="No customers found"
+              description="Start by adding your first customer"
+            />
           ) : (
-            <div className="rounded-md border">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead>Total Spent</TableHead>
-                    <TableHead>Points</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Customer
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Tier
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Total Spent
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Points
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Created At
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {currentCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                    <TableRow
+                      key={customer.id}
+                      className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                    >
                       <TableCell>
                         <button
                           onClick={() => navigate(`/customer/${customer.id}`)}
-                          className="text-left hover:text-indigo-900 cursor-pointer"
+                          className="text-left hover:text-primary cursor-pointer transition-colors"
                         >
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-slate-800">
                             {customer.fullName}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-slate-500">
                             {customer.phone}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-slate-400">
                             {customer.email}
                           </div>
                         </button>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-100"
-                        >
+                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">
                           {customer.tier?.name || "N/A"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium text-gray-900">
+                      <TableCell className="font-semibold text-slate-800">
                         {customer.totalPurchase?.toLocaleString("vi-VN")}₫
                       </TableCell>
-                      <TableCell className="text-gray-700">
-                        {customer.loyaltyPoint?.pointsAvailable || 0}
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-50 text-amber-700 border-amber-200"
+                        >
+                          {customer.loyaltyPoint?.pointsAvailable || 0} pts
+                        </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-500">
+                      <TableCell className="text-sm text-slate-500">
                         {customer.createdAt
                           ? format(new Date(customer.createdAt), "dd/MM/yyyy")
                           : "-"}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-gray-500 hover:text-indigo-600 cursor-pointer"
+                            className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-primary/10"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-gray-500 hover:text-red-600 cursor-pointer"
+                            className="h-8 w-8 text-slate-600 hover:text-red-600 hover:bg-red-50"
                             onClick={() =>
                               handleDeleteClick({
                                 id: customer.id,
@@ -359,29 +387,32 @@ export default function CustomerPage() {
           )}
 
           {/* Pagination */}
-          <div className="items-center justify-between mt-6">
-            <div className="text-sm text-gray-500">
-              Page {currentPage} of {totalPages}
+          {customers.length > 0 && (
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+              <p className="text-sm text-slate-500">
+                Page <span className="font-medium">{currentPage}</span> of{" "}
+                <span className="font-medium">{totalPages}</span>
+              </p>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="cursor-pointer hover:bg-slate-100"
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className="cursor-pointer hover:bg-slate-100"
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="cursor-pointer"
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    className="cursor-pointer"
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -476,6 +507,6 @@ export default function CustomerPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the customer list"
       />
-    </div>
+    </PageContainer>
   );
 }

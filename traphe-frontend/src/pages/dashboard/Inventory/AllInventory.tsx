@@ -31,24 +31,31 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  BellIcon,
   Search,
   Filter,
   RefreshCw,
   Edit,
   Minus,
   Plus,
+  Package,
+  Loader2,
+  FileSpreadsheet,
+  ArrowUpDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { CURRENT_USER } from "@/constants/user";
 import {
   inventoryService,
   type InventoryResponse,
 } from "@/services/inventory.service";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface InventoryItem {
   id: string;
@@ -188,27 +195,19 @@ export default function AllInventoryPage() {
   const items = activeTab === "variants" ? productVariants : partsComponents;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Inventory</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
-      <div className="flex items-center justify-end gap-3">
-        <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
+    <PageContainer>
+      <PageHeader
+        title="Inventory"
+        subtitle="Manage stock levels and adjustments"
+        onRefresh={fetchInventory}
+      />
+      <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
+        <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md">
+          <FileSpreadsheet className="w-4 h-4 mr-2" />
           Export Excel
         </Button>
-        <Button className="bg-gray-900 hover:bg-gray-800 text-white">
+        <Button className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-md">
+          <ArrowUpDown className="w-4 h-4 mr-2" />
           Stock Adjustment
         </Button>
       </div>
@@ -219,33 +218,47 @@ export default function AllInventoryPage() {
         onValueChange={setActiveTab}
         className="mb-4"
       >
-        <TabsList className="bg-white">
-          <TabsTrigger value="variants">Product Variants</TabsTrigger>
-          <TabsTrigger value="components">Parts Component</TabsTrigger>
+        <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
+          <TabsTrigger
+            value="variants"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+          >
+            Product Variants
+          </TabsTrigger>
+          <TabsTrigger
+            value="components"
+            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+          >
+            Parts Component
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Search Bar */}
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Search"
-              className="pl-10 bg-white"
+              placeholder="Search by name, SKU, category..."
+              className="pl-10 bg-white border-slate-200 focus:border-primary"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           {/* Filters */}
-          <Button variant="outline" size="icon" className="shrink-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 border-slate-200 hover:bg-slate-50"
+          >
             <Filter className="w-4 h-4" />
           </Button>
 
           <Select defaultValue="all-days">
-            <SelectTrigger className="w-[140px] bg-white borderColor:#E5E5E5">
+            <SelectTrigger className="w-[140px] bg-white border-slate-200">
               <SelectValue placeholder="All days" />
             </SelectTrigger>
             <SelectContent>
@@ -257,7 +270,7 @@ export default function AllInventoryPage() {
           </Select>
 
           <Select defaultValue="all-categories">
-            <SelectTrigger className="w-[160px] bg-white">
+            <SelectTrigger className="w-[160px] bg-white border-slate-200">
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
@@ -269,7 +282,7 @@ export default function AllInventoryPage() {
           </Select>
 
           <Select defaultValue="all-status">
-            <SelectTrigger className="w-[140px] bg-white">
+            <SelectTrigger className="w-[140px] bg-white border-slate-200">
               <SelectValue placeholder="All status" />
             </SelectTrigger>
             <SelectContent>
@@ -282,15 +295,15 @@ export default function AllInventoryPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">
           {/* Loading State */}
           {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-gray-400" />
-                <p className="text-gray-600">Loading inventory data...</p>
-              </div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading inventory data...
+              </span>
             </div>
           )}
 
@@ -704,7 +717,7 @@ export default function AllInventoryPage() {
                 Cancel
               </Button>
               <Button
-                className="bg-gray-900 hover:bg-gray-800 text-white"
+                className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white"
                 onClick={() => setIsEditDialogOpen(false)}
               >
                 Update
@@ -713,6 +726,6 @@ export default function AllInventoryPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

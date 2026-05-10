@@ -31,15 +31,19 @@ import {
   Download,
   Edit,
   Trash2,
-  MoreHorizontal,
-  BellIcon,
   Filter,
+  Loader2,
+  Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { adminService, type UserAccount } from "@/services/admin.service";
 import { toast } from "sonner";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function UserAccountsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -125,12 +129,12 @@ export default function UserAccountsPage() {
     const statusUpper = status?.toUpperCase();
     switch (statusUpper) {
       case "ACTIVE":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
+        return "bg-green-100 text-green-700 hover:bg-green-100 border-0";
       case "INACTIVE":
       case "PENDING":
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+        return "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0";
       default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
+        return "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0";
     }
   };
 
@@ -157,60 +161,57 @@ export default function UserAccountsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">User Accounts</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="User Accounts"
+        subtitle="Manage system users and their roles"
+        onRefresh={fetchUsers}
+      />
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+      <div className="flex flex-wrap justify-end gap-3 mb-6">
+        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md">
+          <Plus className="mr-2 w-4 h-4" />
           New User
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button
+          variant="outline"
+          className="border-slate-200 hover:bg-slate-50"
+        >
+          <Plus className="mr-2 w-4 h-4" />
           Import CSV
         </Button>
-        <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-          <Download className="mr-2" />
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
+          <Download className="mr-2 w-4 h-4" />
           Bulk Update
         </Button>
       </div>
 
       {/* Main Card */}
-      <Card>
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">
           {/* Filters */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
                 placeholder="Search by name, email, or phone..."
-                className="pl-10"
+                className="pl-10 border-slate-200 focus:border-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 border-slate-200 hover:bg-slate-50"
+            >
+              <Filter className="w-4 h-4" />
             </Button>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-slate-200">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
               <SelectContent>
@@ -221,7 +222,7 @@ export default function UserAccountsPage() {
             </Select>
 
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-slate-200">
                 <SelectValue placeholder="All role" />
               </SelectTrigger>
               <SelectContent>
@@ -234,145 +235,168 @@ export default function UserAccountsPage() {
           </div>
 
           {/* Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name/Username</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-10 text-gray-500"
-                  >
-                    Loading users...
-                  </TableCell>
-                </TableRow>
-              ) : currentUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-10 text-gray-500"
-                  >
-                    No users found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                currentUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {user.fullName || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {user.username}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.phone || "N/A"}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles?.map((role, index) => (
-                          <Badge
-                            key={index}
-                            variant="secondary"
-                            className="bg-blue-100 text-blue-800 hover:bg-blue-100"
-                          >
-                            {role.replace("ROLE_", "")}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getStatusColor(user.status)}
-                        variant="secondary"
-                      >
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Edit />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() =>
-                            handleDeleteClick({
-                              id: user.id,
-                              name: user.fullName || user.username,
-                            })
-                          }
-                        >
-                          <Trash2 />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal />
-                        </Button>
-                      </div>
-                    </TableCell>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading users...
+              </span>
+            </div>
+          ) : currentUsers.length === 0 ? (
+            <EmptyState
+              icon={<Users className="w-8 h-8 text-slate-400" />}
+              title="No users found"
+              description="Try adjusting your search or filter criteria"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Name/Username
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Phone
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Email
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Role
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentUsers.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="border-slate-50 hover:bg-slate-50/50 transition-colors"
+                    >
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-slate-800">
+                            {user.fullName || "N/A"}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            {user.username}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {user.phone || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {user.email}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles?.map((role, index) => (
+                            <Badge
+                              key={index}
+                              className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0"
+                            >
+                              {role.replace("ROLE_", "")}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(user.status)}>
+                          {user.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-primary/10"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: user.id,
+                                name: user.fullName || user.username,
+                              })
+                            }
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
           {/* Pagination */}
-          <div className="mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ),
-                )}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          {filteredUsers.length > 0 && (
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+              <p className="text-sm text-slate-500">
+                Showing{" "}
+                <span className="font-medium">
+                  {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)}
+                </span>{" "}
+                of <span className="font-medium">{filteredUsers.length}</span>{" "}
+                users
+              </p>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      className={`hover:bg-slate-100 ${
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }`}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ),
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      className={`hover:bg-slate-100 ${
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }`}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -383,6 +407,6 @@ export default function UserAccountsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the user accounts"
       />
-    </div>
+    </PageContainer>
   );
 }

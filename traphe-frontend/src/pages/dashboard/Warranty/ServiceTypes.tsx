@@ -21,11 +21,16 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Loader2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { repairService } from "@/services/repair-service.service";
 import type { RepairService } from "@/types/repair-service.types";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function ServiceTypesPage() {
   const [services, setServices] = useState<RepairService[]>([]);
@@ -135,109 +140,128 @@ export default function ServiceTypesPage() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Service Types</h1>
+    <PageContainer>
+      <PageHeader
+        title="Service Types"
+        subtitle="Manage repair and maintenance service offerings"
+        onRefresh={fetchServices}
+      />
+
+      <div className="flex justify-end mb-6">
         <Button
-          className="bg-indigo-900 text-white cursor-pointer"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg"
           onClick={handleOpenCreate}
         >
           <Plus className="w-4 h-4 mr-2" /> New Service
         </Button>
       </div>
 
-      <Card className="shadow-md">
-        <CardContent className="p-4">
-          <div className="flex items-center mb-4">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex items-center mb-6">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search services..."
-                className="pl-9 bg-white"
+                className="pl-10 bg-white border-slate-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Service Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Standard Price</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10">
-                      <Loader2 className="animate-spin inline" />
-                    </TableCell>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="mt-3 text-slate-600">Loading services...</p>
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <EmptyState
+              icon={<Wrench className="w-8 h-8 text-slate-400" />}
+              title="No services found"
+              description="Create your first service type to get started"
+            />
+          ) : (
+            <div className="rounded-lg border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Service Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Description
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Standard Price
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Duration
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : filteredServices.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center py-10 text-gray-500"
-                    >
-                      No services found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredServices.map((service) => (
-                    <TableRow key={service.id}>
-                      <TableCell className="font-medium">
+                </TableHeader>
+                <TableBody>
+                  {filteredServices.map((service) => (
+                    <TableRow key={service.id} className="hover:bg-slate-50/50">
+                      <TableCell className="font-medium text-slate-800">
                         {service.name}
                       </TableCell>
-                      <TableCell className="text-gray-500 max-w-[200px] truncate">
+                      <TableCell className="text-slate-500 max-w-[200px] truncate">
                         {service.description}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-slate-600">
                         {service.standardPrice.toLocaleString()}₫
                       </TableCell>
-                      <TableCell>{service.estimatedDuration}</TableCell>
+                      <TableCell className="text-slate-600">
+                        {service.estimatedDuration}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={`cursor-pointer ${service.isActive ? "text-green-600!" : "text-gray-400!"}`}
+                          className={
+                            service.isActive
+                              ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                              : "bg-gray-50 text-gray-400 border-gray-200"
+                          }
                         >
                           {service.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
-                            className="cursor-pointer"
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 hover:bg-slate-100"
                             onClick={() => handleOpenEdit(service)}
                           >
-                            <Edit className="w-4 h-4 text-blue-600!" />
+                            <Edit className="w-4 h-4 text-slate-600" />
                           </Button>
                           <Button
-                            className="cursor-pointer"
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 hover:bg-red-50"
                             onClick={() => {
                               setServiceToDelete(service);
                               setIsDeleteOpen(true);
                             }}
                           >
-                            <Trash2 className="w-4 h-4 text-red-600!" />
+                            <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -325,17 +349,13 @@ export default function ServiceTypesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              className="cursor-pointer"
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-indigo-900 text-white cursor-pointer"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
             >
               {isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -353,6 +373,6 @@ export default function ServiceTypesPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="service"
       />
-    </div>
+    </PageContainer>
   );
 }

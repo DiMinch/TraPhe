@@ -28,11 +28,12 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"; // Import Pagination components
+} from "@/components/ui/pagination";
 import { customerTierService } from "@/services/customer-tier.service";
 import type { CustomerTier } from "@/types/customer.types";
 import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 
 export default function CustomerTierPage() {
   const [tiers, setTiers] = useState<CustomerTier[]>([]);
@@ -175,30 +176,32 @@ export default function CustomerTierPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Customer Tiers</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleRecalculate}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Recalculate All
-          </Button>
-          <Button
-            className="bg-indigo-900 text-white"
-            onClick={handleCreateClick}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Tier
-          </Button>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Customer Tiers"
+        subtitle="Manage loyalty tiers and rewards"
+      />
+
+      <div className="flex items-center justify-end gap-2 mb-6">
+        <Button variant="outline" onClick={handleRecalculate}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Recalculate All
+        </Button>
+        <Button
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          onClick={handleCreateClick}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          New Tier
+        </Button>
       </div>
 
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="rounded-md border mb-4">
+          <div className="rounded-md border border-slate-200 mb-4">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
                   <TableHead>Tier Name</TableHead>
                   <TableHead>Min Points</TableHead>
                   <TableHead>Discount</TableHead>
@@ -375,7 +378,7 @@ export default function CustomerTierPage() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-indigo-900 text-white"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
             >
               {isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -393,6 +396,6 @@ export default function CustomerTierPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="tier"
       />
-    </div>
+    </PageContainer>
   );
 }

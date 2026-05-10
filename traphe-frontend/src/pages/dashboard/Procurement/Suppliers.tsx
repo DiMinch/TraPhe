@@ -39,19 +39,23 @@ import {
   Search,
   Edit,
   Trash2,
+  Loader2,
+  Building2,
   MoreHorizontal,
-  BellIcon,
-  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import {
   supplierService,
   type SupplierResponse,
   type SupplierRequest,
 } from "@/services/supplier.service";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface Supplier {
   id: string;
@@ -266,43 +270,30 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Suppliers</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Suppliers"
+        subtitle="Manage your supplier relationships"
+        onRefresh={fetchSuppliers}
+      />
 
       {/* Action Buttons */}
-      <div className="flex gap-3 mb-6 justify-end">
-        <Button variant="outline" onClick={fetchSuppliers} disabled={loading}>
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+      <div className="flex flex-wrap gap-3 mb-6 justify-end">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewSupplierOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Supplier
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
+        <Button
+          variant="outline"
+          className="border-slate-200 hover:bg-slate-50"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Import CSV
         </Button>
-        <Button className="bg-yellow-500 hover:bg-yellow-600 text-gray-900">
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
           <Upload className="w-4 h-4 mr-2" />
           Bulk Update
         </Button>
@@ -310,21 +301,21 @@ export default function SuppliersPage() {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-md">
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Main Card */}
-      <Card className="shadow-md">
-        <CardContent className="p-6 pt-0">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="Search"
-                className="pl-10 bg-white"
+                placeholder="Search by name, contact, phone, email..."
+                className="pl-10 bg-white border-slate-200 focus:border-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -333,108 +324,130 @@ export default function SuppliersPage() {
 
           {/* Table */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600">Loading suppliers...</span>
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading suppliers...
+              </span>
             </div>
+          ) : filteredSuppliers.length === 0 ? (
+            <EmptyState
+              icon={<Building2 className="w-8 h-8 text-slate-400" />}
+              title="No suppliers found"
+              description="Add your first supplier to get started"
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-[200px]">Name</TableHead>
-                  <TableHead className="w-[200px]">Contact Name</TableHead>
-                  <TableHead className="w-[150px]">Phone</TableHead>
-                  <TableHead className="w-[200px]">Email</TableHead>
-                  <TableHead className="w-[120px]">Total POs</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[120px] text-center">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentSuppliers.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-8 text-gray-500"
-                    >
-                      No suppliers found
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="w-[200px] font-semibold text-slate-600">
+                      Name
+                    </TableHead>
+                    <TableHead className="w-[200px] font-semibold text-slate-600">
+                      Contact Name
+                    </TableHead>
+                    <TableHead className="w-[150px] font-semibold text-slate-600">
+                      Phone
+                    </TableHead>
+                    <TableHead className="w-[200px] font-semibold text-slate-600">
+                      Email
+                    </TableHead>
+                    <TableHead className="w-[120px] font-semibold text-slate-600">
+                      Total POs
+                    </TableHead>
+                    <TableHead className="w-[120px] font-semibold text-slate-600">
+                      Status
+                    </TableHead>
+                    <TableHead className="w-[120px] text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  currentSuppliers.map((supplier) => (
-                    <TableRow key={supplier.id}>
-                      <TableCell>
-                        <button
-                          onClick={() =>
-                            navigate(`/procurement/suppliers/${supplier.id}`)
-                          }
-                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                        >
-                          {supplier.name}
-                        </button>
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {supplier.contactName}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {supplier.phone}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {supplier.email}
-                      </TableCell>
-                      <TableCell className="text-center text-gray-700">
-                        {supplier.totalPOs}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            supplier.status === "Active"
-                              ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                          }
-                        >
-                          {supplier.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleEditClick(supplier)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: supplier.id,
-                                name: supplier.name,
-                              })
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {currentSuppliers.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-gray-500"
+                      >
+                        No suppliers found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    currentSuppliers.map((supplier) => (
+                      <TableRow key={supplier.id}>
+                        <TableCell>
+                          <button
+                            onClick={() =>
+                              navigate(`/procurement/suppliers/${supplier.id}`)
+                            }
+                            className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                          >
+                            {supplier.name}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-gray-700">
+                          {supplier.contactName}
+                        </TableCell>
+                        <TableCell className="text-gray-700">
+                          {supplier.phone}
+                        </TableCell>
+                        <TableCell className="text-gray-700">
+                          {supplier.email}
+                        </TableCell>
+                        <TableCell className="text-center text-gray-700">
+                          {supplier.totalPOs}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              supplier.status === "Active"
+                                ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+                            }
+                          >
+                            {supplier.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleEditClick(supplier)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: supplier.id,
+                                  name: supplier.name,
+                                })
+                              }
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {/* Pagination */}
@@ -753,7 +766,7 @@ export default function SuppliersPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
               onClick={handleUpdateSupplier}
             >
               Save Changes
@@ -770,6 +783,6 @@ export default function SuppliersPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the supplier list"
       />
-    </div>
+    </PageContainer>
   );
 }

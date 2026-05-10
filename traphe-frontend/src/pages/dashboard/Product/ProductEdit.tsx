@@ -18,6 +18,7 @@ import type { Product } from "@/types/product.types";
 import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
+import { PageContainer } from "@/components/layout/PageLayout";
 
 export default function ProductEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -128,7 +129,7 @@ export default function ProductEditPage() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <PageContainer>
       <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
@@ -140,7 +141,7 @@ export default function ProductEditPage() {
         <h1 className="text-2xl font-semibold">Edit Product</h1>
       </div>
 
-      <Card>
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>Product Information</CardTitle>
         </CardHeader>
@@ -280,7 +281,7 @@ export default function ProductEditPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
               onClick={handleUpdate}
               disabled={loading}
             >
@@ -289,6 +290,6 @@ export default function ProductEditPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

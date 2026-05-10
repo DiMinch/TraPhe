@@ -31,16 +31,15 @@ import {
   Download,
   Edit,
   Trash2,
-  MoreHorizontal,
-  BellIcon,
   Filter,
-  RefreshCw,
+  Loader2,
   ToggleLeft,
   ToggleRight,
+  Tag,
+  MoreHorizontal,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import {
   promotionService,
@@ -65,6 +64,11 @@ import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
 import type { Category } from "@/types/category.types";
 import type { Product } from "@/types/product.types";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
@@ -459,26 +463,12 @@ export default function PromotionListPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Promotion List</h1>
-        <div className="flex items-center gap-4">
-          <Button onClick={fetchPromotions} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Promotion List"
+        subtitle="Manage discounts and promotional campaigns"
+        onRefresh={fetchPromotions}
+      />
 
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
@@ -487,45 +477,52 @@ export default function PromotionListPage() {
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
+      <div className="flex flex-wrap justify-end gap-3 mb-6">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsCreateDialogOpen(true)}
         >
-          <Plus className="mr-2" />
+          <Plus className="mr-2 w-4 h-4" />
           New Promotion
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button
+          variant="outline"
+          className="border-slate-200 hover:bg-slate-50"
+        >
+          <Plus className="mr-2 w-4 h-4" />
           Import CSV
         </Button>
-        <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-          <Download className="mr-2" />
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
+          <Download className="mr-2 w-4 h-4" />
           Bulk Update
         </Button>
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-md">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">
           {/* Filters */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search by Name or Code"
-                className="pl-10 bg-white"
+                className="pl-10 bg-white border-slate-200 focus:border-primary"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Filter />
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 border-slate-200 hover:bg-slate-50"
+            >
+              <Filter className="w-4 h-4" />
             </Button>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-slate-200">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
               <SelectContent>
@@ -538,7 +535,7 @@ export default function PromotionListPage() {
             </Select>
 
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-slate-200">
                 <SelectValue placeholder="All type" />
               </SelectTrigger>
               <SelectContent>
@@ -552,153 +549,168 @@ export default function PromotionListPage() {
 
           {/* Table */}
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading promotions...
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <span className="mt-3 text-slate-500 font-medium">
+                Loading promotions...
+              </span>
             </div>
+          ) : filteredPromotions.length === 0 ? (
+            <EmptyState
+              icon={<Tag className="w-8 h-8 text-slate-400" />}
+              title="No promotions found"
+              description="Create your first promotional campaign"
+            />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Code</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentPromotions.map((promo) => (
-                  <TableRow key={promo.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">
-                        {promo.code}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => navigate(`/promotions/${promo.id}`)}
-                        className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                      >
-                        {promo.name}
-                      </button>
-                      {promo.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                          {promo.description}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {getTypeLabel(promo.type)}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {promo.scope}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-green-600">
-                        {promo.type === "PERCENTAGE"
-                          ? `${promo.value}%`
-                          : `$${promo.value.toFixed(2)}`}
-                      </span>
-                      {promo.maxDiscountAmount && (
-                        <div className="text-xs text-gray-500">
-                          Max: ${promo.maxDiscountAmount.toFixed(2)}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{formatDate(promo.startDate)}</div>
-                        <div className="text-gray-500">
-                          to {formatDate(promo.endDate)}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getStatusColor(promo.status)}
-                        variant="secondary"
-                      >
-                        {promo.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {promo.usageLimit ? (
-                          <>
-                            <span className="font-medium">
-                              {promo.usageCount || 0}
-                            </span>
-                            <span className="text-gray-500">
-                              /{promo.usageLimit}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-gray-500">Unlimited</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className="bg-gray-200 text-gray-800 hover:bg-gray-200"
-                        variant="secondary"
-                      >
-                        {promo.priority}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleToggleStatus(promo)}
-                          title={promo.isActive ? "Deactivate" : "Activate"}
-                        >
-                          {promo.isActive ? (
-                            <ToggleRight className="text-green-600" />
-                          ) : (
-                            <ToggleLeft className="text-gray-400" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEditClick(promo)}
-                          title="Edit"
-                        >
-                          <Edit />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() =>
-                            handleDeleteClick({
-                              id: promo.id,
-                              name: promo.name,
-                            })
-                          }
-                        >
-                          <Trash2 />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Usage</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentPromotions.map((promo) => (
+                    <TableRow key={promo.id}>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">
+                          {promo.code}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => navigate(`/promotions/${promo.id}`)}
+                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                        >
+                          {promo.name}
+                        </button>
+                        {promo.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-[200px]">
+                            {promo.description}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {getTypeLabel(promo.type)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {promo.scope}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-green-600">
+                          {promo.type === "PERCENTAGE"
+                            ? `${promo.value}%`
+                            : `$${promo.value.toFixed(2)}`}
+                        </span>
+                        {promo.maxDiscountAmount && (
+                          <div className="text-xs text-gray-500">
+                            Max: ${promo.maxDiscountAmount.toFixed(2)}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{formatDate(promo.startDate)}</div>
+                          <div className="text-gray-500">
+                            to {formatDate(promo.endDate)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={getStatusColor(promo.status)}
+                          variant="secondary"
+                        >
+                          {promo.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {promo.usageLimit ? (
+                            <>
+                              <span className="font-medium">
+                                {promo.usageCount || 0}
+                              </span>
+                              <span className="text-gray-500">
+                                /{promo.usageLimit}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-500">Unlimited</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className="bg-gray-200 text-gray-800 hover:bg-gray-200"
+                          variant="secondary"
+                        >
+                          {promo.priority}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleToggleStatus(promo)}
+                            title={promo.isActive ? "Deactivate" : "Activate"}
+                          >
+                            {promo.isActive ? (
+                              <ToggleRight className="text-green-600" />
+                            ) : (
+                              <ToggleLeft className="text-gray-400" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditClick(promo)}
+                            title="Edit"
+                          >
+                            <Edit />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: promo.id,
+                                name: promo.name,
+                              })
+                            }
+                          >
+                            <Trash2 />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <MoreHorizontal />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
 
           {/* Pagination */}
@@ -1564,13 +1576,13 @@ export default function PromotionListPage() {
             <Button
               onClick={handleUpdatePromotion}
               disabled={editing}
-              className="bg-indigo-900 text-white hover:bg-indigo-800"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
             >
               {editing ? "Updating..." : "Update Promotion"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

@@ -9,19 +9,16 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Plus,
-  Download,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  BellIcon,
-} from "lucide-react";
+import { Plus, Download, Edit, Trash2, Shield, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { CURRENT_USER } from "@/constants/user";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { adminService, type Role } from "@/services/admin.service";
 import { toast } from "sonner";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 interface Permission {
   id: string;
@@ -200,87 +197,88 @@ export default function RolesPermissionsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Roles & Permissions</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
+    <PageContainer>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Manage user roles and their access permissions"
+        onRefresh={fetchRoles}
+      />
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+          <Plus className="mr-2 w-4 h-4" />
           New User
         </Button>
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-          <Plus className="mr-2" />
+        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+          <Plus className="mr-2 w-4 h-4" />
           Import CSV
         </Button>
-        <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-          <Download className="mr-2" />
+        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg">
+          <Download className="mr-2 w-4 h-4" />
           Bulk Update
         </Button>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Role List */}
-        <Card className="shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold">Role List</CardTitle>
-            <Button className="bg-indigo-900 hover:bg-indigo-800 text-white h-8">
-              <Plus className="mr-1" />
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+            <CardTitle className="text-base font-semibold text-slate-800">
+              Role List
+            </CardTitle>
+            <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8">
+              <Plus className="mr-1 w-4 h-4" />
               New Role
             </Button>
           </CardHeader>
-          <CardContent className="p-0 pl-4 ">
-            <Table className="">
+          <CardContent className="p-0 pl-4">
+            <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Description</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                  <TableHead className="font-semibold text-slate-600">
+                    Description
+                  </TableHead>
+                  <TableHead className="font-semibold text-slate-600">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={3}
-                      className="text-center py-10 text-gray-500"
-                    >
-                      Loading roles...
+                    <TableCell colSpan={3} className="text-center py-10">
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <span className="mt-2 text-gray-500">
+                          Loading roles...
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : roles.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={3}
-                      className="text-center py-10 text-gray-500"
-                    >
-                      No roles found
+                    <TableCell colSpan={3} className="text-center py-10">
+                      <EmptyState
+                        icon={<Shield className="w-8 h-8 text-slate-400" />}
+                        title="No roles found"
+                        description="Create your first role to manage permissions"
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
                   roles.map((role) => (
                     <TableRow
                       key={role.id}
-                      className={`cursor-pointer ${
-                        selectedRole === role.id ? "bg-gray-100" : ""
+                      className={`cursor-pointer transition-colors hover:bg-slate-50 ${
+                        selectedRole === role.id ? "bg-indigo-50" : ""
                       }`}
                       onClick={() => setSelectedRole(role.id)}
                     >
-                      <TableCell className="font-medium">{role.name}</TableCell>
+                      <TableCell className="font-medium text-slate-800">
+                        {role.name}
+                      </TableCell>
                       <TableCell className="text-gray-600">
                         {role.description || "No description"}
                       </TableCell>
@@ -289,14 +287,14 @@ export default function RolesPermissionsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-7 w-7 hover:bg-slate-100"
                           >
-                            <Edit />
+                            <Edit className="w-4 h-4 text-slate-600" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-7 w-7 hover:bg-red-50"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteClick({
@@ -305,14 +303,7 @@ export default function RolesPermissionsPage() {
                               });
                             }}
                           >
-                            <Trash2 />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                          >
-                            <MoreHorizontal />
+                            <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
                       </TableCell>
@@ -324,42 +315,56 @@ export default function RolesPermissionsPage() {
           </CardContent>
         </Card>
 
-        {/* Role List (Permissions) */}
-        <Card className="shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold">Role List</CardTitle>
-            <Button className="bg-indigo-900 hover:bg-indigo-800 text-white h-8">
-              <Plus className="mr-1" />
+        {/* Permissions */}
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+            <CardTitle className="text-base font-semibold text-slate-800">
+              Permissions
+            </CardTitle>
+            <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8">
+              <Plus className="mr-1 w-4 h-4" />
               New Permission
             </Button>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             {permissionModules.map((module, moduleIndex) => (
-              <div key={module.name}>
-                <h3 className="font-semibold mb-3">{module.name}</h3>
+              <div key={module.name} className="bg-slate-50/50 rounded-lg p-4">
+                <h3 className="font-semibold mb-3 text-slate-800">
+                  {module.name}
+                </h3>
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="w-[100px]">Checkbox</TableHead>
-                      <TableHead>Role Name</TableHead>
-                      <TableHead>Role Name</TableHead>
+                    <TableRow className="hover:bg-transparent border-slate-200">
+                      <TableHead className="w-[80px] font-semibold text-slate-600">
+                        Enable
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Permission
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-600">
+                        Description
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {module.permissions.map((permission) => (
-                      <TableRow key={permission.id}>
+                      <TableRow
+                        key={permission.id}
+                        className="hover:bg-white/50"
+                      >
                         <TableCell>
                           <Checkbox
                             checked={permission.checked}
                             onCheckedChange={() =>
                               handlePermissionToggle(moduleIndex, permission.id)
                             }
+                            className="border-slate-300"
                           />
                         </TableCell>
-                        <TableCell className="text-sm text-gray-700">
+                        <TableCell className="text-sm font-medium text-slate-700">
                           {permission.name}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="text-sm text-slate-500">
                           {permission.description}
                         </TableCell>
                       </TableRow>
@@ -379,6 +384,6 @@ export default function RolesPermissionsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="role"
       />
-    </div>
+    </PageContainer>
   );
 }

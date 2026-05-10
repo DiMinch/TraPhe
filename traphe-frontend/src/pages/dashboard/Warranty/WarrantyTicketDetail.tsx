@@ -28,6 +28,7 @@ import type {
   WarrantyPartItem,
   WarrantyServiceItem,
 } from "@/types/warranty.types";
+import { PageContainer } from "@/components/layout/PageLayout";
 
 export default function WarrantyTicketDetailPage() {
   const { id } = useParams();
@@ -109,7 +110,7 @@ export default function WarrantyTicketDetailPage() {
   if (!ticket) return null;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <PageContainer>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -145,7 +146,7 @@ export default function WarrantyTicketDetailPage() {
         <div className="flex gap-2">
           {ticket.status === WarrantyStatus.PENDING && (
             <Button
-              className="bg-black hover:bg-gray-800 text-white shadow-sm"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
               onClick={() => handleAction("start")}
             >
               <Play className="w-4 h-4 mr-2" /> Start Repair
@@ -153,7 +154,7 @@ export default function WarrantyTicketDetailPage() {
           )}
           {ticket.status === WarrantyStatus.IN_PROGRESS && (
             <Button
-              className="bg-black hover:bg-gray-800 text-white shadow-sm"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
               onClick={() => handleAction("complete")}
             >
               <CheckCircle className="w-4 h-4 mr-2" /> Complete Repair
@@ -161,7 +162,7 @@ export default function WarrantyTicketDetailPage() {
           )}
           {ticket.status === WarrantyStatus.COMPLETED && (
             <Button
-              className="bg-black hover:bg-gray-800 text-white shadow-sm"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
               onClick={() => handleAction("return")}
             >
               <RotateCcw className="w-4 h-4 mr-2" /> Return Device
@@ -361,6 +362,6 @@ export default function WarrantyTicketDetailPage() {
           />
         </>
       )}
-    </div>
+    </PageContainer>
   );
 }

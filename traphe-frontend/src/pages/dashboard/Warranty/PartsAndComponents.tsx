@@ -26,11 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { partService } from "@/services/part.service";
 import type { PartComponent } from "@/types/part.types";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
 
 const MOCK_SUPPLIERS = [
   { id: "39696383-79b9-4899-b9d9-2f8f0ca92884", name: "ABC Company" },
@@ -148,25 +153,30 @@ export default function PartsAndComponentsPage() {
   );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Parts & Components</h1>
+    <PageContainer>
+      <PageHeader
+        title="Parts & Components"
+        subtitle="Manage spare parts and components inventory"
+        onRefresh={fetchParts}
+      />
+
+      <div className="flex justify-end mb-6">
         <Button
-          className="bg-indigo-900 text-white cursor-pointer"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg"
           onClick={handleOpenCreate}
         >
           <Plus className="w-4 h-4 mr-2" /> Add Part
         </Button>
       </div>
 
-      <Card className="shadow-md">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4 mb-4 w-full">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap items-center gap-4 mb-6 w-full">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search parts by name or type..."
-                className="pl-9 bg-white w-full"
+                className="pl-10 bg-white border-slate-200 w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -178,8 +188,8 @@ export default function PartsAndComponentsPage() {
                 onClick={() => setFilterType("all")}
                 className={
                   filterType === "all"
-                    ? "bg-indigo-900 text-white cursor-pointer"
-                    : "cursor-pointe"
+                    ? "bg-gradient-to-r from-indigo-600 to-indigo-700 text-white"
+                    : "border-slate-200 hover:bg-slate-50"
                 }
               >
                 All Parts
@@ -190,94 +200,107 @@ export default function PartsAndComponentsPage() {
                 onClick={() => setFilterType("low-stock")}
                 className={
                   filterType === "low-stock"
-                    ? "bg-red-600 hover:bg-red-700 cursor-pointer"
-                    : "text-red-600 border-red-200 hover:bg-red-50 cursor-pointer"
+                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white"
+                    : "text-red-600 border-red-200 hover:bg-red-50"
                 }
               >
                 Low Stock Alert
               </Button>
             </div>
           </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Part Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead>Price (Sell)</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
-                      <Loader2 className="animate-spin inline" />
-                    </TableCell>
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p className="mt-3 text-slate-600">Loading parts...</p>
+            </div>
+          ) : filteredParts.length === 0 ? (
+            <EmptyState
+              icon={<Package className="w-8 h-8 text-slate-400" />}
+              title="No parts found"
+              description="Add your first part or component to get started"
+            />
+          ) : (
+            <div className="rounded-lg border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableHead className="font-semibold text-slate-600">
+                      Part Name
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Type
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Supplier
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Price (Sell)
+                    </TableHead>
+                    <TableHead className="font-semibold text-slate-600">
+                      Stock
+                    </TableHead>
+                    <TableHead className="text-center font-semibold text-slate-600">
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ) : filteredParts.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center py-10 text-gray-500"
-                    >
-                      No parts found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredParts.map((part) => {
+                </TableHeader>
+                <TableBody>
+                  {filteredParts.map((part) => {
                     const isLowStock = part.currentStock <= part.minStock;
                     return (
-                      <TableRow key={part.id}>
-                        <TableCell className="font-medium">
+                      <TableRow key={part.id} className="hover:bg-slate-50/50">
+                        <TableCell className="font-medium text-slate-800">
                           {part.name}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{part.partType}</Badge>
+                          <Badge variant="outline" className="border-slate-200">
+                            {part.partType}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{part.supplier?.name || "N/A"}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-slate-600">
+                          {part.supplier?.name || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-slate-600">
                           {part.sellingPrice?.toLocaleString()}₫
                         </TableCell>
                         <TableCell>
                           <span
-                            className={`font-bold ${isLowStock ? "text-red-600" : "text-gray-900"}`}
+                            className={`font-bold ${isLowStock ? "text-red-600" : "text-emerald-600"}`}
                           >
                             {part.currentStock} {part.unit}
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-center">
+                          <div className="flex items-center justify-center gap-1">
                             <Button
-                              className="cursor-pointer"
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 hover:bg-slate-100"
                               onClick={() => handleOpenEdit(part)}
                             >
-                              <Edit className="w-4 h-4 text-blue-600!" />
+                              <Edit className="w-4 h-4 text-slate-600" />
                             </Button>
                             <Button
-                              className="cursor-pointer"
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8 hover:bg-red-50"
                               onClick={() => {
                                 setPartToDelete(part);
                                 setIsDeleteOpen(true);
                               }}
                             >
-                              <Trash2 className="w-4 h-4 text-red-600!" />
+                              <Trash2 className="w-4 h-4 text-red-500" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -379,7 +402,7 @@ export default function PartsAndComponentsPage() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-indigo-900 text-white"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
             >
               {isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -397,6 +420,6 @@ export default function PartsAndComponentsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="part"
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -36,11 +36,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Edit, Trash2, MoreHorizontal, Bell } from "lucide-react";
+import { Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { useParams } from "react-router";
 import productsData from "@/data/products.json";
 import { useState } from "react";
-import { CURRENT_USER } from "@/constants/user";
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -57,47 +57,33 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold mb-2">Product Detail</h1>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/product/productlist">
-                  Product List
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{product.name}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role}: {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <Bell className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-          <Avatar>
-            <AvatarFallback className="bg-green-600 text-white">
-              M
-            </AvatarFallback>
-          </Avatar>
-        </div>
+      <PageHeader
+        title="Product Detail"
+        subtitle="View and manage product information"
+      />
+
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/product/productlist">
+                Product List
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{product.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3 mb-6 justify-end">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white w-25"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md w-25"
           onClick={() => setIsEditing(!isEditing)}
         >
           <Edit className="w-4 h-4 mr-2" />
@@ -112,7 +98,7 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Product Information Form */}
-      <Card className="mb-6">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
         <CardContent className="pt-6">
           <div className="grid grid-cols-3 gap-6 mb-6">
             <div className="space-y-2">
@@ -301,6 +287,6 @@ export default function ProductDetailPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

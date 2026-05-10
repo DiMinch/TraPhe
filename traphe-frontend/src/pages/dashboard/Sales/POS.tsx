@@ -26,12 +26,10 @@ import {
   Minus,
   Edit,
   Trash2,
-  BellIcon,
   RefreshCw,
   X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { CURRENT_USER } from "@/constants/user";
 import {
   inventoryService,
   type InventoryResponse,
@@ -249,7 +247,7 @@ export default function POSPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
       {/* Left Side - Catalog */}
       <div className="flex-1 p-6 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
@@ -258,15 +256,6 @@ export default function POSPage() {
             <Button onClick={fetchProducts} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
-            </Button>
-            <span className="text-sm text-gray-600">
-              Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-            </span>
-            <Button variant="outline" size="icon">
-              <BellIcon className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm">
-              CN
             </Button>
           </div>
         </div>
@@ -277,7 +266,7 @@ export default function POSPage() {
           </div>
         )}
 
-        <Card className="shadow-md">
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-4">Catalog</h2>
 
@@ -346,7 +335,7 @@ export default function POSPage() {
                         >
                           <CardContent className="p-4">
                             <div className="absolute top-2 left-2">
-                              <Badge className="bg-indigo-900 text-white">
+                              <Badge className="bg-indigo-600 text-white">
                                 {product.category}
                               </Badge>
                             </div>
@@ -369,7 +358,7 @@ export default function POSPage() {
                             </div>
                             <Button
                               size="icon"
-                              className="absolute bottom-2 right-2 rounded-full bg-indigo-900 hover:bg-indigo-800"
+                              className="absolute bottom-2 right-2 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleAddToCart(product);
@@ -429,7 +418,7 @@ export default function POSPage() {
               {orderItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
                 >
                   <div className="w-16 h-16 bg-black rounded flex items-center justify-center text-2xl">
                     {item.image}
@@ -508,7 +497,7 @@ export default function POSPage() {
           {promotions.length > 0 && (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
+                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
                   <TableHead className="text-xs">Code</TableHead>
                   <TableHead className="text-xs">Type</TableHead>
                   <TableHead className="text-xs">Discount</TableHead>
@@ -573,7 +562,7 @@ export default function POSPage() {
           </Select>
 
           <Button
-            className="w-full bg-indigo-900 hover:bg-indigo-800 text-white"
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
             onClick={handleProceed}
             disabled={processing || orderItems.length === 0}
           >
