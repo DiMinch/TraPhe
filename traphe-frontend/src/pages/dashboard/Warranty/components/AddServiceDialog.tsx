@@ -19,15 +19,8 @@ import {
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { warrantyService } from "@/services/warranty.service";
-
-// Giả lập danh sách dịch vụ (Thực tế bạn nên gọi API getAllServiceTypes)
-const MOCK_SERVICES = [
-  { id: "srv-001", name: "General Diagnosis", price: 100000 },
-  { id: "srv-002", name: "Screen Replacement Service", price: 150000 },
-  { id: "srv-003", name: "Battery Replacement Service", price: 100000 },
-  { id: "srv-004", name: "Software Re-installation", price: 200000 },
-  { id: "srv-005", name: "Motherboard Repair (Level 1)", price: 500000 },
-];
+import { repairService } from "@/services/repair-service.service";
+import type { RepairService } from "@/types/repair-service.types";
 
 interface AddServiceDialogProps {
   open: boolean;
@@ -43,8 +36,42 @@ export default function AddServiceDialog({
   onSuccess,
 }: AddServiceDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [services, setServices] = useState<RepairService[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState("");
-  const [notes, setNotes] = useState("");
+  const [additionalCost, setAdditionalCost] = useState<number>(0);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      const fetchActiveServices = async () => {
+        setIsFetching(true);
+        try {
+          const res = await repairService.getActiveServices();
+          if (res.statusCode === 200 && res.data) {
+            setServices(res.data);
+          }
+        } catch (error) {
+          console.error("Failed to load services", error);
+          toast.error("Could not load service list");
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchActiveServices();
+      setSelectedServiceId("");
+      setAdditionalCost(0);
+      setNote("");
+    }
+  }, [open]);
+
+  const handleServiceChange = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    const service = services.find((s) => s.id === serviceId);
+    if (service) {
+      setAdditionalCost(service.standardPrice);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedServiceId) {
@@ -55,15 +82,18 @@ export default function AddServiceDialog({
     setIsLoading(true);
     try {
       await warrantyService.addService(ticketId, {
-        repairServiceId: selectedServiceId,
-        notes: notes,
+        services: [
+          {
+            repairServiceId: selectedServiceId,
+            additionalCost: additionalCost,
+            note: note,
+          },
+        ],
       });
+
       toast.success("Service added successfully");
       onSuccess();
       onOpenChange(false);
-      // Reset
-      setSelectedServiceId("");
-      setNotes("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to add service");
     } finally {
@@ -82,26 +112,42 @@ export default function AddServiceDialog({
             <Label>Select Service</Label>
             <Select
               value={selectedServiceId}
-              onValueChange={setSelectedServiceId}
+              onValueChange={handleServiceChange}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a service..." />
+              <SelectTrigger disabled={isFetching}>
+                <SelectValue
+                  placeholder={
+                    isFetching ? "Loading services..." : "Choose a service..."
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {MOCK_SERVICES.map((s) => (
+                {services.map((s) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.name} - {s.price.toLocaleString()}₫
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Notes (Optional)</Label>
+            <Label>Cost (VND)</Label>
             <Input
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="E.g. Difficult repair, discount applied..."
+              type="number"
+              value={additionalCost}
+              onChange={(e) => setAdditionalCost(Number(e.target.value))}
+              placeholder="Enter cost..."
+            />
+            <p className="text-xs text-gray-500">
+              Default price loaded from system. You can adjust if needed.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Note (Optional)</Label>
+            <Input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="E.g. Discount applied, complex repair..."
             />
           </div>
         </div>

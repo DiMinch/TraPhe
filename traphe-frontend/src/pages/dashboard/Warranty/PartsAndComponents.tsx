@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -10,13 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -25,568 +20,382 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Search,
-  Plus,
-  Upload,
-  Edit,
-  Trash2,
-  MoreHorizontal,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { useState } from "react";
-import { CURRENT_USER } from "@/constants/user";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { partsAndComponents as initialParts } from "@/data/mockData";
+import { partService } from "@/services/part.service";
+import type { PartComponent } from "@/types/part.types";
 
-interface PartComponent {
-  id: number;
-  name: string;
-  partNumber: string;
-  category: string;
-  unitPrice: string;
-  quantityInStock: number;
-  reorderLevel: number;
-  supplier: string;
-}
+const MOCK_SUPPLIERS = [
+  { id: "39696383-79b9-4899-b9d9-2f8f0ca92884", name: "ABC Company" },
+  { id: "supplier-002", name: "XYZ Distributor" },
+];
 
 export default function PartsAndComponentsPage() {
+  const [parts, setParts] = useState<PartComponent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isNewPartDialogOpen, setIsNewPartDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPart, setSelectedPart] = useState<PartComponent | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [filterType, setFilterType] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingPart, setEditingPart] = useState<PartComponent | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [partToDelete, setPartToDelete] = useState<PartComponent | null>(null);
 
-  const [parts, setParts] = useState<PartComponent[]>(initialParts);
-
-  const [formData, setFormData] = useState<Partial<PartComponent>>({
+  const [formData, setFormData] = useState({
     name: "",
-    partNumber: "",
-    category: "",
-    unitPrice: "",
-    quantityInStock: 0,
-    reorderLevel: 0,
-    supplier: "",
+    partType: "",
+    supplierId: "",
+    unit: "Cái",
+    unitPrice: 0,
+    minStock: 5,
   });
 
-  const filteredParts = parts.filter(
-    (part) =>
-      part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.partNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      part.supplier.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const fetchParts = async () => {
+    setIsLoading(true);
+    try {
+      const res =
+        filterType === "low-stock"
+          ? await partService.getLowStockParts()
+          : await partService.getAllParts();
 
-  const totalPages = Math.ceil(filteredParts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentParts = filteredParts.slice(
-    startIndex,
-    startIndex + itemsPerPage,
-  );
-
-  const handleAddPart = () => {
-    if (formData.name && formData.partNumber) {
-      const newPart: PartComponent = {
-        id: parts.length + 1,
-        name: formData.name,
-        partNumber: formData.partNumber,
-        category: formData.category || "",
-        unitPrice: formData.unitPrice || "$ 0",
-        quantityInStock: formData.quantityInStock || 0,
-        reorderLevel: formData.reorderLevel || 0,
-        supplier: formData.supplier || "",
-      };
-      setParts([...parts, newPart]);
-      setIsNewPartDialogOpen(false);
-      resetForm();
+      if (res.statusCode === 200 && res.data) {
+        setParts(res.data);
+      }
+    } catch (error) {
+      toast.error("Failed to load parts");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleEditClick = (part: PartComponent) => {
-    setSelectedPart(part);
-    setFormData(part);
-    setIsEditDialogOpen(true);
-  };
+  useEffect(() => {
+    fetchParts();
+  }, [filterType]);
 
-  const handleUpdatePart = () => {
-    if (selectedPart && formData.name && formData.partNumber) {
-      setParts(
-        parts.map((p) =>
-          p.id === selectedPart.id
-            ? ({ ...p, ...formData } as PartComponent)
-            : p,
-        ),
-      );
-      setIsEditDialogOpen(false);
-      resetForm();
-    }
-  };
-
-  const handleDeleteClick = (part: PartComponent) => {
-    setSelectedPart(part);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (selectedPart) {
-      setParts(parts.filter((p) => p.id !== selectedPart.id));
-      setIsDeleteDialogOpen(false);
-      setSelectedPart(null);
-    }
-  };
-
-  const resetForm = () => {
+  const handleOpenCreate = () => {
+    setEditingPart(null);
     setFormData({
       name: "",
-      partNumber: "",
-      category: "",
-      unitPrice: "",
-      quantityInStock: 0,
-      reorderLevel: 0,
-      supplier: "",
+      partType: "",
+      supplierId: "",
+      unit: "Cái",
+      unitPrice: 0,
+      minStock: 5,
     });
-    setSelectedPart(null);
+    setIsDialogOpen(true);
   };
 
-  const handleImportCSV = () => {
-    // Implement CSV import logic
-    alert("CSV Import functionality will be implemented");
+  const handleOpenEdit = (part: PartComponent) => {
+    setEditingPart(part);
+    setFormData({
+      name: part.name,
+      partType: part.partType,
+      supplierId: part.supplier?.supplierId || "",
+      unit: part.unit,
+      unitPrice: part.sellingPrice,
+      minStock: part.minStock,
+    });
+    setIsDialogOpen(true);
   };
 
-  const handleBulkUpdate = () => {
-    // Implement bulk update logic
-    alert("Bulk Update functionality will be implemented");
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.supplierId || formData.unitPrice < 0) {
+      toast.warning("Please fill required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingPart) {
+        await partService.updatePart(editingPart.id, formData);
+        toast.success("Part updated successfully");
+      } else {
+        await partService.createPart(formData);
+        toast.success("Part created successfully");
+      }
+      setIsDialogOpen(false);
+      fetchParts();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Operation failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const handleDeleteConfirm = async () => {
+    if (!partToDelete) return;
+    try {
+      await partService.deletePart(partToDelete.id);
+      toast.success("Part deleted");
+      fetchParts();
+    } catch (error) {
+      toast.error("Failed to delete part");
+    }
+    setIsDeleteOpen(false);
+  };
+
+  const filteredParts = parts.filter(
+    (p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.partType.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Parts & Components</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <Bell className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
         <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
-          onClick={() => setIsNewPartDialogOpen(true)}
+          className="bg-indigo-900 text-white cursor-pointer"
+          onClick={handleOpenCreate}
         >
-          <Plus className="w-4 h-4 mr-2" />
-          New Part/Component
-        </Button>
-        <Button
-          className="bg-indigo-900 hover:bg-indigo-800 text-white"
-          onClick={handleImportCSV}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
-        <Button
-          className="bg-[#F59E0B] hover:bg-[#D97706] text-white"
-          onClick={handleBulkUpdate}
-        >
-          Bulk Update
+          <Plus className="w-4 h-4 mr-2" /> Add Part
         </Button>
       </div>
 
-      {/* Main Content Card */}
-      <Card className="shadow-sm bg-white">
-        <CardContent className="pt-6">
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <Card className="shadow-md">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4 mb-4 w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by Ticket No, Phone or Serial"
+                placeholder="Search parts by name or type..."
+                className="pl-9 bg-white w-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-300"
               />
             </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant={filterType === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterType("all")}
+                className={
+                  filterType === "all"
+                    ? "bg-indigo-900 text-white cursor-pointer"
+                    : "cursor-pointe"
+                }
+              >
+                All Parts
+              </Button>
+              <Button
+                variant={filterType === "low-stock" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterType("low-stock")}
+                className={
+                  filterType === "low-stock"
+                    ? "bg-red-600 hover:bg-red-700 cursor-pointer"
+                    : "text-red-600 border-red-200 hover:bg-red-50 cursor-pointer"
+                }
+              >
+                Low Stock Alert
+              </Button>
+            </div>
           </div>
-
-          {/* Table */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 border-b border-gray-200">
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Name
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Part Number
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Category
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Supplier
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Unit Price
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Quantity In Stock
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Reorder Level
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700 text-sm">
-                    Actions
-                  </TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead>Part Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead>Price (Sell)</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentParts.map((part) => (
-                  <TableRow key={part.id} className="border-b border-gray-200">
-                    <TableCell className="font-medium text-sm text-gray-900">
-                      {part.name}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.partNumber}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.category}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.supplier}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.unitPrice}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.quantityInStock}
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-900">
-                      {part.reorderLevel}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-gray-100"
-                          onClick={() => handleEditClick(part)}
-                        >
-                          <Edit className="w-4 h-4 text-gray-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-gray-100"
-                          onClick={() => handleDeleteClick(part)}
-                        >
-                          <Trash2 className="w-4 h-4 text-gray-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 hover:bg-gray-100"
-                        >
-                          <MoreHorizontal className="w-4 h-4 text-gray-600" />
-                        </Button>
-                      </div>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10">
+                      <Loader2 className="animate-spin inline" />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredParts.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-10 text-gray-500"
+                    >
+                      No parts found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredParts.map((part) => {
+                    const isLowStock = part.currentStock <= part.minStock;
+                    return (
+                      <TableRow key={part.id}>
+                        <TableCell className="font-medium">
+                          {part.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{part.partType}</Badge>
+                        </TableCell>
+                        <TableCell>{part.supplier?.name || "N/A"}</TableCell>
+                        <TableCell>
+                          {part.sellingPrice?.toLocaleString()}₫
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`font-bold ${isLowStock ? "text-red-600" : "text-gray-900"}`}
+                          >
+                            {part.currentStock} {part.unit}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center">
+                            <Button
+                              className="cursor-pointer"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(part)}
+                            >
+                              <Edit className="w-4 h-4 text-blue-600!" />
+                            </Button>
+                            <Button
+                              className="cursor-pointer"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPartToDelete(part);
+                                setIsDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600!" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center mt-6 gap-3">
-            <Button
-              variant="ghost"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-              className="text-sm text-gray-700"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous
-            </Button>
-            <div className="px-3 py-1 text-sm text-gray-900 font-medium">
-              {currentPage}
-            </div>
-            <Button
-              variant="ghost"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-              className="text-sm text-gray-700"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* New Part Dialog */}
-      <Dialog open={isNewPartDialogOpen} onOpenChange={setIsNewPartDialogOpen}>
-        <DialogContent className="max-w-2xl bg-white">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-[600px] bg-white">
           <DialogHeader>
-            <DialogTitle>New Part/Component</DialogTitle>
+            <DialogTitle>
+              {editingPart ? "Edit Part" : "Add New Part"}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Name *
-              </Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Enter part name"
-              />
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Part Name *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Part Type</Label>
+                <Input
+                  value={formData.partType}
+                  onChange={(e) =>
+                    setFormData({ ...formData, partType: e.target.value })
+                  }
+                  placeholder="e.g. KEYBOARD"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Part Number *
-              </Label>
-              <Input
-                value={formData.partNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, partNumber: e.target.value })
-                }
-                placeholder="Enter part number"
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Input
+                  value={formData.unit}
+                  onChange={(e) =>
+                    setFormData({ ...formData, unit: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Selling Price *</Label>
+                <Input
+                  type="number"
+                  value={formData.unitPrice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      unitPrice: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Category
-              </Label>
-              <Input
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                placeholder="Enter category"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Supplier
-              </Label>
-              <Input
-                value={formData.supplier}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplier: e.target.value })
-                }
-                placeholder="Enter supplier"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Unit Price
-              </Label>
-              <Input
-                value={formData.unitPrice}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    unitPrice: e.target.value,
-                  })
-                }
-                placeholder="Enter unit price (e.g., $ 250,000)"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Quantity In Stock
-              </Label>
-              <Input
-                type="number"
-                value={formData.quantityInStock}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    quantityInStock: Number(e.target.value),
-                  })
-                }
-                placeholder="Enter quantity"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Reorder Level
-              </Label>
-              <Input
-                type="number"
-                value={formData.reorderLevel}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    reorderLevel: Number(e.target.value),
-                  })
-                }
-                placeholder="Enter reorder level"
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Min Stock Level</Label>
+                <Input
+                  type="number"
+                  value={formData.minStock}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minStock: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Supplier *</Label>
+                <Select
+                  value={formData.supplierId}
+                  onValueChange={(val) =>
+                    setFormData({ ...formData, supplierId: val })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Supplier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOCK_SUPPLIERS.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsNewPartDialogOpen(false);
-                resetForm();
-              }}
-            >
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-              onClick={handleAddPart}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-indigo-900 text-white"
             >
-              Add Part
+              {isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}{" "}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Part Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl bg-white">
-          <DialogHeader>
-            <DialogTitle>Edit Part/Component</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Name *
-              </Label>
-              <Input
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                placeholder="Enter part name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Part Number *
-              </Label>
-              <Input
-                value={formData.partNumber}
-                onChange={(e) =>
-                  setFormData({ ...formData, partNumber: e.target.value })
-                }
-                placeholder="Enter part number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Category
-              </Label>
-              <Input
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                placeholder="Enter category"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Supplier
-              </Label>
-              <Input
-                value={formData.supplier}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplier: e.target.value })
-                }
-                placeholder="Enter supplier"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Unit Price
-              </Label>
-              <Input
-                value={formData.unitPrice}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    unitPrice: e.target.value,
-                  })
-                }
-                placeholder="Enter unit price (e.g., $ 250,000)"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Quantity In Stock
-              </Label>
-              <Input
-                type="number"
-                value={formData.quantityInStock}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    quantityInStock: Number(e.target.value),
-                  })
-                }
-                placeholder="Enter quantity"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">
-                Reorder Level
-              </Label>
-              <Input
-                type="number"
-                value={formData.reorderLevel}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    reorderLevel: Number(e.target.value),
-                  })
-                }
-                placeholder="Enter reorder level"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsEditDialogOpen(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#4F46E5] hover:bg-[#4338CA] text-white"
-              onClick={handleUpdatePart}
-            >
-              Update Part
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        itemName={selectedPart?.name || ""}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        itemName={partToDelete?.name || ""}
         onConfirm={handleDeleteConfirm}
-        contextMessage="part/component"
+        contextMessage="part"
       />
     </div>
   );

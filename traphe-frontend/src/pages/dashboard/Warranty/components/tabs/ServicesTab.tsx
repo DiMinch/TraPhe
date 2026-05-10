@@ -35,13 +35,14 @@ export default function ServicesTab({
           <Plus className="w-4 h-4 mr-2" /> Add Service
         </Button>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="px-4">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50">
               <TableHead>Service Name</TableHead>
-              <TableHead>Note</TableHead>
-              <TableHead className="text-right">Cost</TableHead>
+              <TableHead className="text-right">Unit Price</TableHead>
+              <TableHead className="text-right">Extra</TableHead>
+              <TableHead className="text-right">Total</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
@@ -49,18 +50,30 @@ export default function ServicesTab({
             {services && services.length > 0 ? (
               services.map((s) => (
                 <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.serviceName}</TableCell>
-                  <TableCell className="text-xs text-gray-500">
-                    {s.notes}
+                  <TableCell>
+                    <div className="font-medium">{s.serviceName}</div>
+                    {s.notes && (
+                      <div className="text-xs text-gray-500 italic">
+                        Note: {s.notes}
+                      </div>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {s.cost.toLocaleString()}₫
+                  <TableCell className="text-right text-gray-500">
+                    {s.unitPrice.toLocaleString()}₫
                   </TableCell>
-                  <TableCell className="w-[50px]">
+                  <TableCell className="text-right text-gray-500">
+                    {s.additionalCost > 0
+                      ? `+${s.additionalCost.toLocaleString()}₫`
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-right font-bold text-gray-900">
+                    {s.totalCost.toLocaleString()}₫
+                  </TableCell>
+                  <TableCell className="w-[50px] text-right">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-600"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 cursor-pointer"
                       onClick={() => onRemoveClick(s.id)}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -71,7 +84,7 @@ export default function ServicesTab({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center text-gray-500 py-8"
                 >
                   No services added

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -10,287 +11,224 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Search, Plus, Edit, Trash2, MoreVertical } from "lucide-react";
-import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Search, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { serviceTypes as initialServiceTypes } from "@/data/mockData";
-
-interface ServiceType {
-  id: number;
-  name: string;
-  description: string;
-  standardPrice: string;
-  estimatedDuration: string;
-}
+import { repairService } from "@/services/repair-service.service";
+import type { RepairService } from "@/types/repair-service.types";
 
 export default function ServiceTypesPage() {
+  const [services, setServices] = useState<RepairService[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isNewServiceOpen, setIsNewServiceOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
-  const [serviceTypes, setServiceTypes] =
-    useState<ServiceType[]>(initialServiceTypes);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingService, setEditingService] = useState<RepairService | null>(
+    null,
+  );
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<RepairService | null>(
+    null,
+  );
 
-  const [newService, setNewService] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
-    standardPrice: "",
+    standardPrice: 0,
     estimatedDuration: "",
+    category: "",
+    isActive: true,
   });
 
-  const handleSaveService = () => {
-    const service: ServiceType = {
-      id: serviceTypes.length + 1,
-      name: newService.name,
-      description: newService.description,
-      standardPrice: `$ ${newService.standardPrice}`,
-      estimatedDuration: newService.estimatedDuration,
-    };
-    setServiceTypes([...serviceTypes, service]);
-    setIsNewServiceOpen(false);
-    setNewService({
+  const fetchServices = async () => {
+    setIsLoading(true);
+    try {
+      const res = await repairService.getAllServices();
+      if (res.statusCode === 200 && res.data) {
+        setServices(res.data);
+      }
+    } catch (error) {
+      toast.error("Failed to load service types");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const handleOpenCreate = () => {
+    setEditingService(null);
+    setFormData({
       name: "",
       description: "",
-      standardPrice: "",
+      standardPrice: 0,
       estimatedDuration: "",
+      category: "",
+      isActive: true,
     });
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteClick = (service: { id: number; name: string }) => {
-    setServiceToDelete(service);
-    setIsDeleteDialogOpen(true);
+  const handleOpenEdit = (service: RepairService) => {
+    setEditingService(service);
+    setFormData({
+      name: service.name,
+      description: service.description || "",
+      standardPrice: service.standardPrice,
+      estimatedDuration: service.estimatedDuration || "",
+      category: service.category || "",
+      isActive: !!service.isActive,
+    });
+    setIsDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (serviceToDelete) {
-      setServiceTypes(serviceTypes.filter((s) => s.id !== serviceToDelete.id));
+  const handleSubmit = async () => {
+    if (!formData.name || formData.standardPrice < 0) {
+      toast.warning("Please fill required fields correctly.");
+      return;
     }
-    setIsDeleteDialogOpen(false);
-    setServiceToDelete(null);
+
+    setIsSubmitting(true);
+    try {
+      if (editingService) {
+        await repairService.updateService(editingService.id, formData);
+        toast.success("Service updated successfully");
+      } else {
+        await repairService.createService(formData);
+        toast.success("Service created successfully");
+      }
+      setIsDialogOpen(false);
+      fetchServices();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Operation failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const filteredServices = serviceTypes.filter(
-    (service) =>
-      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.description.toLowerCase().includes(searchTerm.toLowerCase()),
+  const handleDeleteConfirm = async () => {
+    if (!serviceToDelete) return;
+    try {
+      await repairService.deleteService(serviceToDelete.id);
+      toast.success("Service deleted");
+      fetchServices();
+    } catch (error) {
+      toast.error("Failed to delete service");
+    }
+    setIsDeleteOpen(false);
+  };
+
+  const filteredServices = services.filter((s) =>
+    s.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
-    <>
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold">Service Types</h1>
-          <div className="flex items-center gap-3">
-            <Dialog open={isNewServiceOpen} onOpenChange={setIsNewServiceOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Service
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl bg-white">
-                <DialogHeader>
-                  <DialogTitle>Create New Service Type</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Service Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter service name"
-                      value={newService.name}
-                      onChange={(e) =>
-                        setNewService({ ...newService, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Enter service description"
-                      value={newService.description}
-                      onChange={(e) =>
-                        setNewService({
-                          ...newService,
-                          description: e.target.value,
-                        })
-                      }
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Standard Price ($)</Label>
-                      <Input
-                        id="price"
-                        type="number"
-                        placeholder="Enter price"
-                        value={newService.standardPrice}
-                        onChange={(e) =>
-                          setNewService({
-                            ...newService,
-                            standardPrice: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Estimated Duration</Label>
-                      <Select
-                        value={newService.estimatedDuration}
-                        onValueChange={(value) =>
-                          setNewService({
-                            ...newService,
-                            estimatedDuration: value,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1 hour">1 hour</SelectItem>
-                          <SelectItem value="2 hours">2 hours</SelectItem>
-                          <SelectItem value="3 hours">3 hours</SelectItem>
-                          <SelectItem value="1 day">1 day</SelectItem>
-                          <SelectItem value="2 days">2 days</SelectItem>
-                          <SelectItem value="1 week">1 week</SelectItem>
-                          <SelectItem value="1 month">1 month</SelectItem>
-                          <SelectItem value="1 year">1 year</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsNewServiceOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    className="bg-indigo-900 hover:bg-indigo-800 text-white"
-                    onClick={handleSaveService}
-                  >
-                    Save Service
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button className="bg-[#F59E0B] hover:bg-[#D97706] text-white">
-              Bulk Update
-            </Button>
-          </div>
-        </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Service Types</h1>
+        <Button
+          className="bg-indigo-900 text-white cursor-pointer"
+          onClick={handleOpenCreate}
+        >
+          <Plus className="w-4 h-4 mr-2" /> New Service
+        </Button>
       </div>
 
-      <Card className="border-[#E5E5E5] m-6 mt-0">
-        <CardContent className="p-6">
-          {/* Search */}
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <Card className="shadow-md">
+        <CardContent className="p-4">
+          <div className="flex items-center mb-4">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by Name"
+                placeholder="Search services..."
+                className="pl-9 bg-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white"
               />
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  <TableHead className="font-semibold text-gray-700">
-                    Name
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Description
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Standard Price
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Estimated Duration
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-700">
-                    Actions
-                  </TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead>Service Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Standard Price</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredServices.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10">
+                      <Loader2 className="animate-spin inline" />
+                    </TableCell>
+                  </TableRow>
+                ) : filteredServices.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
-                      className="text-center py-8 text-gray-500"
+                      colSpan={6}
+                      className="text-center py-10 text-gray-500"
                     >
                       No services found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredServices.map((service) => (
-                    <TableRow key={service.id} className="hover:bg-gray-50">
+                    <TableRow key={service.id}>
                       <TableCell className="font-medium">
                         {service.name}
                       </TableCell>
-                      <TableCell>{service.description}</TableCell>
-                      <TableCell className="font-medium">
-                        {service.standardPrice}
+                      <TableCell className="text-gray-500 max-w-[200px] truncate">
+                        {service.description}
+                      </TableCell>
+                      <TableCell>
+                        {service.standardPrice.toLocaleString()}₫
                       </TableCell>
                       <TableCell>{service.estimatedDuration}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`cursor-pointer ${service.isActive ? "text-green-600!" : "text-gray-400!"}`}
+                        >
+                          {service.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-2">
                           <Button
+                            className="cursor-pointer"
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
+                            size="icon"
+                            onClick={() => handleOpenEdit(service)}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-4 h-4 text-blue-600!" />
                           </Button>
                           <Button
+                            className="cursor-pointer"
                             variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: service.id,
-                                name: service.name,
-                              })
-                            }
+                            size="icon"
+                            onClick={() => {
+                              setServiceToDelete(service);
+                              setIsDeleteOpen(true);
+                            }}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreVertical className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 text-red-600!" />
                           </Button>
                         </div>
                       </TableCell>
@@ -300,29 +238,121 @@ export default function ServiceTypesPage() {
               </TableBody>
             </Table>
           </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 mt-6">
-            <Button variant="ghost" size="sm">
-              &lt; Previous
-            </Button>
-            <Button variant="outline" size="sm">
-              1
-            </Button>
-            <Button variant="ghost" size="sm">
-              Next &gt;
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-[500px] bg-white">
+          <DialogHeader>
+            <DialogTitle>
+              {editingService ? "Edit Service" : "New Service"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Service Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="e.g. Laptop Cleaning"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Price (VND) *</Label>
+                <Input
+                  type="number"
+                  value={formData.standardPrice}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      standardPrice: Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Est. Duration</Label>
+                <Input
+                  value={formData.estimatedDuration}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      estimatedDuration: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. 2 hours"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Input
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
+                placeholder="e.g. Maintenance"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="active-mode"
+                className="data-[state=checked]:bg-green-600 border-gray-200"
+                checked={!!formData.isActive}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, isActive: checked })
+                }
+              />
+              <Label htmlFor="active-mode" className="cursor-pointer">
+                Active Status
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-indigo-900 text-white cursor-pointer"
+            >
+              {isSubmitting && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}{" "}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <DeleteConfirmDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
         itemName={serviceToDelete?.name || ""}
         onConfirm={handleDeleteConfirm}
-        contextMessage="from the service types list"
+        contextMessage="service"
       />
-    </>
+    </div>
   );
 }

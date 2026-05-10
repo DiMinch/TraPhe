@@ -16,31 +16,72 @@ export interface WarrantyTicket {
   createdAt: string;
 }
 
-export interface WarrantyTicketDetail extends WarrantyTicket {
+export interface WarrantyProduct {
+  variantId: string;
+  sku: string;
+  productName: string;
+  variantName: string;
+}
+
+export interface WarrantyCustomer {
+  customerId: string | null;
+  name: string;
+  phone: string;
+  email: string | null;
+}
+
+export interface WarrantyTechnician {
+  id: string;
+  name: string;
+}
+
+export interface WarrantyTicketDetail {
+  id: string;
+  ticketNumber: string;
+  product: WarrantyProduct;
+  serialNumber: string;
+  customer: WarrantyCustomer;
+  technician: WarrantyTechnician | null;
   problemDescription: string;
   accessories: string;
+  isUnderWarranty: boolean;
+  warrantyExpireDate: string | null;
+  status: WarrantyStatus;
+  receivedDate: string;
+  expectedReturnDate: string;
+  actualReturnDate: string | null;
+  totalServiceCost: number;
+  totalPartCost: number;
+  totalCost: number;
+  services: WarrantyServiceItem[];
+  parts: WarrantyPartItem[];
   notes: string;
-  technicianId: string;
-  customerId: string;
-  services?: WarrantyServiceItem[];
-  parts?: WarrantyPartItem[];
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
   history?: WarrantyHistory[];
 }
 
 export interface WarrantyServiceItem {
   id: string;
   repairServiceId: string;
-  serviceName?: string;
-  cost: number;
-  notes?: string;
+  serviceName: string;
+  serviceDescription?: string;
+  status: string;
+  unitPrice: number;
+  additionalCost: number;
+  totalCost: number;
+  completedAt: string | null;
+  notes: string | null;
 }
 
 export interface WarrantyPartItem {
   id: string;
   partId: string;
-  partName?: string;
+  partName: string;
   quantity: number;
-  cost: number;
+  unitPrice: number;
+  totalCost: number;
 }
 
 export interface WarrantyHistory {
@@ -89,19 +130,52 @@ export interface ReassignTechnicianRequest {
   reason: string;
 }
 
-export interface AddServiceRequest {
-  repairServiceId: string;
-  quantity?: number;
-  notes?: string;
-}
-
 export interface AddPartRequest {
-  partId: string;
-  quantity: number;
-  notes?: string;
+  parts: WarrantyPartRequestItem[];
 }
 
 export interface UpdateStatusRequest {
   status: WarrantyStatus;
   note?: string;
+}
+
+export interface WarrantyServiceRequestItem {
+  repairServiceId: string;
+  additionalCost: number;
+  note?: string;
+}
+
+export interface AddServiceRequest {
+  services: {
+    repairServiceId: string;
+    additionalCost: number;
+    note?: string;
+  }[];
+}
+
+export interface WarrantyPartRequestItem {
+  partComponentId: string;
+  quantity: number;
+  unitPrice: number;
+  notes?: string;
+}
+
+export interface WarrantyDashboardStats {
+  totalTickets: number;
+  receivedCount: number;
+  processingCount: number;
+  waitingForPartsCount: number;
+  completedCount: number;
+  returnedCount: number;
+  cancelledCount: number;
+  overdueCount: number;
+  totalRevenue: number;
+  totalServiceRevenue: number;
+  totalPartRevenue: number;
+  ticketsThisMonth: number;
+  ticketsLastMonth: number;
+  avgRepairDays: number;
+  ticketsByTechnician: Record<string, number>;
+  ticketsByStatus: Record<string, number>;
+  lowStockPartsCount: number;
 }

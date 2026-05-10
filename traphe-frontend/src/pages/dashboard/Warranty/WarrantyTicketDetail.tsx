@@ -15,16 +15,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
 import { warrantyService } from "@/services/warranty.service";
 import type { WarrantyTicketDetail } from "@/types/warranty.types";
 import { WarrantyStatus } from "@/enums/warranty.enum";
-
-// Import Dialogs
 import AddServiceDialog from "./components/AddServiceDialog";
 import AddPartDialog from "./components/AddPartDialog";
-
-// Import Tabs đã chia nhỏ
 import OverviewTab from "./components/tabs/OverviewTab";
 import ServicesTab from "./components/tabs/ServicesTab";
 import PartsTab from "./components/tabs/PartsTab";
@@ -39,8 +34,6 @@ export default function WarrantyTicketDetailPage() {
   const navigate = useNavigate();
   const [ticket, setTicket] = useState<WarrantyTicketDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Dialog States
   const [isAddServiceOpen, setIsAddServiceOpen] = useState(false);
   const [isAddPartOpen, setIsAddPartOpen] = useState(false);
 
@@ -117,7 +110,6 @@ export default function WarrantyTicketDetailPage() {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header & Actions */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -150,7 +142,6 @@ export default function WarrantyTicketDetailPage() {
           </div>
         </div>
 
-        {/* Workflow Buttons */}
         <div className="flex gap-2">
           {ticket.status === WarrantyStatus.PENDING && (
             <Button
@@ -189,7 +180,6 @@ export default function WarrantyTicketDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Info */}
         <div className="space-y-6">
           <Card className="shadow-sm border-gray-200">
             <CardHeader>
@@ -203,16 +193,21 @@ export default function WarrantyTicketDetailPage() {
                   Customer
                 </span>
                 <p className="font-medium text-gray-900 mt-1">
-                  {ticket.customerName}
+                  {ticket.customer?.name}
                 </p>
-                <p className="text-sm text-gray-600">{ticket.customerPhone}</p>
+                <p className="text-sm text-gray-600">
+                  {ticket.customer?.phone}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {ticket.customer?.email}
+                </p>
               </div>
               <div>
                 <span className="text-xs text-gray-500 uppercase font-bold tracking-wide">
                   Product
                 </span>
                 <p className="font-medium text-sm line-clamp-2 mt-1 text-gray-900">
-                  {ticket.productName}
+                  {ticket.product.productName}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded text-gray-700 border border-gray-200">
@@ -252,7 +247,7 @@ export default function WarrantyTicketDetailPage() {
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      {ticket.technicianName || "Unassigned"}
+                      {ticket.technician?.name || "Unassigned"}
                     </p>
                     <p className="text-xs text-gray-500">Responsible</p>
                   </div>
@@ -269,7 +264,6 @@ export default function WarrantyTicketDetailPage() {
           </Card>
         </div>
 
-        {/* Right Column: Tabs */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="mb-4 bg-gray-100 p-1">
@@ -312,7 +306,6 @@ export default function WarrantyTicketDetailPage() {
             </TabsContent>
           </Tabs>
 
-          {/* Summary Footer */}
           <div className="flex justify-end">
             <Card className="w-full md:w-1/2 bg-white text-black shadow-lg border-gray-200">
               <CardContent className="p-6">
@@ -321,7 +314,8 @@ export default function WarrantyTicketDetailPage() {
                   <span>
                     {ticket.services
                       ?.reduce(
-                        (acc: number, s: WarrantyServiceItem) => acc + s.cost,
+                        (acc: number, s: WarrantyServiceItem) =>
+                          acc + s.totalCost,
                         0,
                       )
                       .toLocaleString()}
@@ -334,7 +328,7 @@ export default function WarrantyTicketDetailPage() {
                     {ticket.parts
                       ?.reduce(
                         (acc: number, p: WarrantyPartItem) =>
-                          acc + p.cost * p.quantity,
+                          acc + p.totalCost * p.quantity,
                         0,
                       )
                       .toLocaleString()}

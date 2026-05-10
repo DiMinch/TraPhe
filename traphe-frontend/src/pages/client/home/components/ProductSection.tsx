@@ -3,7 +3,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router";
 import ProductCard from "@/components/common/product/ProductCard";
 import { productService } from "@/services/product.service";
-import type { Product } from "@/types/product";
+import type { Product } from "@/types/product.types";
 
 export default function ProductSection() {
   const [products, setProducts] = useState<Product[]>([]);

@@ -39,7 +39,7 @@ export default function Navigation() {
       </div>
 
       {/* Navigation Label */}
-      <div className="px-6 py-3">
+      <div className="px-6 py-3 -mt-10">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
           Navigation
         </h2>

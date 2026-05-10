@@ -53,16 +53,16 @@ export default function PartsTab({
                   <TableCell className="font-medium">{p.partName}</TableCell>
                   <TableCell>{p.quantity}</TableCell>
                   <TableCell className="text-right text-gray-500">
-                    {p.cost.toLocaleString()}₫
+                    {p.totalCost.toLocaleString()}₫
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {(p.cost * p.quantity).toLocaleString()}₫
+                    {(p.totalCost * p.quantity).toLocaleString()}₫
                   </TableCell>
                   <TableCell className="w-[50px]">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-600"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 cursor-pointer"
                       onClick={() => onRemoveClick(p.id)}
                     >
                       <Trash2 className="w-4 h-4" />

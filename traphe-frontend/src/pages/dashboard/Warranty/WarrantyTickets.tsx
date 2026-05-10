@@ -11,17 +11,31 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Edit, Trash2, Plus, Loader2 } from "lucide-react";
+import {
+  Search,
+  Edit,
+  Trash2,
+  Plus,
+  Loader2,
+  Ticket,
+  DollarSign,
+  AlertCircle,
+  Activity,
+  Clock,
+} from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { warrantyService } from "@/services/warranty.service";
-import type { WarrantyTicket } from "@/types/warranty.types";
+import type {
+  WarrantyTicket,
+  WarrantyDashboardStats,
+} from "@/types/warranty.types";
 import { WarrantyStatus } from "@/enums/warranty.enum";
 import CreateTicketDialog from "./components/CreateTicketDialog";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 
-const getStatusBadge = (status: WarrantyStatus) => {
+export const getStatusBadge = (status: WarrantyStatus) => {
   switch (status) {
     case WarrantyStatus.RECEIVED:
       return (
@@ -61,10 +75,7 @@ const getStatusBadge = (status: WarrantyStatus) => {
       );
     case WarrantyStatus.RETURNED:
       return (
-        <Badge
-          variant="outline"
-          className="text-gray-600 border-gray-600 bg-gray-50"
-        >
+        <Badge variant="outline" className="text-gray-600">
           Returned
         </Badge>
       );
@@ -78,30 +89,36 @@ const getStatusBadge = (status: WarrantyStatus) => {
 export default function WarrantyTicketsPage() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<WarrantyTicket[]>([]);
+  const [stats, setStats] = useState<WarrantyDashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState<WarrantyTicket | null>(
     null,
   );
-
-  const fetchTickets = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const res = await warrantyService.getAllTickets();
-      if (res.statusCode === 200 && res.data) {
-        setTickets(res.data);
+      const [ticketsRes, statsRes] = await Promise.all([
+        warrantyService.getAllTickets(),
+        warrantyService.getDashboardStats(),
+      ]);
+
+      if (ticketsRes.statusCode === 200 && ticketsRes.data) {
+        setTickets(ticketsRes.data);
+      }
+      if (statsRes.statusCode === 200 && statsRes.data) {
+        setStats(statsRes.data);
       }
     } catch (error) {
-      toast.error("Failed to load warranty tickets");
+      toast.error("Failed to load data");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTickets();
+    fetchData();
   }, []);
 
   const handleDeleteConfirm = async () => {
@@ -109,7 +126,7 @@ export default function WarrantyTicketsPage() {
     try {
       await warrantyService.deleteTicket(ticketToDelete.id);
       toast.success("Ticket deleted");
-      fetchTickets();
+      fetchData();
     } catch (error) {
       toast.error("Failed to delete ticket");
     }
@@ -121,13 +138,122 @@ export default function WarrantyTicketsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Warranty Tickets</h1>
         <Button
-          className="bg-indigo-900 cursor-pointer text-white"
+          className="bg-indigo-900 text-white"
           onClick={() => setIsCreateOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Ticket
         </Button>
       </div>
+
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Tickets
+                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {stats.totalTickets}
+                </h3>
+                <p className="text-xs text-green-600 mt-1 flex items-center">
+                  <Activity className="w-3 h-3 mr-1" />+{stats.ticketsThisMonth}{" "}
+                  this month
+                </p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-full text-blue-600">
+                <Ticket className="w-5 h-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">
+                  Total Revenue
+                </p>
+                <h3 className="text-2xl font-bold mt-1">
+                  {stats.totalRevenue.toLocaleString()}₫
+                </h3>
+                <div className="text-xs text-gray-500 mt-1 space-x-2">
+                  <span>
+                    Svc: {(stats.totalServiceRevenue / 1000).toFixed(0)}k
+                  </span>
+                  <span className="text-gray-300">|</span>
+                  <span>
+                    Part: {(stats.totalPartRevenue / 1000).toFixed(0)}k
+                  </span>
+                </div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-full text-green-600">
+                <DollarSign className="w-5 h-5" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-sm font-medium text-gray-500">Active Work</p>
+                <Activity className="w-4 h-4 text-orange-500" />
+              </div>
+              <div className="flex justify-between text-sm mt-3">
+                <div className="text-center">
+                  <span className="block font-bold text-lg">
+                    {stats.processingCount}
+                  </span>
+                  <span className="text-xs text-gray-500">Processing</span>
+                </div>
+                <div className="text-center">
+                  <span className="block font-bold text-lg">
+                    {stats.waitingForPartsCount}
+                  </span>
+                  <span className="text-xs text-gray-500">Waiting Parts</span>
+                </div>
+                <div className="text-center">
+                  <span
+                    className={`block font-bold text-lg ${stats.overdueCount > 0 ? "text-red-600" : ""}`}
+                  >
+                    {stats.overdueCount}
+                  </span>
+                  <span className="text-xs text-gray-500">Overdue</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 flex flex-col justify-between h-full gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-red-50 rounded text-red-600">
+                    <AlertCircle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-red-600">
+                      {stats.lowStockPartsCount}
+                    </p>
+                    <p className="text-xs text-gray-500">Low Stock Parts</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-100 pt-2 mt-1">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3 h-3 text-gray-400" />
+                  <span className="text-xs text-gray-600">
+                    Avg Repair Time:
+                  </span>
+                </div>
+                <span className="text-xs font-semibold">
+                  {stats.avgRepairDays} days
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card className="shadow-md">
         <CardContent className="p-4">
@@ -202,17 +328,19 @@ export default function WarrantyTicketsPage() {
                         {ticket.technicianName || "Unassigned"}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center">
                           <Button
+                            className="cursor-pointer"
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation(); /* Edit logic */
                             }}
                           >
-                            <Edit className="w-4 h-4 text-gray-500" />
+                            <Edit className="w-4 h-4 text-blue-600!" />
                           </Button>
                           <Button
+                            className="cursor-pointer"
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
@@ -221,7 +349,7 @@ export default function WarrantyTicketsPage() {
                               setIsDeleteOpen(true);
                             }}
                           >
-                            <Trash2 className="w-4 h-4 text-red-500" />
+                            <Trash2 className="w-4 h-4 text-red-600!" />
                           </Button>
                         </div>
                       </TableCell>
@@ -237,7 +365,7 @@ export default function WarrantyTicketsPage() {
       <CreateTicketDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
-        onSuccess={fetchTickets}
+        onSuccess={fetchData}
       />
 
       <DeleteConfirmDialog
