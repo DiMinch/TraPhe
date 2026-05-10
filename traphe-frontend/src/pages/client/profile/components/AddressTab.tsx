@@ -9,7 +9,9 @@ import {
   Home,
   Briefcase,
   Pencil,
-} from "lucide-react";
+  User,
+  Phone,
+} from "lucide-react"; // [1] Import thêm icon
 import { toast } from "sonner";
 import { userService } from "@/services/user.service";
 import type { UserAddress } from "@/types/user.types";
@@ -106,8 +108,21 @@ export default function AddressTab() {
                     )}
                   </div>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1 mt-2">
-                  <p className="font-medium text-black">{addr.detailAddress}</p>
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span>{addr.contactName || "No Name"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span>{addr.contactPhone || "No Phone"}</span>
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-600 space-y-1 mt-2 pt-2 border-t border-dashed border-gray-100">
+                  <p className="font-medium text-black line-clamp-2">
+                    {addr.detailAddress}
+                  </p>
                 </div>
               </div>
 

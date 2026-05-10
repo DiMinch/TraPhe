@@ -1,11 +1,15 @@
-import { Link } from "react-router";
-import { Search, User, ShoppingBag } from "lucide-react";
+import { Link, useNavigate } from "react-router";
+import { Search, User, ShoppingBag, LogIn } from "lucide-react";
 import { navLinks } from "@/lib/menu";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { authService } from "@/services/auth.service";
+import { Button } from "../ui/button";
 
 export default function Header() {
   const { count } = useCart();
+  const navigate = useNavigate();
+  const user = authService.getCurrentUser();
 
   return (
     <header className="w-full bg-white py-4 px-6 sticky top-0 z-50 shadow-sm border-b border-gray-100">
@@ -36,9 +40,7 @@ export default function Header() {
           <button className="text-gray-700 hover:text-black">
             <Search className="w-5 h-5" />
           </button>
-          <Link to="/profile" className="text-gray-700 hover:text-black">
-            <User className="w-5 h-5" />
-          </Link>
+
           <Link to="/cart" className="text-gray-700 hover:text-black relative">
             <ShoppingBag className="w-5 h-5" />
             {count > 0 && (
@@ -47,6 +49,24 @@ export default function Header() {
               </Badge>
             )}
           </Link>
+
+          {user ? (
+            <Link
+              to="/profile"
+              className="text-gray-700 hover:text-black"
+              title="My Profile"
+            >
+              <User className="w-5 h-5" />
+            </Link>
+          ) : (
+            <Button
+              variant="default"
+              onClick={() => navigate("/sign-in")}
+              className="bg-black text-white hover:bg-gray-900 px-3 py-1.5 flex items-center cursor-pointer"
+            >
+              <span className="hidden sm:inline">Login</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>

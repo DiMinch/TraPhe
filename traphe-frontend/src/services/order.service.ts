@@ -61,6 +61,7 @@ export interface CreateOrderRequest {
   guestPhone?: string;
   guestEmail?: string;
   addressId?: string;
+  shippingAddress?: string;
 }
 
 export const orderService = {

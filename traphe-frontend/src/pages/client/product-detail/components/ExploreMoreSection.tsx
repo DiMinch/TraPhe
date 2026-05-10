@@ -20,7 +20,10 @@ export default function ExploreMoreSection() {
     try {
       if (isLoadMore) setIsLoadingMore(true);
 
-      const res = await productService.getAllProducts(pageIndex, PAGE_SIZE);
+      const res = await productService.getAllProducts({
+        page: pageIndex,
+        size: PAGE_SIZE,
+      });
 
       if (res.statusCode === 200 && res.data) {
         const newProducts = res.data.content;

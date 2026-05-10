@@ -32,17 +32,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const isLoggedIn = !!authService.getCurrentUser();
 
   const refreshCart = async () => {
-    if (!isLoggedIn) return; // Nếu chưa login, có thể dùng local storage (tùy logic), ở đây giả sử chỉ call API
-
     setIsLoading(true);
     try {
       const res = await cartService.getCart();
       if (res.statusCode === 200 && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
+      } else {
+        setCart(null);
+        setCount(0);
       }
     } catch (error) {
-      console.error("Failed to load cart", error);
+      console.error("Cart not found or empty session", error);
+      setCart(null);
+      setCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -53,16 +56,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [isLoggedIn]);
 
   const addToCart = async (variantId: string, quantity = 1) => {
-    if (!isLoggedIn) {
-      toast.error("Please login to add items to cart");
-      return;
-    }
     try {
       await cartService.addToCart({ productVariantId: variantId, quantity });
       await refreshCart();
       toast.success("Added to cart");
-    } catch (error) {
-      toast.error("Failed to add to cart");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to add to cart");
     }
   };
 

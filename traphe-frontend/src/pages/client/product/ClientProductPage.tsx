@@ -19,6 +19,7 @@ import Banner from "@/components/common/banner/Banner";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
+import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Link } from "react-router";
@@ -33,11 +34,22 @@ export default function ClientProductPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 12;
 
+  const [filters, setFilters] = useState<FilterParams>({});
+
+  const handleFilterChange = (newFilters: FilterParams) => {
+    setFilters(newFilters);
+    setCurrentPage(0);
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await productService.getAllProducts(currentPage, pageSize);
+        const res = await productService.getAllProducts({
+          page: currentPage,
+          size: pageSize,
+          ...filters,
+        });
         if (res.statusCode === 200 && res.data) {
           setProducts(res.data.content);
           setTotalPages(res.data.totalPages);
@@ -49,7 +61,7 @@ export default function ClientProductPage() {
       }
     };
     fetchProducts();
-  }, [currentPage]);
+  }, [currentPage, filters]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
@@ -60,9 +72,9 @@ export default function ClientProductPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      <Banner />
+      {/* <Banner /> */}
       <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
-        <FilterSection />
+        <FilterSection onFilterChange={handleFilterChange} />
 
         <div className="flex-1 mt-8 lg:mt-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4">
@@ -89,28 +101,24 @@ export default function ClientProductPage() {
                 <button
                   onClick={() => setGridCols(4)}
                   className={`p-2 rounded hover:bg-gray-100 transition-colors ${gridCols === 4 ? "bg-gray-100 text-black" : "text-gray-400"}`}
-                  title="View 4 columns"
                 >
                   <LayoutGrid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setGridCols(3)}
                   className={`p-2 rounded hover:bg-gray-100 transition-colors ${gridCols === 3 ? "bg-gray-100 text-black" : "text-gray-400"}`}
-                  title="View 3 columns"
                 >
                   <Grid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setGridCols(2)}
                   className={`p-2 rounded hover:bg-gray-100 transition-colors ${gridCols === 2 ? "bg-gray-100 text-black" : "text-gray-400"}`}
-                  title="View 2 columns"
                 >
                   <StretchHorizontal className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setGridCols(1)}
                   className={`p-2 rounded hover:bg-gray-100 transition-colors ${gridCols === 1 ? "bg-gray-100 text-black" : "text-gray-400"}`}
-                  title="View List"
                 >
                   <AlignJustify className="w-5 h-5" />
                 </button>
@@ -124,47 +132,52 @@ export default function ClientProductPage() {
             </div>
           ) : (
             <>
-              <div
-                className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
-                ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
-                ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
-                ${gridCols === 2 ? "grid-cols-2" : ""}
-                ${gridCols === 1 ? "grid-cols-1" : ""}
-                `}
-              >
-                {products.map((product) => {
-                  const firstVariant = product.variants?.[0];
-                  const displayPrice = product.variants?.[0]?.sellingPrice || 0;
-
-                  return (
-                    <Link
-                      key={product.id}
-                      to={`/products/${product.id}`}
-                      className={gridCols === 1 ? "w-full" : ""}
-                    >
-                      <div
-                        className={
-                          gridCols === 1
-                            ? "flex gap-6 items-center border-b pb-4 last:border-0"
-                            : ""
-                        }
+              {products.length === 0 ? (
+                <div className="text-center py-20 text-gray-500">
+                  No products found.
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
+                        ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
+                        ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
+                        ${gridCols === 2 ? "grid-cols-2" : ""}
+                        ${gridCols === 1 ? "grid-cols-1" : ""}
+                    `}
+                >
+                  {products.map((product) => {
+                    const firstVariant = product.variants?.[0];
+                    const displayPrice = firstVariant?.sellingPrice || 0;
+                    return (
+                      <Link
+                        key={product.id}
+                        to={`/products/${product.id}`}
+                        className={gridCols === 1 ? "w-full" : ""}
                       >
-                        <ProductCard
-                          product={{
-                            id: product.id,
-                            variantId: firstVariant?.id,
-                            name: product.name,
-                            price: displayPrice,
-                            image: product.imageUrl,
-                            rating: 5,
-                            isNew: false,
-                          }}
-                        />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                        <div
+                          className={
+                            gridCols === 1
+                              ? "flex gap-6 items-center border-b pb-4 last:border-0"
+                              : ""
+                          }
+                        >
+                          <ProductCard
+                            product={{
+                              id: product.id,
+                              variantId: firstVariant?.id,
+                              name: product.name,
+                              price: displayPrice,
+                              image: product.imageUrl,
+                              rating: 5,
+                              isNew: false,
+                            }}
+                          />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12">
@@ -177,11 +190,9 @@ export default function ClientProductPage() {
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-
                   <span className="text-sm font-medium px-4">
                     Page {currentPage + 1} of {totalPages}
                   </span>
-
                   <Button
                     variant="outline"
                     size="icon"
@@ -197,7 +208,6 @@ export default function ClientProductPage() {
           )}
         </div>
       </div>
-
       <SubscribeSection />
     </div>
   );

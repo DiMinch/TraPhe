@@ -71,3 +71,14 @@ export interface UpdateVariantRequest {
   purchasePriceAvg?: number;
   sellingPrice?: number;
 }
+
+export interface GetProductsParams {
+  page?: number;
+  size?: number;
+  sort?: string[];
+  categoryId?: string;
+  supplierId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  keyword?: string; // Optional: thêm nếu cần search text
+}

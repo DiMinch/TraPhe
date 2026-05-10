@@ -17,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { userService } from "@/services/user.service";
+import { authService } from "@/services/auth.service";
 import type { Province, Commune, UserAddress } from "@/types/user.types";
 
 interface AddressDialogProps {
@@ -27,7 +28,7 @@ interface AddressDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: (savedAddress?: UserAddress) => void;
   isFirstAddress?: boolean;
-  addressToEdit?: UserAddress | null; // Thêm prop này để nhận dữ liệu cần sửa
+  addressToEdit?: UserAddress | null;
 }
 
 export default function AddressDialog({
@@ -42,8 +43,9 @@ export default function AddressDialog({
   const [communes, setCommunes] = useState<Commune[]>([]);
   const [isLoadingCommunes, setIsLoadingCommunes] = useState(false);
 
-  // Form State
   const [formData, setFormData] = useState({
+    contactName: "",
+    contactPhone: "",
     street: "",
     provinceCode: "",
     communeCode: "",
@@ -52,13 +54,12 @@ export default function AddressDialog({
     isPrimary: isFirstAddress,
   });
 
-  // 1. Logic Fill Dữ Liệu khi mở Dialog (Fix lỗi không hiện province/commune cũ)
   useEffect(() => {
     if (open) {
       if (addressToEdit) {
-        // Chế độ EDIT: Lấy dữ liệu từ addressToEdit đổ vào form
         setFormData({
-          // Ưu tiên lấy street hoặc detailAddress tùy API trả về
+          contactName: addressToEdit.contactName || "",
+          contactPhone: addressToEdit.contactPhone || "",
           street: addressToEdit.street || addressToEdit.detailAddress || "",
           provinceCode: addressToEdit.provinceCode || "",
           communeCode: addressToEdit.communeCode || "",
@@ -67,8 +68,11 @@ export default function AddressDialog({
           isPrimary: addressToEdit.isPrimary || false,
         });
       } else {
-        // Chế độ ADD NEW: Reset form về rỗng
+        const currentUser = authService.getCurrentUser();
+
         setFormData({
+          contactName: currentUser?.fullName || "",
+          contactPhone: currentUser?.phone || "",
           street: "",
           provinceCode: "",
           communeCode: "",
@@ -76,19 +80,17 @@ export default function AddressDialog({
           type: "Home",
           isPrimary: isFirstAddress,
         });
-        setCommunes([]); // Xóa danh sách xã/phường cũ
+        setCommunes([]);
       }
     }
   }, [open, addressToEdit, isFirstAddress]);
 
-  // 2. Load danh sách Tỉnh/Thành (Chạy 1 lần khi dialog mở)
   useEffect(() => {
     if (open && provinces.length === 0) {
       const fetchProvinces = async () => {
         try {
           const res = await userService.getProvinces();
           if (res.statusCode === 200 && res.data) {
-            // Handle both direct array and paginated response
             const provincesData = Array.isArray(res.data)
               ? res.data
               : (res.data as any)?.content || [];
@@ -102,8 +104,6 @@ export default function AddressDialog({
     }
   }, [open]);
 
-  // 3. Load danh sách Quận/Huyện/Xã (Chạy khi provinceCode thay đổi)
-  // Logic này sẽ tự động chạy khi ta fill provinceCode ở bước 1
   useEffect(() => {
     if (formData.provinceCode) {
       const fetchCommunes = async () => {
@@ -111,7 +111,6 @@ export default function AddressDialog({
         try {
           const res = await userService.getCommunes(formData.provinceCode);
           if (res.statusCode === 200 && res.data) {
-            // Handle both direct array and paginated response
             const communesData = Array.isArray(res.data)
               ? res.data
               : (res.data as any)?.content || [];
@@ -129,21 +128,24 @@ export default function AddressDialog({
     }
   }, [formData.provinceCode]);
 
-  // 4. Xử lý Lưu (Thêm mới hoặc Cập nhật)
   const handleSave = async () => {
     if (
+      !formData.contactName ||
+      !formData.contactPhone ||
       !formData.street ||
       !formData.provinceCode ||
       !formData.communeCode ||
       !formData.type
     ) {
-      toast.warning("Please fill in required fields (*)");
+      toast.warning("Please fill in all required fields (*)");
       return;
     }
 
     setIsSubmitting(true);
     try {
       const payload = {
+        contactName: formData.contactName,
+        contactPhone: formData.contactPhone,
         street: formData.street,
         provinceCode: formData.provinceCode,
         communeCode: formData.communeCode,
@@ -154,19 +156,17 @@ export default function AddressDialog({
 
       let res;
       if (addressToEdit) {
-        // Gọi API cập nhật
         res = await userService.updateAddress(addressToEdit.id, payload);
         if (res.statusCode === 200)
           toast.success("Address updated successfully");
       } else {
-        // Gọi API thêm mới
         res = await userService.addAddress(payload);
         if (res.statusCode === 200 || res.statusCode === 201)
           toast.success("Address added successfully");
       }
 
       if (res && (res.statusCode === 200 || res.statusCode === 201)) {
-        onSuccess(res.data); // Callback để refresh list ở component cha
+        onSuccess(res.data);
         onOpenChange(false);
       }
     } catch (error: any) {
@@ -186,6 +186,37 @@ export default function AddressDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <div className="relative">
+                <User className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  className="pl-9"
+                  value={formData.contactName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactName: e.target.value })
+                  }
+                  placeholder="e.g. Nguyen Van A"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Phone Number *</Label>
+              <div className="relative">
+                <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  className="pl-9"
+                  value={formData.contactPhone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, contactPhone: e.target.value })
+                  }
+                  placeholder="e.g. 0912345678"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Address Type *</Label>

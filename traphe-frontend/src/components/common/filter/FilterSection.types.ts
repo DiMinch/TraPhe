@@ -1,5 +1,10 @@
+export interface FilterParams {
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
 export interface FilterSectionProps {
   className?: string;
-  onCategoryChange?: (category: string) => void;
-  onPriceChange?: (price: string) => void;
+  onFilterChange: (params: FilterParams) => void;
 }

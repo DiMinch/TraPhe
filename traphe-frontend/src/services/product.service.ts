@@ -8,13 +8,18 @@ import type {
   ProductVariant,
   CreateVariantRequest,
   UpdateVariantRequest,
+  GetProductsParams,
 } from "@/types/product.types";
 
 export const productService = {
   // Product CRUD
-  getAllProducts: async (page = 0, size = 12) => {
+  getAllProducts: async (params?: GetProductsParams) => {
     return axiosClient.get<any, ApiResponse<ProductPageResponse>>("/products", {
-      params: { page, size },
+      params: {
+        page: 0,
+        size: 12,
+        ...params,
+      },
     });
   },
 

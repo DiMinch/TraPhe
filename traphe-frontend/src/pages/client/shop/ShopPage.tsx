@@ -13,6 +13,8 @@ import Banner from "@/components/common/banner/Banner";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
+import ShopCategorySection from "./components/ShopCategorySection";
+import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Link } from "react-router";
@@ -33,11 +35,32 @@ export default function ShopPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 12;
 
+  const [filters, setFilters] = useState<FilterParams>({});
+  const handleFilterChange = (newFilters: FilterParams) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    setCurrentPage(0);
+  };
+
+  const handleTopCategorySelect = (categoryId: string) => {
+    if (filters.categoryId === categoryId) {
+      const { categoryId: _, ...rest } = filters;
+      setFilters(rest);
+    } else {
+      setFilters((prev) => ({ ...prev, categoryId }));
+    }
+    setCurrentPage(0);
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const res = await productService.getAllProducts(currentPage, pageSize);
+        const res = await productService.getAllProducts({
+          page: currentPage,
+          size: pageSize,
+          ...filters,
+        });
+
         if (res.statusCode === 200 && res.data) {
           setProducts(res.data.content);
           setTotalPages(res.data.totalPages);
@@ -49,7 +72,7 @@ export default function ShopPage() {
       }
     };
     fetchProducts();
-  }, [currentPage]);
+  }, [currentPage, filters]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
@@ -61,13 +84,22 @@ export default function ShopPage() {
   return (
     <div className="bg-white min-h-screen">
       <Banner />
+      <div className="border-b border-gray-100 bg-white">
+        <ShopCategorySection
+          onSelectCategory={handleTopCategorySelect}
+          selectedCategoryId={filters.categoryId}
+        />
+      </div>
+
       <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
-        <FilterSection />
+        {/* <FilterSection 
+                    onFilterChange={handleFilterChange} 
+                /> */}
 
         <div className="flex-1 mt-8 lg:mt-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4">
             <h1 className="text-xl font-semibold text-black mb-4 sm:mb-0">
-              All Products
+              {filters.categoryId ? "Products in Category" : "All Products"}
             </h1>
 
             <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
@@ -119,46 +151,52 @@ export default function ShopPage() {
             </div>
           ) : (
             <>
-              <div
-                className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
-                                ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
-                                ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
-                                ${gridCols === 2 ? "grid-cols-2" : ""}
-                                ${gridCols === 1 ? "grid-cols-1" : ""}
-                            `}
-              >
-                {products.map((product) => {
-                  const firstVariant = product.variants?.[0];
-                  const displayPrice = product.variants?.[0]?.sellingPrice || 0;
-                  return (
-                    <div
-                      key={product.id}
-                      className={
-                        gridCols === 1
-                          ? "flex gap-6 items-center border-b pb-4 w-full"
-                          : ""
-                      }
-                    >
-                      <Link
-                        to={`/products/${product.id}`}
-                        className="block w-full"
+              {products.length === 0 ? (
+                <div className="text-center py-20 text-gray-500">
+                  No products found matching your criteria.
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
+                                    ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
+                                    ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
+                                    ${gridCols === 2 ? "grid-cols-2" : ""}
+                                    ${gridCols === 1 ? "grid-cols-1" : ""}
+                                `}
+                >
+                  {products.map((product) => {
+                    const firstVariant = product.variants?.[0];
+                    const displayPrice = firstVariant?.sellingPrice || 0;
+                    return (
+                      <div
+                        key={product.id}
+                        className={
+                          gridCols === 1
+                            ? "flex gap-6 items-center border-b pb-4 w-full"
+                            : ""
+                        }
                       >
-                        <ProductCard
-                          product={{
-                            id: product.id,
-                            variantId: firstVariant?.id,
-                            name: product.name,
-                            price: displayPrice,
-                            image: product.imageUrl,
-                            rating: 5,
-                            isNew: false,
-                          }}
-                        />
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
+                        <Link
+                          to={`/products/${product.id}`}
+                          className="block w-full"
+                        >
+                          <ProductCard
+                            product={{
+                              id: product.id,
+                              variantId: firstVariant?.id,
+                              name: product.name,
+                              price: displayPrice,
+                              image: product.imageUrl,
+                              rating: 5,
+                              isNew: false,
+                            }}
+                          />
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-12">
