@@ -80,15 +80,25 @@ export interface ApplyPromotionCodeRequest {
 }
 
 // Cart discount calculation response
+export interface AppliedPromotionDetail {
+  promotionId: string;
+  code: string;
+  name: string;
+  type: string;
+  discountAmount: number;
+  message: string;
+}
+
 export interface CartDiscountCalculationResponse {
-  originalTotal: number;
+  subtotal: number;
+  tierDiscount: number;
+  productPromotionDiscount: number;
+  orderPromotionDiscount: number;
   totalDiscount: number;
-  finalTotal: number;
-  appliedPromotions: Array<{
-    promotionId: string;
-    promotionCode: string;
-    discountAmount: number;
-  }>;
+  finalAmount: number;
+  productPromotions: AppliedPromotionDetail[];
+  orderPromotion: AppliedPromotionDetail | null;
+  warnings: string[];
 }
 
 export const promotionService = {

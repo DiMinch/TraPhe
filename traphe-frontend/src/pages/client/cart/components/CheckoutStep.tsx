@@ -10,7 +10,6 @@ import {
   MapPin,
   Plus,
   Wallet,
-  CreditCard,
   Tag,
   X,
   Ticket,
@@ -48,9 +47,11 @@ export default function CheckoutStep({
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [appliedPromotionId, setAppliedPromotionId] = useState<string | null>(
-    null,
-  );
+  const [calculatedFinalAmount, setCalculatedFinalAmount] = useState<
+    number | null
+  >(null);
+  const [appliedPromotionIds, setAppliedPromotionIds] = useState<string[]>([]);
+
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [availablePromotions, setAvailablePromotions] = useState<
     PromotionResponse[]
@@ -128,36 +129,43 @@ export default function CheckoutStep({
 
       const res = await promotionService.calculateCartDiscount(payload);
 
-      if (res.statusCode === 200 && res.data) {
-        if (res.data.totalDiscount > 0) {
-          setDiscountAmount(res.data.totalDiscount);
-          if (res.data.appliedPromotions.length > 0) {
-            setAppliedPromotionId(res.data.appliedPromotions[0].promotionId);
-          }
+      if (res.data) {
+        const data = res.data;
+        if (data.totalDiscount > 0) {
+          setDiscountAmount(data.totalDiscount);
+          setCalculatedFinalAmount(data.finalAmount);
+          const promoIds: string[] = [];
+          if (data.orderPromotion)
+            promoIds.push(data.orderPromotion.promotionId);
+          setAppliedPromotionIds([...new Set(promoIds)]);
+
           toast.success(
-            `Applied! Saved ${res.data.totalDiscount.toLocaleString()}₫`,
+            `Applied! Saved ${data.totalDiscount.toLocaleString()}₫`,
           );
         } else {
-          toast.info(
-            "Coupon is valid but no discount applicable for these items.",
-          );
-          setDiscountAmount(0);
-          setAppliedPromotionId(null);
+          toast.info("Coupon is valid but no discount applicable.");
+          resetCouponState();
         }
       }
     } catch (error: any) {
-      setDiscountAmount(0);
-      setAppliedPromotionId(null);
-      toast.error(error.response?.data?.message || "Invalid coupon code");
+      resetCouponState();
+      toast.error(
+        error.response?.data?.message || "Invalid or expired coupon code",
+      );
     } finally {
       setIsApplyingCoupon(false);
     }
   };
 
+  const resetCouponState = () => {
+    setDiscountAmount(0);
+    setCalculatedFinalAmount(null);
+    setAppliedPromotionIds([]);
+  };
+
   const handleRemoveCoupon = () => {
     setCouponCode("");
-    setDiscountAmount(0);
-    setAppliedPromotionId(null);
+    resetCouponState();
     toast.info("Coupon removed");
   };
 
@@ -188,7 +196,7 @@ export default function CheckoutStep({
         paymentMethod: paymentMethod === "cod" ? "COD" : "TRANSFER",
         addressId: selectedAddressId,
         loyaltyPointsToUse: 0,
-        promotionIds: appliedPromotionId ? [appliedPromotionId] : [],
+        promotionIds: appliedPromotionIds,
       });
 
       if (res.statusCode === 200 || res.statusCode === 201) {
@@ -206,17 +214,23 @@ export default function CheckoutStep({
 
   const cartSubtotal = cart?.totalAmount || 0;
   const shippingFee = 0;
-  const total = Math.max(0, cartSubtotal + shippingFee - discountAmount);
+
+  const displayTotal =
+    calculatedFinalAmount !== null
+      ? calculatedFinalAmount
+      : Math.max(0, cartSubtotal + shippingFee - discountAmount);
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 pb-12">
       <div className="lg:col-span-7 space-y-8">
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <MapPin className="w-5 h-5 text-black" />
-            <h3 className="font-bold text-lg text-gray-900">
-              Shipping Address
-            </h3>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-black" />
+              <h3 className="font-bold text-lg text-gray-900">
+                Shipping Address
+              </h3>
+            </div>
           </div>
 
           {isLoadingAddresses ? (
@@ -269,7 +283,7 @@ export default function CheckoutStep({
               <Button
                 variant="outline"
                 onClick={() => setIsAddressDialogOpen(true)}
-                className="w-full border-dashed border-gray-300 text-gray-600 hover:text-black hover:border-black h-12 flex items-center gap-2 mt-2"
+                className="w-full border-dashed border-gray-300 text-gray-600 hover:text-black hover:border-black h-12 flex items-center gap-2 mt-2 cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Ship to a different address
               </Button>
@@ -277,6 +291,7 @@ export default function CheckoutStep({
           )}
         </div>
 
+        {/* Payment Method */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
             <Wallet className="w-5 h-5 text-black" />
@@ -301,24 +316,11 @@ export default function CheckoutStep({
               </div>
               <Truck className="w-5 h-5 text-gray-400" />
             </div>
-            <div
-              className={cn(
-                "flex items-center justify-between border rounded-lg px-4 py-4 cursor-pointer",
-                paymentMethod === "banking" && "border-black bg-gray-50",
-              )}
-            >
-              <div className="flex items-center space-x-3">
-                <RadioGroupItem value="banking" id="banking" />
-                <Label htmlFor="banking" className="cursor-pointer font-medium">
-                  Internet Banking / QR Code
-                </Label>
-              </div>
-              <CreditCard className="w-5 h-5 text-gray-400" />
-            </div>
           </RadioGroup>
         </div>
       </div>
 
+      {/* Order Summary Side */}
       <div className="lg:col-span-5">
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 lg:p-8 sticky top-24">
           <h2 className="text-xl font-bold mb-6 text-gray-900">
@@ -359,6 +361,7 @@ export default function CheckoutStep({
             ))}
           </div>
 
+          {/* Coupon Input */}
           <div className="mb-6 space-y-3">
             <Label className="text-xs font-bold text-gray-500 uppercase block">
               Coupon Code
@@ -462,7 +465,7 @@ export default function CheckoutStep({
           <div className="flex justify-between items-end mb-8">
             <span className="text-base font-medium text-gray-900">Total</span>
             <span className="text-2xl font-bold text-gray-900">
-              {total.toLocaleString("vi-VN")}₫
+              {displayTotal.toLocaleString("vi-VN")}₫
             </span>
           </div>
 
