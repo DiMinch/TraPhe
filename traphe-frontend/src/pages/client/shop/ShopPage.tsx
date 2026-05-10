@@ -14,10 +14,11 @@ import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
 import ShopCategorySection from "./components/ShopCategorySection";
+import ProductSearch from "@/components/common/search/ProductSearch"; // Import Search Component
 import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router"; // [1] Import useSearchParams
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,18 +36,48 @@ export default function ShopPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 12;
 
+  // [2] Lấy Search Params từ URL
+  const [searchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get("search");
+
   const [filters, setFilters] = useState<FilterParams>({});
+
+  // [3] Effect: Đồng bộ URL Search -> Filters State
+  useEffect(() => {
+    if (urlSearchQuery) {
+      setFilters((prev) => ({ ...prev, search: urlSearchQuery }));
+    } else {
+      // Nếu URL không có search (user xóa), loại bỏ khỏi bộ lọc
+      setFilters((prev) => {
+        const { search, ...rest } = prev;
+        return rest;
+      });
+    }
+    // Reset về trang đầu khi search thay đổi
+    setCurrentPage(0);
+  }, [urlSearchQuery]);
+
   const handleFilterChange = (newFilters: FilterParams) => {
-    setFilters((prev) => ({ ...prev, ...newFilters }));
+    // Giữ lại search query từ URL khi user thao tác các bộ lọc khác (như giá, danh mục)
+    setFilters((prev) => ({
+      ...prev,
+      ...newFilters,
+      search: urlSearchQuery || undefined,
+    }));
     setCurrentPage(0);
   };
 
   const handleTopCategorySelect = (categoryId: string) => {
     if (filters.categoryId === categoryId) {
       const { categoryId: _, ...rest } = filters;
-      setFilters(rest);
+      // Giữ lại search nếu có
+      setFilters({ ...rest, search: urlSearchQuery || undefined });
     } else {
-      setFilters((prev) => ({ ...prev, categoryId }));
+      setFilters((prev) => ({
+        ...prev,
+        categoryId,
+        search: urlSearchQuery || undefined,
+      }));
     }
     setCurrentPage(0);
   };
@@ -89,17 +120,27 @@ export default function ShopPage() {
           onSelectCategory={handleTopCategorySelect}
           selectedCategoryId={filters.categoryId}
         />
+
+        {/* Thanh tìm kiếm */}
+        <div className="pb-8 px-6">
+          <div className="max-w-[1240px] mx-auto">
+            <ProductSearch placeholder="Find your favorite tech items..." />
+          </div>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
-        {/* <FilterSection 
-                    onFilterChange={handleFilterChange} 
-                /> */}
+        <FilterSection onFilterChange={handleFilterChange} />
 
         <div className="flex-1 mt-8 lg:mt-0">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4">
             <h1 className="text-xl font-semibold text-black mb-4 sm:mb-0">
-              {filters.categoryId ? "Products in Category" : "All Products"}
+              {/* Hiển thị tiêu đề động */}
+              {urlSearchQuery
+                ? `Search results for "${urlSearchQuery}"`
+                : filters.categoryId
+                  ? "Products in Category"
+                  : "All Products"}
             </h1>
 
             <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
@@ -153,7 +194,9 @@ export default function ShopPage() {
             <>
               {products.length === 0 ? (
                 <div className="text-center py-20 text-gray-500">
-                  No products found matching your criteria.
+                  {urlSearchQuery
+                    ? `No products found for "${urlSearchQuery}"`
+                    : "No products found matching your criteria."}
                 </div>
               ) : (
                 <div

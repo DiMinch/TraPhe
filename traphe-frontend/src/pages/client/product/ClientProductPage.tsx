@@ -15,15 +15,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Banner from "@/components/common/banner/Banner";
-import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
-import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
 import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router"; // [CHANGE] Import useSearchParams
 import { Button } from "@/components/ui/button";
+import ProductCard from "@/components/common/product/ProductCard";
+import ProductSearch from "@/components/common/search/ProductSearch";
 
 export default function ClientProductPage() {
   const [gridCols, setGridCols] = useState<number>(3);
@@ -34,10 +33,34 @@ export default function ClientProductPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 12;
 
+  // [SEARCH LOGIC] Lấy param từ URL
+  const [searchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get("search");
+
   const [filters, setFilters] = useState<FilterParams>({});
 
+  // [SEARCH LOGIC] Sync URL search param vào filters state
+  useEffect(() => {
+    if (urlSearchQuery) {
+      setFilters((prev) => ({ ...prev, search: urlSearchQuery }));
+    } else {
+      // Nếu không có search param (xóa trên url), bỏ search khỏi filter
+      setFilters((prev) => {
+        const { search, ...rest } = prev;
+        return rest;
+      });
+    }
+    // Reset về trang 0 khi search thay đổi
+    setCurrentPage(0);
+  }, [urlSearchQuery]);
+
   const handleFilterChange = (newFilters: FilterParams) => {
-    setFilters(newFilters);
+    // Giữ lại search query khi thay đổi các filter khác (nếu cần)
+    setFilters((prev) => ({
+      ...prev,
+      ...newFilters,
+      search: urlSearchQuery || undefined,
+    }));
     setCurrentPage(0);
   };
 
@@ -72,14 +95,19 @@ export default function ClientProductPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      {/* <Banner /> */}
       <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
         <FilterSection onFilterChange={handleFilterChange} />
 
         <div className="flex-1 mt-8 lg:mt-0">
+          <div className="mb-6">
+            <ProductSearch className="w-full" />
+          </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4">
             <h1 className="text-xl font-semibold text-black mb-4 sm:mb-0">
-              All Products
+              {/* Hiển thị tiêu đề động theo từ khóa */}
+              {urlSearchQuery
+                ? `Search results for "${urlSearchQuery}"`
+                : "All Products"}
             </h1>
 
             <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
@@ -134,7 +162,9 @@ export default function ClientProductPage() {
             <>
               {products.length === 0 ? (
                 <div className="text-center py-20 text-gray-500">
-                  No products found.
+                  {urlSearchQuery
+                    ? `No products found for "${urlSearchQuery}"`
+                    : "No products found."}
                 </div>
               ) : (
                 <div
@@ -208,7 +238,6 @@ export default function ClientProductPage() {
           )}
         </div>
       </div>
-      <SubscribeSection />
     </div>
   );
 }

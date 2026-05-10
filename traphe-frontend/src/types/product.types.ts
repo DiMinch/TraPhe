@@ -15,7 +15,7 @@ export interface Product {
   status: string;
   categoryName: string;
   categoryId: string;
-  supplierId?: string; // Not returned by API, but needed for edit form
+  supplierId?: string;
   supplierName: string;
   minStockThreshold: number;
   warrantyPeriod: number;
@@ -81,5 +81,19 @@ export interface GetProductsParams {
   supplierId?: string;
   minPrice?: number;
   maxPrice?: number;
-  keyword?: string;
+  search?: string;
+  variantSpec?: string;
+  [key: string]: any;
+}
+
+export interface VariantFilterOptionsResponse {
+  filters: Record<string, string[]>;
+  metadata: Record<
+    string,
+    {
+      specName: string;
+      dataType: string;
+      isRequired: boolean;
+    }
+  >;
 }

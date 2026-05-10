@@ -37,10 +37,6 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-5">
-          <button className="text-gray-700 hover:text-black">
-            <Search className="w-5 h-5" />
-          </button>
-
           <Link to="/cart" className="text-gray-700 hover:text-black relative">
             <ShoppingBag className="w-5 h-5" />
             {count > 0 && (

@@ -9,6 +9,7 @@ import type {
   CreateVariantRequest,
   UpdateVariantRequest,
   GetProductsParams,
+  VariantFilterOptionsResponse,
 } from "@/types/product.types";
 
 export const productService = {
@@ -25,6 +26,15 @@ export const productService = {
 
   getProductById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<Product>>(`/products/${id}`);
+  },
+
+  getVariantFilterOptions: async (categoryId?: string) => {
+    return axiosClient.get<any, ApiResponse<VariantFilterOptionsResponse>>(
+      "/variants/filter-options",
+      {
+        params: { categoryId },
+      },
+    );
   },
 
   createProduct: async (data: CreateProductRequest, image?: File) => {

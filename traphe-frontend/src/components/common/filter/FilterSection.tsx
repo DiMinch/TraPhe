@@ -1,13 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-  SlidersHorizontal,
-  Filter,
-  Loader2,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { SlidersHorizontal, Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -25,14 +17,29 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import axiosClient from "@/lib/axios-client";
+import { productService } from "@/services/product.service";
 import type { ApiResponse } from "@/types/api.types";
 import type { FilterSectionProps } from "./FilterSection.types";
+import CategoryFilter from "./CategoryFilter";
+import PriceFilter from "./PriceFilter";
+import VariantFilter from "./VariantFilter";
+import type { PriceRange } from "./PriceFilter";
 
-const PRICE_RANGES = [
-  { id: "p1", label: "Dưới 10 triệu", min: 0, max: 10000000 },
-  { id: "p2", label: "10 triệu - 20 triệu", min: 10000000, max: 20000000 },
-  { id: "p3", label: "20 triệu - 50 triệu", min: 20000000, max: 50000000 },
-  { id: "p4", label: "Trên 50 triệu", min: 50000000, max: undefined },
+const PRICE_RANGES: PriceRange[] = [
+  { id: "p1", label: "Under 10 million VND", min: 0, max: 10000000 },
+  {
+    id: "p2",
+    label: "10 million - 20 million VND",
+    min: 10000000,
+    max: 20000000,
+  },
+  {
+    id: "p3",
+    label: "20 million - 50 million VND",
+    min: 20000000,
+    max: 50000000,
+  },
+  { id: "p4", label: "Over 50 million VND", min: 50000000, max: undefined },
 ];
 
 interface Category {
@@ -61,6 +68,14 @@ export default function FilterSection({
     Record<string, boolean>
   >({});
 
+  const [variantFilterOptions, setVariantFilterOptions] = useState<
+    Record<string, string[]>
+  >({});
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>(
+    {},
+  );
+  const [loadingSpecs, setLoadingSpecs] = useState(false);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -78,6 +93,27 @@ export default function FilterSection({
     };
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    const fetchVariantOptions = async () => {
+      setLoadingSpecs(true);
+      try {
+        const res =
+          await productService.getVariantFilterOptions(selectedCategoryId);
+        if (res.statusCode === 200 && res.data) {
+          setVariantFilterOptions(res.data.filters);
+        } else {
+          setVariantFilterOptions({});
+        }
+      } catch (error) {
+        console.error("Failed to load variant filters", error);
+      } finally {
+        setLoadingSpecs(false);
+      }
+    };
+
+    fetchVariantOptions();
+  }, [selectedCategoryId]);
 
   const categoryTree = useMemo(() => {
     const tree: CategoryNode[] = [];
@@ -98,17 +134,21 @@ export default function FilterSection({
     return tree;
   }, [categories]);
 
-  const toggleExpand = (catId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const toggleExpand = (catId: string) => {
     setExpandedCategories((prev) => ({
       ...prev,
       [catId]: !prev[catId],
     }));
   };
 
-  const applyFilters = (catId?: string, prices?: string[]) => {
+  const applyFilters = (
+    catId?: string,
+    prices?: string[],
+    specs?: Record<string, string[]>,
+  ) => {
     const currentCat = catId ?? selectedCategoryId;
     const currentPrices = prices ?? selectedPriceRanges;
+    const currentSpecs = specs ?? selectedSpecs;
 
     let minPrice: number | undefined = undefined;
     let maxPrice: number | undefined = undefined;
@@ -128,17 +168,27 @@ export default function FilterSection({
       }
     }
 
+    const dynamicFilters: Record<string, string> = {};
+
+    Object.entries(currentSpecs).forEach(([key, values]) => {
+      if (values.length > 0) {
+        dynamicFilters[key] = values.join(",");
+      }
+    });
+
     onFilterChange({
       categoryId: currentCat,
       minPrice,
       maxPrice,
+      ...dynamicFilters,
     });
   };
 
   const handleCategoryClick = (catId: string) => {
     const newId = selectedCategoryId === catId ? undefined : catId;
     setSelectedCategoryId(newId);
-    applyFilters(newId, undefined);
+    setSelectedSpecs({});
+    applyFilters(newId, undefined, {});
   };
 
   const handlePriceCheck = (rangeId: string) => {
@@ -147,75 +197,50 @@ export default function FilterSection({
       : [...selectedPriceRanges, rangeId];
 
     setSelectedPriceRanges(newRanges);
-    applyFilters(undefined, newRanges);
+    applyFilters(undefined, newRanges, undefined);
+  };
+
+  const handleSpecCheck = (key: string, value: string) => {
+    const currentValues = selectedSpecs[key] || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter((v) => v !== value)
+      : [...currentValues, value];
+
+    const newSelectedSpecs = {
+      ...selectedSpecs,
+      [key]: newValues,
+    };
+
+    if (newValues.length === 0) {
+      delete newSelectedSpecs[key];
+    }
+
+    setSelectedSpecs(newSelectedSpecs);
+    applyFilters(undefined, undefined, newSelectedSpecs);
   };
 
   const handleReset = () => {
     setSelectedCategoryId(undefined);
     setSelectedPriceRanges([]);
+    setSelectedSpecs({});
     onFilterChange({});
-  };
-
-  const renderCategoryItem = (node: CategoryNode, level: number = 0) => {
-    const hasChildren = node.children && node.children.length > 0;
-    const isExpanded = expandedCategories[node.id];
-    const isSelected = selectedCategoryId === node.id;
-
-    return (
-      <div key={node.id} className="w-full">
-        <div
-          className={cn(
-            "flex items-center justify-between py-2 px-2 rounded-md cursor-pointer transition-colors hover:bg-gray-100",
-            isSelected
-              ? "bg-black text-white hover:bg-gray-800"
-              : "text-gray-700",
-          )}
-          style={{ paddingLeft: `${level * 16 + 8}px` }}
-          onClick={() => handleCategoryClick(node.id)}
-        >
-          <span
-            className={cn("text-sm font-medium", isSelected && "font-bold")}
-          >
-            {node.name}
-          </span>
-
-          {hasChildren && (
-            <button
-              onClick={(e) => toggleExpand(node.id, e)}
-              className={cn(
-                "p-1 rounded-full hover:bg-gray-200/20",
-                isSelected ? "text-white" : "text-gray-500",
-              )}
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-          )}
-        </div>
-
-        {hasChildren && isExpanded && (
-          <div className="mt-1 space-y-1 animate-in slide-in-from-top-2 duration-200">
-            {node.children.map((child) => renderCategoryItem(child, level + 1))}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const FilterContent = () => (
     <div className="space-y-6">
       <Accordion
         type="multiple"
-        defaultValue={["category", "price"]}
+        defaultValue={[
+          "category",
+          "price",
+          ...Object.keys(variantFilterOptions),
+        ]}
         className="w-full"
       >
-        <AccordionItem value="category" className="border-b-0">
-          <AccordionTrigger className="hover:no-underline py-3">
-            <span className="font-bold text-base uppercase tracking-wide text-gray-900">
-              Danh mục
+        <AccordionItem value="category" className="border-b border-gray-100">
+          <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
+            <span className="font-bold text-base uppercase tracking-wide text-gray-900 cursor-pointer">
+              Category
             </span>
           </AccordionTrigger>
           <AccordionContent>
@@ -224,64 +249,52 @@ export default function FilterSection({
                 <Loader2 className="w-4 h-4 animate-spin" />
               </div>
             ) : (
-              <div className="flex flex-col space-y-1">
-                {categoryTree.length > 0 ? (
-                  categoryTree.map((node) => renderCategoryItem(node))
-                ) : (
-                  <p className="text-sm text-gray-500 italic pl-2">
-                    Không có danh mục
-                  </p>
-                )}
-              </div>
+              <CategoryFilter
+                categoryTree={categoryTree}
+                loading={loadingCats}
+                selectedCategoryId={selectedCategoryId}
+                expandedCategories={expandedCategories}
+                onCategoryClick={handleCategoryClick}
+                onToggleExpand={toggleExpand}
+              />
             )}
           </AccordionContent>
         </AccordionItem>
 
-        <Separator className="my-2 bg-gray-100" />
-
-        <AccordionItem value="price" className="border-b-0">
-          <AccordionTrigger className="hover:no-underline py-3">
+        <AccordionItem value="price" className="border-b border-gray-100">
+          <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
             <span className="font-bold text-base uppercase tracking-wide text-gray-900">
-              Khoảng giá
+              Price
             </span>
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-3 pt-1 pl-1">
-              {PRICE_RANGES.map((range) => (
-                <div
-                  key={range.id}
-                  className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <Checkbox
-                    id={range.id}
-                    className="w-5 h-5 rounded border-gray-300 data-[state=checked]:bg-black data-[state=checked]:border-black"
-                    checked={selectedPriceRanges.includes(range.id)}
-                    onCheckedChange={() => handlePriceCheck(range.id)}
-                  />
-                  <Label
-                    htmlFor={range.id}
-                    className={cn(
-                      "text-sm cursor-pointer flex-1",
-                      selectedPriceRanges.includes(range.id)
-                        ? "text-black font-medium"
-                        : "text-gray-600 font-normal",
-                    )}
-                  >
-                    {range.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
+            <PriceFilter
+              priceRanges={PRICE_RANGES}
+              selectedPriceRanges={selectedPriceRanges}
+              onTogglePrice={handlePriceCheck}
+            />
           </AccordionContent>
         </AccordionItem>
+
+        {loadingSpecs ? (
+          <div className="py-4 flex justify-center">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+        ) : (
+          <VariantFilter
+            filters={variantFilterOptions}
+            selectedSpecs={selectedSpecs}
+            onToggleSpec={handleSpecCheck}
+          />
+        )}
       </Accordion>
 
       <Button
         variant="outline"
         onClick={handleReset}
-        className="w-full border-dashed border-gray-400 hover:border-black hover:bg-gray-50 mt-4"
+        className="w-full border-dashed border-gray-400 hover:border-black hover:bg-gray-50 mt-4 cursor-pointer"
       >
-        Xóa tất cả bộ lọc
+        Clear All Filters
       </Button>
     </div>
   );
@@ -299,7 +312,9 @@ export default function FilterSection({
                 <SlidersHorizontal className="w-4 h-4" />
                 <span className="font-medium">Filter & Sort</span>
               </div>
-              {(selectedCategoryId || selectedPriceRanges.length > 0) && (
+              {(selectedCategoryId ||
+                selectedPriceRanges.length > 0 ||
+                Object.keys(selectedSpecs).length > 0) && (
                 <span className="bg-black text-white text-xs px-2 py-0.5 rounded-full">
                   •
                 </span>
@@ -325,14 +340,16 @@ export default function FilterSection({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
               <SlidersHorizontal className="w-5 h-5" />
-              <span>Bộ lọc</span>
+              <span>Filter</span>
             </div>
-            {(selectedCategoryId || selectedPriceRanges.length > 0) && (
+            {(selectedCategoryId ||
+              selectedPriceRanges.length > 0 ||
+              Object.keys(selectedSpecs).length > 0) && (
               <button
                 onClick={handleReset}
-                className="text-xs text-gray-400 hover:text-black underline"
+                className="text-xs text-gray-400 hover:text-black underline cursor-pointer"
               >
-                Xóa tất cả
+                Clear All
               </button>
             )}
           </div>

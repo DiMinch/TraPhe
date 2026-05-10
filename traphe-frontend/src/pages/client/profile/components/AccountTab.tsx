@@ -145,7 +145,12 @@ export default function AccountTab({
     }
   };
 
-  if (!currentUser) return <div>Loading...</div>;
+  if (!currentUser)
+    return (
+      <div>
+        <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+      </div>
+    );
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
