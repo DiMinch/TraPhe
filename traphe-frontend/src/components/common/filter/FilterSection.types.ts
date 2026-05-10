@@ -7,5 +7,6 @@ export interface FilterParams {
 
 export interface FilterSectionProps {
   className?: string;
+  categoryId?: string;
   onFilterChange: (params: FilterParams) => void;
 }

@@ -47,6 +47,7 @@ export default function CheckoutStep({
     number | null
   >(null);
   const [appliedPromotionIds, setAppliedPromotionIds] = useState<string[]>([]);
+  const [appliedCodes, setAppliedCodes] = useState<string[]>([]);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [availablePromotions, setAvailablePromotions] = useState<
     PromotionResponse[]
@@ -124,14 +125,17 @@ export default function CheckoutStep({
     try {
       const payload = {
         items: cart.items.map((item) => ({
+          productId: item.productId,
           productVariantId: item.productVariantId,
           quantity: item.quantity,
           unitPrice: item.currentPrice || 0,
         })),
         code: code,
-        customerId: user?.id,
+        appliedCodes: appliedCodes,
+        customerId: user?.customerId || user?.id,
       };
 
+      // Vẫn giữ logic gọi calculate-discount khi bấm Apply
       const res = await promotionService.calculateCartDiscount(payload);
 
       if (res.data) {
@@ -143,14 +147,18 @@ export default function CheckoutStep({
           const promoIds: string[] = [];
           if (data.orderPromotion)
             promoIds.push(data.orderPromotion.promotionId);
+          data.productPromotions.forEach((p) => promoIds.push(p.promotionId));
+
           setAppliedPromotionIds([...new Set(promoIds)]);
+          if (!appliedCodes.includes(code)) {
+            setAppliedCodes([...appliedCodes, code]);
+          }
 
           toast.success(
             `Applied! Saved ${data.totalDiscount.toLocaleString()}₫`,
           );
         } else {
           toast.info("Coupon is valid but no discount applicable.");
-          resetCouponState();
         }
       }
     } catch (error: any) {
@@ -167,6 +175,7 @@ export default function CheckoutStep({
     setDiscountAmount(0);
     setCalculatedFinalAmount(null);
     setAppliedPromotionIds([]);
+    setAppliedCodes([]);
   };
 
   const handleRemoveCoupon = () => {
@@ -197,6 +206,8 @@ export default function CheckoutStep({
 
     setIsLoading(true);
     try {
+      // [ĐÃ XOÁ] Phần logic gọi applyPromotionCode tại đây theo yêu cầu
+
       const orderItems = cart.items.map((item) => ({
         productVariantId: item.productVariantId,
         quantity: item.quantity,
@@ -209,6 +220,7 @@ export default function CheckoutStep({
         orderType: paymentMethod === "cod" ? "ONLINE_COD" : "ONLINE_TRANSFER",
         paymentMethod: paymentMethod === "cod" ? "COD" : "TRANSFER",
         loyaltyPointsToUse: 0,
+        // Sử dụng trực tiếp danh sách promotion đã lưu từ bước Apply
         promotionIds: appliedPromotionIds,
       };
 

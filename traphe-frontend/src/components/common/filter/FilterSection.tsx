@@ -56,6 +56,7 @@ interface CategoryNode extends Category {
 export default function FilterSection({
   className,
   onFilterChange,
+  categoryId,
 }: FilterSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCats, setLoadingCats] = useState(true);
@@ -75,6 +76,10 @@ export default function FilterSection({
     {},
   );
   const [loadingSpecs, setLoadingSpecs] = useState(false);
+
+  useEffect(() => {
+    setSelectedCategoryId(categoryId);
+  }, [categoryId]);
 
   useEffect(() => {
     const fetchCategories = async () => {

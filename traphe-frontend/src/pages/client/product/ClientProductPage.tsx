@@ -55,12 +55,10 @@ export default function ClientProductPage() {
   }, [urlSearchQuery]);
 
   const handleFilterChange = (newFilters: FilterParams) => {
-    // Giữ lại search query khi thay đổi các filter khác (nếu cần)
-    setFilters((prev) => ({
-      ...prev,
+    setFilters({
       ...newFilters,
       search: urlSearchQuery || undefined,
-    }));
+    });
     setCurrentPage(0);
   };
 
@@ -96,7 +94,10 @@ export default function ClientProductPage() {
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
-        <FilterSection onFilterChange={handleFilterChange} />
+        <FilterSection
+          onFilterChange={handleFilterChange}
+          categoryId={filters.categoryId}
+        />
 
         <div className="flex-1 mt-8 lg:mt-0">
           <div className="mb-6">
@@ -111,19 +112,19 @@ export default function ClientProductPage() {
             </h1>
 
             <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:opacity-80">
-                    Sort by <ChevronDown className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Price: Low to High</DropdownMenuItem>
-                  <DropdownMenuItem>Price: High to Low</DropdownMenuItem>
-                  <DropdownMenuItem>Newest</DropdownMenuItem>
-                  <DropdownMenuItem>Best Selling</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:opacity-80">
+                      Sort by <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>Price: Low to High</DropdownMenuItem>
+                    <DropdownMenuItem>Price: High to Low</DropdownMenuItem>
+                    <DropdownMenuItem>Newest</DropdownMenuItem>
+                    <DropdownMenuItem>Best Selling</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu> */}
 
               <div className="flex items-center gap-1 bg-white">
                 <button

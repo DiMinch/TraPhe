@@ -65,8 +65,8 @@ export default function ProfilePage() {
 
   const menuItems = [
     { id: "account", label: "Account Details", icon: User },
-    { id: "address", label: "Address", icon: MapPin },
-    { id: "orders", label: "Orders", icon: Package },
+    { id: "address", label: "My Address", icon: MapPin },
+    { id: "orders", label: "Order History", icon: Package },
   ];
 
   const calculateProgress = () => {

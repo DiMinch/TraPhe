@@ -31,9 +31,9 @@ export default function ContactPage() {
             </div>
             <h3 className="font-semibold text-lg mb-2">Our Store</h3>
             <p className="text-gray-500 text-sm leading-relaxed">
-              Ward 34, Linh Xuan Commune,
+              Quarter 6, Linh Trung Ward,
               <br />
-              Ho Chi Minh City, Vietnam
+              Thu Duc City, Ho Chi Minh City
             </p>
           </div>
 
@@ -63,6 +63,7 @@ export default function ContactPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+          {/* Form Section */}
           <div>
             <h2 className="text-2xl font-bold mb-6">Get in Touch</h2>
             <form className="space-y-6">
@@ -72,7 +73,7 @@ export default function ContactPage() {
                   <Input
                     id="name"
                     placeholder="Your full name"
-                    className="bg-gray-50 border-gray-200"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-black"
                   />
                 </div>
                 <div className="space-y-2">
@@ -81,7 +82,7 @@ export default function ContactPage() {
                     id="email"
                     type="email"
                     placeholder="example@gmail.com"
-                    className="bg-gray-50 border-gray-200"
+                    className="bg-gray-50 border-gray-200 focus-visible:ring-black"
                   />
                 </div>
               </div>
@@ -91,7 +92,7 @@ export default function ContactPage() {
                 <Input
                   id="subject"
                   placeholder="How can we help you?"
-                  className="bg-gray-50 border-gray-200"
+                  className="bg-gray-50 border-gray-200 focus-visible:ring-black"
                 />
               </div>
 
@@ -100,34 +101,40 @@ export default function ContactPage() {
                 <Textarea
                   id="message"
                   placeholder="Type your message here..."
-                  className="min-h-[150px] bg-gray-50 border-gray-200 resize-none"
+                  className="min-h-[150px] bg-gray-50 border-gray-200 resize-none focus-visible:ring-black"
                 />
               </div>
 
-              <Button className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white px-8 py-6 rounded-md cursor-pointer">
+              <Button className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white px-8 py-6 rounded-md cursor-pointer transition-transform active:scale-95">
                 Send Message <Send className="w-4 h-4 ml-2" />
               </Button>
             </form>
           </div>
 
-          <div className="h-full min-h-[400px] w-full bg-gray-200 rounded-lg relative overflow-hidden group">
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
-              <MapPin className="w-12 h-12 mb-2 text-gray-400" />
-              <span className="font-semibold">Google Map Integration</span>
-              <span className="text-sm">
-                Ward 34, Linh Xuan Commune, Ho Chi Minh City.
-              </span>
-            </div>
+          {/* Map Section - Đã cập nhật src iframe */}
+          <div className="h-full min-h-[450px] w-full bg-gray-100 rounded-xl overflow-hidden shadow-sm border border-gray-200">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3918.231240416692!2d106.80047917573673!3d10.870008889284565!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317527587e9ad5bf%3A0xafa66f9c8be3c91!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBDw7RuZyBuZ2jhu4cgVGjDtG5nIHRpbiAtIMSQSFFHIFRQLkhDTQ!5e0!3m2!1svi!2s!4v1705891234567!5m2!1svi!2s"
+              width="100%"
+              height="100%"
+              style={{ border: 0, minHeight: "450px" }}
+              allowFullScreen={true}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="University of Information Technology VNUHCM Location"
+              className="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all duration-500"
+            ></iframe>
           </div>
         </div>
 
+        {/* FAQ Section */}
         <div className="max-w-3xl mx-auto mb-10">
           <h2 className="text-2xl font-bold mb-8 text-center">
             Frequently Asked Questions
           </h2>
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
-              <AccordionTrigger className="cursor-pointer">
+              <AccordionTrigger className="cursor-pointer font-medium hover:no-underline">
                 How do I track my order?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600">
@@ -137,7 +144,7 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-              <AccordionTrigger className="cursor-pointer">
+              <AccordionTrigger className="cursor-pointer font-medium hover:no-underline">
                 What is your return policy?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600">
@@ -147,7 +154,7 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
-              <AccordionTrigger className="cursor-pointer">
+              <AccordionTrigger className="cursor-pointer font-medium hover:no-underline">
                 Do you offer international shipping?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600">
@@ -156,7 +163,7 @@ export default function ContactPage() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4">
-              <AccordionTrigger className="cursor-pointer">
+              <AccordionTrigger className="cursor-pointer font-medium hover:no-underline">
                 Are the laptops brand new?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600">

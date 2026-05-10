@@ -3,6 +3,7 @@ import { UserStatus, LinkingStatus } from "@/enums/user.enum";
 
 export interface UserInfo {
   id: string;
+  customerId?: string;
   username: string;
   email: string;
   roles: UserRole[];
