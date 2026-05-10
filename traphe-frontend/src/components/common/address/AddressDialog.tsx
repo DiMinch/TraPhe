@@ -25,8 +25,9 @@ import type { Province, Commune, UserAddress } from "@/types/user.types";
 interface AddressDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (newAddress?: UserAddress) => void;
+  onSuccess: (savedAddress?: UserAddress) => void;
   isFirstAddress?: boolean;
+  addressToEdit?: UserAddress | null; // Thêm prop này để nhận dữ liệu cần sửa
 }
 
 export default function AddressDialog({
@@ -34,12 +35,14 @@ export default function AddressDialog({
   onOpenChange,
   onSuccess,
   isFirstAddress = false,
+  addressToEdit,
 }: AddressDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [provinces, setProvinces] = useState<Province[]>([]);
   const [communes, setCommunes] = useState<Commune[]>([]);
   const [isLoadingCommunes, setIsLoadingCommunes] = useState(false);
 
+  // Form State
   const [formData, setFormData] = useState({
     street: "",
     provinceCode: "",
@@ -49,19 +52,36 @@ export default function AddressDialog({
     isPrimary: isFirstAddress,
   });
 
+  // 1. Logic Fill Dữ Liệu khi mở Dialog (Fix lỗi không hiện province/commune cũ)
   useEffect(() => {
     if (open) {
-      setFormData({
-        street: "",
-        provinceCode: "",
-        communeCode: "",
-        postalCode: "",
-        type: "Home",
-        isPrimary: isFirstAddress,
-      });
+      if (addressToEdit) {
+        // Chế độ EDIT: Lấy dữ liệu từ addressToEdit đổ vào form
+        setFormData({
+          // Ưu tiên lấy street hoặc detailAddress tùy API trả về
+          street: addressToEdit.street || addressToEdit.detailAddress || "",
+          provinceCode: addressToEdit.provinceCode || "",
+          communeCode: addressToEdit.communeCode || "",
+          postalCode: addressToEdit.postalCode || "",
+          type: addressToEdit.type || "Home",
+          isPrimary: addressToEdit.isPrimary || false,
+        });
+      } else {
+        // Chế độ ADD NEW: Reset form về rỗng
+        setFormData({
+          street: "",
+          provinceCode: "",
+          communeCode: "",
+          postalCode: "",
+          type: "Home",
+          isPrimary: isFirstAddress,
+        });
+        setCommunes([]); // Xóa danh sách xã/phường cũ
+      }
     }
-  }, [open, isFirstAddress]);
+  }, [open, addressToEdit, isFirstAddress]);
 
+  // 2. Load danh sách Tỉnh/Thành (Chạy 1 lần khi dialog mở)
   useEffect(() => {
     if (open && provinces.length === 0) {
       const fetchProvinces = async () => {
@@ -76,15 +96,19 @@ export default function AddressDialog({
     }
   }, [open]);
 
+  // 3. Load danh sách Quận/Huyện/Xã (Chạy khi provinceCode thay đổi)
+  // Logic này sẽ tự động chạy khi ta fill provinceCode ở bước 1
   useEffect(() => {
     if (formData.provinceCode) {
       const fetchCommunes = async () => {
         setIsLoadingCommunes(true);
         try {
           const res = await userService.getCommunes(formData.provinceCode);
-          if (res.statusCode === 200 && res.data) setCommunes(res.data);
+          if (res.statusCode === 200 && res.data) {
+            setCommunes(res.data);
+          }
         } catch (error) {
-          toast.error("Failed to load communes");
+          console.error("Failed to load communes");
         } finally {
           setIsLoadingCommunes(false);
         }
@@ -95,35 +119,48 @@ export default function AddressDialog({
     }
   }, [formData.provinceCode]);
 
-  const handleAddAddress = async () => {
+  // 4. Xử lý Lưu (Thêm mới hoặc Cập nhật)
+  const handleSave = async () => {
     if (
       !formData.street ||
       !formData.provinceCode ||
       !formData.communeCode ||
       !formData.type
     ) {
-      toast.warning("Please fill in required fields");
+      toast.warning("Please fill in required fields (*)");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await userService.addAddress({
+      const payload = {
         street: formData.street,
         provinceCode: formData.provinceCode,
         communeCode: formData.communeCode,
         postalCode: formData.postalCode,
         type: formData.type,
         isPrimary: formData.isPrimary,
-      });
+      };
 
-      if (res.statusCode === 200 || res.statusCode === 201) {
-        toast.success("Address added successfully");
-        onSuccess(res.data);
+      let res;
+      if (addressToEdit) {
+        // Gọi API cập nhật
+        res = await userService.updateAddress(addressToEdit.id, payload);
+        if (res.statusCode === 200)
+          toast.success("Address updated successfully");
+      } else {
+        // Gọi API thêm mới
+        res = await userService.addAddress(payload);
+        if (res.statusCode === 200 || res.statusCode === 201)
+          toast.success("Address added successfully");
+      }
+
+      if (res && (res.statusCode === 200 || res.statusCode === 201)) {
+        onSuccess(res.data); // Callback để refresh list ở component cha
         onOpenChange(false);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to add address");
+      toast.error(error.response?.data?.message || "Failed to save address");
     } finally {
       setIsSubmitting(false);
     }
@@ -133,7 +170,9 @@ export default function AddressDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[500px] bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Address</DialogTitle>
+          <DialogTitle>
+            {addressToEdit ? "Edit Address" : "Add New Address"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -264,12 +303,12 @@ export default function AddressDialog({
             Cancel
           </Button>
           <Button
-            onClick={handleAddAddress}
+            onClick={handleSave}
             disabled={isSubmitting}
             className="bg-black text-white cursor-pointer"
           >
             {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Address
+            {addressToEdit ? "Update" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

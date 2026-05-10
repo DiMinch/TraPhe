@@ -14,6 +14,18 @@ export interface UserInfo {
   hasEmailProvider?: boolean;
   shouldPromptLinking?: boolean;
   linkingStatus?: LinkingStatus;
+  tier?: {
+    name: string;
+    discountRate: number;
+    minPoint: number;
+    description?: string;
+  };
+  loyaltyPoint?: {
+    totalPoints: number;
+    pointsAvailable: number;
+    pointsUsed: number;
+    pointsToNextTier?: number;
+  };
 }
 
 export interface Province {

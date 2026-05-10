@@ -4,31 +4,55 @@ import ProductCard from "@/components/common/product/ProductCard";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 export default function ExploreMoreSection() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const PAGE_SIZE = 8;
+
+  const fetchProducts = async (pageIndex: number, isLoadMore = false) => {
+    try {
+      if (isLoadMore) setIsLoadingMore(true);
+
+      const res = await productService.getAllProducts(pageIndex, PAGE_SIZE);
+
+      if (res.statusCode === 200 && res.data) {
+        const newProducts = res.data.content;
+
+        if (isLoadMore) {
+          setProducts((prev) => [...prev, ...newProducts]);
+        } else {
+          setProducts(newProducts);
+        }
+
+        setHasMore(!res.data.last);
+        setPage(pageIndex);
+      }
+    } catch (error) {
+      console.error("Failed to fetch products", error);
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRelated = async () => {
-      try {
-        const res = await productService.getAllProducts();
-        if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.slice(0, 4));
-        }
-      } catch (error) {
-        console.error("Failed to fetch related products", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchRelated();
+    fetchProducts(0);
   }, []);
+
+  const handleLoadMore = () => {
+    fetchProducts(page + 1, true);
+  };
 
   if (isLoading) {
     return (
       <section className="mb-20">
-        <Skeleton className="h-8 w-48 mb-8" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="h-[300px] w-full" />
@@ -41,7 +65,8 @@ export default function ExploreMoreSection() {
   return (
     <section className="mb-20">
       <h2 className="text-3xl font-semibold mb-8 text-black">Explore more</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
         {products.map((product) => {
           const displayPrice = product.variants?.[0]?.sellingPrice || 0;
           return (
@@ -59,6 +84,25 @@ export default function ExploreMoreSection() {
           );
         })}
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="h-12 px-8 border-black text-black hover:bg-black hover:text-white transition-colors min-w-[150px]"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading...
+              </>
+            ) : (
+              "Load More"
+            )}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

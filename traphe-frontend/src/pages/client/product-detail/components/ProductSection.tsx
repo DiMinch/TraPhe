@@ -119,7 +119,7 @@ export default function ProductSection({
                     key={v.id}
                     onClick={() => onVariantChange(v)}
                     className={cn(
-                      "border rounded-md px-4 py-2 text-sm transition-all",
+                      "border rounded-md px-4 py-2 text-sm transition-all cursor-pointer",
                       isSelected
                         ? "border-black bg-black text-white"
                         : "border-gray-200 hover:border-black text-gray-700 hover:bg-gray-50",

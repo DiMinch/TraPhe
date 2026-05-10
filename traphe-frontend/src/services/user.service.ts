@@ -36,6 +36,16 @@ export const userService = {
     );
   },
 
+  updateAddress: async (
+    addressId: string,
+    data: Partial<CreateAddressRequest>,
+  ) => {
+    return axiosClient.put<any, ApiResponse<UserAddress>>(
+      `/users/addresses/${addressId}`,
+      data,
+    );
+  },
+
   deleteAddress: async (addressId: string) => {
     return axiosClient.delete<any, ApiResponse<null>>(
       `/users/addresses/${addressId}`,

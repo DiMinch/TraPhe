@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { User, MapPin, Package, LogOut, Camera } from "lucide-react";
+import {
+  User,
+  MapPin,
+  Package,
+  LogOut,
+  Crown,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,25 +18,23 @@ import AccountTab from "./components/AccountTab";
 import AddressTab from "./components/AddressTab";
 import OrderTab from "./components/OrderTab";
 import { authService } from "@/services/auth.service";
-import { userService } from "@/services/user.service"; // Import user service
-import type { UserInfo } from "@/types/user.types"; // Import UserInfo type
+import { userService } from "@/services/user.service";
+import type { UserInfo } from "@/types/user.types";
 
 type TabType = "account" | "address" | "orders";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabType>("account");
-  const [user, setUser] = useState<UserInfo | null>(null); // State chứa user thực
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
-  // Hàm fetch profile từ API
   const fetchProfile = useCallback(async () => {
     try {
       const res = await userService.getProfile();
       if (res.statusCode === 200 && res.data) {
         setUser(res.data);
-        // Cập nhật localStorage để đồng bộ phiên làm việc (nếu cần)
         localStorage.setItem("user", JSON.stringify(res.data));
       }
     } catch (error) {
@@ -38,7 +44,6 @@ export default function ProfilePage() {
     }
   }, []);
 
-  // Gọi API khi component mount
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
@@ -64,6 +69,18 @@ export default function ProfilePage() {
     { id: "orders", label: "Orders", icon: Package },
   ];
 
+  const calculateProgress = () => {
+    if (!user?.loyaltyPoint) return 0;
+    const { totalPoints, pointsToNextTier } = user.loyaltyPoint;
+
+    if (!pointsToNextTier || pointsToNextTier <= 0) return 100;
+
+    const nextTierGoal = totalPoints + pointsToNextTier;
+    if (nextTierGoal === 0) return 0;
+
+    return Math.min(100, Math.max(0, (totalPoints / nextTierGoal) * 100));
+  };
+
   return (
     <div className="bg-white min-h-screen pb-20">
       <div className="pt-10 pb-12 text-center">
@@ -73,18 +90,18 @@ export default function ProfilePage() {
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12">
         <div className="lg:col-span-3">
           {/* SIDEBAR USER INFO */}
-          <div className="bg-gray-50 rounded-lg p-6 flex flex-col items-center mb-6 text-center border border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-6 flex flex-col items-center mb-6 border border-gray-100 shadow-sm">
             {isLoading ? (
-              // Skeleton Loading
               <div className="flex flex-col items-center space-y-3 w-full">
                 <Skeleton className="h-20 w-20 rounded-full" />
                 <Skeleton className="h-5 w-32" />
                 <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-20 w-full mt-4" />
               </div>
             ) : user ? (
               <>
                 <div className="relative mb-3">
-                  <Avatar className="w-20 h-20 border-2 border-white shadow-sm">
+                  <Avatar className="w-20 h-20 border-4 border-white shadow-sm">
                     <AvatarImage
                       src={user.avatar || ""}
                       className="object-cover"
@@ -94,10 +111,72 @@ export default function ProfilePage() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <h3 className="font-bold text-lg">
+                <h3 className="font-bold text-lg text-gray-900">
                   {user.fullName || user.username}
                 </h3>
-                <p className="text-sm text-gray-500">{user.email}</p>
+                <p className="text-sm text-gray-500 mb-4">{user.email}</p>
+
+                {/* --- LOYALTY & TIER SECTION --- */}
+                {(user.tier || user.loyaltyPoint) && (
+                  <div className="w-full border-t border-gray-200 pt-4 mt-2 space-y-4">
+                    <div className="flex items-center justify-between">
+                      {user.tier && (
+                        <div className="flex items-center gap-1.5 bg-white border border-gray-200 px-2.5 py-1 rounded-full shadow-sm">
+                          <Crown className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                          <span className="text-xs font-bold text-gray-800">
+                            {user.tier.name}
+                          </span>
+                        </div>
+                      )}
+                      {user.loyaltyPoint && (
+                        <div className="flex items-center gap-1 text-orange-600">
+                          <Star className="w-3.5 h-3.5 fill-orange-600" />
+                          <span className="text-sm font-bold">
+                            {user.loyaltyPoint.pointsAvailable.toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {user.loyaltyPoint && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px] uppercase font-semibold text-gray-500 tracking-wide">
+                          <span>Total Earned</span>
+                          <span>Next Rank</span>
+                        </div>
+
+                        <div className="relative h-2.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-linear-to-r from-gray-900 to-gray-600 rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${calculateProgress()}%` }}
+                          />
+                        </div>
+
+                        <div className="flex justify-between text-xs items-center">
+                          <span className="font-medium text-gray-900">
+                            {user.loyaltyPoint.totalPoints.toLocaleString()} pts
+                          </span>
+                          <span className="text-gray-500 italic">
+                            {user.loyaltyPoint.pointsToNextTier
+                              ? `+${user.loyaltyPoint.pointsToNextTier.toLocaleString()} needed`
+                              : "Max Level"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {user.loyaltyPoint && user.loyaltyPoint.pointsUsed > 0 && (
+                      <div className="flex items-center justify-between bg-white p-2.5 rounded-md border border-gray-100">
+                        <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                          <TrendingUp className="w-3.5 h-3.5" /> Used Points
+                        </span>
+                        <span className="text-xs font-semibold text-gray-900">
+                          {user.loyaltyPoint.pointsUsed.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : null}
           </div>
@@ -140,7 +219,6 @@ export default function ProfilePage() {
 
         <div className="lg:col-span-9">
           <>
-            {/* Truyền user và callback refresh xuống AccountTab */}
             {activeTab === "account" && (
               <AccountTab currentUser={user} onUpdateSuccess={fetchProfile} />
             )}

@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, MapPin, Loader2, Home, Briefcase } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  MapPin,
+  Loader2,
+  Home,
+  Briefcase,
+  Pencil,
+} from "lucide-react";
 import { toast } from "sonner";
 import { userService } from "@/services/user.service";
 import type { UserAddress } from "@/types/user.types";
@@ -11,6 +19,9 @@ export default function AddressTab() {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>(
+    null,
+  );
 
   const fetchAddresses = async () => {
     try {
@@ -41,12 +52,22 @@ export default function AddressTab() {
     }
   };
 
+  const handleAddNew = () => {
+    setSelectedAddress(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditAddress = (addr: UserAddress) => {
+    setSelectedAddress(addr);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">My Addresses</h2>
         <Button
-          onClick={() => setIsDialogOpen(true)}
+          onClick={handleAddNew}
           className="bg-black hover:bg-gray-800 text-white font-medium gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Add New
@@ -87,18 +108,19 @@ export default function AddressTab() {
                 </div>
                 <div className="text-sm text-gray-600 space-y-1 mt-2">
                   <p className="font-medium text-black">{addr.detailAddress}</p>
-                  {addr.postalCode && (
-                    <p className="text-xs text-gray-400">
-                      Postal: {addr.postalCode}
-                    </p>
-                  )}
                 </div>
               </div>
 
               <div className="pt-4 border-t border-gray-100 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
+                  onClick={() => handleEditAddress(addr)}
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium cursor-pointer"
+                >
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+                <button
                   onClick={() => handleDeleteAddress(addr.id)}
-                  className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
+                  className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1 font-medium cursor-pointer"
                 >
                   <Trash2 className="w-3 h-3" /> Delete
                 </button>
@@ -113,6 +135,7 @@ export default function AddressTab() {
         onOpenChange={setIsDialogOpen}
         onSuccess={() => fetchAddresses()}
         isFirstAddress={addresses.length === 0}
+        addressToEdit={selectedAddress}
       />
     </div>
   );

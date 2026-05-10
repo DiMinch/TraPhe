@@ -262,7 +262,7 @@ export default function AccountTab({
 
         <Button
           type="submit"
-          className="bg-black hover:bg-gray-800 text-white h-12 px-8 rounded-md"
+          className="bg-black hover:bg-gray-800 text-white h-12 px-8 rounded-md cursor-pointer"
           disabled={isLoading}
         >
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -314,8 +314,8 @@ export default function AccountTab({
         <Button
           type="submit"
           variant="outline"
-          className="h-12 px-8"
-          disabled={isLoading} // Disable khi đang upload profile để tránh xung đột
+          className="bg-black hover:bg-gray-800 text-white h-12 px-8 rounded-md cursor-pointer"
+          disabled={isLoading}
         >
           Change Password
         </Button>
