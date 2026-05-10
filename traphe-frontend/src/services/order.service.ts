@@ -73,6 +73,7 @@ export const orderService = {
     orderType?: string;
     startDate?: string;
     endDate?: string;
+    sort?: string;
   }) => {
     const queryParams = {
       page: params?.page || 0,
@@ -87,6 +88,7 @@ export const orderService = {
         }),
       ...(params?.startDate && { startDate: params.startDate }),
       ...(params?.endDate && { endDate: params.endDate }),
+      ...(params?.sort && { sort: params.sort }),
     };
 
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(

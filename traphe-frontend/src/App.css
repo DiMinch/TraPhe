@@ -5,3 +5,20 @@
 body {
   font-family: "Geist Mono";
 }
+
+/* Custom highlight animation for orders */
+@keyframes highlight-pulse {
+  0%,
+  100% {
+    background-color: rgb(254 249 195); /* yellow-100 */
+    transform: scale(1);
+  }
+  50% {
+    background-color: rgb(254 240 138); /* yellow-200 */
+    transform: scale(1.005);
+  }
+}
+
+.animate-highlight {
+  animation: highlight-pulse 0.8s ease-in-out 3;
+}

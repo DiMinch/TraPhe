@@ -118,10 +118,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
 
     // Check admin role first
     const hasAdminRole = checkAdminRole();
-    if (!hasAdminRole) {
-      // User doesn't have admin role, skip notification fetching
-      return;
-    }
+    if (!hasAdminRole) return;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -137,19 +134,29 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             Accept: "text/event-stream",
           },
           signal: controller.signal,
-          onopen(res) {
-            if (res.ok) return Promise.resolve();
-            if (res.status === 403) {
-              // User doesn't have admin permission for SSE - silently ignore
+          async onopen(res) {
+            if (res.ok && res.status === 200) {
+              return; // everything's good
+            } else if (
+              res.status >= 400 &&
+              res.status < 500 &&
+              res.status !== 429
+            ) {
+              console.error("[SSE] Client error:", res.status);
+              throw new Error(`SSE error: ${res.status}`);
             }
-            return Promise.resolve();
           },
           onmessage(event) {
+            // Handle "connected" event
+            if (event.event === "connected") return;
+
+            // Handle "ORDER_NEW" event
             if (event.event === "ORDER_NEW") {
               try {
                 const newNotification: NotificationItem = JSON.parse(
                   event.data,
                 );
+
                 setNotifications((prev) => [newNotification, ...prev]);
                 setUnreadCount((prev) => prev + 1);
 
@@ -157,26 +164,26 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                   description: newNotification.content,
                   action: {
                     label: "View",
-                    onClick: () =>
-                      navigate(`/sales/orders/${newNotification.entityId}`),
+                    onClick: () => navigate("/sales/orders"),
                   },
                 });
               } catch (e) {
-                console.error(e);
+                console.error("[SSE] Error parsing notification:", e);
               }
             }
           },
           onerror(err) {
-            // Don't retry on abort or 403
+            // Don't retry on abort
             if (controller.signal.aborted) {
               throw err;
             }
+            // Otherwise, fetchEventSource will automatically retry
           },
+          openWhenHidden: true,
         });
       } catch (error: any) {
-        // Silently handle 403 errors
         if (error?.response?.status !== 403) {
-          console.error("SSE connection error:", error);
+          console.error("[SSE] Connection error:", error);
         }
       }
     };

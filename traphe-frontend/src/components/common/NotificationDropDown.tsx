@@ -28,7 +28,7 @@ export default function NotificationDropdown() {
       markAsRead(notification.id);
     }
     if (notification.entityType === "ORDER" && notification.entityId) {
-      navigate(`/sales/orders/${notification.entityId}`);
+      navigate("/sales/orders");
     }
   };
 

@@ -72,6 +72,12 @@ export default function OrdersPage() {
   const [typeFilter, setTypeFilter] = useState("all-type");
   const [paymentFilter, setPaymentFilter] = useState("all-payment");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const PAGE_SIZE = 20;
+
   // Transform backend response to frontend format
   const transformOrder = (o: OrderResponse): Order => ({
     id: o.id,
@@ -85,16 +91,20 @@ export default function OrdersPage() {
   });
 
   // Fetch orders from API with filters
-  const fetchOrders = async () => {
+  const fetchOrders = async (page: number = 0) => {
     setLoading(true);
     setError(null);
     try {
       const response = await orderService.getAllOrders({
-        page: 0,
-        size: 100,
+        page: page,
+        size: PAGE_SIZE,
+        sort: "createdAt,desc", // Sort by newest first
       });
       const transformedData = (response.data.content || []).map(transformOrder);
       setOrders(transformedData);
+      setCurrentPage(response.data.number);
+      setTotalPages(response.data.totalPages);
+      setTotalElements(response.data.totalElements);
     } catch (err: any) {
       console.error("Error fetching orders:", err);
       if (err.response?.status === 401) {
@@ -111,10 +121,10 @@ export default function OrdersPage() {
 
   // Fetch orders on mount
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(0);
   }, []);
 
-  // Filter orders by search term, status, and type (client-side)
+  // Filter orders by search term, status, and type (client-side for now)
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,6 +143,14 @@ export default function OrdersPage() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < totalPages) {
+      setCurrentPage(newPage);
+      fetchOrders(newPage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   const handleDeleteClick = (order: { id: string; orderNumber: string }) => {
     setOrderToDelete(order);
     setIsDeleteDialogOpen(true);
@@ -144,7 +162,7 @@ export default function OrdersPage() {
         await orderService.deleteOrder(orderToDelete.id);
         setIsDeleteDialogOpen(false);
         setOrderToDelete(null);
-        fetchOrders();
+        fetchOrders(currentPage);
       } catch (err: any) {
         console.error("Error deleting order:", err);
         alert(err.response?.data?.message || "Failed to delete order");
@@ -155,7 +173,7 @@ export default function OrdersPage() {
   const handleConfirmOrder = async (orderId: string) => {
     try {
       await orderService.confirmOrder(orderId);
-      fetchOrders();
+      fetchOrders(currentPage);
     } catch (err: any) {
       console.error("Error confirming order:", err);
       alert(err.response?.data?.message || "Failed to confirm order");
@@ -168,7 +186,7 @@ export default function OrdersPage() {
 
     try {
       await orderService.cancelOrder(orderId, reason);
-      fetchOrders();
+      fetchOrders(currentPage);
     } catch (err: any) {
       console.error("Error canceling order:", err);
       alert(err.response?.data?.message || "Failed to cancel order");
@@ -401,28 +419,111 @@ export default function OrdersPage() {
           <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <p className="text-sm text-slate-500">
               Showing{" "}
-              <span className="font-medium">{filteredOrders.length}</span>{" "}
-              orders
+              <span className="font-medium">
+                {currentPage * PAGE_SIZE + 1} -{" "}
+                {Math.min((currentPage + 1) * PAGE_SIZE, totalElements)}
+              </span>{" "}
+              of <span className="font-medium">{totalElements}</span> orders
             </p>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" className="hover:bg-slate-100" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink
-                    href="#"
-                    isActive
-                    className="bg-primary text-white hover:bg-primary/90"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" className="hover:bg-slate-100" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className={`hover:bg-slate-100 cursor-pointer ${
+                        currentPage === 0
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }`}
+                    />
+                  </PaginationItem>
+
+                  {/* Show first page */}
+                  {currentPage > 1 && (
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(0)}
+                        className="hover:bg-slate-100 cursor-pointer"
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+
+                  {/* Show dots if needed */}
+                  {currentPage > 2 && (
+                    <PaginationItem>
+                      <span className="px-2">...</span>
+                    </PaginationItem>
+                  )}
+
+                  {/* Show previous page */}
+                  {currentPage > 0 && (
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        className="hover:bg-slate-100 cursor-pointer"
+                      >
+                        {currentPage}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+
+                  {/* Current page */}
+                  <PaginationItem>
+                    <PaginationLink
+                      isActive
+                      className="bg-primary text-white hover:bg-primary/90"
+                    >
+                      {currentPage + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+
+                  {/* Show next page */}
+                  {currentPage < totalPages - 1 && (
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className="hover:bg-slate-100 cursor-pointer"
+                      >
+                        {currentPage + 2}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+
+                  {/* Show dots if needed */}
+                  {currentPage < totalPages - 3 && (
+                    <PaginationItem>
+                      <span className="px-2">...</span>
+                    </PaginationItem>
+                  )}
+
+                  {/* Show last page */}
+                  {currentPage < totalPages - 2 && (
+                    <PaginationItem>
+                      <PaginationLink
+                        onClick={() => handlePageChange(totalPages - 1)}
+                        className="hover:bg-slate-100 cursor-pointer"
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className={`hover:bg-slate-100 cursor-pointer ${
+                        currentPage === totalPages - 1
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }`}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
         </CardContent>
       </Card>
