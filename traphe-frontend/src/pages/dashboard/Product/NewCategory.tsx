@@ -15,15 +15,37 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Edit, Trash2, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { categoryService } from "@/services/category.service";
-import type { Category as ApiCategory } from "@/types/category.types";
+import type {
+  Category as ApiCategory,
+  CategorySpec,
+} from "@/types/category.types";
 import { toast } from "sonner";
 
 interface NewCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: () => void;
+}
+
+interface SpecFormData {
+  specKey: string;
+  specName: string;
+  isRequired: boolean;
+  dataType: string;
+  options: string;
 }
 
 export default function NewCategoryDialog({
@@ -41,6 +63,18 @@ export default function NewCategoryDialog({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Specs management
+  const [specs, setSpecs] = useState<CategorySpec[]>([]);
+  const [isAddingSpec, setIsAddingSpec] = useState(false);
+  const [editingSpecIndex, setEditingSpecIndex] = useState<number | null>(null);
+  const [specFormData, setSpecFormData] = useState<SpecFormData>({
+    specKey: "",
+    specName: "",
+    isRequired: false,
+    dataType: "TEXT",
+    options: "",
+  });
 
   useEffect(() => {
     if (open) {
@@ -90,10 +124,24 @@ export default function NewCategoryDialog({
         parentId: formData.parent === "none" ? undefined : formData.parent,
       };
 
-      await categoryService.createCategory(
+      const response = await categoryService.createCategory(
         categoryData,
         imageFile || undefined,
       );
+
+      // If specs were added, save them to the newly created category
+      if (response.data?.id && specs.length > 0) {
+        for (const spec of specs) {
+          await categoryService.createSpec(response.data.id, {
+            specKey: spec.specKey,
+            specName: spec.specName,
+            isRequired: spec.isRequired,
+            dataType: spec.dataType,
+            options: spec.options || undefined,
+          });
+        }
+      }
+
       toast.success("Category created successfully");
 
       // Reset form
@@ -105,6 +153,9 @@ export default function NewCategoryDialog({
       });
       setImageFile(null);
       setImagePreview("");
+      setSpecs([]);
+      setIsAddingSpec(false);
+      setEditingSpecIndex(null);
 
       onAdd(); // Refresh the parent list
       onOpenChange(false);
@@ -115,6 +166,76 @@ export default function NewCategoryDialog({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleAddSpec = () => {
+    setSpecFormData({
+      specKey: "",
+      specName: "",
+      isRequired: false,
+      dataType: "TEXT",
+      options: "",
+    });
+    setIsAddingSpec(true);
+    setEditingSpecIndex(null);
+  };
+
+  const handleEditSpec = (index: number) => {
+    const spec = specs[index];
+    setSpecFormData({
+      specKey: spec.specKey,
+      specName: spec.specName,
+      isRequired: spec.isRequired,
+      dataType: spec.dataType,
+      options: spec.options?.join(", ") || "",
+    });
+    setEditingSpecIndex(index);
+    setIsAddingSpec(false);
+  };
+
+  const handleSaveSpec = () => {
+    if (!specFormData.specKey.trim() || !specFormData.specName.trim()) {
+      toast.error("Spec Key and Spec Name are required");
+      return;
+    }
+
+    const newSpec: CategorySpec = {
+      id:
+        editingSpecIndex !== null
+          ? specs[editingSpecIndex].id
+          : `temp-${Date.now()}`,
+      specKey: specFormData.specKey,
+      specName: specFormData.specName,
+      isRequired: specFormData.isRequired,
+      dataType: specFormData.dataType,
+      options:
+        specFormData.dataType === "SELECT" && specFormData.options
+          ? specFormData.options.split(",").map((opt) => opt.trim())
+          : undefined,
+    };
+
+    if (editingSpecIndex !== null) {
+      const updatedSpecs = [...specs];
+      updatedSpecs[editingSpecIndex] = newSpec;
+      setSpecs(updatedSpecs);
+      toast.success("Spec updated");
+    } else {
+      setSpecs([...specs, newSpec]);
+      toast.success("Spec added");
+    }
+
+    setIsAddingSpec(false);
+    setEditingSpecIndex(null);
+  };
+
+  const handleDeleteSpec = (index: number) => {
+    setSpecs(specs.filter((_, i) => i !== index));
+    toast.success("Spec removed");
+  };
+
+  const handleCancelSpec = () => {
+    setIsAddingSpec(false);
+    setEditingSpecIndex(null);
   };
 
   return (
@@ -240,6 +361,220 @@ export default function NewCategoryDialog({
                 setFormData({ ...formData, description: e.target.value })
               }
             />
+          </div>
+
+          {/* Specifications Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">
+                Specifications (Optional)
+              </Label>
+              {!isAddingSpec && editingSpecIndex === null && (
+                <Button
+                  onClick={handleAddSpec}
+                  size="sm"
+                  variant="outline"
+                  className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Spec
+                </Button>
+              )}
+            </div>
+
+            {/* Spec Add/Edit Form */}
+            {(isAddingSpec || editingSpecIndex !== null) && (
+              <div className="border-2 border-indigo-200 rounded-lg p-3 bg-white shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-indigo-700">
+                    {editingSpecIndex !== null
+                      ? "Edit Specification"
+                      : "New Specification"}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCancelSpec}
+                    className="h-7 w-7"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Spec Key *</Label>
+                    <Input
+                      value={specFormData.specKey}
+                      onChange={(e) =>
+                        setSpecFormData({
+                          ...specFormData,
+                          specKey: e.target.value,
+                        })
+                      }
+                      placeholder="ram"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Spec Name *</Label>
+                    <Input
+                      value={specFormData.specName}
+                      onChange={(e) =>
+                        setSpecFormData({
+                          ...specFormData,
+                          specName: e.target.value,
+                        })
+                      }
+                      placeholder="RAM Memory"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Data Type</Label>
+                    <Select
+                      value={specFormData.dataType}
+                      onValueChange={(value) =>
+                        setSpecFormData({ ...specFormData, dataType: value })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TEXT">Text</SelectItem>
+                        <SelectItem value="NUMBER">Number</SelectItem>
+                        <SelectItem value="SELECT">Select (Options)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2 pt-5">
+                    <Switch
+                      checked={specFormData.isRequired}
+                      onCheckedChange={(checked) =>
+                        setSpecFormData({
+                          ...specFormData,
+                          isRequired: checked,
+                        })
+                      }
+                    />
+                    <Label className="text-xs">Required Field</Label>
+                  </div>
+                </div>
+
+                {specFormData.dataType === "SELECT" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Options (comma-separated)</Label>
+                    <Input
+                      value={specFormData.options}
+                      onChange={(e) =>
+                        setSpecFormData({
+                          ...specFormData,
+                          options: e.target.value,
+                        })
+                      }
+                      placeholder="8GB, 16GB, 32GB"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelSpec}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveSpec}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {editingSpecIndex !== null ? "Update" : "Add"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Specs List */}
+            {specs.length > 0 && (
+              <div className="border rounded-lg overflow-hidden bg-white">
+                <Table>
+                  <TableHeader className="bg-slate-100">
+                    <TableRow>
+                      <TableHead className="text-xs">Key</TableHead>
+                      <TableHead className="text-xs">Name</TableHead>
+                      <TableHead className="text-xs">Type</TableHead>
+                      <TableHead className="text-xs">Required</TableHead>
+                      <TableHead className="text-xs w-[80px]">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {specs.map((spec, index) => (
+                      <TableRow key={spec.id}>
+                        <TableCell className="text-xs">
+                          <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                            {spec.specKey}
+                          </code>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {spec.specName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {spec.dataType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {spec.isRequired ? (
+                            <Badge className="bg-red-100 text-red-700 text-xs">
+                              Yes
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              No
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleEditSpec(index)}
+                              disabled={
+                                isAddingSpec || editingSpecIndex !== null
+                              }
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-red-600 hover:bg-red-50"
+                              onClick={() => handleDeleteSpec(index)}
+                              disabled={
+                                isAddingSpec || editingSpecIndex !== null
+                              }
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

@@ -25,6 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -41,7 +47,9 @@ import {
   Loader2,
   FileSpreadsheet,
   ArrowUpDown,
+  CalendarIcon,
 } from "lucide-react";
+import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,9 +92,13 @@ export default function AllInventoryPage() {
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<any[]>([]);
 
   // Filter states
-  const [dateFilter, setDateFilter] = useState("all-days");
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({ from: undefined, to: undefined });
   const [categoryFilter, setCategoryFilter] = useState("all-categories");
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [submitting, setSubmitting] = useState(false);
@@ -125,7 +137,7 @@ export default function AllInventoryPage() {
               : item.productVariant.productName || "Unknown Product",
             sku: item.productVariant.sku || "N/A",
             category: "Product Variant",
-            supplier: "N/A",
+            supplier: item.productVariant.supplierName || "N/A",
             physical: item.quantityPhysical || 0,
             reserved: item.quantityReserved || 0,
             available: item.quantityAvailable || 0,
@@ -172,7 +184,22 @@ export default function AllInventoryPage() {
 
   useEffect(() => {
     fetchInventory();
+    fetchCategories();
   }, []);
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const { categoryService } = await import("@/services/category.service");
+      const response = await categoryService.getAllCategories();
+      const categoriesData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      setCategories(categoriesData);
+    } catch (err: any) {
+      console.error("Error fetching categories:", err);
+    }
+  };
 
   const productVariants: InventoryItem[] = inventoryData;
   const partsComponents: InventoryItem[] = []; // This can be filtered or fetched separately
@@ -187,6 +214,8 @@ export default function AllInventoryPage() {
 
     const matchesCategory =
       categoryFilter === "all-categories" ||
+      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
+    categoryFilter === "all-categories" ||
       item.category.toLowerCase().includes(categoryFilter.toLowerCase());
 
     const matchesStatus =
@@ -438,39 +467,78 @@ export default function AllInventoryPage() {
             />
           </div>
 
-          {/* Filters */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 border-slate-200 hover:bg-slate-50"
-          >
-            <Filter className="w-4 h-4" />
-          </Button>
+          {/* Date Range Filter */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={`w-[240px] justify-start text-left font-normal bg-white border-slate-200 ${
+                  !dateRange.from && !dateRange.to && "text-muted-foreground"
+                }`}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "MMM dd, yyyy")} -{" "}
+                      {format(dateRange.to, "MMM dd, yyyy")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "MMM dd, yyyy")
+                  )
+                ) : (
+                  <span>Pick a date range</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={{
+                  from: dateRange.from,
+                  to: dateRange.to,
+                }}
+                onSelect={(range: any) => {
+                  setDateRange({
+                    from: range?.from,
+                    to: range?.to,
+                  });
+                }}
+                numberOfMonths={2}
+              />
+              <div className="p-3 border-t flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() =>
+                    setDateRange({ from: undefined, to: undefined })
+                  }
+                >
+                  Clear
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
-          <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[140px] bg-white border-slate-200">
-              <SelectValue placeholder="All days" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-days">All days</SelectItem>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
-
+          {/* Category Filter */}
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[160px] bg-white border-slate-200">
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-categories">All categories</SelectItem>
-              <SelectItem value="laptop">Laptop</SelectItem>
-              <SelectItem value="screen">Screen</SelectItem>
-              <SelectItem value="mouse">Mouse</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.name}>
+                  {cat.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
+          {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px] bg-white border-slate-200">
               <SelectValue placeholder="All status" />

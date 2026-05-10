@@ -103,13 +103,18 @@ export default function WarrantyTicketsPage() {
       ]);
 
       if (ticketsRes.statusCode === 200 && ticketsRes.data) {
-        setTickets(ticketsRes.data);
+        // Ensure data is an array
+        const ticketsData = Array.isArray(ticketsRes.data)
+          ? ticketsRes.data
+          : [];
+        setTickets(ticketsData);
       }
       if (statsRes.statusCode === 200 && statsRes.data) {
         setStats(statsRes.data);
       }
     } catch (error) {
       toast.error("Failed to load data");
+      console.error("Error fetching warranty data:", error);
     } finally {
       setIsLoading(false);
     }

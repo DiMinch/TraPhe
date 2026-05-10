@@ -8,6 +8,7 @@ export interface InventoryResponse {
     sku: string;
     variantName: string;
     productName: string;
+    supplierName?: string;
   };
   quantityPhysical: number;
   quantityReserved: number;
