@@ -49,7 +49,11 @@ export default function AddServiceDialog({
         try {
           const res = await repairService.getActiveServices();
           if (res.statusCode === 200 && res.data) {
-            setServices(res.data);
+            // Handle both direct array and paginated response
+            const servicesData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setServices(servicesData);
           }
         } catch (error) {
           console.error("Failed to load services", error);

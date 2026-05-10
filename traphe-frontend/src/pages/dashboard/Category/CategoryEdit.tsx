@@ -62,8 +62,12 @@ export default function CategoryEditPage() {
     try {
       const response = await categoryService.getAllCategories();
       if (response.data) {
+        // Handle both direct array and paginated response
+        const categoriesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
         // Filter out current category to avoid circular reference
-        setCategories(response.data.filter((cat) => cat.id !== id));
+        setCategories(categoriesData.filter((cat: any) => cat.id !== id));
       }
     } catch (error: unknown) {
       console.error("Failed to load categories:", error);

@@ -72,7 +72,11 @@ export default function CreateTicketDialog({
         try {
           const res = await customerService.getCustomers();
           if (res.statusCode === 200 && res.data) {
-            setCustomers(res.data);
+            // Handle both direct array and paginated response
+            const customersData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setCustomers(customersData);
           }
         } catch (error) {
           console.error("Failed to load customers", error);

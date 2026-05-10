@@ -64,22 +64,23 @@ export default function ProductListPage() {
     try {
       setLoading(true);
       const response = await productService.getAllProducts();
-      if (response.data) {
-        setAllProducts(response.data);
+      // response.data is ProductPageResponse, extract content array
+      const productList = response.data?.content || [];
 
-        // Filter products by category if category filter is provided
-        if (categoryFilter) {
-          const filtered = response.data.filter((product) => {
-            // Match products where category name or parent category name matches
-            return (
-              product.categoryName === categoryFilter ||
-              product.parentCategoryName === categoryFilter
-            );
-          });
-          setProducts(filtered);
-        } else {
-          setProducts(response.data);
-        }
+      setAllProducts(productList);
+
+      // Filter products by category if category filter is provided
+      if (categoryFilter) {
+        const filtered = productList.filter((product) => {
+          // Match products where category name or parent category name matches
+          return (
+            product.categoryName === categoryFilter ||
+            product.parentCategoryName === categoryFilter
+          );
+        });
+        setProducts(filtered);
+      } else {
+        setProducts(productList);
       }
     } catch (error: unknown) {
       const errorMsg =

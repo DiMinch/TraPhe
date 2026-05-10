@@ -54,22 +54,33 @@ export default function InventoryOverviewPage() {
       ]);
 
       if (inventoryRes.statusCode === 200) {
+        // Handle both direct array and paginated response
+        const inventoryData = Array.isArray(inventoryRes.data)
+          ? inventoryRes.data
+          : (inventoryRes.data as any)?.content || [];
+
         // Filter low stock items
-        const lowStock = inventoryRes.data.filter(
-          (item) => item.quantityAvailable <= item.minThreshold,
+        const lowStock = inventoryData.filter(
+          (item: InventoryResponse) =>
+            item.quantityAvailable <= item.minThreshold,
         );
         setLowStockProducts(lowStock);
 
         // Calculate total stock value (simplified)
-        const total = inventoryRes.data.reduce(
-          (sum, item) => sum + item.quantityAvailable,
+        const total = inventoryData.reduce(
+          (sum: number, item: InventoryResponse) =>
+            sum + item.quantityAvailable,
           0,
         );
         setTotalStockValue(total);
       }
 
       if (partsRes.statusCode === 200) {
-        setLowStockParts(partsRes.data);
+        // Handle both direct array and paginated response
+        const partsData = Array.isArray(partsRes.data)
+          ? partsRes.data
+          : (partsRes.data as any)?.content || [];
+        setLowStockParts(partsData);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

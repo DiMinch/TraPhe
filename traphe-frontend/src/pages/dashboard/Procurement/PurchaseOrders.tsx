@@ -149,7 +149,11 @@ export default function PurchaseOrdersPage() {
     setError(null);
     try {
       const response = await purchaseOrderService.getAllPurchaseOrders();
-      const transformedData = response.data.map(transformPurchaseOrder);
+      // Handle both direct array and paginated response
+      const purchaseOrdersData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      const transformedData = purchaseOrdersData.map(transformPurchaseOrder);
       setPurchaseOrders(transformedData);
     } catch (err: any) {
       console.error("Error fetching purchase orders:", err);
@@ -175,7 +179,11 @@ export default function PurchaseOrdersPage() {
   const fetchSuppliers = async () => {
     try {
       const response = await supplierService.getAllSuppliers();
-      setSuppliers(response.data);
+      // Handle both direct array and paginated response
+      const suppliersData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      setSuppliers(suppliersData);
     } catch (err) {
       console.error("Error fetching suppliers:", err);
     }

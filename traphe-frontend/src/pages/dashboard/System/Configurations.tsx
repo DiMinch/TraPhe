@@ -51,7 +51,11 @@ export default function ConfigurationsPage() {
       setError(null);
       const response = await systemConfigService.getAllConfigs();
       if (response.statusCode === 200) {
-        setConfigurations(response.data);
+        // Handle both direct array and paginated response
+        const configsData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setConfigurations(configsData);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };

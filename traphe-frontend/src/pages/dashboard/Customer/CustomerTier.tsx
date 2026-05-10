@@ -63,7 +63,11 @@ export default function CustomerTierPage() {
     try {
       const res = await customerTierService.getAllTiers();
       if (res.statusCode === 200 && res.data) {
-        setTiers(res.data);
+        // Handle both direct array and paginated response
+        const tiersData = Array.isArray(res.data)
+          ? res.data
+          : (res.data as any)?.content || [];
+        setTiers(tiersData);
       }
     } catch (error) {
       toast.error("Failed to load tiers");

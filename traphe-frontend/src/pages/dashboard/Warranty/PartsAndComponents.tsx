@@ -71,7 +71,11 @@ export default function PartsAndComponentsPage() {
           : await partService.getAllParts();
 
       if (res.statusCode === 200 && res.data) {
-        setParts(res.data);
+        // Handle both direct array and paginated response
+        const partsData = Array.isArray(res.data)
+          ? res.data
+          : (res.data as any)?.content || [];
+        setParts(partsData);
       }
     } catch (error) {
       toast.error("Failed to load parts");

@@ -87,7 +87,13 @@ export default function AddressDialog({
       const fetchProvinces = async () => {
         try {
           const res = await userService.getProvinces();
-          if (res.statusCode === 200 && res.data) setProvinces(res.data);
+          if (res.statusCode === 200 && res.data) {
+            // Handle both direct array and paginated response
+            const provincesData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setProvinces(provincesData);
+          }
         } catch (error) {
           toast.error("Failed to load provinces");
         }
@@ -105,7 +111,11 @@ export default function AddressDialog({
         try {
           const res = await userService.getCommunes(formData.provinceCode);
           if (res.statusCode === 200 && res.data) {
-            setCommunes(res.data);
+            // Handle both direct array and paginated response
+            const communesData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setCommunes(communesData);
           }
         } catch (error) {
           console.error("Failed to load communes");

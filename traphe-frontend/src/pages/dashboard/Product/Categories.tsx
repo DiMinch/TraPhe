@@ -65,17 +65,23 @@ export default function CategoriesPage() {
       setLoading(true);
       const response = await categoryService.getAllCategories();
       if (response.data) {
-        setApiCategories(response.data);
+        // Handle both direct array and paginated response
+        const categoriesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setApiCategories(categoriesData);
         // Convert API categories to display format and store full API data
-        const displayCategories: Category[] = response.data.map((cat) => ({
-          id: parseInt(cat.id.slice(0, 8), 16), // Use first 8 chars of UUID as number
-          name: cat.name,
-          description: cat.description || "No description",
-          parent: cat.parentName || "",
-          productCount: 0, // TODO: Get actual product count from API
-          status: "Active" as const,
-          image: cat.imageUrl,
-        }));
+        const displayCategories: Category[] = categoriesData.map(
+          (cat: any) => ({
+            id: parseInt(cat.id.slice(0, 8), 16), // Use first 8 chars of UUID as number
+            name: cat.name,
+            description: cat.description || "No description",
+            parent: cat.parentName || "",
+            productCount: 0, // TODO: Get actual product count from API
+            status: "Active" as const,
+            image: cat.imageUrl,
+          }),
+        );
         setCategories(displayCategories);
       }
     } catch (error: unknown) {

@@ -78,7 +78,11 @@ export default function EditCategoryDialog({
       setLoading(true);
       const response = await categoryService.getAllCategories();
       if (response.data) {
-        setAllCategories(response.data);
+        // Handle both direct array and paginated response
+        const categoriesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setAllCategories(categoriesData);
       }
     } catch (error: unknown) {
       console.error("Failed to load categories:", error);

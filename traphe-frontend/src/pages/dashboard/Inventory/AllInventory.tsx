@@ -97,24 +97,42 @@ export default function AllInventoryPage() {
     try {
       const response = await inventoryService.getAllInventory();
 
-      // Transform API response to match InventoryItem interface
-      const transformedData: InventoryItem[] = response.data.map(
-        (item: InventoryResponse) => ({
-          id: item.id,
-          productVariantId: item.productVariant?.id || "",
-          name: item.productVariant?.variantName
-            ? `${item.productVariant.productName} - ${item.productVariant.variantName}`
-            : item.productVariant?.productName || "Unknown Product",
-          sku: item.productVariant?.sku || "N/A",
-          category: "Product Variant",
-          supplier: "N/A",
-          physical: item.quantityPhysical || 0,
-          reserved: item.quantityReserved || 0,
-          available: item.quantityAvailable || 0,
-          status: "Active" as const,
-        }),
-      );
+      console.log("Raw API response:", response);
 
+      // Handle both direct array and paginated response
+      const rawData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+
+      // Transform API response to match InventoryItem interface
+      const transformedData: InventoryItem[] = rawData
+        .filter((item: InventoryResponse) => {
+          // Only include items with valid productVariant
+          if (!item.productVariant || !item.productVariant.id) {
+            console.warn("Skipping item without valid productVariant:", item);
+            return false;
+          }
+          return true;
+        })
+        .map((item: InventoryResponse) => {
+          console.log("Processing inventory item:", item);
+          return {
+            id: item.id,
+            productVariantId: item.productVariant.id,
+            name: item.productVariant.variantName
+              ? `${item.productVariant.productName} - ${item.productVariant.variantName}`
+              : item.productVariant.productName || "Unknown Product",
+            sku: item.productVariant.sku || "N/A",
+            category: "Product Variant",
+            supplier: "N/A",
+            physical: item.quantityPhysical || 0,
+            reserved: item.quantityReserved || 0,
+            available: item.quantityAvailable || 0,
+            status: "Active" as const,
+          };
+        });
+
+      console.log("Transformed data:", transformedData);
       setInventoryData(transformedData);
     } catch (err: any) {
       console.error("Error fetching inventory:", err);
@@ -202,6 +220,15 @@ export default function AllInventoryPage() {
   };
 
   const handleEditClick = (item: InventoryItem) => {
+    // Validate that item has productVariantId
+    if (!item.productVariantId || item.productVariantId === "") {
+      alert(
+        "Cannot edit this item: Product Variant information is missing. Please ensure the product variant is properly linked.",
+      );
+      console.error("Item missing productVariantId:", item);
+      return;
+    }
+
     setEditItem(item);
     setIsEditDialogOpen(true);
   };
@@ -209,34 +236,76 @@ export default function AllInventoryPage() {
   const handleEditSave = async () => {
     if (!editItem) return;
 
+    // Validate productVariantId
+    if (!editItem.productVariantId || editItem.productVariantId === "") {
+      alert("Error: Product Variant ID is missing. Cannot update inventory.");
+      console.error("Invalid productVariantId:", editItem);
+      setSubmitting(false);
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Check if physical quantity changed
       const originalItem = inventoryData.find(
         (item) => item.id === editItem.id,
       );
-      if (originalItem && originalItem.physical !== editItem.physical) {
+      if (!originalItem) {
+        alert("Original item not found!");
+        setSubmitting(false);
+        return;
+      }
+
+      console.log("Original item:", originalItem);
+      console.log("Edited item:", editItem);
+
+      if (originalItem.physical !== editItem.physical) {
         const difference = editItem.physical - originalItem.physical;
+
+        // Don't send adjustment if no change
+        if (difference === 0) {
+          setIsEditDialogOpen(false);
+          return;
+        }
+
         const adjustmentData = {
           reason: "Manual Edit - Inventory Update",
           items: [
             {
               productVariantId: editItem.productVariantId,
-              type: "ADJUSTMENT",
+              type: "ADJUSTMENT" as const,
               quantity: Math.abs(difference),
-              reason: "Manual Edit - Inventory Update",
+              reason: `Manual Edit - Inventory Update (${difference > 0 ? "+" : ""}${difference})`,
             },
           ],
         };
 
-        await inventoryService.createStockAdjustment(adjustmentData);
+        console.log(
+          "Sending adjustment data:",
+          JSON.stringify(adjustmentData, null, 2),
+        );
+
+        const response =
+          await inventoryService.createStockAdjustment(adjustmentData);
+        console.log("Adjustment response:", response);
+
+        alert(
+          `Inventory updated successfully! ${difference > 0 ? "Added" : "Removed"} ${Math.abs(difference)} units.`,
+        );
+      } else {
+        alert("No changes detected in physical quantity.");
       }
 
       setIsEditDialogOpen(false);
-      fetchInventory();
+      await fetchInventory();
     } catch (err: any) {
       console.error("Error updating inventory:", err);
-      alert(err.response?.data?.message || "Failed to update inventory");
+      console.error("Error response:", err.response);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update inventory";
+      alert(`Error: ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
@@ -245,6 +314,12 @@ export default function AllInventoryPage() {
   const handleUpdate = async () => {
     if (!selectedItem) return;
 
+    // Don't send if no change
+    if (difference === 0) {
+      alert("No changes detected. Please adjust the quantity.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const adjustmentData = {
@@ -252,7 +327,7 @@ export default function AllInventoryPage() {
         items: [
           {
             productVariantId: selectedItem.productVariantId,
-            type: "ADJUSTMENT",
+            type: "ADJUSTMENT" as const,
             quantity: Math.abs(difference),
             reason: note || reason,
           },
@@ -265,7 +340,11 @@ export default function AllInventoryPage() {
       setNote("");
     } catch (err: any) {
       console.error("Error creating stock adjustment:", err);
-      alert(err.response?.data?.message || "Failed to create stock adjustment");
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to create stock adjustment";
+      alert(`Error: ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
@@ -489,6 +568,12 @@ export default function AllInventoryPage() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => handleStockAdjustment(item)}
+                              disabled={!item.productVariantId}
+                              title={
+                                !item.productVariantId
+                                  ? "Product Variant not found"
+                                  : "Stock Adjustment"
+                              }
                             >
                               <RefreshCw className="w-4 h-4" />
                             </Button>
@@ -497,6 +582,12 @@ export default function AllInventoryPage() {
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => handleEditClick(item)}
+                              disabled={!item.productVariantId}
+                              title={
+                                !item.productVariantId
+                                  ? "Product Variant not found - Cannot edit"
+                                  : "Edit Item"
+                              }
                             >
                               <Edit className="w-4 h-4" />
                             </Button>

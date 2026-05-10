@@ -55,10 +55,14 @@ export default function RolesPermissionsPage() {
       const response = await adminService.getAllRoles();
 
       if (response.statusCode === 200 && response.data) {
-        setRoles(response.data);
+        // Handle both direct array and paginated response
+        const rolesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setRoles(rolesData);
         // Initialize permissions for each role
         const initialPermissions: Record<string, PermissionModule[]> = {};
-        response.data.forEach((role) => {
+        rolesData.forEach((role: Role) => {
           initialPermissions[role.id] = getDefaultPermissions();
         });
         setRolePermissions(initialPermissions);

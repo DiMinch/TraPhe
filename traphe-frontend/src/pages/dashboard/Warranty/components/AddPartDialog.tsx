@@ -50,7 +50,11 @@ export default function AddPartDialog({
         try {
           const res = await partService.getActiveParts();
           if (res.statusCode === 200 && res.data) {
-            setParts(res.data);
+            // Handle both direct array and paginated response
+            const partsData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setParts(partsData);
           }
         } catch (error) {
           console.error("Failed to load parts", error);

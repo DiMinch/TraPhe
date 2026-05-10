@@ -74,8 +74,12 @@ export default function UserAccountsPage() {
       setLoading(true);
       const response = await adminService.getAllUsers();
       if (response.data) {
-        setUserAccounts(response.data);
-        setFilteredUsers(response.data);
+        // Handle both direct array and paginated response
+        const usersData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setUserAccounts(usersData);
+        setFilteredUsers(usersData);
       }
     } catch (error: unknown) {
       const errorMsg =

@@ -75,7 +75,11 @@ export default function CategoryPage() {
       setLoading(true);
       const response = await categoryService.getAllCategories();
       if (response.data) {
-        setCategories(response.data);
+        // Handle both direct array and paginated response
+        const categoriesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setCategories(categoriesData);
       }
     } catch (error: unknown) {
       const errorMsg =

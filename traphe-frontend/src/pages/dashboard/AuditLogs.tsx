@@ -100,7 +100,11 @@ export default function AuditLogsPage() {
       const response = await auditLogService.getAllAuditLogs(filters);
 
       if (response.data) {
-        setAuditLogs(response.data);
+        // Handle both direct array and paginated response
+        const logsData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setAuditLogs(logsData);
       }
 
       // Show error message only if there's a meaningful error
@@ -273,17 +277,63 @@ export default function AuditLogsPage() {
               <span className="ml-3 text-slate-600">Loading audit logs...</span>
             </div>
           ) : error?.includes("permission") ? (
-            <EmptyState
-              icon={<ShieldAlert className="w-8 h-8 text-amber-500" />}
-              title="Access Restricted"
-              description="You don't have permission to view audit logs. This feature is available for administrators only."
-            />
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <ShieldAlert className="w-12 h-12 text-amber-500" />
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Access Restricted
+                </h3>
+                <p className="text-sm text-slate-600 max-w-md">
+                  You don't have permission to view audit logs. This feature is
+                  available for administrators only.
+                </p>
+                <div className="text-xs text-slate-500 mt-4">
+                  Contact your system administrator if you believe you should
+                  have access.
+                </div>
+              </div>
+            </div>
           ) : error?.includes("Server error") ? (
-            <EmptyState
-              icon={<ServerCrash className="w-8 h-8 text-red-500" />}
-              title="Server Error"
-              description="Unable to connect to the server. Please check if the backend is running and try again."
-            />
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <ServerCrash className="w-12 h-12 text-red-500" />
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Server Error
+                </h3>
+                <p className="text-sm text-slate-600 max-w-md">
+                  Unable to connect to the audit logs service. The backend
+                  server may be experiencing issues.
+                </p>
+                <div className="text-xs text-slate-500 mt-4">
+                  <p>Possible causes:</p>
+                  <ul className="list-disc list-inside text-left mx-auto max-w-xs mt-2">
+                    <li>Backend server is not running</li>
+                    <li>Database connection error</li>
+                    <li>API endpoint misconfiguration</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRefresh}
+                  className="border-slate-300"
+                >
+                  Try Again
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    window.open(
+                      "http://localhost:8080/swagger-ui/index.html",
+                      "_blank",
+                    )
+                  }
+                >
+                  Check Backend Status
+                </Button>
+              </div>
+            </div>
           ) : error ? (
             <EmptyState
               icon={<ClipboardList className="w-8 h-8 text-red-400" />}

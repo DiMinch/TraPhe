@@ -103,7 +103,11 @@ export default function SuppliersPage() {
     setError(null);
     try {
       const response = await supplierService.getAllSuppliers();
-      const transformedData = response.data.map(transformSupplier);
+      // Handle both direct array and paginated response
+      const suppliersData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      const transformedData = suppliersData.map(transformSupplier);
       setSuppliers(transformedData);
     } catch (err: any) {
       console.error("Error fetching suppliers:", err);

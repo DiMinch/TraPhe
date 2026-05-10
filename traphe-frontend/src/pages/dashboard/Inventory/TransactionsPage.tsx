@@ -63,10 +63,15 @@ export default function TransactionsPage() {
     try {
       const response = await purchaseOrderService.getAllPurchaseOrders();
 
+      // Handle both direct array and paginated response
+      const purchaseOrders = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+
       // Transform Purchase Orders to transactions (only RECEIVED orders create stock transactions)
       const transformedData: Transaction[] = [];
 
-      response.data.forEach((po: PurchaseOrderResponse) => {
+      purchaseOrders.forEach((po: PurchaseOrderResponse) => {
         if (po.status === "RECEIVED" || po.status === "CLOSED") {
           po.items.forEach((item) => {
             // Skip items without product variant or with zero quantity

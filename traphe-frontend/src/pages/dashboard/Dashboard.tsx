@@ -147,7 +147,11 @@ export default function DashboardPage() {
         // Fetch inventory for low stock items
         const inventoryResponse = await dashboardService.getLowStockItems();
         if (inventoryResponse.data) {
-          const lowStock = inventoryResponse.data
+          // Handle both direct array and paginated response
+          const inventoryData = Array.isArray(inventoryResponse.data)
+            ? inventoryResponse.data
+            : (inventoryResponse.data as any)?.content || [];
+          const lowStock = inventoryData
             .filter(
               (item: InventoryResponse) =>
                 item.quantityAvailable <= item.minThreshold,
@@ -164,9 +168,13 @@ export default function DashboardPage() {
 
         // Fetch pending orders
         const ordersResponse = await dashboardService.getRecentOrders();
-        if (ordersResponse.data?.content) {
+        if (ordersResponse.data) {
+          // Handle both direct array and paginated response
+          const ordersData =
+            ordersResponse.data?.content ||
+            (Array.isArray(ordersResponse.data) ? ordersResponse.data : []);
           // Filter pending orders
-          const pending = ordersResponse.data.content
+          const pending = ordersData
             .filter((order: OrderResponse) => order.status === "PENDING")
             .slice(0, 5)
             .map((order: OrderResponse) => ({
@@ -181,7 +189,7 @@ export default function DashboardPage() {
             string,
             { orders: number; sales: number; name: string }
           > = {};
-          ordersResponse.data.content.forEach((order: OrderResponse) => {
+          ordersData.forEach((order: OrderResponse) => {
             order.items?.forEach((item) => {
               const key = item.productVariantId;
               if (!productSales[key]) {
@@ -211,7 +219,11 @@ export default function DashboardPage() {
         // Fetch warranty tickets
         const ticketsResponse = await warrantyService.getAllTickets();
         if (ticketsResponse.data) {
-          const tickets = (ticketsResponse.data as WarrantyTicket[])
+          // Handle both direct array and paginated response
+          const ticketsData = Array.isArray(ticketsResponse.data)
+            ? ticketsResponse.data
+            : (ticketsResponse.data as any)?.content || [];
+          const tickets = ticketsData
             .slice(0, 5)
             .map((ticket: WarrantyTicket) => ({
               id: ticket.ticketNumber,

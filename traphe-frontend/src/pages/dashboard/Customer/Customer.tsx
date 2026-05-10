@@ -93,10 +93,18 @@ export default function CustomerPage() {
       ]);
 
       if (custRes.statusCode === 200 && custRes.data) {
-        setCustomers(custRes.data);
+        // Handle both direct array and paginated response
+        const customersData = Array.isArray(custRes.data)
+          ? custRes.data
+          : (custRes.data as any)?.content || [];
+        setCustomers(customersData);
       }
       if (tierRes.statusCode === 200 && tierRes.data) {
-        setActiveTiers(tierRes.data);
+        // Handle both direct array and paginated response
+        const tiersData = Array.isArray(tierRes.data)
+          ? tierRes.data
+          : (tierRes.data as any)?.content || [];
+        setActiveTiers(tiersData);
       }
     } catch (error) {
       toast.error("Failed to fetch data");
