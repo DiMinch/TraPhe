@@ -29,7 +29,10 @@ axiosClient.interceptors.response.use(
   (error) => {
     const status = error.response ? error.response.status : null;
 
-    if (status === 401 || status === 403) {
+    // Only redirect on 401 (unauthorized/expired token)
+    // 403 (forbidden) means user is authenticated but lacks permission
+    // We should not redirect on 403, just let the calling code handle it
+    if (status === 401) {
       localStorage.clear();
       window.location.href = "/sign-in";
     }

@@ -1,7 +1,9 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Bell, RefreshCw } from "lucide-react";
-import { CURRENT_USER } from "@/constants/user";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { RefreshCw } from "lucide-react";
+import { authService } from "@/services/auth.service";
+import NotificationDropdown from "@/components/common/NotificationDropdown";
 
 interface PageHeaderProps {
   title: string;
@@ -18,6 +20,19 @@ export function PageHeader({
   onRefresh,
   isLoading,
 }: PageHeaderProps) {
+  const currentUser = authService.getCurrentUser();
+  const userName = currentUser?.fullName || currentUser?.username || "User";
+  const userRole = currentUser?.roles?.[0]?.replace("ROLE_", "") || "User";
+  const userAvatar = currentUser?.avatar;
+
+  // Get initials for avatar fallback
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
       <div>
@@ -26,34 +41,31 @@ export function PageHeader({
         </h1>
         {subtitle && <p className="text-sm text-slate-500 mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {children}
-        <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-slate-100">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-sm text-slate-600 font-medium">
-            {CURRENT_USER.role} • {CURRENT_USER.name}
+        <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-sm border border-slate-200">
+          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <span className="text-sm text-slate-700 font-medium">
+            {userRole} • {userName}
           </span>
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={userAvatar} alt={userName} />
+            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative hover:bg-slate-100 transition-colors"
-        >
-          <Bell className="w-5 h-5 text-slate-600" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
-            3
-          </span>
-        </Button>
+        <NotificationDropdown />
         {onRefresh && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={onRefresh}
             disabled={isLoading}
-            className="hover:bg-slate-100 transition-colors"
+            className="bg-white hover:bg-slate-50 rounded-full shadow-sm border border-slate-200 w-10 h-10"
           >
             <RefreshCw
-              className={`w-4 h-4 text-slate-600 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-5 h-5 text-slate-600 ${isLoading ? "animate-spin" : ""}`}
             />
           </Button>
         )}

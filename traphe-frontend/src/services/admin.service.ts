@@ -51,9 +51,21 @@ export const adminService = {
     );
   },
 
-  // Get all users (for admin)
-  getAllUsers: async () => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>("/admin/users");
+  // Get all users (for admin) with filters
+  getAllUsers: async (params?: { role?: string; status?: string }) => {
+    const queryParams: any = {};
+
+    if (params?.role && params.role !== "all-roles") {
+      queryParams.role = params.role.toUpperCase();
+    }
+    if (params?.status && params.status !== "all-status") {
+      queryParams.status = params.status.toUpperCase();
+    }
+
+    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
+      "/admin/users",
+      { params: queryParams },
+    );
   },
 
   // Get all roles

@@ -67,9 +67,26 @@ export interface ReceiveGoodsRequest {
 
 export const purchaseOrderService = {
   // Get all purchase orders
-  getAllPurchaseOrders: async () => {
+  getAllPurchaseOrders: async (params?: {
+    supplierId?: string;
+    status?: string;
+  }) => {
+    const queryParams: Record<string, string> = {};
+
+    if (params?.supplierId && params.supplierId !== "all-suppliers") {
+      queryParams.supplierId = params.supplierId;
+    }
+    if (params?.status && params.status !== "all-status") {
+      queryParams.status = params.status.toUpperCase();
+    }
+
+    // Only add params if there are any filters
+    const config =
+      Object.keys(queryParams).length > 0 ? { params: queryParams } : {};
+
     return axiosClient.get<any, ApiResponse<PurchaseOrderResponse[]>>(
       "/purchase-orders",
+      config,
     );
   },
 

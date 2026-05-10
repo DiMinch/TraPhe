@@ -63,13 +63,33 @@ export interface CreateOrderRequest {
 }
 
 export const orderService = {
-  // Get all orders
-  getAllOrders: async (page: number = 0, size: number = 100) => {
+  // Get all orders with filters
+  getAllOrders: async (params?: {
+    page?: number;
+    size?: number;
+    status?: string;
+    orderType?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const queryParams = {
+      page: params?.page || 0,
+      size: params?.size || 100,
+      ...(params?.status &&
+        params.status !== "all-status" && {
+          status: params.status.toUpperCase(),
+        }),
+      ...(params?.orderType &&
+        params.orderType !== "all-type" && {
+          orderType: params.orderType.toUpperCase().replace("-", "_"),
+        }),
+      ...(params?.startDate && { startDate: params.startDate }),
+      ...(params?.endDate && { endDate: params.endDate }),
+    };
+
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
       "/orders",
-      {
-        params: { page, size },
-      },
+      { params: queryParams },
     );
   },
 

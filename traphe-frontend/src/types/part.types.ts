@@ -6,6 +6,7 @@ export interface PartSupplier {
 export interface PartComponent {
   id: string;
   name: string;
+  code?: string;
   partType: string;
   supplier?: PartSupplier;
   unit: string;
@@ -13,6 +14,9 @@ export interface PartComponent {
   sellingPrice: number;
   minStock: number;
   currentStock: number;
+  // Aliases for compatibility
+  minQuantity?: number;
+  quantityInStock?: number;
   createdAt: string;
   updatedAt: string;
 }

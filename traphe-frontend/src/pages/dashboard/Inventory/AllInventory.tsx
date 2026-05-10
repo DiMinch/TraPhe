@@ -59,6 +59,7 @@ import {
 
 interface InventoryItem {
   id: string;
+  productVariantId: string;
   name: string;
   sku: string;
   category: string;
@@ -83,6 +84,12 @@ export default function AllInventoryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Filter states
+  const [dateFilter, setDateFilter] = useState("all-days");
+  const [categoryFilter, setCategoryFilter] = useState("all-categories");
+  const [statusFilter, setStatusFilter] = useState("all-status");
+  const [submitting, setSubmitting] = useState(false);
+
   // Fetch inventory data from API
   const fetchInventory = async () => {
     setLoading(true);
@@ -94,6 +101,7 @@ export default function AllInventoryPage() {
       const transformedData: InventoryItem[] = response.data.map(
         (item: InventoryResponse) => ({
           id: item.id,
+          productVariantId: item.productVariant?.id || "",
           name: item.productVariant?.variantName
             ? `${item.productVariant.productName} - ${item.productVariant.variantName}`
             : item.productVariant?.productName || "Unknown Product",
@@ -150,22 +158,42 @@ export default function AllInventoryPage() {
   const productVariants: InventoryItem[] = inventoryData;
   const partsComponents: InventoryItem[] = []; // This can be filtered or fetched separately
 
-  // Filter items by search term
-  const filteredVariants = productVariants.filter(
-    (item) =>
+  // Filter items by search term, category, and status
+  const filteredVariants = productVariants.filter((item) => {
+    const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.supplier.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const filteredParts = partsComponents.filter(
-    (item) =>
+    const matchesCategory =
+      categoryFilter === "all-categories" ||
+      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all-status" ||
+      item.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  const filteredParts = partsComponents.filter((item) => {
+    const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.supplier.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+      item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === "all-categories" ||
+      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all-status" ||
+      item.status.toLowerCase() === statusFilter.toLowerCase();
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   const handleStockAdjustment = (item: InventoryItem) => {
     setSelectedItem(item);
@@ -178,16 +206,69 @@ export default function AllInventoryPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = () => {
-    // Handle update logic here
-    console.log("Update stock:", {
-      item: selectedItem,
-      newQuantity,
-      difference: newQuantity - (selectedItem?.physical || 0),
-      reason,
-      note,
-    });
-    setIsStockAdjustmentOpen(false);
+  const handleEditSave = async () => {
+    if (!editItem) return;
+
+    setSubmitting(true);
+    try {
+      // Check if physical quantity changed
+      const originalItem = inventoryData.find(
+        (item) => item.id === editItem.id,
+      );
+      if (originalItem && originalItem.physical !== editItem.physical) {
+        const difference = editItem.physical - originalItem.physical;
+        const adjustmentData = {
+          reason: "Manual Edit - Inventory Update",
+          items: [
+            {
+              productVariantId: editItem.productVariantId,
+              type: "ADJUSTMENT",
+              quantity: Math.abs(difference),
+              reason: "Manual Edit - Inventory Update",
+            },
+          ],
+        };
+
+        await inventoryService.createStockAdjustment(adjustmentData);
+      }
+
+      setIsEditDialogOpen(false);
+      fetchInventory();
+    } catch (err: any) {
+      console.error("Error updating inventory:", err);
+      alert(err.response?.data?.message || "Failed to update inventory");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedItem) return;
+
+    setSubmitting(true);
+    try {
+      const adjustmentData = {
+        reason: note || reason,
+        items: [
+          {
+            productVariantId: selectedItem.productVariantId,
+            type: "ADJUSTMENT",
+            quantity: Math.abs(difference),
+            reason: note || reason,
+          },
+        ],
+      };
+
+      await inventoryService.createStockAdjustment(adjustmentData);
+      setIsStockAdjustmentOpen(false);
+      fetchInventory();
+      setNote("");
+    } catch (err: any) {
+      console.error("Error creating stock adjustment:", err);
+      alert(err.response?.data?.message || "Failed to create stock adjustment");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const difference = selectedItem ? newQuantity - selectedItem.physical : 0;
@@ -206,7 +287,16 @@ export default function AllInventoryPage() {
           <FileSpreadsheet className="w-4 h-4 mr-2" />
           Export Excel
         </Button>
-        <Button className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-md">
+        <Button
+          className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-md"
+          onClick={() => {
+            if (filteredVariants.length > 0) {
+              handleStockAdjustment(filteredVariants[0]);
+            } else {
+              alert("No inventory items available to adjust");
+            }
+          }}
+        >
           <ArrowUpDown className="w-4 h-4 mr-2" />
           Stock Adjustment
         </Button>
@@ -257,7 +347,7 @@ export default function AllInventoryPage() {
             <Filter className="w-4 h-4" />
           </Button>
 
-          <Select defaultValue="all-days">
+          <Select value={dateFilter} onValueChange={setDateFilter}>
             <SelectTrigger className="w-[140px] bg-white border-slate-200">
               <SelectValue placeholder="All days" />
             </SelectTrigger>
@@ -269,7 +359,7 @@ export default function AllInventoryPage() {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all-categories">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[160px] bg-white border-slate-200">
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
@@ -281,7 +371,7 @@ export default function AllInventoryPage() {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all-status">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px] bg-white border-slate-200">
               <SelectValue placeholder="All status" />
             </SelectTrigger>
@@ -561,14 +651,23 @@ export default function AllInventoryPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsStockAdjustmentOpen(false)}
+                disabled={submitting}
               >
                 Cancel
               </Button>
               <Button
                 className="bg-indigo-900 hover:bg-indigo-800 text-white"
                 onClick={handleUpdate}
+                disabled={submitting}
               >
-                Update
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update"
+                )}
               </Button>
             </div>
           </div>
@@ -713,14 +812,23 @@ export default function AllInventoryPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsEditDialogOpen(false)}
+                disabled={submitting}
               >
                 Cancel
               </Button>
               <Button
                 className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white"
-                onClick={() => setIsEditDialogOpen(false)}
+                onClick={handleEditSave}
+                disabled={submitting}
               >
-                Update
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update"
+                )}
               </Button>
             </div>
           </div>

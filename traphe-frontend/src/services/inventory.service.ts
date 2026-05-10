@@ -54,4 +54,20 @@ export const inventoryService = {
       { status },
     );
   },
+
+  // Create stock adjustment
+  createStockAdjustment: async (data: {
+    reason: string;
+    items: Array<{
+      productVariantId: string;
+      type: string;
+      quantity: number;
+      reason: string;
+    }>;
+  }) => {
+    return axiosClient.post<any, ApiResponse<any>>(
+      "/v1/inventory-adjustments",
+      data,
+    );
+  },
 };

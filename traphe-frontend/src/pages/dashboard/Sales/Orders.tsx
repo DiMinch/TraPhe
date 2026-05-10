@@ -70,6 +70,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [typeFilter, setTypeFilter] = useState("all-type");
+  const [paymentFilter, setPaymentFilter] = useState("all-payment");
 
   // Transform backend response to frontend format
   const transformOrder = (o: OrderResponse): Order => ({
@@ -83,12 +84,15 @@ export default function OrdersPage() {
     status: o.status as "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED",
   });
 
-  // Fetch orders from API
+  // Fetch orders from API with filters
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await orderService.getAllOrders();
+      const response = await orderService.getAllOrders({
+        page: 0,
+        size: 100,
+      });
       const transformedData = (response.data.content || []).map(transformOrder);
       setOrders(transformedData);
     } catch (err: any) {
@@ -105,12 +109,12 @@ export default function OrdersPage() {
     }
   };
 
-  // Fetch orders on component mount
+  // Fetch orders on mount
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  // Filter orders
+  // Filter orders by search term, status, and type (client-side)
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,7 +127,8 @@ export default function OrdersPage() {
 
     const matchesType =
       typeFilter === "all-type" ||
-      order.orderType.toLowerCase().includes(typeFilter.toLowerCase());
+      order.orderType.toLowerCase() ===
+        typeFilter.toLowerCase().replace("-", "_");
 
     return matchesSearch && matchesStatus && matchesType;
   });

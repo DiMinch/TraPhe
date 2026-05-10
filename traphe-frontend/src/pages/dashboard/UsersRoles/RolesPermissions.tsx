@@ -54,7 +54,7 @@ export default function RolesPermissionsPage() {
       setLoading(true);
       const response = await adminService.getAllRoles();
 
-      if (response.success && response.data) {
+      if (response.statusCode === 200 && response.data) {
         setRoles(response.data);
         // Initialize permissions for each role
         const initialPermissions: Record<string, PermissionModule[]> = {};

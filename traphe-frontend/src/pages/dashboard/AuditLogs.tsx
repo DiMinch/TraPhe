@@ -35,9 +35,10 @@ import {
   Search,
   Filter,
   Calendar,
-  RotateCw,
   ClipboardList,
   Loader2,
+  ShieldAlert,
+  ServerCrash,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -49,8 +50,6 @@ import {
 import {
   auditLogService,
   type AuditLogResponse,
-  type AuditModule,
-  type AuditAction,
 } from "@/services/audit-log.service";
 import { toast } from "sonner";
 
@@ -79,11 +78,11 @@ export default function AuditLogsPage() {
       const filters: any = {};
 
       if (selectedModule !== "all-module") {
-        filters.module = selectedModule.toUpperCase();
+        filters.module = selectedModule;
       }
 
       if (selectedAction !== "all-action") {
-        filters.action = selectedAction.toUpperCase();
+        filters.action = selectedAction;
       }
 
       if (selectedActor !== "all-actor") {
@@ -91,11 +90,11 @@ export default function AuditLogsPage() {
       }
 
       if (dateRange.from) {
-        filters.startDate = dateRange.from;
+        filters.startDate = dateRange.from.toISOString();
       }
 
       if (dateRange.to) {
-        filters.endDate = dateRange.to;
+        filters.endDate = dateRange.to.toISOString();
       }
 
       const response = await auditLogService.getAllAuditLogs(filters);
@@ -105,26 +104,27 @@ export default function AuditLogsPage() {
       }
 
       // Show error message only if there's a meaningful error
-      if (
-        response.statusCode >= 400 &&
-        response.message &&
-        !response.message.includes("not yet available")
-      ) {
-        const errorMsg = response.message;
-        setError(errorMsg);
-        toast.error(errorMsg);
-      } else if (
-        response.message &&
-        response.message.includes("not yet available")
-      ) {
-        // Silently set error message without toast for "not available" case
+      if (response.statusCode >= 400 && response.message) {
         setError(response.message);
+        // Don't show toast for 403/500 - just display inline error
+        if (response.statusCode !== 403 && response.statusCode !== 500) {
+          toast.error(response.message);
+        }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosErr = err as {
+        response?: { status?: number; data?: { message?: string } };
+      };
+      const status = axiosErr.response?.status;
       const errorMsg =
-        err.response?.data?.message || "Failed to fetch audit logs";
+        status === 500
+          ? "Server error. Please try again later or contact support."
+          : axiosErr.response?.data?.message || "Failed to fetch audit logs";
       setError(errorMsg);
-      toast.error(errorMsg);
+      // Don't show toast for 403 or 500
+      if (status !== 403 && status !== 500) {
+        toast.error(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -146,19 +146,6 @@ export default function AuditLogsPage() {
       log.module.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()),
   );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "SUCCESS":
-        return "bg-green-100 text-green-800 hover:bg-green-100";
-      case "FAILED":
-        return "bg-red-100 text-red-800 hover:bg-red-100";
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
-      default:
-        return "bg-gray-100 text-gray-800 hover:bg-gray-100";
-    }
-  };
 
   return (
     <PageContainer>
@@ -244,17 +231,17 @@ export default function AuditLogsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-action">All action</SelectItem>
-                <SelectItem value="create">CREATE</SelectItem>
-                <SelectItem value="update">UPDATE</SelectItem>
-                <SelectItem value="delete">DELETE</SelectItem>
-                <SelectItem value="view">VIEW</SelectItem>
-                <SelectItem value="export">EXPORT</SelectItem>
-                <SelectItem value="import">IMPORT</SelectItem>
-                <SelectItem value="login">LOGIN</SelectItem>
-                <SelectItem value="logout">LOGOUT</SelectItem>
-                <SelectItem value="approve">APPROVE</SelectItem>
-                <SelectItem value="reject">REJECT</SelectItem>
-                <SelectItem value="cancel">CANCEL</SelectItem>
+                <SelectItem value="CREATE">CREATE</SelectItem>
+                <SelectItem value="UPDATE">UPDATE</SelectItem>
+                <SelectItem value="DELETE">DELETE</SelectItem>
+                <SelectItem value="LOCK">LOCK</SelectItem>
+                <SelectItem value="UNLOCK">UNLOCK</SelectItem>
+                <SelectItem value="EARN_POINTS">EARN_POINTS</SelectItem>
+                <SelectItem value="REDEEM_POINTS">REDEEM_POINTS</SelectItem>
+                <SelectItem value="ADJUST_POINTS">ADJUST_POINTS</SelectItem>
+                <SelectItem value="RESET_POINTS">RESET_POINTS</SelectItem>
+                <SelectItem value="RECEIVE_GOODS">RECEIVE_GOODS</SelectItem>
+                <SelectItem value="CLOSE_PO">CLOSE_PO</SelectItem>
               </SelectContent>
             </Select>
 
@@ -264,17 +251,17 @@ export default function AuditLogsPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-module">All module</SelectItem>
-                <SelectItem value="invoice">INVOICE</SelectItem>
-                <SelectItem value="product">PRODUCT</SelectItem>
-                <SelectItem value="inventory">INVENTORY</SelectItem>
-                <SelectItem value="order">ORDER</SelectItem>
-                <SelectItem value="customer">CUSTOMER</SelectItem>
-                <SelectItem value="supplier">SUPPLIER</SelectItem>
-                <SelectItem value="warranty">WARRANTY</SelectItem>
-                <SelectItem value="user">USER</SelectItem>
-                <SelectItem value="report">REPORT</SelectItem>
-                <SelectItem value="system">SYSTEM</SelectItem>
-                <SelectItem value="notification">NOTIFICATION</SelectItem>
+                <SelectItem value="INVOICE">INVOICE</SelectItem>
+                <SelectItem value="PRODUCT">PRODUCT</SelectItem>
+                <SelectItem value="INVENTORY">INVENTORY</SelectItem>
+                <SelectItem value="SUPPLIER">SUPPLIER</SelectItem>
+                <SelectItem value="STAFF">STAFF</SelectItem>
+                <SelectItem value="PROMOTION">PROMOTION</SelectItem>
+                <SelectItem value="CONFIG">CONFIG</SelectItem>
+                <SelectItem value="WARRANTY">WARRANTY</SelectItem>
+                <SelectItem value="LOYALTY_POINTS">LOYALTY_POINTS</SelectItem>
+                <SelectItem value="PURCHASE_ORDER">PURCHASE_ORDER</SelectItem>
+                <SelectItem value="ORDER">ORDER</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -285,6 +272,18 @@ export default function AuditLogsPage() {
               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
               <span className="ml-3 text-slate-600">Loading audit logs...</span>
             </div>
+          ) : error?.includes("permission") ? (
+            <EmptyState
+              icon={<ShieldAlert className="w-8 h-8 text-amber-500" />}
+              title="Access Restricted"
+              description="You don't have permission to view audit logs. This feature is available for administrators only."
+            />
+          ) : error?.includes("Server error") ? (
+            <EmptyState
+              icon={<ServerCrash className="w-8 h-8 text-red-500" />}
+              title="Server Error"
+              description="Unable to connect to the server. Please check if the backend is running and try again."
+            />
           ) : error ? (
             <EmptyState
               icon={<ClipboardList className="w-8 h-8 text-red-400" />}

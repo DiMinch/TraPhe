@@ -22,16 +22,68 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Package, DollarSign, AlertTriangle } from "lucide-react";
+import { Package, DollarSign, AlertTriangle, Loader2 } from "lucide-react";
 import {
-  inventoryLowStockProducts,
-  inventoryLowStockComponents,
-} from "@/data/mockData";
-import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
+  inventoryService,
+  type InventoryResponse,
+} from "@/services/inventory.service";
+import { partService } from "@/services/part.service";
+import type { PartComponent } from "@/types/part.types";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function InventoryOverviewPage() {
-  const lowStockProducts = inventoryLowStockProducts;
-  const lowStockComponents = inventoryLowStockComponents;
+  const [lowStockProducts, setLowStockProducts] = useState<InventoryResponse[]>(
+    [],
+  );
+  const [lowStockParts, setLowStockParts] = useState<PartComponent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalStockValue, setTotalStockValue] = useState(0);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [inventoryRes, partsRes] = await Promise.all([
+        inventoryService.getAllInventory(),
+        partService.getLowStockParts(),
+      ]);
+
+      if (inventoryRes.statusCode === 200) {
+        // Filter low stock items
+        const lowStock = inventoryRes.data.filter(
+          (item) => item.quantityAvailable <= item.minThreshold,
+        );
+        setLowStockProducts(lowStock);
+
+        // Calculate total stock value (simplified)
+        const total = inventoryRes.data.reduce(
+          (sum, item) => sum + item.quantityAvailable,
+          0,
+        );
+        setTotalStockValue(total);
+      }
+
+      if (partsRes.statusCode === 200) {
+        setLowStockParts(partsRes.data);
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(
+        error.response?.data?.message || "Failed to fetch inventory data",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <PageContainer>
@@ -49,7 +101,9 @@ export default function InventoryOverviewPage() {
                 <p className="text-emerald-100 text-sm mb-1">
                   Total Stock Value
                 </p>
-                <p className="text-3xl font-bold">$ 5,200</p>
+                <p className="text-3xl font-bold">
+                  {loading ? "..." : totalStockValue.toLocaleString()} units
+                </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <DollarSign className="w-6 h-6" />
@@ -65,7 +119,9 @@ export default function InventoryOverviewPage() {
                 <p className="text-amber-100 text-sm mb-1">
                   Low Stock Products
                 </p>
-                <p className="text-3xl font-bold">2</p>
+                <p className="text-3xl font-bold">
+                  {loading ? "..." : lowStockProducts.length}
+                </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <AlertTriangle className="w-6 h-6" />
@@ -81,7 +137,9 @@ export default function InventoryOverviewPage() {
                 <p className="text-rose-100 text-sm mb-1">
                   Low Stock Components
                 </p>
-                <p className="text-3xl font-bold">2</p>
+                <p className="text-3xl font-bold">
+                  {loading ? "..." : lowStockParts.length}
+                </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
                 <Package className="w-6 h-6" />
@@ -196,10 +254,10 @@ export default function InventoryOverviewPage() {
                       Product Variant
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
-                      Suppliers
+                      SKU
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
-                      Inventory
+                      Available
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
                       Min Threshold
@@ -207,22 +265,43 @@ export default function InventoryOverviewPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lowStockProducts.map((product) => (
-                    <TableRow key={product.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-medium text-slate-800 text-sm">
-                        {product.variant}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {product.supplier}
-                      </TableCell>
-                      <TableCell className="text-amber-600 font-semibold">
-                        {product.inventory}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {product.threshold}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : lowStockProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-slate-500"
+                      >
+                        No low stock products
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    lowStockProducts.map((product) => (
+                      <TableRow
+                        key={product.id}
+                        className="hover:bg-slate-50/50"
+                      >
+                        <TableCell className="font-medium text-slate-800 text-sm">
+                          {product.productVariant?.productName || "N/A"} -{" "}
+                          {product.productVariant?.variantName || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {product.productVariant?.sku || "N/A"}
+                        </TableCell>
+                        <TableCell className="text-amber-600 font-semibold">
+                          {product.quantityAvailable}
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {product.minThreshold}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -262,36 +341,50 @@ export default function InventoryOverviewPage() {
                       Component
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
-                      Suppliers
+                      Type
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
-                      Inventory
+                      Stock
                     </TableHead>
                     <TableHead className="font-semibold text-slate-600">
-                      Min Threshold
+                      Min Stock
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lowStockComponents.map((component) => (
-                    <TableRow
-                      key={component.id}
-                      className="hover:bg-slate-50/50"
-                    >
-                      <TableCell className="font-medium text-slate-800">
-                        {component.component}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {component.supplier}
-                      </TableCell>
-                      <TableCell className="text-amber-600 font-semibold">
-                        {component.inventory}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {component.threshold}
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : lowStockParts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-slate-500"
+                      >
+                        No low stock components
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    lowStockParts.map((part) => (
+                      <TableRow key={part.id} className="hover:bg-slate-50/50">
+                        <TableCell className="font-medium text-slate-800">
+                          {part.name}
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {part.partType}
+                        </TableCell>
+                        <TableCell className="text-amber-600 font-semibold">
+                          {part.currentStock}
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {part.minStock}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>

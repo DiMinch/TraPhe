@@ -96,9 +96,19 @@ export const promotionService = {
   // ========================================
 
   // Get all promotions (Admin)
-  getAllPromotions: async () => {
+  getAllPromotions: async (params?: { status?: string; type?: string }) => {
+    const queryParams: any = {};
+
+    if (params?.status && params.status !== "all-status") {
+      queryParams.status = params.status.toUpperCase();
+    }
+    if (params?.type && params.type !== "all-type") {
+      queryParams.type = params.type.toUpperCase();
+    }
+
     return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
       "/admin/promotions",
+      { params: queryParams },
     );
   },
 

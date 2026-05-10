@@ -5,12 +5,14 @@ import {
   useState,
   useRef,
   type ReactNode,
+  useCallback,
 } from "react";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { notificationService } from "@/services/notification.service";
 import type { NotificationItem } from "@/types/notification.types";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
+import { authService } from "@/services/auth.service";
 
 interface NotificationContextType {
   notifications: NotificationItem[];
@@ -18,6 +20,7 @@ interface NotificationContextType {
   isLoading: boolean;
   hasMore: boolean;
   isLoadingMore: boolean;
+  isAdmin: boolean;
   loadMore: () => Promise<void>;
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
@@ -32,6 +35,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -43,7 +47,25 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem("accessToken");
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Check if user has admin role
+  const checkAdminRole = useCallback(() => {
+    const user = authService.getCurrentUser();
+    if (user && user.roles) {
+      const hasAdminRole = user.roles.some(
+        (role: string) => role === "ROLE_ADMIN" || role === "ADMIN",
+      );
+      setIsAdmin(hasAdminRole);
+      return hasAdminRole;
+    }
+    return false;
+  }, []);
+
   const fetchBasicData = async () => {
+    // Only fetch if user is admin
+    if (!checkAdminRole()) {
+      return;
+    }
+
     setIsLoading(true);
     try {
       const [listRes, countRes] = await Promise.all([
@@ -59,15 +81,19 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
       if (countRes.statusCode === 200) {
         setUnreadCount(countRes.data.unreadCount);
       }
-    } catch (error) {
-      console.error("Failed to load notifications", error);
+    } catch (error: any) {
+      // Silently handle 403 (forbidden) and 500 (server error) - don't spam console
+      const status = error.response?.status;
+      if (status !== 403 && status !== 500) {
+        console.error("Failed to load notifications", error);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadMore = async () => {
-    if (isLoadingMore || !hasMore) return;
+    if (isLoadingMore || !hasMore || !isAdmin) return;
     setIsLoadingMore(true);
     try {
       const nextPage = page + 1;
@@ -90,53 +116,75 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!token) return;
 
+    // Check admin role first
+    const hasAdminRole = checkAdminRole();
+    if (!hasAdminRole) {
+      // User doesn't have admin role, skip notification fetching
+      return;
+    }
+
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     const init = async () => {
       await fetchBasicData();
 
-      await fetchEventSource(notificationService.getStreamUrl(), {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "text/event-stream",
-        },
-        signal: controller.signal,
-        onopen(res) {
-          if (res.ok) return Promise.resolve();
-          return Promise.resolve();
-        },
-        onmessage(event) {
-          if (event.event === "ORDER_NEW") {
-            try {
-              const newNotification: NotificationItem = JSON.parse(event.data);
-              setNotifications((prev) => [newNotification, ...prev]);
-              setUnreadCount((prev) => prev + 1);
-
-              toast.info("New Order Received", {
-                description: newNotification.content,
-                action: {
-                  label: "View",
-                  onClick: () =>
-                    navigate(`/sales/orders/${newNotification.entityId}`),
-                },
-              });
-            } catch (e) {
-              console.error(e);
+      try {
+        await fetchEventSource(notificationService.getStreamUrl(), {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "text/event-stream",
+          },
+          signal: controller.signal,
+          onopen(res) {
+            if (res.ok) return Promise.resolve();
+            if (res.status === 403) {
+              // User doesn't have admin permission for SSE - silently ignore
             }
-          }
-        },
-        onerror(err) {
-          /* retry */
-        },
-      });
+            return Promise.resolve();
+          },
+          onmessage(event) {
+            if (event.event === "ORDER_NEW") {
+              try {
+                const newNotification: NotificationItem = JSON.parse(
+                  event.data,
+                );
+                setNotifications((prev) => [newNotification, ...prev]);
+                setUnreadCount((prev) => prev + 1);
+
+                toast.info("New Order Received", {
+                  description: newNotification.content,
+                  action: {
+                    label: "View",
+                    onClick: () =>
+                      navigate(`/sales/orders/${newNotification.entityId}`),
+                  },
+                });
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          },
+          onerror(err) {
+            // Don't retry on abort or 403
+            if (controller.signal.aborted) {
+              throw err;
+            }
+          },
+        });
+      } catch (error: any) {
+        // Silently handle 403 errors
+        if (error?.response?.status !== 403) {
+          console.error("SSE connection error:", error);
+        }
+      }
     };
 
     init();
 
     return () => controller.abort();
-  }, [token, navigate]);
+  }, [token, navigate, checkAdminRole]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -169,6 +217,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         hasMore,
         isLoadingMore,
         loadMore,
+        isAdmin,
         fetchNotifications: fetchBasicData,
         markAsRead,
         markAllRead,

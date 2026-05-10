@@ -46,8 +46,22 @@ export interface AuditLogFilters {
   actorId?: string;
   startDate?: string;
   endDate?: string;
-  resourceId?: string;
+  page?: number;
+  size?: number;
 }
+
+export interface AuditLogPageResponse {
+  content: AuditLogResponse[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+const BASE_URL = "/admin/audit-logs";
 
 export const auditLogService = {
   getAllAuditLogs: async (filters?: AuditLogFilters) => {
@@ -58,58 +72,59 @@ export const auditLogService = {
       if (filters?.actorId) params.append("actorId", filters.actorId);
       if (filters?.startDate) params.append("startDate", filters.startDate);
       if (filters?.endDate) params.append("endDate", filters.endDate);
-      if (filters?.resourceId) params.append("resourceId", filters.resourceId);
+      if (filters?.page !== undefined)
+        params.append("page", String(filters.page));
+      if (filters?.size !== undefined)
+        params.append("size", String(filters.size));
+      params.append("sort", "createdAt,desc");
 
-      const response = await axiosClient.get<{
-        statusCode: number;
-        message: string;
-        data: AuditLogResponse[];
-      }>(`/audit-logs${params.toString() ? `?${params.toString()}` : ""}`);
-      return response.data;
-    } catch (error: any) {
-      console.warn("Audit log endpoint not available:", error.message);
+      // The axios interceptor returns response.data directly
+      const apiResponse = await axiosClient.get<
+        unknown,
+        { statusCode: number; message: string; data: AuditLogPageResponse }
+      >(`${BASE_URL}${params.toString() ? `?${params.toString()}` : ""}`);
+
+      // Return full page response for pagination support
       return {
-        statusCode: error.response?.status || 500,
+        statusCode: 200,
+        message: "Success",
+        data: apiResponse.data?.content || [],
+        pageData: apiResponse.data,
+      };
+    } catch (error: unknown) {
+      const axiosError = error as {
+        response?: { status?: number; data?: { message?: string } };
+        message?: string;
+      };
+      const status = axiosError.response?.status || 500;
+
+      // Don't log 403 or 500 errors to avoid console spam
+      if (status !== 403 && status !== 500) {
+        console.warn("Audit log endpoint error:", axiosError.message);
+      }
+
+      return {
+        statusCode: status,
         message:
-          "Audit log feature is not yet available. Backend endpoint needs to be created.",
+          status === 403
+            ? "You don't have permission to view audit logs. Admin role required."
+            : status === 500
+              ? "Server error. Please try again later or contact support."
+              : axiosError.response?.data?.message ||
+                "Failed to fetch audit logs",
         data: [],
+        pageData: null,
       };
     }
   },
 
-  getAuditLogById: async (id: string) => {
-    const response = await axiosClient.get<{
-      statusCode: number;
-      message: string;
-      data: AuditLogResponse;
-    }>(`/audit-logs/${id}`);
-    return response.data;
+  // Get audit logs filtered by module
+  getAuditLogsByModule: async (module: AuditModule, page = 0, size = 20) => {
+    return auditLogService.getAllAuditLogs({ module, page, size });
   },
 
-  getAuditLogsByModule: async (module: AuditModule) => {
-    const response = await axiosClient.get<{
-      statusCode: number;
-      message: string;
-      data: AuditLogResponse[];
-    }>(`/audit-logs/module/${module}`);
-    return response.data;
-  },
-
-  getAuditLogsByUser: async (userId: string) => {
-    const response = await axiosClient.get<{
-      statusCode: number;
-      message: string;
-      data: AuditLogResponse[];
-    }>(`/audit-logs/user/${userId}`);
-    return response.data;
-  },
-
-  getAuditLogsByResource: async (resourceId: string) => {
-    const response = await axiosClient.get<{
-      statusCode: number;
-      message: string;
-      data: AuditLogResponse[];
-    }>(`/audit-logs/resource/${resourceId}`);
-    return response.data;
+  // Get audit logs filtered by actor
+  getAuditLogsByUser: async (actorId: string, page = 0, size = 20) => {
+    return auditLogService.getAllAuditLogs({ actorId, page, size });
   },
 };

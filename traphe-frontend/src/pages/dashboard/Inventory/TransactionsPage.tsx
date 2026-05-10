@@ -162,7 +162,7 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [filterType, filterDateRange]);
 
   // Filter transactions based on selected filters
   const filteredTransactions = transactions.filter((transaction) => {
@@ -267,7 +267,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+      <Card>
         <CardContent className="p-6">
           {/* Loading State */}
           {loading && (
@@ -322,7 +322,7 @@ export default function TransactionsPage() {
               <div className="overflow-hidden rounded-lg">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                    <TableRow>
                       <TableHead className="font-semibold text-slate-600">
                         Time
                       </TableHead>
@@ -348,10 +348,7 @@ export default function TransactionsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredTransactions.map((transaction) => (
-                      <TableRow
-                        key={transaction.id}
-                        className="hover:bg-slate-50/50 border-b last:border-b-0"
-                      >
+                      <TableRow key={transaction.id}>
                         <TableCell className="py-4">
                           <div>
                             <div className="font-medium text-slate-800">
