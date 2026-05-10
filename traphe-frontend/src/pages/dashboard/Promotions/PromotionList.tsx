@@ -71,6 +71,7 @@ import {
   EmptyState,
 } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
+import { exportService, type ExportColumn } from "@/services/export.service";
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
@@ -177,7 +178,16 @@ export default function PromotionListPage() {
         : (response.data as any)?.content || response.data?.data || [];
       console.log("Promotion data:", promotionData);
 
-      setPromotions(Array.isArray(promotionData) ? promotionData : []);
+      const promotionArray = Array.isArray(promotionData) ? promotionData : [];
+
+      // Sort by createdAt descending (newest first)
+      promotionArray.sort((a: PromotionResponse, b: PromotionResponse) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      setPromotions(promotionArray);
     } catch (err: any) {
       console.error("Error fetching promotions:", err);
       if (err.response?.status === 401) {
@@ -509,6 +519,43 @@ export default function PromotionListPage() {
     }
   };
 
+  // Export promotions to Excel
+  const handleExportExcel = () => {
+    if (filteredPromotions.length === 0) {
+      toast.warning("No promotions to export");
+      return;
+    }
+
+    const columns: ExportColumn<PromotionResponse>[] = [
+      { key: "code", header: "Promo Code" },
+      { key: "name", header: "Promotion Name" },
+      { key: "type", header: "Discount Type" },
+      {
+        key: "value",
+        header: "Discount Value",
+        formatter: (value, row) =>
+          row.type === "PERCENTAGE" ? `${value}%` : `$${value}`,
+      },
+      { key: "startDate", header: "Start Date" },
+      { key: "endDate", header: "End Date" },
+      { key: "status", header: "Status" },
+      { key: "usageCount", header: "Usage Count" },
+      { key: "maxUsage", header: "Max Usage" },
+    ];
+
+    try {
+      exportService.exportToExcel(
+        filteredPromotions,
+        columns,
+        "promotions_export",
+      );
+      toast.success("Promotions exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export promotions");
+    }
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -525,6 +572,13 @@ export default function PromotionListPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-end gap-3 mb-6">
+        <Button
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
+          <Download className="mr-2 w-4 h-4" />
+          Export Excel
+        </Button>
         <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsCreateDialogOpen(true)}
@@ -856,7 +910,7 @@ export default function PromotionListPage() {
                       <PaginationLink
                         onClick={() => setCurrentPage(page)}
                         isActive={currentPage === page}
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
                       >
                         {page}
                       </PaginationLink>

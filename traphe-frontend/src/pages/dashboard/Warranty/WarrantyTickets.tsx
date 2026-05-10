@@ -107,6 +107,14 @@ export default function WarrantyTicketsPage() {
         const ticketsData = Array.isArray(ticketsRes.data)
           ? ticketsRes.data
           : [];
+
+        // Sort by createdAt descending (newest first)
+        ticketsData.sort((a: WarrantyTicket, b: WarrantyTicket) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
         setTickets(ticketsData);
       }
       if (statsRes.statusCode === 200 && statsRes.data) {

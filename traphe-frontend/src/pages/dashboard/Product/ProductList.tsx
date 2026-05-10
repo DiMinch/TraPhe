@@ -25,6 +25,7 @@ import {
   Package,
   Loader2,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useState, useEffect } from "react";
@@ -38,6 +39,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { exportService, type ExportColumn } from "@/services/export.service";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -66,6 +68,13 @@ export default function ProductListPage() {
       const response = await productService.getAllProducts();
       // response.data is ProductPageResponse, extract content array
       const productList = response.data?.content || [];
+
+      // Sort by createdAt descending (newest first)
+      productList.sort((a: Product, b: Product) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
 
       setAllProducts(productList);
 
@@ -124,6 +133,40 @@ export default function ProductListPage() {
     fetchProducts(); // Refresh list
   };
 
+  // Export products to Excel
+  const handleExportExcel = () => {
+    if (products.length === 0) {
+      toast.warning("No products to export");
+      return;
+    }
+
+    const columns: ExportColumn<Product>[] = [
+      { key: "sku", header: "SKU" },
+      { key: "name", header: "Product Name" },
+      { key: "categoryName", header: "Category" },
+      {
+        key: "basePrice",
+        header: "Base Price",
+        formatter: (value) => (value ? `$${value.toLocaleString()}` : "$0"),
+      },
+      {
+        key: "discountedPrice",
+        header: "Discounted Price",
+        formatter: (value) => (value ? `$${value.toLocaleString()}` : "$0"),
+      },
+      { key: "stock", header: "Stock" },
+      { key: "status", header: "Status" },
+    ];
+
+    try {
+      exportService.exportToExcel(products, columns, "products_export");
+      toast.success("Products exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export products");
+    }
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -138,6 +181,13 @@ export default function ProductListPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 mb-6 justify-end">
+        <Button
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Excel
+        </Button>
         <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewProductOpen(true)}
@@ -333,7 +383,7 @@ export default function ProductListPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : ""}`}
+                            className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
                           >
                             {page}
                           </PaginationLink>

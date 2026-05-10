@@ -1,5 +1,5 @@
 import axiosClient from "@/lib/axios-client";
-import type { ApiResponse } from "@/types/api.types";
+import type { ApiResponse, PageResponse } from "@/types/api.types";
 
 export interface PurchaseOrderResponse {
   id: string;
@@ -24,12 +24,21 @@ export interface PurchaseOrderResponse {
 
 export interface PurchaseOrderItemResponse {
   id: string;
+  itemType: "PRODUCT" | "PART_COMPONENT";
   productVariant: {
     id: string;
     sku: string;
     variantName: string;
     productName: string;
     purchasePriceAvg: number;
+    sellingPrice: number;
+  } | null;
+  partComponent: {
+    id: string;
+    partNumber: string;
+    partName: string;
+    partType: string;
+    purchasePrice: number;
     sellingPrice: number;
   } | null;
   quantityOrdered: number;
@@ -42,7 +51,8 @@ export interface PurchaseOrderItemResponse {
 
 // Request interfaces for creating/updating
 export interface PurchaseOrderItemRequest {
-  productVariantId: string;
+  productVariantId?: string;
+  partComponentId?: string;
   quantityOrdered: number;
   unitPrice: number;
   warrantyPeriod?: number;
@@ -56,8 +66,10 @@ export interface PurchaseOrderRequest {
 }
 
 export interface ReceiveGoodsItemRequest {
-  productVariantId: string;
+  productVariantId?: string;
+  partComponentId?: string;
   quantityReceived: number;
+  serialNumbers?: string[]; // Required for PRODUCT, not needed for PART_COMPONENT
 }
 
 export interface ReceiveGoodsRequest {
@@ -70,8 +82,13 @@ export const purchaseOrderService = {
   getAllPurchaseOrders: async (params?: {
     supplierId?: string;
     status?: string;
+    page?: number;
+    size?: number;
   }) => {
-    const queryParams: Record<string, string> = {};
+    const queryParams: Record<string, string | number> = {
+      size: params?.size || 100, // Default to large page size
+      page: params?.page || 0,
+    };
 
     if (params?.supplierId && params.supplierId !== "all-suppliers") {
       queryParams.supplierId = params.supplierId;
@@ -80,14 +97,10 @@ export const purchaseOrderService = {
       queryParams.status = params.status.toUpperCase();
     }
 
-    // Only add params if there are any filters
-    const config =
-      Object.keys(queryParams).length > 0 ? { params: queryParams } : {};
-
-    return axiosClient.get<any, ApiResponse<PurchaseOrderResponse[]>>(
-      "/purchase-orders",
-      config,
-    );
+    return axiosClient.get<
+      unknown,
+      ApiResponse<PageResponse<PurchaseOrderResponse>>
+    >("/purchase-orders", { params: queryParams });
   },
 
   // Get purchase order by ID

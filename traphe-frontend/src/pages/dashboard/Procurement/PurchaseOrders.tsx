@@ -25,13 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -43,16 +36,15 @@ import {
   Search,
   Filter,
   Calendar,
-  Edit,
   Trash2,
-  Check,
-  X,
   Loader2,
   ShoppingCart,
+  Download,
+  PackageCheck,
+  FileCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import OrderItemsTable from "./OrderItemsTable";
 import { format } from "date-fns";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import {
@@ -60,15 +52,18 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { toast } from "sonner";
+import { exportService, type ExportColumn } from "@/services/export.service";
 import {
   purchaseOrderService,
   type PurchaseOrderResponse,
-  type PurchaseOrderRequest,
 } from "@/services/purchase-order.service";
 import {
   supplierService,
   type SupplierResponse,
 } from "@/services/supplier.service";
+import CreatePurchaseOrderDialog from "./CreatePurchaseOrderDialog";
+import ReceiveGoodsDialog from "./ReceiveGoodsDialog";
 
 interface PurchaseOrder {
   id: string;
@@ -83,24 +78,14 @@ interface PurchaseOrder {
   status: "DRAFT" | "RECEIVED" | "CLOSED";
 }
 
-interface OrderItem {
-  id: number;
-  productVariantId: string;
-  product: string;
-  sku: string;
-  referenceTicket: string;
-  quantityOrdered: number;
-  quantityReceived: number;
-  unitPrice: string;
-  subtotal: string;
-  warrantyPeriod: number;
-}
-
 export default function PurchaseOrdersPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isNewOrderOpen, setIsNewOrderOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isReceiveDialogOpen, setIsReceiveDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedPOForReceive, setSelectedPOForReceive] =
+    useState<PurchaseOrderResponse | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<{
     id: string;
     poNumber: string;
@@ -149,25 +134,43 @@ export default function PurchaseOrdersPage() {
     setError(null);
     try {
       const response = await purchaseOrderService.getAllPurchaseOrders();
-      // Handle both direct array and paginated response
-      const purchaseOrdersData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || [];
+      console.log("Fetch PO response:", response);
+
+      // Backend returns PageResponse with content array
+      const purchaseOrdersData = response.data?.content || [];
+
+      console.log("Purchase orders data:", purchaseOrdersData);
       const transformedData = purchaseOrdersData.map(transformPurchaseOrder);
+
+      // Sort by created date descending (newest first)
+      transformedData.sort((a, b) => {
+        const dateA = a.createdDate
+          ? new Date(a.createdDate.split("/").reverse().join("-"))
+          : new Date(0);
+        const dateB = b.createdDate
+          ? new Date(b.createdDate.split("/").reverse().join("-"))
+          : new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+
+      console.log("Transformed data:", transformedData);
       setPurchaseOrders(transformedData);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as {
+        response?: { status?: number; data?: { message?: string } };
+      };
       console.error("Error fetching purchase orders:", err);
-      if (err.response?.status === 401) {
+      if (error.response?.status === 401) {
         setError("Authentication required. Please sign in.");
-      } else if (err.response?.status === 403) {
+      } else if (error.response?.status === 403) {
         setError("You don't have permission to view purchase orders.");
-      } else if (err.response?.status === 400) {
+      } else if (error.response?.status === 400) {
         setError(
           "Backend data error. Some purchase order items may have invalid data.",
         );
       } else {
         setError(
-          err.response?.data?.message || "Failed to fetch purchase orders",
+          error.response?.data?.message || "Failed to fetch purchase orders",
         );
       }
     } finally {
@@ -182,7 +185,7 @@ export default function PurchaseOrdersPage() {
       // Handle both direct array and paginated response
       const suppliersData = Array.isArray(response.data)
         ? response.data
-        : (response.data as any)?.content || [];
+        : (response.data as { content?: SupplierResponse[] })?.content || [];
       setSuppliers(suppliersData);
     } catch (err) {
       console.error("Error fetching suppliers:", err);
@@ -193,6 +196,7 @@ export default function PurchaseOrdersPage() {
   useEffect(() => {
     fetchPurchaseOrders();
     fetchSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter purchase orders
@@ -218,120 +222,6 @@ export default function PurchaseOrdersPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentOrders = filteredOrders.slice(startIndex, endIndex);
 
-  const [newOrder, setNewOrder] = useState({
-    supplierId: "",
-    expectedDate: "",
-  });
-
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([
-    {
-      id: 1,
-      productVariantId: "",
-      product: "",
-      sku: "",
-      referenceTicket: "",
-      quantityOrdered: 0,
-      quantityReceived: 0,
-      unitPrice: "",
-      subtotal: "",
-      warrantyPeriod: 0,
-    },
-  ]);
-
-  const handleAddItem = () => {
-    const newItem: OrderItem = {
-      id: orderItems.length + 1,
-      productVariantId: "",
-      product: "",
-      sku: "",
-      referenceTicket: "",
-      quantityOrdered: 0,
-      quantityReceived: 0,
-      unitPrice: "",
-      subtotal: "",
-      warrantyPeriod: 0,
-    };
-    setOrderItems([...orderItems, newItem]);
-  };
-
-  const handleRemoveItem = (id: number) => {
-    setOrderItems(orderItems.filter((item) => item.id !== id));
-  };
-
-  const handleItemChange = (
-    id: number,
-    field: keyof OrderItem,
-    value: unknown,
-  ) => {
-    setOrderItems(
-      orderItems.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
-    );
-  };
-
-  const handleSaveDraft = async () => {
-    try {
-      // Validate
-      if (!newOrder.supplierId) {
-        alert("Please select a supplier");
-        return;
-      }
-      if (orderItems.length === 0 || !orderItems[0].productVariantId) {
-        alert("Please add at least one item");
-        return;
-      }
-
-      const request: PurchaseOrderRequest = {
-        supplierId: newOrder.supplierId,
-        expectedDeliveryDate: newOrder.expectedDate || undefined,
-        items: orderItems
-          .filter((item) => item.productVariantId)
-          .map((item) => ({
-            productVariantId: item.productVariantId,
-            quantityOrdered: item.quantityOrdered,
-            unitPrice: parseFloat(item.unitPrice) || 0,
-            warrantyPeriod: item.warrantyPeriod || 0,
-            referenceTicketId: item.referenceTicket || undefined,
-          })),
-      };
-
-      await purchaseOrderService.createPurchaseOrder(request);
-      setIsNewOrderOpen(false);
-      resetNewOrderForm();
-      fetchPurchaseOrders();
-    } catch (err: any) {
-      console.error("Error creating purchase order:", err);
-      alert(err.response?.data?.message || "Failed to create purchase order");
-    }
-  };
-
-  const resetNewOrderForm = () => {
-    setNewOrder({
-      supplierId: "",
-      expectedDate: "",
-    });
-    setOrderItems([
-      {
-        id: 1,
-        productVariantId: "",
-        product: "",
-        sku: "",
-        referenceTicket: "",
-        quantityOrdered: 0,
-        quantityReceived: 0,
-        unitPrice: "",
-        subtotal: "",
-        warrantyPeriod: 0,
-      },
-    ]);
-  };
-
-  const handleMarkAsOrdered = () => {
-    // For now, this just saves as draft since backend creates in DRAFT status
-    handleSaveDraft();
-  };
-
   const handleDeleteClick = (order: { id: string; poNumber: string }) => {
     setOrderToDelete(order);
     setIsDeleteDialogOpen(true);
@@ -344,10 +234,11 @@ export default function PurchaseOrdersPage() {
         setIsDeleteDialogOpen(false);
         setOrderToDelete(null);
         fetchPurchaseOrders();
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
         console.error("Error deleting purchase order:", err);
         alert(
-          err.response?.data?.message ||
+          error.response?.data?.message ||
             "Failed to delete purchase order. Only DRAFT orders can be deleted.",
         );
       }
@@ -356,24 +247,14 @@ export default function PurchaseOrdersPage() {
 
   const handleReceiveGoods = async (orderId: string) => {
     try {
-      // For simplicity, receive all ordered quantities
-      const order = purchaseOrders.find((po) => po.id === orderId);
-      if (!order) return;
-
-      // Get the full order details to get items
+      // Get the full order details to show in dialog
       const response = await purchaseOrderService.getPurchaseOrderById(orderId);
-      const items = response.data.items
-        .filter((item) => item.productVariant)
-        .map((item) => ({
-          productVariantId: item.productVariant!.id,
-          quantityReceived: item.quantityOrdered,
-        }));
-
-      await purchaseOrderService.receiveGoods(orderId, { items });
-      fetchPurchaseOrders();
-    } catch (err: any) {
-      console.error("Error receiving goods:", err);
-      alert(err.response?.data?.message || "Failed to receive goods");
+      setSelectedPOForReceive(response.data);
+      setIsReceiveDialogOpen(true);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      console.error("Error loading purchase order:", err);
+      alert(error.response?.data?.message || "Failed to load purchase order");
     }
   };
 
@@ -381,9 +262,41 @@ export default function PurchaseOrdersPage() {
     try {
       await purchaseOrderService.closePurchaseOrder(orderId);
       fetchPurchaseOrders();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
       console.error("Error closing order:", err);
-      alert(err.response?.data?.message || "Failed to close purchase order");
+      alert(error.response?.data?.message || "Failed to close purchase order");
+    }
+  };
+
+  // Export purchase orders to Excel
+  const handleExportExcel = () => {
+    if (filteredOrders.length === 0) {
+      toast.warning("No purchase orders to export");
+      return;
+    }
+
+    const columns: ExportColumn<PurchaseOrder>[] = [
+      { key: "poNumber", header: "PO Number" },
+      { key: "createdDate", header: "Created Date" },
+      { key: "supplier", header: "Supplier" },
+      { key: "contactName", header: "Contact Name" },
+      { key: "totalAmount", header: "Total Amount" },
+      { key: "status", header: "Status" },
+      { key: "expectedDate", header: "Expected Delivery" },
+      { key: "actualDate", header: "Actual Delivery" },
+    ];
+
+    try {
+      exportService.exportToExcel(
+        filteredOrders,
+        columns,
+        "purchase_orders_export",
+      );
+      toast.success("Purchase orders exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export purchase orders");
     }
   };
 
@@ -398,13 +311,42 @@ export default function PurchaseOrdersPage() {
       {/* Action Button */}
       <div className="flex justify-end gap-3 mb-6">
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg"
-          onClick={() => setIsNewOrderOpen(true)}
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Excel
+        </Button>
+        <Button
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
-          New Purchase Order
+          Create Purchase Order
         </Button>
       </div>
+
+      {/* Dialogs */}
+      <CreatePurchaseOrderDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={fetchPurchaseOrders}
+      />
+
+      <ReceiveGoodsDialog
+        open={isReceiveDialogOpen}
+        onOpenChange={setIsReceiveDialogOpen}
+        purchaseOrder={selectedPOForReceive}
+        onSuccess={fetchPurchaseOrders}
+      />
+
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        itemName={orderToDelete?.poNumber || "this purchase order"}
+        contextMessage="from the purchase orders list"
+      />
 
       {/* Error Display */}
       {error && (
@@ -593,52 +535,51 @@ export default function PurchaseOrdersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                      <div className="flex items-center justify-center gap-1">
                         {po.status === "DRAFT" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: po.id,
-                                poNumber: po.poNumber,
-                              })
-                            }
-                            title="Delete (DRAFT only)"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {po.status === "DRAFT" && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-green-600"
-                            onClick={() => handleReceiveGoods(po.id)}
-                            title="Receive Goods"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="h-8 px-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white"
+                              onClick={() => handleReceiveGoods(po.id)}
+                              title="Receive Goods"
+                            >
+                              <PackageCheck className="w-4 h-4 mr-1" />
+                              Receive
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: po.id,
+                                  poNumber: po.poNumber,
+                                })
+                              }
+                              title="Delete Draft"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                         {po.status === "RECEIVED" && (
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-blue-600"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 border-blue-300 text-blue-700 hover:bg-blue-50"
                             onClick={() => handleCloseOrder(po.id)}
                             title="Close Order"
                           >
-                            <X className="w-4 h-4" />
+                            <FileCheck className="w-4 h-4 mr-1" />
+                            Close
                           </Button>
+                        )}
+                        {po.status === "CLOSED" && (
+                          <span className="text-slate-400 text-sm">
+                            Completed
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -670,7 +611,7 @@ export default function PurchaseOrdersPage() {
                       <PaginationLink
                         onClick={() => setCurrentPage(page)}
                         isActive={currentPage === page}
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
                       >
                         {page}
                       </PaginationLink>
@@ -694,106 +635,6 @@ export default function PurchaseOrdersPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* New Purchase Order Dialog */}
-      <Dialog open={isNewOrderOpen} onOpenChange={setIsNewOrderOpen}>
-        <DialogContent className="min-w-[90vw] max-h-[90vh] flex flex-col bg-white overflow-hidden">
-          <DialogHeader className="flex flex-row items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">
-              New Product
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsNewOrderOpen(false)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </DialogHeader>
-
-          <div className="space-y-6 overflow-y-auto">
-            {/* Order Information */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Supplier *
-                </Label>
-                <Select
-                  value={newOrder.supplierId}
-                  onValueChange={(value) =>
-                    setNewOrder({ ...newOrder, supplierId: value })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Expected Delivery Date
-                </Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="datetime-local"
-                    value={newOrder.expectedDate}
-                    onChange={(e) =>
-                      setNewOrder({ ...newOrder, expectedDate: e.target.value })
-                    }
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Order Items */}
-            <OrderItemsTable
-              orderItems={orderItems}
-              onItemChange={handleItemChange}
-              onRemoveItem={handleRemoveItem}
-              onAddItem={handleAddItem}
-            />
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setIsNewOrderOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
-                onClick={handleSaveDraft}
-              >
-                Save Draft
-              </Button>
-              <Button
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white"
-                onClick={handleMarkAsOrdered}
-              >
-                Mark as Ordered
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <DeleteConfirmDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        itemName={`PO #${orderToDelete?.poNumber || ""}`}
-        onConfirm={handleDeleteConfirm}
-        contextMessage="from the purchase orders"
-      />
     </PageContainer>
   );
 }

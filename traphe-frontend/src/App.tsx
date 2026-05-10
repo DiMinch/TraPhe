@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "./components/ui/sonner";
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import { UserRole } from "./enums/roles.enum";
 
 // Auth Pages
 import SignUpPage from "./pages/auth/sign-up";
@@ -74,102 +76,472 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
-        {/* Admin */}
+        {/* Admin - Protected Routes */}
         <Route element={<AdminLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/customer" element={<CustomerPage />} />
-          <Route path="/customer/tiers" element={<CustomerTierPage />} />
-          <Route path="/customer/:id" element={<CustomerDetailPage />} />
+          {/* Dashboard - All admin roles */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                  UserRole.ACCOUNTANT,
+                ]}
+              >
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/product" element={<ProductListPage />} />
-          <Route path="/product/productlist" element={<ProductListPage />} />
-          <Route path="/product/detail/:id" element={<ProductDetailPage />} />
-          <Route path="/product/edit/:id" element={<ProductEditPage />} />
+          {/* Customer Management - Admin, Employee, Cashier */}
+          <Route
+            path="/customer"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <CustomerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/tiers"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <CustomerTierPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <CustomerDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/category" element={<CategoryPage />} />
-          <Route path="/category/:id/edit" element={<CategoryEditPage />} />
+          {/* Product Management - Admin, Employee */}
+          <Route
+            path="/product"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <ProductListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/product/productlist"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <ProductListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/product/detail/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <ProductDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/product/edit/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <ProductEditPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/product/categories" element={<CategoriesPage />} />
+          {/* Category Management - Admin, Employee */}
+          <Route
+            path="/category"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <CategoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/category/:id/edit"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <CategoryEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/product/categories"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <CategoriesPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/product/categories/:categoryName/attributes"
-            element={<AttributesPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <AttributesPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/inventory" element={<InventoryOverviewPage />} />
+          {/* Inventory - Admin, Employee */}
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <InventoryOverviewPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/inventory/overview"
-            element={<InventoryOverviewPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <InventoryOverviewPage />
+              </ProtectedRoute>
+            }
           />
-          <Route path="/inventory/all" element={<AllInventoryPage />} />
+          <Route
+            path="/inventory/all"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <AllInventoryPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/inventory/transactions"
-            element={<TransactionsPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <TransactionsPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/procurement" element={<SuppliersPage />} />
-          <Route path="/procurement/suppliers" element={<SuppliersPage />} />
+          {/* Procurement - Admin, Employee */}
+          <Route
+            path="/procurement"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <SuppliersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/procurement/suppliers"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <SuppliersPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/procurement/suppliers/:id"
-            element={<SupplierDetailPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <SupplierDetailPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/procurement/purchase-orders"
-            element={<PurchaseOrdersPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <PurchaseOrdersPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/procurement/purchase-orders/:id"
-            element={<PurchaseOrderDetailPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <PurchaseOrderDetailPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/sales" element={<POSPage />} />
-          <Route path="/sales/pos" element={<POSPage />} />
-          <Route path="/sales/orders" element={<OrdersPage />} />
+          {/* Sales - Admin, Employee, Cashier */}
+          <Route
+            path="/sales"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <POSPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales/pos"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <POSPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales/orders"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <OrdersPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/warranty" element={<WarrantyTicketsPage />} />
-          <Route path="/warranty/tickets" element={<WarrantyTicketsPage />} />
+          {/* Warranty & Service - Admin, Employee */}
+          <Route
+            path="/warranty"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <WarrantyTicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/warranty/tickets"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <WarrantyTicketsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/warranty/tickets/:id"
-            element={<WarrantyTicketDetailPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <WarrantyTicketDetailPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/warranty/service-types"
-            element={<ServiceTypesPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <ServiceTypesPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/warranty/parts-components"
-            element={<PartsAndComponentsPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <PartsAndComponentsPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/user" element={<UserPage />} />
-          <Route path="/audit-logs" element={<AuditLogsPage />} />
+          {/* User Profile - Admin, Employee */}
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
+              >
+                <UserPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/system" element={<ConfigurationsPage />} />
+          {/* Audit Logs - Admin only */}
+          <Route
+            path="/audit-logs"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* System Configuration - Admin only */}
+          <Route
+            path="/system"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <ConfigurationsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/system/configurations"
-            element={<ConfigurationsPage />}
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <ConfigurationsPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/users-roles" element={<UserAccountsPage />} />
+          {/* Users & Roles Management - Admin only */}
+          <Route
+            path="/users-roles"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <UserAccountsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/users-roles/user-accounts"
-            element={<UserAccountsPage />}
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <UserAccountsPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/users-roles/roles-permissions"
-            element={<RolesPermissionsPage />}
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <RolesPermissionsPage />
+              </ProtectedRoute>
+            }
           />
 
-          <Route path="/promotions" element={<PromotionListPage />} />
-          <Route path="/promotions/:id" element={<PromotionDetailPage />} />
+          {/* Promotions - Admin only */}
+          <Route
+            path="/promotions"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <PromotionListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/promotions/:id"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                <PromotionDetailPage />
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/reports" element={<RevenueReportPage />} />
-          <Route path="/reports/revenue" element={<RevenueReportPage />} />
-          <Route path="/reports/profit" element={<ProfitReportPage />} />
+          {/* Reports - Admin, Accountant */}
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}
+              >
+                <RevenueReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/revenue"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}
+              >
+                <RevenueReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/profit"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}
+              >
+                <ProfitReportPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/reports/top-products"
-            element={<TopProductsReportPage />}
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}
+              >
+                <TopProductsReportPage />
+              </ProtectedRoute>
+            }
           />
-          <Route path="/reports/inventory" element={<InventoryReportPage />} />
+          <Route
+            path="/reports/inventory"
+            element={
+              <ProtectedRoute
+                allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}
+              >
+                <InventoryReportPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,17 +8,60 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import { navItems } from "./navItems";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { authService } from "@/services/auth.service";
+import type { UserRole } from "@/enums/roles.enum";
 
 export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
+  // Get current user and their roles
+  const user = authService.getCurrentUser();
+  const userRoles = useMemo(
+    () => (user?.roles || []) as UserRole[],
+    [user?.roles],
+  );
+
+  // Filter navigation items based on user permissions
+  const filteredNavItems = useMemo(() => {
+    return navItems
+      .filter((item) => {
+        // If no allowedRoles specified, show to everyone
+        if (!item.allowedRoles || item.allowedRoles.length === 0) {
+          return true;
+        }
+        // Check if user has any of the allowed roles
+        return item.allowedRoles.some((role) => userRoles.includes(role));
+      })
+      .map((item) => {
+        // Filter sub-items based on permissions
+        if (item.subItems) {
+          const filteredSubItems = item.subItems.filter((subItem) => {
+            if (!subItem.allowedRoles || subItem.allowedRoles.length === 0) {
+              // If sub-item has no specific roles, inherit from parent
+              return true;
+            }
+            return subItem.allowedRoles.some((role) =>
+              userRoles.includes(role),
+            );
+          });
+          return { ...item, subItems: filteredSubItems };
+        }
+        return item;
+      });
+  }, [userRoles]);
+
   const toggleExpand = (path: string) => {
     setExpandedItems((prev) =>
       prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path],
     );
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/sign-in");
   };
 
   return (
@@ -52,7 +95,7 @@ export default function Navigation() {
           className="max-w-none items-start"
         >
           <NavigationMenuList className="flex-col items-start space-x-0 space-y-1 w-full">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               const isExpanded = expandedItems.includes(item.path);
@@ -146,7 +189,7 @@ export default function Navigation() {
       {/* Logout */}
       <div className="p-3 ">
         <button
-          onClick={() => navigate("/sign-in")}
+          onClick={handleLogout}
           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
         >
           <LogOut className="h-4 w-4" />

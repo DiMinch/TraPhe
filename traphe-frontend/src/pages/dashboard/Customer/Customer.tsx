@@ -44,6 +44,7 @@ import {
   UserPlus,
   Crown,
   RefreshCw,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -58,6 +59,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { exportService, type ExportColumn } from "@/services/export.service";
 
 export default function CustomerPage() {
   const navigate = useNavigate();
@@ -97,6 +99,14 @@ export default function CustomerPage() {
         const customersData = Array.isArray(custRes.data)
           ? custRes.data
           : (custRes.data as any)?.content || [];
+
+        // Sort by createdAt descending (newest first)
+        customersData.sort((a: Customer, b: Customer) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
         setCustomers(customersData);
       }
       if (tierRes.statusCode === 200 && tierRes.data) {
@@ -173,6 +183,41 @@ export default function CustomerPage() {
     currentPage * itemsPerPage,
   );
 
+  // Export customers to Excel
+  const handleExportExcel = () => {
+    if (customers.length === 0) {
+      toast.warning("No customers to export");
+      return;
+    }
+
+    const columns: ExportColumn<Customer>[] = [
+      { key: "fullName", header: "Customer Name" },
+      { key: "email", header: "Email" },
+      { key: "phone", header: "Phone" },
+      { key: "tier.name", header: "Tier" },
+      { key: "totalOrders", header: "Total Orders" },
+      {
+        key: "totalSpent",
+        header: "Total Spent",
+        formatter: (value) => (value ? `$${value.toLocaleString()}` : "$0"),
+      },
+      {
+        key: "createdAt",
+        header: "Created Date",
+        formatter: (value) =>
+          value ? format(new Date(value), "dd/MM/yyyy") : "",
+      },
+    ];
+
+    try {
+      exportService.exportToExcel(customers, columns, "customers_export");
+      toast.success("Customers exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export customers");
+    }
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -248,6 +293,13 @@ export default function CustomerPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-end gap-3 mb-6">
+        <Button
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Excel
+        </Button>
         <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewCustomerOpen(true)}

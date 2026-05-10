@@ -104,6 +104,14 @@ export default function AuditLogsPage() {
         const logsData = Array.isArray(response.data)
           ? response.data
           : (response.data as any)?.content || [];
+
+        // Sort by createdAt descending (newest first)
+        logsData.sort((a: AuditLogResponse, b: AuditLogResponse) => {
+          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
         setAuditLogs(logsData);
       }
 

@@ -303,7 +303,7 @@ export default function CreatePurchaseOrderDialog({
         referenceTicketId: item.referenceTicketId,
       }));
 
-      await purchaseOrderService.createPurchaseOrder({
+      const response = await purchaseOrderService.createPurchaseOrder({
         supplierId,
         expectedDeliveryDate: expectedDeliveryDate
           ? `${format(expectedDeliveryDate, "yyyy-MM-dd")}T00:00:00`
@@ -311,13 +311,17 @@ export default function CreatePurchaseOrderDialog({
         items: requestItems,
       });
 
+      console.log("Purchase order created:", response);
       toast.success("Purchase order created successfully");
+
+      // First call onSuccess to refresh the list, then close the dialog
+      await onSuccess();
       handleClose();
-      onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
       console.error("Error creating purchase order:", error);
       toast.error(
-        error.response?.data?.message || "Failed to create purchase order",
+        err.response?.data?.message || "Failed to create purchase order",
       );
     } finally {
       setLoading(false);
