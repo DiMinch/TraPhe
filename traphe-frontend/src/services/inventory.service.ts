@@ -1,6 +1,50 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 
+// ========== Overview Types ==========
+export interface StockValueChartData {
+  label: string;
+  stockValue: number;
+}
+
+export interface OnHandQuantityChartData {
+  label: string;
+  productQuantity: number;
+  componentQuantity: number;
+}
+
+export interface LowStockProductItem {
+  productVariantId: string;
+  productName: string;
+  variantName: string;
+  sku: string;
+  currentStock: number;
+  minThreshold: number;
+  unitPrice: number;
+  imageUrl?: string;
+}
+
+export interface LowStockComponentItem {
+  partComponentId: string;
+  name: string;
+  partType: string;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+  purchasePriceAvg: number;
+}
+
+export interface InventoryOverviewResponse {
+  totalStockValue: number;
+  lowStockProductCount: number;
+  lowStockComponentCount: number;
+  stockValueChartData: StockValueChartData[];
+  onHandQuantityChartData: OnHandQuantityChartData[];
+  lowStockProducts: LowStockProductItem[];
+  lowStockComponents: LowStockComponentItem[];
+}
+
+// ========== Inventory Types ==========
 export interface SupplierInfo {
   id: string;
   name: string;
@@ -44,6 +88,19 @@ export interface InventoryResponse {
 }
 
 export const inventoryService = {
+  // Get inventory overview with statistics and charts
+  getInventoryOverview: async (
+    stockValueTimeRange = "MONTH",
+    onHandQuantityTimeRange = "MONTH",
+  ) => {
+    return axiosClient.get<any, ApiResponse<InventoryOverviewResponse>>(
+      "/inventory/overview",
+      {
+        params: { stockValueTimeRange, onHandQuantityTimeRange },
+      },
+    );
+  },
+
   // Get all inventory items
   getAllInventory: async () => {
     return axiosClient.get<any, ApiResponse<InventoryResponse[]>>("/inventory");

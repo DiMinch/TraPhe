@@ -595,13 +595,13 @@ export default function CreatePurchaseOrderDialog({
                         {item.quantityOrdered}
                       </TableCell>
                       <TableCell className="text-right">
-                        ${item.unitPrice.toLocaleString()}
+                        {item.unitPrice.toLocaleString()}đ
                       </TableCell>
                       <TableCell className="text-right">
                         {item.warrantyPeriod}m
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        ${item.subtotal.toLocaleString()}
+                        {item.subtotal.toLocaleString()}đ
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -619,7 +619,7 @@ export default function CreatePurchaseOrderDialog({
                       Total Amount:
                     </TableCell>
                     <TableCell className="text-right text-lg">
-                      ${totalAmount.toLocaleString()}
+                      {totalAmount.toLocaleString()}đ
                     </TableCell>
                     <TableCell />
                   </TableRow>

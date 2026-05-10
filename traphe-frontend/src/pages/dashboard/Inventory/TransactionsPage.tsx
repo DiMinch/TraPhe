@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, Loader2, ArrowLeftRight, Download } from "lucide-react";
+import { Filter, Loader2, ArrowLeftRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   purchaseOrderService,
@@ -35,6 +35,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -212,16 +213,6 @@ export default function TransactionsPage() {
         subtitle="Track all inventory movements and stock changes"
         onRefresh={fetchTransactions}
       />
-
-      <div className="flex items-center justify-end mb-6">
-        <Button
-          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg"
-          size="sm"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export Excel
-        </Button>
-      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center justify-end gap-3 mb-6">

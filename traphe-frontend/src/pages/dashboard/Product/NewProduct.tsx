@@ -744,7 +744,7 @@ export default function NewProductDialog({
                                   className="h-8"
                                 />
                               ) : (
-                                `$ ${variant.purchasePriceAvg || "0"}`
+                                `${variant.purchasePriceAvg || "0"}đ`
                               )}
                             </TableCell>
                             <TableCell>
@@ -761,7 +761,7 @@ export default function NewProductDialog({
                                   className="h-8"
                                 />
                               ) : (
-                                `$ ${variant.sellingPrice}`
+                                `${variant.sellingPrice}đ`
                               )}
                             </TableCell>
                             <TableCell>

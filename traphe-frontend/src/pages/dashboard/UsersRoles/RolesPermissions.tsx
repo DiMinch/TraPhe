@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,14 +21,25 @@ import {
 } from "@/components/ui/dialog";
 import {
   Plus,
-  Download,
   Edit,
   Trash2,
   Shield,
   Loader2,
   Users,
+  ChevronRight,
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Clipboard,
+  ChartBar,
+  Tag,
+  Settings,
+  UserCog,
+  ClipboardList,
+  Wrench,
+  BarChart3,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import {
   roleService,
@@ -42,18 +52,133 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { UserRole } from "@/enums/roles.enum";
 
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  checked: boolean;
+// Page access configuration for each role
+interface PageAccess {
+  title: string;
+  path: string;
+  icon: React.ComponentType<{ className?: string }>;
+  subPages?: { title: string; path: string }[];
 }
 
-interface PermissionModule {
-  name: string;
-  permissions: Permission[];
-}
+// Define all available pages with their allowed roles
+const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = [
+  {
+    title: "Dashboard",
+    path: "/dashboard",
+    icon: LayoutDashboard,
+    allowedRoles: [
+      UserRole.ADMIN,
+      UserRole.EMPLOYEE,
+      UserRole.CASHIER,
+      UserRole.ACCOUNTANT,
+    ],
+  },
+  {
+    title: "Product",
+    path: "/product",
+    icon: Package,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    subPages: [
+      { title: "Product List", path: "/product/productlist" },
+      { title: "Categories", path: "/product/categories" },
+    ],
+  },
+  {
+    title: "Inventory",
+    path: "/inventory",
+    icon: ShoppingCart,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    subPages: [
+      { title: "Overview", path: "/inventory/overview" },
+      { title: "All Inventory", path: "/inventory/all" },
+      { title: "Transactions", path: "/inventory/transactions" },
+    ],
+  },
+  {
+    title: "Procurement",
+    path: "/procurement",
+    icon: Clipboard,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    subPages: [
+      { title: "Suppliers", path: "/procurement/suppliers" },
+      { title: "Purchase Orders", path: "/procurement/purchase-orders" },
+    ],
+  },
+  {
+    title: "Sales",
+    path: "/sales",
+    icon: ChartBar,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+    subPages: [
+      { title: "POS", path: "/sales/pos" },
+      { title: "Orders", path: "/sales/orders" },
+    ],
+  },
+  {
+    title: "Customers",
+    path: "/customer",
+    icon: Users,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+    subPages: [
+      { title: "Customer List", path: "/customer" },
+      { title: "Customer Tiers", path: "/customer/tiers" },
+    ],
+  },
+  {
+    title: "Warranty & Service",
+    path: "/warranty",
+    icon: Wrench,
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    subPages: [
+      { title: "Warranty Tickets", path: "/warranty/tickets" },
+      { title: "Service Types", path: "/warranty/service-types" },
+      { title: "Parts & Components", path: "/warranty/parts-components" },
+    ],
+  },
+  {
+    title: "Promotions",
+    path: "/promotions",
+    icon: Tag,
+    allowedRoles: [UserRole.ADMIN],
+  },
+  {
+    title: "Reports",
+    path: "/reports",
+    icon: BarChart3,
+    allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT],
+    subPages: [
+      { title: "Revenue Report", path: "/reports/revenue" },
+      { title: "Profit Report", path: "/reports/profit" },
+      { title: "Top Products", path: "/reports/top-products" },
+      { title: "Inventory Report", path: "/reports/inventory" },
+    ],
+  },
+  {
+    title: "System",
+    path: "/system",
+    icon: Settings,
+    allowedRoles: [UserRole.ADMIN],
+    subPages: [{ title: "Configurations", path: "/system/configurations" }],
+  },
+  {
+    title: "Users & Roles",
+    path: "/users-roles",
+    icon: UserCog,
+    allowedRoles: [UserRole.ADMIN],
+    subPages: [
+      { title: "User Accounts", path: "/users-roles/user-accounts" },
+      { title: "Roles & Permissions", path: "/users-roles/roles-permissions" },
+    ],
+  },
+  {
+    title: "Audit Logs",
+    path: "/audit-logs",
+    icon: ClipboardList,
+    allowedRoles: [UserRole.ADMIN],
+  },
+];
 
 export default function RolesPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -65,9 +190,6 @@ export default function RolesPermissionsPage() {
     id: string;
     name: string;
   } | null>(null);
-  const [rolePermissions, setRolePermissions] = useState<
-    Record<string, PermissionModule[]>
-  >({});
 
   // New Role Dialog State
   const [isNewRoleDialogOpen, setIsNewRoleDialogOpen] = useState(false);
@@ -100,12 +222,6 @@ export default function RolesPermissionsPage() {
           ? response.data
           : (response.data as any)?.content || [];
         setRoles(rolesData);
-        // Initialize permissions for each role
-        const initialPermissions: Record<string, PermissionModule[]> = {};
-        rolesData.forEach((role: Role) => {
-          initialPermissions[role.id] = getDefaultPermissions();
-        });
-        setRolePermissions(initialPermissions);
       } else {
         toast.error("Failed to load roles");
       }
@@ -117,114 +233,29 @@ export default function RolesPermissionsPage() {
     }
   };
 
-  const getDefaultPermissions = (): PermissionModule[] => {
-    return [
-      {
-        name: "User Management",
-        permissions: [
-          {
-            id: "user.view",
-            name: "View Users",
-            description: "Can view user list and details",
-            checked: false,
-          },
-          {
-            id: "user.create",
-            name: "Create Users",
-            description: "Can create new users",
-            checked: false,
-          },
-          {
-            id: "user.edit",
-            name: "Edit Users",
-            description: "Can edit user information",
-            checked: false,
-          },
-          {
-            id: "user.delete",
-            name: "Delete Users",
-            description: "Can delete users",
-            checked: false,
-          },
-        ],
-      },
-      {
-        name: "Product Management",
-        permissions: [
-          {
-            id: "product.view",
-            name: "View Products",
-            description: "Can view product list",
-            checked: false,
-          },
-          {
-            id: "product.create",
-            name: "Create Products",
-            description: "Can create new products",
-            checked: false,
-          },
-          {
-            id: "product.edit",
-            name: "Edit Products",
-            description: "Can edit product information",
-            checked: false,
-          },
-          {
-            id: "product.delete",
-            name: "Delete Products",
-            description: "Can delete products",
-            checked: false,
-          },
-        ],
-      },
-      {
-        name: "Order Management",
-        permissions: [
-          {
-            id: "order.view",
-            name: "View Orders",
-            description: "Can view order list",
-            checked: false,
-          },
-          {
-            id: "order.manage",
-            name: "Manage Orders",
-            description: "Can update order status",
-            checked: false,
-          },
-          {
-            id: "order.cancel",
-            name: "Cancel Orders",
-            description: "Can cancel orders",
-            checked: false,
-          },
-        ],
-      },
-    ];
+  // Get the UserRole enum value from role name
+  const getRoleEnum = (roleName: string): UserRole | null => {
+    const roleMap: Record<string, UserRole> = {
+      ROLE_ADMIN: UserRole.ADMIN,
+      ROLE_EMPLOYEE: UserRole.EMPLOYEE,
+      ROLE_CASHIER: UserRole.CASHIER,
+      ROLE_ACCOUNTANT: UserRole.ACCOUNTANT,
+      ROLE_CUSTOMER: UserRole.CUSTOMER,
+    };
+    return roleMap[roleName] || null;
   };
 
-  const permissionModules = selectedRole
-    ? rolePermissions[selectedRole] || getDefaultPermissions()
-    : [];
+  // Get accessible pages for selected role
+  const accessiblePages = useMemo(() => {
+    if (!selectedRole) return [];
+    const role = roles.find((r) => r.id === selectedRole);
+    if (!role) return [];
 
-  const handlePermissionToggle = (
-    moduleIndex: number,
-    permissionId: string,
-  ) => {
-    if (!selectedRole) return;
-    const updatedModules = [...permissionModules];
-    const permission = updatedModules[moduleIndex].permissions.find(
-      (p) => p.id === permissionId,
-    );
-    if (permission) {
-      permission.checked = !permission.checked;
-      setRolePermissions({
-        ...rolePermissions,
-        [selectedRole]: updatedModules,
-      });
-      toast.success("Permission updated (Note: Backend integration pending)");
-    }
-  };
+    const roleEnum = getRoleEnum(role.name);
+    if (!roleEnum) return [];
+
+    return allPages.filter((page) => page.allowedRoles.includes(roleEnum));
+  }, [selectedRole, roles]);
 
   const handleDeleteClick = (role: { id: string; name: string }) => {
     setRoleToDelete(role);
@@ -356,25 +387,9 @@ export default function RolesPermissionsPage() {
     <PageContainer>
       <PageHeader
         title="Roles & Permissions"
-        subtitle="Manage user roles and their access permissions"
+        subtitle="Manage user roles and their page access"
         onRefresh={fetchRoles}
       />
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-3 mb-6">
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
-          <Plus className="mr-2 w-4 h-4" />
-          New User
-        </Button>
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
-          <Plus className="mr-2 w-4 h-4" />
-          Import CSV
-        </Button>
-        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg">
-          <Download className="mr-2 w-4 h-4" />
-          Bulk Update
-        </Button>
-      </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -489,64 +504,77 @@ export default function RolesPermissionsPage() {
           </CardContent>
         </Card>
 
-        {/* Permissions */}
+        {/* Page Access */}
         <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
             <CardTitle className="text-base font-semibold text-slate-800">
-              Permissions
+              Page Access
             </CardTitle>
-            <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8">
-              <Plus className="mr-1 w-4 h-4" />
-              New Permission
-            </Button>
+            {selectedRole && (
+              <span className="text-sm text-slate-500">
+                {accessiblePages.length} pages accessible
+              </span>
+            )}
           </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            {permissionModules.map((module, moduleIndex) => (
-              <div key={module.name} className="bg-slate-50/50 rounded-lg p-4">
-                <h3 className="font-semibold mb-3 text-slate-800">
-                  {module.name}
-                </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-slate-200">
-                      <TableHead className="w-[80px] font-semibold text-slate-600">
-                        Enable
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
-                        Permission
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
-                        Description
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {module.permissions.map((permission) => (
-                      <TableRow
-                        key={permission.id}
-                        className="hover:bg-white/50"
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={permission.checked}
-                            onCheckedChange={() =>
-                              handlePermissionToggle(moduleIndex, permission.id)
-                            }
-                            className="border-slate-300"
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm font-medium text-slate-700">
-                          {permission.name}
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-500">
-                          {permission.description}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          <CardContent className="p-4">
+            {!selectedRole ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Shield className="w-12 h-12 text-slate-300 mb-3" />
+                <p className="text-slate-500 text-sm">
+                  Select a role to view accessible pages
+                </p>
               </div>
-            ))}
+            ) : accessiblePages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Shield className="w-12 h-12 text-slate-300 mb-3" />
+                <p className="text-slate-500 text-sm">
+                  No page access configured for this role
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {accessiblePages.map((page) => {
+                  const IconComponent = page.icon;
+                  return (
+                    <div
+                      key={page.path}
+                      className="bg-slate-50/80 rounded-lg p-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-100 rounded-lg">
+                          <IconComponent className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-slate-800 text-sm">
+                            {page.title}
+                          </p>
+                          <p className="text-xs text-slate-500">{page.path}</p>
+                        </div>
+                        <div className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                          Accessible
+                        </div>
+                      </div>
+                      {page.subPages && page.subPages.length > 0 && (
+                        <div className="mt-2 ml-11 space-y-1">
+                          {page.subPages.map((subPage) => (
+                            <div
+                              key={subPage.path}
+                              className="flex items-center gap-2 text-sm text-slate-600 py-1"
+                            >
+                              <ChevronRight className="w-3 h-3 text-slate-400" />
+                              <span>{subPage.title}</span>
+                              <span className="text-xs text-slate-400">
+                                {subPage.path}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

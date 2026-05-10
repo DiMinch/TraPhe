@@ -19,9 +19,9 @@ import {
   type SupplierResponse,
 } from "@/services/supplier.service";
 import type { Product } from "@/types/product.types";
-import type { Category } from "@/types/category.types";
+import type { Category, CategorySpec } from "@/types/category.types";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageLayout";
 
 export default function ProductEditPage() {
@@ -31,6 +31,8 @@ export default function ProductEditPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
+  const [categorySpecs, setCategorySpecs] = useState<CategorySpec[]>([]);
+  const [specValues, setSpecValues] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
@@ -41,15 +43,146 @@ export default function ProductEditPage() {
     commonSpecs: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [existingSpecKeys, setExistingSpecKeys] = useState<string[]>([]); // Keys from product's commonSpecs
+  const [customSpecs, setCustomSpecs] = useState<
+    { key: string; name: string }[]
+  >([]); // Custom added specs
+  const [newSpecKey, setNewSpecKey] = useState("");
+  const [newSpecName, setNewSpecName] = useState("");
 
   useEffect(() => {
     if (id) {
-      fetchProduct();
       fetchCategories();
       fetchSuppliers();
+      fetchProduct();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Load category specs when categoryId and categories are available
+  useEffect(() => {
+    if (formData.categoryId && categories.length > 0) {
+      const selectedCategory = categories.find(
+        (c) => c.id === formData.categoryId,
+      );
+      if (
+        selectedCategory &&
+        selectedCategory.specs &&
+        selectedCategory.specs.length > 0
+      ) {
+        setCategorySpecs(selectedCategory.specs);
+      } else {
+        // Try to fetch specs directly from API if not in category object
+        fetchCategorySpecs(formData.categoryId);
+      }
+    } else {
+      setCategorySpecs([]);
+    }
+  }, [formData.categoryId, categories]);
+
+  // Parse existing commonSpecs when product data is loaded
+  useEffect(() => {
+    if (formData.commonSpecs) {
+      try {
+        const parsed = JSON.parse(formData.commonSpecs);
+        setSpecValues(parsed);
+        // Store the keys from existing specs
+        const keys = Object.keys(parsed);
+        setExistingSpecKeys(keys);
+
+        // Identify specs that are NOT in category specs (custom specs)
+        const categorySpecKeys = categorySpecs.map((s) => s.specKey);
+        const customKeys = keys.filter(
+          (key) => !categorySpecKeys.includes(key),
+        );
+        setCustomSpecs(
+          customKeys.map((key) => ({
+            key,
+            name: key.replace(/([A-Z])/g, " $1").trim(), // Convert camelCase to readable name
+          })),
+        );
+      } catch {
+        setSpecValues({});
+        setExistingSpecKeys([]);
+        setCustomSpecs([]);
+      }
+    }
+  }, [formData.commonSpecs, categorySpecs]);
+
+  const fetchCategorySpecs = async (categoryId: string) => {
+    try {
+      const response = await categoryService.getSpecs(categoryId);
+      if (response.data) {
+        setCategorySpecs(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load category specs:", error);
+    }
+  };
+
+  // Update commonSpecs JSON when spec values change
+  const handleSpecValueChange = (specKey: string, value: string) => {
+    const newValues = { ...specValues, [specKey]: value };
+    setSpecValues(newValues);
+    // Filter out empty values and convert to JSON
+    const filteredValues = Object.fromEntries(
+      Object.entries(newValues).filter(([, v]) => v && v.trim() !== ""),
+    );
+    setFormData((prev) => ({
+      ...prev,
+      commonSpecs:
+        Object.keys(filteredValues).length > 0
+          ? JSON.stringify(filteredValues)
+          : "",
+    }));
+  };
+
+  // Add a new custom spec
+  const handleAddCustomSpec = () => {
+    if (!newSpecKey.trim()) {
+      toast.error("Spec key is required");
+      return;
+    }
+
+    // Check if key already exists
+    const allKeys = [
+      ...categorySpecs.map((s) => s.specKey),
+      ...customSpecs.map((s) => s.key),
+    ];
+    if (allKeys.includes(newSpecKey)) {
+      toast.error("This spec key already exists");
+      return;
+    }
+
+    const specName =
+      newSpecName.trim() || newSpecKey.replace(/([A-Z])/g, " $1").trim();
+    setCustomSpecs((prev) => [...prev, { key: newSpecKey, name: specName }]);
+    setNewSpecKey("");
+    setNewSpecName("");
+  };
+
+  // Delete a custom spec
+  const handleDeleteSpec = (specKey: string) => {
+    // Remove from custom specs
+    setCustomSpecs((prev) => prev.filter((s) => s.key !== specKey));
+
+    // Remove the value and update formData
+    const newValues = { ...specValues };
+    delete newValues[specKey];
+    setSpecValues(newValues);
+
+    // Update formData.commonSpecs
+    const filteredValues = Object.fromEntries(
+      Object.entries(newValues).filter(([, v]) => v && v.trim() !== ""),
+    );
+    setFormData((prev) => ({
+      ...prev,
+      commonSpecs:
+        Object.keys(filteredValues).length > 0
+          ? JSON.stringify(filteredValues)
+          : "",
+    }));
+  };
 
   const fetchCategories = async () => {
     try {
@@ -308,17 +441,141 @@ export default function ProductEditPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="specs">Common Specs (JSON)</Label>
-              <Textarea
-                id="specs"
-                value={formData.commonSpecs}
-                onChange={(e) =>
-                  setFormData({ ...formData, commonSpecs: e.target.value })
-                }
-                placeholder='{"color": "black", "ram": "8GB"}'
-                rows={6}
-                className="font-mono text-sm"
-              />
+              <Label>Common Specs</Label>
+              <div className="space-y-4 p-4 border rounded-lg bg-slate-50">
+                {/* Category Specs (from category definition) */}
+                {categorySpecs.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                      Category Specs
+                    </p>
+                    {categorySpecs.map((spec) => (
+                      <div key={spec.id} className="space-y-1">
+                        <Label className="text-sm font-medium text-slate-700">
+                          {spec.specName}
+                          {spec.isRequired && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </Label>
+                        {spec.options && spec.options.length > 0 ? (
+                          <Select
+                            value={specValues[spec.specKey] || ""}
+                            onValueChange={(value) =>
+                              handleSpecValueChange(spec.specKey, value)
+                            }
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue
+                                placeholder={`Select ${spec.specName}`}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {spec.options.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Input
+                            value={specValues[spec.specKey] || ""}
+                            onChange={(e) =>
+                              handleSpecValueChange(
+                                spec.specKey,
+                                e.target.value,
+                              )
+                            }
+                            placeholder={`Enter ${spec.specName}`}
+                            type={
+                              spec.dataType === "NUMBER" ? "number" : "text"
+                            }
+                            className="bg-white"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Custom/Existing Specs (not in category definition) */}
+                {customSpecs.length > 0 && (
+                  <div className="space-y-3">
+                    {categorySpecs.length > 0 && (
+                      <hr className="border-slate-200" />
+                    )}
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                      Custom Specs
+                    </p>
+                    {customSpecs.map((spec) => (
+                      <div key={spec.key} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium text-slate-700 capitalize">
+                            {spec.name}
+                          </Label>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteSpec(spec.key)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <Input
+                          value={specValues[spec.key] || ""}
+                          onChange={(e) =>
+                            handleSpecValueChange(spec.key, e.target.value)
+                          }
+                          placeholder={`Enter ${spec.name}`}
+                          className="bg-white"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Custom Spec */}
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                    Add New Spec
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      value={newSpecKey}
+                      onChange={(e) => setNewSpecKey(e.target.value)}
+                      placeholder="Spec key (e.g., color)"
+                      className="bg-white"
+                    />
+                    <Input
+                      value={newSpecName}
+                      onChange={(e) => setNewSpecName(e.target.value)}
+                      placeholder="Display name (optional)"
+                      className="bg-white"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleAddCustomSpec}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Spec
+                  </Button>
+                </div>
+
+                {/* Show message if no specs at all */}
+                {categorySpecs.length === 0 && customSpecs.length === 0 && (
+                  <p className="text-slate-500 text-sm text-center py-2">
+                    {formData.categoryId
+                      ? "No specs defined. Add custom specs below."
+                      : "Select a category or add custom specs below."}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

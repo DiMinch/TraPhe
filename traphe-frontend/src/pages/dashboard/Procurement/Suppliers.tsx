@@ -35,14 +35,12 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Upload,
   Search,
   Edit,
   Trash2,
   Loader2,
   Building2,
   MoreHorizontal,
-  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -58,7 +56,6 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
-import { exportService, type ExportColumn } from "@/services/export.service";
 import { toast } from "sonner";
 
 interface Supplier {
@@ -300,32 +297,6 @@ export default function SuppliersPage() {
     }
   };
 
-  // Export suppliers to Excel
-  const handleExportExcel = () => {
-    if (suppliers.length === 0) {
-      toast.warning("No suppliers to export");
-      return;
-    }
-
-    const columns: ExportColumn<Supplier>[] = [
-      { key: "name", header: "Supplier Name" },
-      { key: "contactName", header: "Contact Name" },
-      { key: "email", header: "Email" },
-      { key: "phone", header: "Phone" },
-      { key: "address", header: "Address" },
-      { key: "totalPOs", header: "Total POs" },
-      { key: "status", header: "Status" },
-    ];
-
-    try {
-      exportService.exportToExcel(suppliers, columns, "suppliers_export");
-      toast.success("Suppliers exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export suppliers");
-    }
-  };
-
   return (
     <PageContainer>
       <PageHeader
@@ -337,29 +308,11 @@ export default function SuppliersPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 mb-6 justify-end">
         <Button
-          onClick={handleExportExcel}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export Excel
-        </Button>
-        <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewSupplierOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           New Supplier
-        </Button>
-        <Button
-          variant="outline"
-          className="border-slate-200 hover:bg-slate-50"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
-        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
-          <Upload className="w-4 h-4 mr-2" />
-          Bulk Update
         </Button>
       </div>
 

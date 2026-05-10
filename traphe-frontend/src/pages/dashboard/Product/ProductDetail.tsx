@@ -433,7 +433,7 @@ export default function ProductDetailPage() {
                           Selling Price
                         </p>
                         <p className="text-2xl font-bold text-green-600 mb-3">
-                          ${variant.sellingPrice.toFixed(2)}
+                          {variant.sellingPrice.toLocaleString()}đ
                         </p>
                         <div className="flex gap-2">
                           <Button

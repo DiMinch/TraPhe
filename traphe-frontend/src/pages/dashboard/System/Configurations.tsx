@@ -118,10 +118,6 @@ export default function ConfigurationsPage() {
           <Plus className="mr-2 w-4 h-4" />
           New Key
         </Button>
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
-          <Plus className="mr-2 w-4 h-4" />
-          Import CSV
-        </Button>
       </div>
 
       {/* Main Card */}

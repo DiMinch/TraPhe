@@ -19,27 +19,35 @@ import {
 } from "@/components/ui/pagination";
 import {
   Plus,
-  Upload,
   Edit,
   Trash2,
   Package,
   Loader2,
-  RefreshCw,
-  Download,
+  Search,
+  Filter,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavigate, useSearchParams } from "react-router";
 import { useState, useEffect } from "react";
 import NewProductDialog from "./NewProduct";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { productService } from "@/services/product.service";
+import { categoryService } from "@/services/category.service";
 import type { Product } from "@/types/product.types";
+import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
 import {
   PageContainer,
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
-import { exportService, type ExportColumn } from "@/services/export.service";
 
 export default function ProductListPage() {
   const navigate = useNavigate();
@@ -57,10 +65,54 @@ export default function ProductListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await categoryService.getAllCategories();
+        setCategories(response.data || []);
+      } catch (error) {
+        console.error("Failed to load categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   // Fetch products from API
   useEffect(() => {
     fetchProducts();
   }, [categoryFilter]);
+
+  // Filter products based on search and category
+  useEffect(() => {
+    let filtered = allProducts;
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(query) ||
+          product.categoryName?.toLowerCase().includes(query) ||
+          product.supplierName?.toLowerCase().includes(query),
+      );
+    }
+
+    // Apply category filter
+    if (selectedCategory && selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (product) => product.categoryName === selectedCategory,
+      );
+    }
+
+    setProducts(filtered);
+    setCurrentPage(1); // Reset to first page on filter change
+  }, [searchQuery, selectedCategory, allProducts]);
 
   const fetchProducts = async () => {
     try {
@@ -69,23 +121,13 @@ export default function ProductListPage() {
       // response.data is ProductPageResponse, extract content array
       const productList = response.data?.content || [];
 
-      // Sort by createdAt descending (newest first)
-      productList.sort((a: Product, b: Product) => {
-        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-
       setAllProducts(productList);
 
       // Filter products by category if category filter is provided
       if (categoryFilter) {
         const filtered = productList.filter((product) => {
-          // Match products where category name or parent category name matches
-          return (
-            product.categoryName === categoryFilter ||
-            product.parentCategoryName === categoryFilter
-          );
+          // Match products where category name matches
+          return product.categoryName === categoryFilter;
         });
         setProducts(filtered);
       } else {
@@ -133,40 +175,6 @@ export default function ProductListPage() {
     fetchProducts(); // Refresh list
   };
 
-  // Export products to Excel
-  const handleExportExcel = () => {
-    if (products.length === 0) {
-      toast.warning("No products to export");
-      return;
-    }
-
-    const columns: ExportColumn<Product>[] = [
-      { key: "sku", header: "SKU" },
-      { key: "name", header: "Product Name" },
-      { key: "categoryName", header: "Category" },
-      {
-        key: "basePrice",
-        header: "Base Price",
-        formatter: (value) => (value ? `$${value.toLocaleString()}` : "$0"),
-      },
-      {
-        key: "discountedPrice",
-        header: "Discounted Price",
-        formatter: (value) => (value ? `$${value.toLocaleString()}` : "$0"),
-      },
-      { key: "stock", header: "Stock" },
-      { key: "status", header: "Status" },
-    ];
-
-    try {
-      exportService.exportToExcel(products, columns, "products_export");
-      toast.success("Products exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export products");
-    }
-  };
-
   return (
     <PageContainer>
       <PageHeader
@@ -179,80 +187,144 @@ export default function ProductListPage() {
         onRefresh={fetchProducts}
       />
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3 mb-6 justify-end">
-        <Button
-          onClick={handleExportExcel}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export Excel
-        </Button>
-        <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
-          onClick={() => setIsNewProductOpen(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Product
-        </Button>
-        <Button
-          variant="outline"
-          className="border-slate-200 hover:bg-slate-50"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
-        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
-          <Upload className="w-4 h-4 mr-2" />
-          Bulk Update
-        </Button>
-      </div>
+      {/* Search, Filter & Actions */}
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden mb-6">
+        <CardContent className="p-0">
+          <div className="p-4 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+              {/* Search Input */}
+              <div className="relative flex-1 min-w-0 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search products by name, category, supplier..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-slate-500" />
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                  >
+                    <SelectTrigger className="w-[180px] h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* New Product Button */}
+                <Button
+                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+                  onClick={() => setIsNewProductOpen(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Product
+                </Button>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {(searchQuery || selectedCategory !== "all") && (
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                <span className="text-slate-500">Active filters:</span>
+                {searchQuery && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    Search: "{searchQuery}" ×
+                  </Badge>
+                )}
+                {selectedCategory !== "all" && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer"
+                    onClick={() => setSelectedCategory("all")}
+                  >
+                    Category: {selectedCategory} ×
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-slate-500 hover:text-slate-700 h-6 px-2"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("all");
+                  }}
+                >
+                  Clear all
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Product List Card */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6">
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-0">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="mt-3 text-slate-500 font-medium">
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 animate-pulse"></div>
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <span className="mt-4 text-slate-500 font-medium">
                 Loading products...
               </span>
             </div>
           ) : products.length === 0 ? (
-            <EmptyState
-              icon={<Package className="w-8 h-8 text-slate-400" />}
-              title="No products found"
-              description={
-                categoryFilter
-                  ? "Try clearing the category filter"
-                  : "Start by adding your first product"
-              }
-            />
+            <div className="p-6">
+              <EmptyState
+                icon={<Package className="w-10 h-10 text-slate-400" />}
+                title="No products found"
+                description={
+                  categoryFilter
+                    ? "Try clearing the category filter"
+                    : "Start by adding your first product"
+                }
+              />
+            </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                      <TableHead className="font-semibold text-slate-600">
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 hover:bg-slate-50 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-700 py-4">
                         Image
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Name
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Category
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Supplier
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Variants
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Status
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-600">
+                      <TableHead className="font-semibold text-slate-700">
                         Actions
                       </TableHead>
                     </TableRow>
@@ -261,13 +333,13 @@ export default function ProductListPage() {
                     {currentProducts.map((product) => (
                       <TableRow
                         key={product.id}
-                        className="cursor-pointer border-slate-50 hover:bg-slate-50/50 transition-colors"
+                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
                         onClick={() =>
                           navigate(`/product/detail/${product.id}`)
                         }
                       >
-                        <TableCell>
-                          <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                        <TableCell className="py-4">
+                          <div className="w-14 h-14 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl flex items-center justify-center overflow-hidden shadow-sm border border-slate-200/50">
                             {product.imageUrl ? (
                               <img
                                 src={product.imageUrl}
@@ -275,13 +347,13 @@ export default function ProductListPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <Package className="w-5 h-5 text-slate-400" />
+                              <Package className="w-6 h-6 text-slate-400" />
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium text-slate-800">
+                            <div className="font-semibold text-slate-800">
                               {product.name}
                             </div>
                             <div className="text-sm text-slate-500">
@@ -292,27 +364,27 @@ export default function ProductListPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0 font-medium">
                             {product.categoryName || "N/A"}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0">
+                          <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 font-medium">
                             {product.supplierName || "N/A"}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span className="text-slate-600">
+                          <span className="text-slate-600 font-medium">
                             {product.variants?.length || 0} variant(s)
                           </span>
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={
+                            className={`font-medium ${
                               product.status === "ACTIVE"
-                                ? "bg-green-100 text-green-700 hover:bg-green-100 border-0"
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0"
                                 : "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0"
-                            }
+                            }`}
                           >
                             {product.status || "ACTIVE"}
                           </Badge>
@@ -325,7 +397,7 @@ export default function ProductListPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-amber-50 text-slate-600 hover:text-amber-600"
+                              className="h-9 w-9 hover:bg-amber-50 text-slate-600 hover:text-amber-600 rounded-lg transition-colors"
                               onClick={() =>
                                 navigate(`/product/edit/${product.id}`)
                               }
@@ -335,7 +407,7 @@ export default function ProductListPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-red-50 text-slate-600 hover:text-red-600"
+                              className="h-9 w-9 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-lg transition-colors"
                               onClick={() =>
                                 handleDeleteClick({
                                   id: product.id,
@@ -354,23 +426,26 @@ export default function ProductListPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 bg-gradient-to-r from-slate-50/50 to-white">
                 <p className="text-sm text-slate-500">
                   Showing{" "}
-                  <span className="font-medium">
+                  <span className="font-semibold text-slate-700">
                     {startIndex + 1}-{Math.min(endIndex, products.length)}
                   </span>{" "}
-                  of <span className="font-medium">{products.length}</span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-slate-700">
+                    {products.length}
+                  </span>{" "}
                   products
                 </p>
                 <Pagination>
-                  <PaginationContent>
+                  <PaginationContent className="gap-1">
                     <PaginationItem>
                       <PaginationPrevious
                         onClick={() =>
                           setCurrentPage((prev) => Math.max(1, prev - 1))
                         }
-                        className={`hover:bg-slate-100 ${
+                        className={`rounded-lg hover:bg-slate-100 ${
                           currentPage === 1
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"
@@ -383,7 +458,7 @@ export default function ProductListPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
+                            className={`cursor-pointer rounded-lg ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 border-0" : "text-slate-600 hover:bg-slate-100"}`}
                           >
                             {page}
                           </PaginationLink>
@@ -397,7 +472,7 @@ export default function ProductListPage() {
                             Math.min(totalPages, prev + 1),
                           )
                         }
-                        className={`hover:bg-slate-100 ${
+                        className={`rounded-lg hover:bg-slate-100 ${
                           currentPage === totalPages
                             ? "pointer-events-none opacity-50"
                             : "cursor-pointer"

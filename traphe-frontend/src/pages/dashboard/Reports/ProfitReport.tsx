@@ -20,6 +20,7 @@ import {
   FileDown,
   Loader2,
   Percent,
+  Calendar,
 } from "lucide-react";
 import {
   reportService,
@@ -48,7 +49,9 @@ export default function ProfitReport() {
         startDate,
         endDate,
       });
-      setReport(response.data);
+      // axios interceptor returns response.data, so use response directly or response.data if wrapped
+      const reportData = (response as any).data ?? response;
+      setReport(reportData as ProfitReportResponse);
     } catch (error) {
       console.error("Profit report error:", error);
       const errorMessage =
@@ -83,17 +86,43 @@ export default function ProfitReport() {
 
   return (
     <PageContainer>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Profit Report</h1>
-        <p className="text-gray-600 mt-1">
-          Analyze profit margins by product performance
-        </p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Profit Report</h1>
+          <p className="text-gray-600 mt-1">
+            Analyze profit margins by product performance
+          </p>
+        </div>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("CSV")}
+            disabled={exporting}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("PDF")}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -115,8 +144,12 @@ export default function ProfitReport() {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={fetchReport} className="flex-1">
+            <div className="flex items-end">
+              <Button
+                onClick={fetchReport}
+                variant="outline"
+                className="w-full text-black"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Apply
               </Button>
@@ -142,7 +175,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${report.totalRevenue.toLocaleString()}
+                  {report.totalRevenue?.toLocaleString() || 0}đ
                 </div>
               </CardContent>
             </Card>
@@ -156,7 +189,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  ${report.totalCost.toLocaleString()}
+                  {report.totalCost?.toLocaleString() || 0}đ
                 </div>
               </CardContent>
             </Card>
@@ -170,7 +203,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  ${report.grossProfit.toLocaleString()}
+                  {report.grossProfit?.toLocaleString() || 0}đ
                 </div>
               </CardContent>
             </Card>
@@ -184,7 +217,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {report.profitMargin.toFixed(2)}%
+                  {(report.profitMargin || 0).toFixed(2)}%
                 </div>
               </CardContent>
             </Card>
@@ -230,7 +263,7 @@ export default function ProfitReport() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {report.products.length === 0 ? (
+                    {!report.details || report.details.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={7}
@@ -240,8 +273,8 @@ export default function ProfitReport() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      report.products.map((product) => (
-                        <TableRow key={product.productId}>
+                      report.details.map((product) => (
+                        <TableRow key={product.productVariantId}>
                           <TableCell className="font-medium">
                             {product.productName}
                           </TableCell>
@@ -252,33 +285,33 @@ export default function ProfitReport() {
                             {product.quantitySold}
                           </TableCell>
                           <TableCell className="text-right">
-                            ${product.revenue.toLocaleString()}
+                            {product.revenue?.toLocaleString() || 0}đ
                           </TableCell>
                           <TableCell className="text-right text-red-600">
-                            ${product.cost.toLocaleString()}
+                            {product.cost?.toLocaleString() || 0}đ
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             <span
                               className={
-                                product.profit >= 0
+                                (product.grossProfit || 0) >= 0
                                   ? "text-green-600"
                                   : "text-red-600"
                               }
                             >
-                              ${product.profit.toLocaleString()}
+                              {product.grossProfit?.toLocaleString() || 0}đ
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
                             <Badge
                               variant={
-                                product.profitMargin >= 20
+                                (product.profitMargin || 0) >= 20
                                   ? "default"
-                                  : product.profitMargin >= 10
+                                  : (product.profitMargin || 0) >= 10
                                     ? "secondary"
                                     : "destructive"
                               }
                             >
-                              {product.profitMargin.toFixed(2)}%
+                              {(product.profitMargin || 0).toFixed(2)}%
                             </Badge>
                           </TableCell>
                         </TableRow>

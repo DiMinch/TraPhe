@@ -22,7 +22,6 @@ import {
   AlertCircle,
   Activity,
   Clock,
-  RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -102,22 +101,45 @@ export default function WarrantyTicketsPage() {
         warrantyService.getDashboardStats(),
       ]);
 
-      if (ticketsRes.statusCode === 200 && ticketsRes.data) {
-        // Ensure data is an array
-        const ticketsData = Array.isArray(ticketsRes.data)
-          ? ticketsRes.data
-          : [];
+      console.log("Tickets API Response:", ticketsRes);
 
-        // Sort by createdAt descending (newest first)
+      // Handle response - ticketsRes is ApiResponse<WarrantyTicket[]>
+      // ticketsRes.data should be the array or paginated object
+      let ticketsData: WarrantyTicket[] = [];
+
+      if (ticketsRes && ticketsRes.statusCode === 200) {
+        const responseData = ticketsRes.data;
+
+        if (Array.isArray(responseData)) {
+          // Direct array response
+          ticketsData = responseData;
+        } else if (responseData && typeof responseData === "object") {
+          // Cast to any to check various shapes
+          const data = responseData as any;
+          // Check for paginated response with 'content' field
+          if (Array.isArray(data.content)) {
+            ticketsData = data.content;
+          }
+        }
+      } else if (Array.isArray(ticketsRes)) {
+        // Response might already be unwrapped to just the array
+        ticketsData = ticketsRes as unknown as WarrantyTicket[];
+      }
+
+      console.log("Parsed tickets:", ticketsData.length, ticketsData);
+
+      // Sort by createdAt descending (newest first)
+      if (ticketsData.length > 0) {
         ticketsData.sort((a: WarrantyTicket, b: WarrantyTicket) => {
           const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
           const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
           return dateB.getTime() - dateA.getTime();
         });
-
-        setTickets(ticketsData);
       }
-      if (statsRes.statusCode === 200 && statsRes.data) {
+
+      setTickets(ticketsData);
+
+      if (statsRes && statsRes.statusCode === 200 && statsRes.data) {
         setStats(statsRes.data);
       }
     } catch (error) {
@@ -284,131 +306,139 @@ export default function WarrantyTicketsPage() {
         </div>
       )}
 
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search by Ticket No, Serial, Customer..."
-                className="pl-10 bg-white border-slate-200 focus:border-primary"
+                className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
               />
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="mt-3 text-slate-500 font-medium">
-                Loading tickets...
-              </span>
-            </div>
-          ) : tickets.length === 0 ? (
-            <EmptyState
-              icon={<Ticket className="w-8 h-8 text-slate-400" />}
-              title="No tickets found"
-              description="Create your first warranty ticket"
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                    <TableHead className="font-semibold text-slate-600">
-                      Ticket No
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Customer
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Product / Serial
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Received Date
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Status
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Technician
-                    </TableHead>
-                    <TableHead className="text-center font-semibold text-slate-600">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tickets.map((ticket) => (
-                    <TableRow
-                      key={ticket.id}
-                      className="cursor-pointer border-slate-50 hover:bg-slate-50/50 transition-colors"
-                      onClick={() => navigate(`/warranty/tickets/${ticket.id}`)}
-                    >
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="font-mono bg-indigo-50 text-indigo-700 border-indigo-200"
-                        >
-                          {ticket.ticketNumber}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-slate-800">
-                          {ticket.customerName}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {ticket.customerPhone}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="truncate max-w-[150px] text-slate-800">
-                          {ticket.productName}
-                        </div>
-                        <div className="text-xs text-slate-500 font-mono">
-                          {ticket.serialNumber}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {format(new Date(ticket.receivedDate), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                      <TableCell className="text-slate-600">
-                        {ticket.technicianName || (
-                          <span className="text-slate-400">Unassigned</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            className="cursor-pointer"
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                          >
-                            <Edit className="w-4 h-4 text-slate-600 hover:text-primary" />
-                          </Button>
-                          <Button
-                            className="cursor-pointer"
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setTicketToDelete(ticket);
-                              setIsDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4 text-slate-600 hover:text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
+          <div className="p-6">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                </div>
+                <span className="mt-4 text-slate-600 font-medium">
+                  Loading tickets...
+                </span>
+              </div>
+            ) : tickets.length === 0 ? (
+              <EmptyState
+                icon={<Ticket className="w-8 h-8 text-slate-400" />}
+                title="No tickets found"
+                description="Create your first warranty ticket"
+              />
+            ) : (
+              <div className="rounded-xl border border-slate-200/60 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100/50">
+                      <TableHead className="font-semibold text-slate-700">
+                        Ticket No
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Customer
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Product / Serial
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Received Date
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Status
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Technician
+                      </TableHead>
+                      <TableHead className="text-center font-semibold text-slate-700">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {tickets.map((ticket) => (
+                      <TableRow
+                        key={ticket.id}
+                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        onClick={() =>
+                          navigate(`/warranty/tickets/${ticket.id}`)
+                        }
+                      >
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="font-mono bg-indigo-50 text-indigo-700 border-indigo-200 rounded-full px-3"
+                          >
+                            {ticket.ticketNumber}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium text-slate-800">
+                            {ticket.customerName}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {ticket.customerPhone}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="truncate max-w-[150px] text-slate-800">
+                            {ticket.productName}
+                          </div>
+                          <div className="text-xs text-slate-500 font-mono">
+                            {ticket.serialNumber}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {format(new Date(ticket.receivedDate), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                        <TableCell className="text-slate-600">
+                          {ticket.technicianName || (
+                            <span className="text-slate-400 italic">
+                              Unassigned
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              className="cursor-pointer h-9 w-9 rounded-lg hover:bg-indigo-50 transition-colors"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <Edit className="w-4 h-4 text-indigo-600" />
+                            </Button>
+                            <Button
+                              className="cursor-pointer h-9 w-9 rounded-lg hover:bg-red-50 transition-colors"
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTicketToDelete(ticket);
+                                setIsDeleteOpen(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

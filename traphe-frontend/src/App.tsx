@@ -28,6 +28,7 @@ import SupplierDetailPage from "./pages/dashboard/Procurement/SupplierDetail";
 import PurchaseOrderDetailPage from "./pages/dashboard/Procurement/PurchaseOrderDetail";
 import POSPage from "./pages/dashboard/Sales/POS";
 import OrdersPage from "./pages/dashboard/Sales/Orders";
+import OrderDetailPage from "./pages/dashboard/Sales/OrderDetail";
 import WarrantyTicketsPage from "./pages/dashboard/Warranty/WarrantyTickets";
 import WarrantyTicketDetailPage from "./pages/dashboard/Warranty/WarrantyTicketDetail";
 import ServiceTypesPage from "./pages/dashboard/Warranty/ServiceTypes";
@@ -351,6 +352,20 @@ function App() {
                 ]}
               >
                 <OrdersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/sales/orders/:id"
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  UserRole.ADMIN,
+                  UserRole.EMPLOYEE,
+                  UserRole.CASHIER,
+                ]}
+              >
+                <OrderDetailPage />
               </ProtectedRoute>
             }
           />

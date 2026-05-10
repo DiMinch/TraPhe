@@ -19,7 +19,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, Trophy, RefreshCw, FileDown, Loader2 } from "lucide-react";
+import {
+  Download,
+  Trophy,
+  RefreshCw,
+  FileDown,
+  Loader2,
+  Calendar,
+} from "lucide-react";
 import {
   reportService,
   type TopProductsReportResponse,
@@ -51,7 +58,9 @@ export default function TopProductsReport() {
         sortBy,
         limit,
       });
-      setReport(response.data);
+      // axios interceptor returns response.data, so use response directly or response.data if wrapped
+      const reportData = (response as any).data ?? response;
+      setReport(reportData as TopProductsReportResponse);
     } catch (error) {
       console.error("Top products report error:", error);
       const errorMessage =
@@ -99,19 +108,45 @@ export default function TopProductsReport() {
 
   return (
     <PageContainer>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Top Products Report
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Discover best-selling products by quantity or revenue
-        </p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Top Products Report
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Discover best-selling products by quantity or revenue
+          </p>
+        </div>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("CSV")}
+            disabled={exporting}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("PDF")}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -165,8 +200,12 @@ export default function TopProductsReport() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={fetchReport} className="flex-1">
+            <div className="flex items-end">
+              <Button
+                onClick={fetchReport}
+                variant="outline"
+                className="w-full"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Apply
               </Button>
@@ -182,11 +221,11 @@ export default function TopProductsReport() {
       ) : report ? (
         <>
           {/* Top 3 Highlights */}
-          {report.products.length >= 3 && (
+          {report.topProducts && report.topProducts.length >= 3 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {report.products.slice(0, 3).map((product, index) => (
+              {report.topProducts.slice(0, 3).map((product, index) => (
                 <Card
-                  key={product.productId}
+                  key={product.productVariantId}
                   className="relative overflow-hidden"
                 >
                   <div
@@ -211,13 +250,13 @@ export default function TopProductsReport() {
                       <div>
                         <div className="text-muted-foreground">Revenue</div>
                         <div className="font-semibold">
-                          ${product.revenue.toLocaleString()}
+                          {product.totalRevenue?.toLocaleString() || 0}đ
                         </div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">Qty Sold</div>
                         <div className="font-semibold">
-                          {product.quantitySold}
+                          {product.quantitySold || 0}
                         </div>
                       </div>
                     </div>
@@ -263,23 +302,21 @@ export default function TopProductsReport() {
                       <TableHead>SKU</TableHead>
                       <TableHead className="text-right">Qty Sold</TableHead>
                       <TableHead className="text-right">Revenue</TableHead>
-                      <TableHead className="text-right">Orders</TableHead>
-                      <TableHead className="text-right">Avg Price</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {report.products.length === 0 ? (
+                    {!report.topProducts || report.topProducts.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={8}
+                          colSpan={6}
                           className="text-center text-muted-foreground"
                         >
                           No products sold in this period
                         </TableCell>
                       </TableRow>
                     ) : (
-                      report.products.map((product) => (
-                        <TableRow key={product.productId}>
+                      report.topProducts.map((product) => (
+                        <TableRow key={product.productVariantId}>
                           <TableCell>
                             <Badge className={getRankBadgeColor(product.rank)}>
                               #{product.rank}
@@ -295,16 +332,10 @@ export default function TopProductsReport() {
                             {product.sku}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
-                            {product.quantitySold}
+                            {product.quantitySold || 0}
                           </TableCell>
                           <TableCell className="text-right font-semibold">
-                            ${product.revenue.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {product.orders}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            ${product.averagePrice.toLocaleString()}
+                            {product.totalRevenue?.toLocaleString() || 0}đ
                           </TableCell>
                         </TableRow>
                       ))

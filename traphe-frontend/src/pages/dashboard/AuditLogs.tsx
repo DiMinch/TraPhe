@@ -168,15 +168,15 @@ export default function AuditLogsPage() {
       />
 
       {/* Main Card */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6">
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-0">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
             <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search by Resource ID, Actor or Module"
-                className="pl-10 bg-white border-slate-200"
+                className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -185,7 +185,7 @@ export default function AuditLogsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 border-slate-200 hover:bg-slate-50"
+              className="shrink-0 border-slate-200 hover:bg-white hover:border-indigo-500 rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
             >
               <Filter className="w-4 h-4" />
             </Button>
@@ -194,7 +194,7 @@ export default function AuditLogsPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="shrink-0 h-9 border-slate-200 hover:bg-slate-50"
+                  className="shrink-0 h-10 border-slate-200 hover:bg-white hover:border-indigo-500 rounded-lg shadow-sm transition-all duration-200"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   {dateRange.from ? (
@@ -228,20 +228,20 @@ export default function AuditLogsPage() {
             </Popover>
 
             <Select value={selectedActor} onValueChange={setSelectedActor}>
-              <SelectTrigger className="w-36 border-slate-200">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                 <SelectValue placeholder="All actor" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                 <SelectItem value="all-actor">All actor</SelectItem>
                 {/* TODO: Populate from actual user list */}
               </SelectContent>
             </Select>
 
             <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-36 border-slate-200">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                 <SelectValue placeholder="All action" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                 <SelectItem value="all-action">All action</SelectItem>
                 <SelectItem value="CREATE">CREATE</SelectItem>
                 <SelectItem value="UPDATE">UPDATE</SelectItem>
@@ -258,10 +258,10 @@ export default function AuditLogsPage() {
             </Select>
 
             <Select value={selectedModule} onValueChange={setSelectedModule}>
-              <SelectTrigger className="w-36 border-slate-200">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
                 <SelectValue placeholder="All module" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                 <SelectItem value="all-module">All module</SelectItem>
                 <SelectItem value="INVOICE">INVOICE</SelectItem>
                 <SelectItem value="PRODUCT">PRODUCT</SelectItem>
@@ -278,174 +278,200 @@ export default function AuditLogsPage() {
             </Select>
           </div>
 
-          {/* Loading State */}
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-              <span className="ml-3 text-slate-600">Loading audit logs...</span>
-            </div>
-          ) : error?.includes("permission") ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <ShieldAlert className="w-12 h-12 text-amber-500" />
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Access Restricted
-                </h3>
-                <p className="text-sm text-slate-600 max-w-md">
-                  You don't have permission to view audit logs. This feature is
-                  available for administrators only.
-                </p>
-                <div className="text-xs text-slate-500 mt-4">
-                  Contact your system administrator if you believe you should
-                  have access.
+          <div className="p-6">
+            {/* Loading State */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                </div>
+                <span className="ml-3 text-slate-600 mt-4">
+                  Loading audit logs...
+                </span>
+              </div>
+            ) : error?.includes("permission") ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <ShieldAlert className="w-12 h-12 text-amber-500" />
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Access Restricted
+                  </h3>
+                  <p className="text-sm text-slate-600 max-w-md">
+                    You don't have permission to view audit logs. This feature
+                    is available for administrators only.
+                  </p>
+                  <div className="text-xs text-slate-500 mt-4">
+                    Contact your system administrator if you believe you should
+                    have access.
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : error?.includes("Server error") ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <ServerCrash className="w-12 h-12 text-red-500" />
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Server Error
-                </h3>
-                <p className="text-sm text-slate-600 max-w-md">
-                  Unable to connect to the audit logs service. The backend
-                  server may be experiencing issues.
-                </p>
-                <div className="text-xs text-slate-500 mt-4">
-                  <p>Possible causes:</p>
-                  <ul className="list-disc list-inside text-left mx-auto max-w-xs mt-2">
-                    <li>Backend server is not running</li>
-                    <li>Database connection error</li>
-                    <li>API endpoint misconfiguration</li>
-                  </ul>
+            ) : error?.includes("Server error") ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <ServerCrash className="w-12 h-12 text-red-500" />
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Server Error
+                  </h3>
+                  <p className="text-sm text-slate-600 max-w-md">
+                    Unable to connect to the audit logs service. The backend
+                    server may be experiencing issues.
+                  </p>
+                  <div className="text-xs text-slate-500 mt-4">
+                    <p>Possible causes:</p>
+                    <ul className="list-disc list-inside text-left mx-auto max-w-xs mt-2">
+                      <li>Backend server is not running</li>
+                      <li>Database connection error</li>
+                      <li>API endpoint misconfiguration</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleRefresh}
+                    className="border-slate-300"
+                  >
+                    Try Again
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      window.open(
+                        "http://localhost:8080/swagger-ui/index.html",
+                        "_blank",
+                      )
+                    }
+                  >
+                    Check Backend Status
+                  </Button>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleRefresh}
-                  className="border-slate-300"
-                >
-                  Try Again
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    window.open(
-                      "http://localhost:8080/swagger-ui/index.html",
-                      "_blank",
-                    )
-                  }
-                >
-                  Check Backend Status
-                </Button>
-              </div>
-            </div>
-          ) : error ? (
-            <EmptyState
-              icon={<ClipboardList className="w-8 h-8 text-red-400" />}
-              title="Error loading audit logs"
-              description={error}
-            />
-          ) : filteredLogs.length === 0 ? (
-            <EmptyState
-              icon={<ClipboardList className="w-8 h-8 text-slate-400" />}
-              title="No audit logs found"
-              description="Activity logs will appear here as actions are performed"
-            />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                  <TableHead className="font-semibold text-slate-600">
-                    Timestamp
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-600">
-                    Actor
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-600">
-                    Action
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-600">
-                    Module
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-600">
-                    Resource ID
-                  </TableHead>
-                  <TableHead className="font-semibold text-slate-600">
-                    Details
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => (
-                  <TableRow key={log.id} className="hover:bg-slate-50/50">
-                    <TableCell className="text-slate-600">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-slate-800">
-                      {log.actorName || `User ${log.actorId}`}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-medium">
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-slate-800">
-                        {log.module}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-indigo-600">
-                        {log.resourceId || "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-slate-500">
-                        {log.oldValue && log.newValue ? (
-                          <div className="space-y-1">
-                            <div className="text-red-600">
-                              Old: {log.oldValue}
-                            </div>
-                            <div className="text-green-600">
-                              New: {log.newValue}
-                            </div>
+            ) : error ? (
+              <EmptyState
+                icon={<ClipboardList className="w-8 h-8 text-red-400" />}
+                title="Error loading audit logs"
+                description={error}
+              />
+            ) : filteredLogs.length === 0 ? (
+              <EmptyState
+                icon={<ClipboardList className="w-8 h-8 text-slate-400" />}
+                title="No audit logs found"
+                description="Activity logs will appear here as actions are performed"
+              />
+            ) : (
+              <div className="rounded-xl border border-slate-200/60 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100/50">
+                      <TableHead className="font-semibold text-slate-700">
+                        Timestamp
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Actor
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Action
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Module
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Resource ID
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Details
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLogs.map((log) => (
+                      <TableRow
+                        key={log.id}
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                      >
+                        <TableCell className="text-slate-600">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-slate-800 font-medium">
+                          {log.actorName || `User ${log.actorId}`}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="font-medium rounded-full px-3"
+                          >
+                            {log.action}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100 rounded-full px-3">
+                            {log.module}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-indigo-600 font-mono">
+                            {log.resourceId || "-"}
                           </div>
-                        ) : log.newValue ? (
-                          <div className="text-green-600">{log.newValue}</div>
-                        ) : (
-                          "-"
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-slate-500">
+                            {log.oldValue && log.newValue ? (
+                              <div className="space-y-1">
+                                <div className="text-red-600 text-xs bg-red-50 rounded px-2 py-0.5 inline-block">
+                                  Old: {log.oldValue}
+                                </div>
+                                <div className="text-green-600 text-xs bg-green-50 rounded px-2 py-0.5 inline-block">
+                                  New: {log.newValue}
+                                </div>
+                              </div>
+                            ) : log.newValue ? (
+                              <div className="text-green-600 text-xs bg-green-50 rounded px-2 py-0.5 inline-block">
+                                {log.newValue}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
 
-          {/* Pagination */}
-          {!loading && !error && filteredLogs.length > 0 && (
-            <div className="mt-6">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious href="#" />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLink href="#" isActive>
-                      1
-                    </PaginationLink>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext href="#" />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          )}
+            {/* Pagination */}
+            {!loading && !error && filteredLogs.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-slate-200/60">
+                <Pagination>
+                  <PaginationContent className="gap-1">
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        className="rounded-lg hover:bg-slate-100 transition-colors"
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        isActive
+                        className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        className="rounded-lg hover:bg-slate-100 transition-colors"
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </PageContainer>

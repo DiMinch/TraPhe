@@ -17,7 +17,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Plus, Upload, Edit, Trash2, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Package } from "lucide-react";
 import {
   PageContainer,
   PageHeader,
@@ -60,14 +60,6 @@ export default function ProductPage() {
         <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
           <Plus className="w-4 h-4 mr-2" />
           New Product
-        </Button>
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
-          <Plus className="w-4 h-4 mr-2" />
-          Import CSV
-        </Button>
-        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg">
-          <Upload className="w-4 h-4 mr-2" />
-          Bulk Update
         </Button>
       </div>
 

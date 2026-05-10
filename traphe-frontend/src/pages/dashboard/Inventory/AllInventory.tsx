@@ -43,11 +43,9 @@ import {
   Minus,
   Plus,
   Loader2,
-  FileSpreadsheet,
   ArrowUpDown,
   CalendarIcon,
 } from "lucide-react";
-import { exportService, type ExportColumn } from "@/services/export.service";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -276,36 +274,6 @@ export default function AllInventoryPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // Export inventory data to Excel
-  const handleExportExcel = () => {
-    const dataToExport =
-      activeTab === "variants" ? filteredVariants : filteredParts;
-
-    if (dataToExport.length === 0) {
-      toast.warning("No data to export");
-      return;
-    }
-
-    const columns: ExportColumn<InventoryItem>[] = [
-      { key: "sku", header: "SKU" },
-      { key: "name", header: "Product Name" },
-      { key: "category", header: "Category" },
-      { key: "supplier", header: "Supplier" },
-      { key: "physical", header: "Physical Qty" },
-      { key: "reserved", header: "Reserved Qty" },
-      { key: "available", header: "Available Qty" },
-      { key: "status", header: "Status" },
-    ];
-
-    try {
-      exportService.exportToExcel(dataToExport, columns, "inventory_export");
-      toast.success("Inventory data exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export inventory data");
-    }
-  };
-
   const handleStockAdjustment = (item: InventoryItem) => {
     setSelectedItem(item);
     setNewQuantity(item.physical);
@@ -483,13 +451,6 @@ export default function AllInventoryPage() {
       />
       <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
         <Button
-          onClick={handleExportExcel}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
-        >
-          <FileSpreadsheet className="w-4 h-4 mr-2" />
-          Export Excel
-        </Button>
-        <Button
           className="bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white shadow-md"
           onClick={() => {
             if (filteredVariants.length > 0) {
@@ -510,16 +471,16 @@ export default function AllInventoryPage() {
         onValueChange={setActiveTab}
         className="mb-4"
       >
-        <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
+        <TabsList className="bg-white/90 backdrop-blur-sm shadow-md rounded-xl p-1">
           <TabsTrigger
             value="variants"
-            className="data-[state=active]:bg-black data-[state=active]:text-white"
+            className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-lg px-4 transition-all duration-200"
           >
             Product Variants
           </TabsTrigger>
           <TabsTrigger
             value="components"
-            className="data-[state=active]:bg-black data-[state=active]:text-white"
+            className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white rounded-lg px-4 transition-all duration-200"
           >
             Parts Component
           </TabsTrigger>
@@ -531,10 +492,10 @@ export default function AllInventoryPage() {
         <div className="flex flex-wrap items-center gap-3 flex-1">
           {/* Search Bar */}
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               placeholder="Search by name, SKU, category..."
-              className="pl-10 bg-white border-slate-200 focus:border-primary"
+              className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -598,10 +559,10 @@ export default function AllInventoryPage() {
 
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px] bg-white border-slate-200">
+            <SelectTrigger className="w-[140px] bg-white border-slate-200 rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
               <SelectValue placeholder="All status" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl border-slate-200 shadow-lg">
               <SelectItem value="all-status">All status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="inactive">Inactive</SelectItem>
@@ -617,7 +578,7 @@ export default function AllInventoryPage() {
                 fetchParts();
               }
             }}
-            className="bg-primary hover:bg-primary/90 text-white"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg h-10 shadow-md hover:shadow-lg transition-all duration-200"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Apply
@@ -626,13 +587,15 @@ export default function AllInventoryPage() {
       </div>
 
       {/* Main Card */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-6">
           {/* Loading State */}
           {loading && (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="mt-3 text-slate-500 font-medium">
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              </div>
+              <span className="mt-4 text-slate-600 font-medium">
                 Loading inventory data...
               </span>
             </div>
@@ -640,18 +603,22 @@ export default function AllInventoryPage() {
 
           {/* Error State */}
           {error && (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-16">
               <div className="text-center max-w-md">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
-                  <p className="text-red-600 font-semibold mb-2">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-8 mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">⚠️</span>
+                  </div>
+                  <p className="text-red-600 font-semibold text-lg mb-2">
                     Error Loading Inventory
                   </p>
-                  <p className="text-red-700 text-sm mb-4">{error}</p>
-                  <div className="flex gap-2 justify-center">
+                  <p className="text-red-700 text-sm mb-6">{error}</p>
+                  <div className="flex gap-3 justify-center">
                     <Button
                       onClick={fetchInventory}
                       variant="outline"
                       size="sm"
+                      className="rounded-lg"
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Retry
@@ -660,13 +627,14 @@ export default function AllInventoryPage() {
                       <Button
                         onClick={() => (window.location.href = "/sign-in")}
                         size="sm"
+                        className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
                       >
                         Sign In
                       </Button>
                     )}
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs">
+                <p className="text-slate-500 text-xs">
                   Make sure you're logged in with ADMIN or EMPLOYEE role and the
                   backend server is running on port 8080.
                 </p>
@@ -677,17 +645,31 @@ export default function AllInventoryPage() {
           {/* Table */}
           {!loading && !error && (
             <>
-              <div className="rounded-md ">
+              <div className="rounded-xl border border-slate-200/60 overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Suppliers</TableHead>
-                      <TableHead>Physical</TableHead>
-                      <TableHead>Reserved</TableHead>
-                      <TableHead>Available</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-700">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Suppliers
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Physical
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Reserved
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Available
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-center font-semibold text-slate-700">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -695,36 +677,49 @@ export default function AllInventoryPage() {
                       ? filteredVariants
                       : filteredParts
                     ).map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow
+                        key={item.id}
+                        className="hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                      >
                         <TableCell>
                           <div>
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-gray-500">
+                            <div className="font-medium text-slate-800">
+                              {item.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
                               {item.sku}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{item.supplier}</TableCell>
-                        <TableCell>{item.physical}</TableCell>
-                        <TableCell>{item.reserved}</TableCell>
-                        <TableCell>{item.available}</TableCell>
+                        <TableCell className="text-slate-600">
+                          {item.supplier}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {item.physical}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {item.reserved}
+                        </TableCell>
+                        <TableCell className="font-semibold text-indigo-600">
+                          {item.available}
+                        </TableCell>
                         <TableCell>
                           <Badge
-                            className={
+                            className={`rounded-full px-3 ${
                               item.status === "Active"
-                                ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
-                            }
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                            }`}
                           >
                             {item.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-9 w-9 rounded-lg hover:bg-indigo-50 transition-colors"
                               onClick={() => handleStockAdjustment(item)}
                               disabled={!item.productVariantId}
                               title={
@@ -733,12 +728,12 @@ export default function AllInventoryPage() {
                                   : "Stock Adjustment"
                               }
                             >
-                              <RefreshCw className="w-4 h-4" />
+                              <RefreshCw className="w-4 h-4 text-indigo-600" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-9 w-9 rounded-lg hover:bg-slate-100 transition-colors"
                               onClick={() => handleEditClick(item)}
                               disabled={!item.productVariantId}
                               title={
@@ -747,7 +742,7 @@ export default function AllInventoryPage() {
                                   : "Edit Item"
                               }
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-4 h-4 text-slate-600" />
                             </Button>
                           </div>
                         </TableCell>
@@ -758,19 +753,29 @@ export default function AllInventoryPage() {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200/60">
                 <Pagination>
-                  <PaginationContent>
+                  <PaginationContent className="gap-1">
                     <PaginationItem>
-                      <PaginationPrevious href="#" />
+                      <PaginationPrevious
+                        href="#"
+                        className="rounded-lg hover:bg-slate-100 transition-colors"
+                      />
                     </PaginationItem>
                     <PaginationItem>
-                      <PaginationLink href="#" isActive>
+                      <PaginationLink
+                        href="#"
+                        isActive
+                        className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                      >
                         1
                       </PaginationLink>
                     </PaginationItem>
                     <PaginationItem>
-                      <PaginationNext href="#" />
+                      <PaginationNext
+                        href="#"
+                        className="rounded-lg hover:bg-slate-100 transition-colors"
+                      />
                     </PaginationItem>
                   </PaginationContent>
                 </Pagination>

@@ -28,16 +28,16 @@ import { Input } from "@/components/ui/input";
 import {
   Search,
   Plus,
-  Download,
   Edit,
   Trash2,
-  Filter,
   Loader2,
   ToggleLeft,
   ToggleRight,
   Tag,
-  MoreHorizontal,
-  Star,
+  Percent,
+  DollarSign,
+  Gift,
+  Calendar,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -71,7 +71,6 @@ import {
   EmptyState,
 } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
-import { exportService, type ExportColumn } from "@/services/export.service";
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
@@ -122,11 +121,6 @@ export default function PromotionListPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
-
-  // Top promotions
-  const [topPromotions, setTopPromotions] = useState<PromotionResponse[]>([]);
-  const [loadingTopPromotions, setLoadingTopPromotions] = useState(false);
-  const [showTopPromotions, setShowTopPromotions] = useState(true);
 
   // Fetch categories and products when dialog opens
   useEffect(() => {
@@ -205,29 +199,7 @@ export default function PromotionListPage() {
 
   useEffect(() => {
     fetchPromotions();
-    fetchTopPromotions();
   }, []);
-
-  // Fetch top promotions
-  const fetchTopPromotions = async () => {
-    setLoadingTopPromotions(true);
-    try {
-      const response = await promotionService.getTopPromotions(5);
-      console.log("Top promotions response:", response);
-
-      // Handle response structure
-      const topData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || response.data?.data || [];
-
-      setTopPromotions(Array.isArray(topData) ? topData : []);
-    } catch (err: any) {
-      console.error("Error fetching top promotions:", err);
-      setTopPromotions([]);
-    } finally {
-      setLoadingTopPromotions(false);
-    }
-  };
 
   // Filter promotions (client-side)
   const filteredPromotions = promotions.filter((promo) => {
@@ -519,40 +491,17 @@ export default function PromotionListPage() {
     }
   };
 
-  // Export promotions to Excel
-  const handleExportExcel = () => {
-    if (filteredPromotions.length === 0) {
-      toast.warning("No promotions to export");
-      return;
-    }
-
-    const columns: ExportColumn<PromotionResponse>[] = [
-      { key: "code", header: "Promo Code" },
-      { key: "name", header: "Promotion Name" },
-      { key: "type", header: "Discount Type" },
-      {
-        key: "value",
-        header: "Discount Value",
-        formatter: (value, row) =>
-          row.type === "PERCENTAGE" ? `${value}%` : `$${value}`,
-      },
-      { key: "startDate", header: "Start Date" },
-      { key: "endDate", header: "End Date" },
-      { key: "status", header: "Status" },
-      { key: "usageCount", header: "Usage Count" },
-      { key: "maxUsage", header: "Max Usage" },
-    ];
-
-    try {
-      exportService.exportToExcel(
-        filteredPromotions,
-        columns,
-        "promotions_export",
-      );
-      toast.success("Promotions exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export promotions");
+  // Get promotion type icon
+  const getTypeIcon = (type: PromotionType) => {
+    switch (type) {
+      case "PERCENTAGE":
+        return <Percent className="w-4 h-4 text-blue-500" />;
+      case "FIXED_AMOUNT":
+        return <DollarSign className="w-4 h-4 text-green-500" />;
+      case "BUY_X_GET_Y":
+        return <Gift className="w-4 h-4 text-purple-500" />;
+      default:
+        return <Tag className="w-4 h-4 text-slate-500" />;
     }
   };
 
@@ -570,367 +519,340 @@ export default function PromotionListPage() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap justify-end gap-3 mb-6">
-        <Button
-          onClick={handleExportExcel}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
-        >
-          <Download className="mr-2 w-4 h-4" />
-          Export Excel
-        </Button>
-        <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          <Plus className="mr-2 w-4 h-4" />
-          New Promotion
-        </Button>
-        <Button
-          variant="outline"
-          className="border-slate-200 hover:bg-slate-50"
-        >
-          <Plus className="mr-2 w-4 h-4" />
-          Import CSV
-        </Button>
-        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md">
-          <Download className="mr-2 w-4 h-4" />
-          Bulk Update
-        </Button>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="border-0 shadow-md bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm">Active</p>
+                <p className="text-2xl font-bold">
+                  {promotions.filter((p) => p.status === "ACTIVE").length}
+                </p>
+              </div>
+              <ToggleRight className="w-8 h-8 text-emerald-200" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Scheduled</p>
+                <p className="text-2xl font-bold">
+                  {promotions.filter((p) => p.status === "SCHEDULED").length}
+                </p>
+              </div>
+              <Calendar className="w-8 h-8 text-blue-200" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-amber-100 text-sm">Inactive</p>
+                <p className="text-2xl font-bold">
+                  {promotions.filter((p) => p.status === "INACTIVE").length}
+                </p>
+              </div>
+              <ToggleLeft className="w-8 h-8 text-amber-200" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-md bg-gradient-to-br from-slate-500 to-slate-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-200 text-sm">Expired</p>
+                <p className="text-2xl font-bold">
+                  {promotions.filter((p) => p.status === "EXPIRED").length}
+                </p>
+              </div>
+              <Tag className="w-8 h-8 text-slate-300" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Top Promotions Section */}
-      <Card className="shadow-lg border-0 bg-gradient-to-r from-indigo-50 to-purple-50 mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-500" />
-              <h3 className="font-semibold text-lg text-slate-800">
-                Top Performing Promotions
-              </h3>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTopPromotions(!showTopPromotions)}
-            >
-              {showTopPromotions ? "Hide" : "Show"}
-            </Button>
-          </div>
-
-          {showTopPromotions && (
-            <>
-              {loadingTopPromotions ? (
-                <div className="text-center py-6 text-slate-500">
-                  Loading top promotions...
-                </div>
-              ) : topPromotions.length === 0 ? (
-                <div className="text-center py-6 text-slate-500">
-                  No promotion usage data yet
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  {topPromotions.map((promo, index) => (
-                    <div
-                      key={promo.id}
-                      className="bg-white rounded-lg p-4 shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() =>
-                        navigate(`/dashboard/promotions/${promo.id}`)
-                      }
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="text-2xl font-bold text-indigo-600">
-                          #{index + 1}
-                        </span>
-                        <Badge className={getStatusColor(promo.status)}>
-                          {promo.status}
-                        </Badge>
-                      </div>
-                      <h4 className="font-medium text-slate-800 truncate mb-1">
-                        {promo.name}
-                      </h4>
-                      <p className="text-sm text-slate-500 mb-2">
-                        Code: {promo.code}
-                      </p>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-slate-600">
-                          {promo.type === "PERCENTAGE"
-                            ? `${promo.value || 0}%`
-                            : `${(promo.value || 0).toLocaleString()}₫`}
-                        </span>
-                        <span className="text-green-600 font-medium">
-                          {promo.usageCount || 0} uses
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Main Card */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Search by Name or Code"
-                className="pl-10 bg-white border-slate-200 focus:border-primary"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-0">
+          {/* Filters and Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[240px] max-w-md">
+                <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search by Name or Code"
+                  className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                  <SelectValue placeholder="All status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-200 shadow-lg">
+                  <SelectItem value="all-status">All status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                  <SelectValue placeholder="All type" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-200 shadow-lg">
+                  <SelectItem value="all-type">All type</SelectItem>
+                  <SelectItem value="percentage">Percentage</SelectItem>
+                  <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
+                  <SelectItem value="buy_x_get_y">Buy X Get Y</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 border-slate-200 hover:bg-slate-50"
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg h-10 px-5"
+              onClick={() => setIsCreateDialogOpen(true)}
             >
-              <Filter className="w-4 h-4" />
+              <Plus className="mr-2 w-4 h-4" />
+              New Promotion
             </Button>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 border-slate-200">
-                <SelectValue placeholder="All status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-status">All status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40 border-slate-200">
-                <SelectValue placeholder="All type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-type">All type</SelectItem>
-                <SelectItem value="percentage">Percentage</SelectItem>
-                <SelectItem value="fixed_amount">Fixed Amount</SelectItem>
-                <SelectItem value="buy_x_get_y">Buy X Get Y</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          {/* Table */}
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="mt-3 text-slate-500 font-medium">
-                Loading promotions...
-              </span>
-            </div>
-          ) : filteredPromotions.length === 0 ? (
-            <EmptyState
-              icon={<Tag className="w-8 h-8 text-slate-400" />}
-              title="No promotions found"
-              description="Create your first promotional campaign"
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {currentPromotions.map((promo) => (
-                    <TableRow key={promo.id}>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono">
-                          {promo.code}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() =>
-                            navigate(`/dashboard/promotions/${promo.id}`)
-                          }
-                          className="font-medium text-indigo-900 hover:underline cursor-pointer"
-                        >
-                          {promo.name}
-                        </button>
-                        {promo.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-[200px]">
-                            {promo.description}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {getTypeLabel(promo.type)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {promo.scope}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-green-600">
-                          {promo.type === "PERCENTAGE"
-                            ? `${promo.value}%`
-                            : `$${promo.value.toFixed(2)}`}
-                        </span>
-                        {promo.maxDiscountAmount && (
-                          <div className="text-xs text-gray-500">
-                            Max: ${promo.maxDiscountAmount.toFixed(2)}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{formatDate(promo.startDate)}</div>
-                          <div className="text-gray-500">
-                            to {formatDate(promo.endDate)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={getStatusColor(promo.status)}
-                          variant="secondary"
-                        >
-                          {promo.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {promo.usageLimit ? (
-                            <>
-                              <span className="font-medium">
-                                {promo.usageCount || 0}
-                              </span>
-                              <span className="text-gray-500">
-                                /{promo.usageLimit}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-gray-500">Unlimited</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className="bg-gray-200 text-gray-800 hover:bg-gray-200"
-                          variant="secondary"
-                        >
-                          {promo.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleToggleStatus(promo)}
-                            title={promo.isActive ? "Deactivate" : "Activate"}
-                          >
-                            {promo.isActive ? (
-                              <ToggleRight className="text-green-600" />
-                            ) : (
-                              <ToggleLeft className="text-gray-400" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleEditClick(promo)}
-                            title="Edit"
-                          >
-                            <Edit />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: promo.id,
-                                name: promo.name,
-                              })
-                            }
-                          >
-                            <Trash2 />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal />
-                          </Button>
-                        </div>
-                      </TableCell>
+          <div className="p-6">
+            {/* Table */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 animate-pulse"></div>
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </div>
+                <span className="mt-4 text-slate-500 font-medium">
+                  Loading promotions...
+                </span>
+              </div>
+            ) : filteredPromotions.length === 0 ? (
+              <EmptyState
+                icon={<Tag className="w-10 h-10 text-slate-400" />}
+                title="No promotions found"
+                description="Create your first promotional campaign"
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-slate-200/60">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 hover:bg-slate-50 border-b border-slate-200">
+                      <TableHead className="font-semibold text-slate-700 py-4">
+                        Code
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Type
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Value
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Period
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Status
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Usage
+                      </TableHead>
+                      <TableHead className="text-center font-semibold text-slate-700">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          <div className="mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page)}
-                        isActive={currentPage === page}
-                        className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
+                  </TableHeader>
+                  <TableBody>
+                    {currentPromotions.map((promo) => (
+                      <TableRow
+                        key={promo.id}
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
                       >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ),
-                )}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                        <TableCell className="py-4">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-xs bg-slate-50 border-slate-200 px-3 py-1"
+                          >
+                            {promo.code}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() =>
+                              navigate(`/dashboard/promotions/${promo.id}`)
+                            }
+                            className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline cursor-pointer"
+                          >
+                            {promo.name}
+                          </button>
+                          {promo.description && (
+                            <div className="text-xs text-slate-500 truncate max-w-[180px]">
+                              {promo.description}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getTypeIcon(promo.type)}
+                            <span className="text-sm font-medium">
+                              {getTypeLabel(promo.type)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-bold text-emerald-600">
+                            {promo.type === "PERCENTAGE"
+                              ? `${promo.value}%`
+                              : `${promo.value.toLocaleString()}₫`}
+                          </span>
+                          {promo.maxDiscountAmount &&
+                            promo.maxDiscountAmount > 0 && (
+                              <div className="text-xs text-slate-500">
+                                Max: {promo.maxDiscountAmount.toLocaleString()}₫
+                              </div>
+                            )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs">
+                            <div className="text-slate-700 font-medium">
+                              {formatDate(promo.startDate)}
+                            </div>
+                            <div className="text-slate-500">
+                              → {formatDate(promo.endDate)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`font-medium px-3 py-1 ${getStatusColor(promo.status)}`}
+                            variant="secondary"
+                          >
+                            {promo.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {promo.usageLimit ? (
+                              <div className="flex items-center gap-1">
+                                <span className="font-bold text-slate-800">
+                                  {promo.usageCount || 0}
+                                </span>
+                                <span className="text-slate-400">/</span>
+                                <span className="text-slate-500">
+                                  {promo.usageLimit}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 text-xs">
+                                ∞ Unlimited
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 hover:bg-emerald-50 rounded-lg transition-colors"
+                              onClick={() => handleToggleStatus(promo)}
+                              title={promo.isActive ? "Deactivate" : "Activate"}
+                            >
+                              {promo.isActive ? (
+                                <ToggleRight className="text-emerald-600" />
+                              ) : (
+                                <ToggleLeft className="text-gray-400" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 hover:bg-blue-50 rounded-lg transition-colors"
+                              onClick={() => handleEditClick(promo)}
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 hover:bg-red-50 rounded-lg transition-colors"
+                              onClick={() =>
+                                handleDeleteClick({
+                                  id: promo.id,
+                                  name: promo.name,
+                                })
+                              }
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {/* Pagination */}
+            <div className="mt-6 pt-6 border-t border-slate-200/60">
+              <Pagination>
+                <PaginationContent className="gap-1">
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(1, prev - 1))
+                      }
+                      className={`rounded-lg transition-colors ${
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer hover:bg-slate-100"
+                      }`}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ),
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                      }
+                      className={`rounded-lg transition-colors ${
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer hover:bg-slate-100"
+                      }`}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1032,7 +954,7 @@ export default function PromotionListPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="value">
-                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "($)"}
+                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "(đ)"}
                 </Label>
                 <Input
                   id="value"
@@ -1125,12 +1047,30 @@ export default function PromotionListPage() {
                         <div className="space-y-2">
                           <div className="text-sm font-medium">Products</div>
                           <div className="max-h-40 overflow-y-auto border rounded-md p-3 space-y-2">
-                            {products.length === 0 ? (
-                              <div className="text-sm text-gray-500">
-                                No products available
-                              </div>
-                            ) : (
-                              products.map((product) => (
+                            {(() => {
+                              // Filter products based on selected categories
+                              const selectedCategoryIds =
+                                formData.applicableCategoryIds || [];
+                              const filteredProducts =
+                                selectedCategoryIds.length > 0
+                                  ? products.filter((product) =>
+                                      selectedCategoryIds.includes(
+                                        product.categoryId,
+                                      ),
+                                    )
+                                  : products;
+
+                              if (filteredProducts.length === 0) {
+                                return (
+                                  <div className="text-sm text-gray-500">
+                                    {selectedCategoryIds.length > 0
+                                      ? "No products found in selected categories"
+                                      : "No products available"}
+                                  </div>
+                                );
+                              }
+
+                              return filteredProducts.map((product) => (
                                 <div
                                   key={product.id}
                                   className="flex items-center space-x-2"
@@ -1171,8 +1111,8 @@ export default function PromotionListPage() {
                                     {product.name}
                                   </label>
                                 </div>
-                              ))
-                            )}
+                              ));
+                            })()}
                           </div>
                         </div>
                       )}
@@ -1223,7 +1163,7 @@ export default function PromotionListPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="minOrderValue">Min Order Value ($)</Label>
+                  <Label htmlFor="minOrderValue">Min Order Value (đ)</Label>
                   <Input
                     id="minOrderValue"
                     type="number"
@@ -1239,7 +1179,7 @@ export default function PromotionListPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="maxDiscountAmount">Max Discount ($)</Label>
+                  <Label htmlFor="maxDiscountAmount">Max Discount (đ)</Label>
                   <Input
                     id="maxDiscountAmount"
                     type="number"
@@ -1668,12 +1608,28 @@ export default function PromotionListPage() {
                     Applicable Products
                   </label>
                   <div className="mt-2 max-h-60 overflow-y-auto border rounded-md p-3">
-                    {products.length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        No products available
-                      </p>
-                    ) : (
-                      products.map((product) => (
+                    {(() => {
+                      // Filter products based on selected categories
+                      const selectedCategoryIds =
+                        formData.applicableCategoryIds || [];
+                      const filteredProducts =
+                        selectedCategoryIds.length > 0
+                          ? products.filter((product) =>
+                              selectedCategoryIds.includes(product.categoryId),
+                            )
+                          : products;
+
+                      if (filteredProducts.length === 0) {
+                        return (
+                          <p className="text-sm text-gray-500">
+                            {selectedCategoryIds.length > 0
+                              ? "No products found in selected categories"
+                              : "No products available"}
+                          </p>
+                        );
+                      }
+
+                      return filteredProducts.map((product) => (
                         <label
                           key={product.id}
                           className="flex items-center space-x-2 py-1"
@@ -1697,8 +1653,8 @@ export default function PromotionListPage() {
                           />
                           <span className="text-sm">{product.name}</span>
                         </label>
-                      ))
-                    )}
+                      ));
+                    })()}
                   </div>
                 </div>
               )}

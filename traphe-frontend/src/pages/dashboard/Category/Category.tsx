@@ -164,146 +164,155 @@ export default function CategoryPage() {
         </Button>
       </div>
 
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
+      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
             <h3 className="text-lg font-semibold text-slate-800">
               All Categories
             </h3>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <div className="relative w-72">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-slate-200 focus:border-primary"
+                className="pl-10 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 bg-white shadow-sm"
               />
             </div>
           </div>
 
-          {loading && categories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <span className="mt-3 text-slate-500 font-medium">
-                Loading categories...
-              </span>
-            </div>
-          ) : filteredCategories.length === 0 ? (
-            <EmptyState
-              icon={<FolderTree className="w-8 h-8 text-slate-400" />}
-              title="No categories found"
-              description="Start by adding your first category"
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                    <TableHead className="font-semibold text-slate-600">
-                      Image
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Name
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Description
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Parent
-                    </TableHead>
-                    <TableHead className="font-semibold text-slate-600">
-                      Specs
-                    </TableHead>
-                    <TableHead className="text-right font-semibold text-slate-600">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCategories.map((category) => (
-                    <TableRow
-                      key={category.id}
-                      className="border-slate-50 hover:bg-slate-50/50 transition-colors"
-                    >
-                      <TableCell>
-                        {category.imageUrl ? (
-                          <img
-                            src={category.imageUrl}
-                            alt={category.name}
-                            className="w-12 h-12 object-cover rounded-lg shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg flex items-center justify-center">
-                            <FolderTree className="w-5 h-5 text-slate-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-800">
-                        {category.name}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate text-slate-600">
-                          {category.description || "-"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {category.parentName ? (
-                          <Badge variant="outline" className="bg-slate-50">
-                            {category.parentName}
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-0">
-                            Root
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="bg-purple-50 text-purple-700 border-purple-200"
-                        >
-                          {category.specs?.length || 0} specs
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-primary/10"
-                            onClick={() => navigate(`/category/${category.id}`)}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-600 hover:text-amber-600 hover:bg-amber-50"
-                            onClick={() =>
-                              navigate(`/category/${category.id}/edit`)
-                            }
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => {
-                              setSelectedCategory(category);
-                              setShowDeleteDialog(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+          <div className="p-6">
+            {loading && categories.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                </div>
+                <span className="mt-4 text-slate-600 font-medium">
+                  Loading categories...
+                </span>
+              </div>
+            ) : filteredCategories.length === 0 ? (
+              <EmptyState
+                icon={<FolderTree className="w-8 h-8 text-slate-400" />}
+                title="No categories found"
+                description="Start by adding your first category"
+              />
+            ) : (
+              <div className="rounded-xl border border-slate-200/60 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100/50">
+                      <TableHead className="font-semibold text-slate-700">
+                        Image
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Description
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Parent
+                      </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Specs
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-slate-700">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCategories.map((category) => (
+                      <TableRow
+                        key={category.id}
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                      >
+                        <TableCell>
+                          {category.imageUrl ? (
+                            <img
+                              src={category.imageUrl}
+                              alt={category.name}
+                              className="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl flex items-center justify-center border border-slate-200">
+                              <FolderTree className="w-5 h-5 text-slate-400" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-slate-800">
+                          {category.name}
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-xs truncate text-slate-600">
+                            {category.description || "-"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {category.parentName ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-slate-50 rounded-full px-3"
+                            >
+                              {category.parentName}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-0 rounded-full px-3">
+                              Root
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="bg-purple-50 text-purple-700 border-purple-200 rounded-full px-3"
+                          >
+                            {category.specs?.length || 0} specs
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                              onClick={() =>
+                                navigate(`/category/${category.id}`)
+                              }
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                              onClick={() =>
+                                navigate(`/category/${category.id}/edit`)
+                              }
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              onClick={() => {
+                                setSelectedCategory(category);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

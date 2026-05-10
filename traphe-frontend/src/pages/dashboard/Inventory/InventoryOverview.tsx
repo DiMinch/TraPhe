@@ -25,62 +25,49 @@ import {
 import { Package, DollarSign, AlertTriangle, Loader2 } from "lucide-react";
 import {
   inventoryService,
-  type InventoryResponse,
+  type InventoryOverviewResponse,
+  type LowStockProductItem,
+  type LowStockComponentItem,
 } from "@/services/inventory.service";
-import { partService } from "@/services/part.service";
-import type { PartComponent } from "@/types/part.types";
-import {
-  PageContainer,
-  PageHeader,
-  EmptyState,
-} from "@/components/layout/PageLayout";
-import { useState, useEffect } from "react";
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+const ITEMS_PER_PAGE = 5;
 
 export default function InventoryOverviewPage() {
-  const [lowStockProducts, setLowStockProducts] = useState<InventoryResponse[]>(
-    [],
-  );
-  const [lowStockParts, setLowStockParts] = useState<PartComponent[]>([]);
+  const [overviewData, setOverviewData] =
+    useState<InventoryOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [totalStockValue, setTotalStockValue] = useState(0);
 
-  const fetchData = async () => {
+  // Time range states for charts
+  const [stockValueTimeRange, setStockValueTimeRange] = useState("MONTH");
+  const [onHandTimeRange, setOnHandTimeRange] = useState("MONTH");
+
+  // Pagination states
+  const [productPage, setProductPage] = useState(1);
+  const [componentPage, setComponentPage] = useState(1);
+
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [inventoryRes, partsRes] = await Promise.all([
-        inventoryService.getAllInventory(),
-        partService.getLowStockParts(),
-      ]);
+      const response = await inventoryService.getInventoryOverview(
+        stockValueTimeRange,
+        onHandTimeRange,
+      );
 
-      if (inventoryRes.statusCode === 200) {
-        // Handle both direct array and paginated response
-        const inventoryData = Array.isArray(inventoryRes.data)
-          ? inventoryRes.data
-          : (inventoryRes.data as any)?.content || [];
-
-        // Filter low stock items
-        const lowStock = inventoryData.filter(
-          (item: InventoryResponse) =>
-            item.quantityAvailable <= item.minThreshold,
-        );
-        setLowStockProducts(lowStock);
-
-        // Calculate total stock value (simplified)
-        const total = inventoryData.reduce(
-          (sum: number, item: InventoryResponse) =>
-            sum + item.quantityAvailable,
-          0,
-        );
-        setTotalStockValue(total);
-      }
-
-      if (partsRes.statusCode === 200) {
-        // Handle both direct array and paginated response
-        const partsData = Array.isArray(partsRes.data)
-          ? partsRes.data
-          : (partsRes.data as any)?.content || [];
-        setLowStockParts(partsData);
+      if (response.statusCode === 200 && response.data) {
+        setOverviewData(response.data);
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -90,11 +77,39 @@ export default function InventoryOverviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [stockValueTimeRange, onHandTimeRange]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
+
+  // Paginated low stock products
+  const paginatedProducts =
+    overviewData?.lowStockProducts?.slice(
+      (productPage - 1) * ITEMS_PER_PAGE,
+      productPage * ITEMS_PER_PAGE,
+    ) || [];
+  const totalProductPages = Math.ceil(
+    (overviewData?.lowStockProducts?.length || 0) / ITEMS_PER_PAGE,
+  );
+
+  // Paginated low stock components
+  const paginatedComponents =
+    overviewData?.lowStockComponents?.slice(
+      (componentPage - 1) * ITEMS_PER_PAGE,
+      componentPage * ITEMS_PER_PAGE,
+    ) || [];
+  const totalComponentPages = Math.ceil(
+    (overviewData?.lowStockComponents?.length || 0) / ITEMS_PER_PAGE,
+  );
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <PageContainer>
@@ -112,8 +127,10 @@ export default function InventoryOverviewPage() {
                 <p className="text-emerald-100 text-sm mb-1">
                   Total Stock Value
                 </p>
-                <p className="text-3xl font-bold">
-                  {loading ? "..." : totalStockValue.toLocaleString()} units
+                <p className="text-2xl font-bold">
+                  {loading
+                    ? "..."
+                    : formatCurrency(overviewData?.totalStockValue || 0)}
                 </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
@@ -131,7 +148,7 @@ export default function InventoryOverviewPage() {
                   Low Stock Products
                 </p>
                 <p className="text-3xl font-bold">
-                  {loading ? "..." : lowStockProducts.length}
+                  {loading ? "..." : overviewData?.lowStockProductCount || 0}
                 </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
@@ -149,7 +166,7 @@ export default function InventoryOverviewPage() {
                   Low Stock Components
                 </p>
                 <p className="text-3xl font-bold">
-                  {loading ? "..." : lowStockParts.length}
+                  {loading ? "..." : overviewData?.lowStockComponentCount || 0}
                 </p>
               </div>
               <div className="p-3 bg-white/20 rounded-lg">
@@ -169,38 +186,67 @@ export default function InventoryOverviewPage() {
               <CardTitle className="text-lg font-semibold text-slate-800">
                 Stock Value
               </CardTitle>
-              <Select defaultValue="month">
+              <Select
+                value={stockValueTimeRange}
+                onValueChange={setStockValueTimeRange}
+              >
                 <SelectTrigger className="w-[140px] h-8 text-sm border-slate-200">
                   <SelectValue placeholder="By Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month">By Month</SelectItem>
-                  <SelectItem value="week">By Week</SelectItem>
-                  <SelectItem value="year">By Year</SelectItem>
+                  <SelectItem value="MONTH">By Month</SelectItem>
+                  <SelectItem value="WEEK">By Week</SelectItem>
+                  <SelectItem value="YEAR">By Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px] flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50/50">
-              <p className="text-sm text-slate-500">
-                Chart placeholder - Stock Value
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm text-slate-600">Laptop</span>
+            {loading ? (
+              <div className="h-[200px] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-                <span className="text-sm text-slate-600">Screen</span>
+            ) : overviewData?.stockValueChartData &&
+              overviewData.stockValueChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={overviewData.stockValueChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12 }}
+                    stroke="#94a3b8"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    stroke="#94a3b8"
+                    tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      formatCurrency(value),
+                      "Stock Value",
+                    ]}
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #e2e8f0",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="stockValue"
+                    stroke="#10b981"
+                    fill="#10b981"
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50/50">
+                <p className="text-sm text-slate-500">
+                  No chart data available
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                <span className="text-sm text-slate-600">Mouse</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -211,38 +257,69 @@ export default function InventoryOverviewPage() {
               <CardTitle className="text-lg font-semibold text-slate-800">
                 On-hand Quantity
               </CardTitle>
-              <Select defaultValue="month">
+              <Select
+                value={onHandTimeRange}
+                onValueChange={setOnHandTimeRange}
+              >
                 <SelectTrigger className="w-[140px] h-8 text-sm border-slate-200">
                   <SelectValue placeholder="By Month" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="month">By Month</SelectItem>
-                  <SelectItem value="week">By Week</SelectItem>
-                  <SelectItem value="year">By Year</SelectItem>
+                  <SelectItem value="MONTH">By Month</SelectItem>
+                  <SelectItem value="WEEK">By Week</SelectItem>
+                  <SelectItem value="YEAR">By Year</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px] flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50/50">
-              <p className="text-sm text-slate-500">
-                Chart placeholder - On-hand Quantity
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm text-slate-600">Laptop</span>
+            {loading ? (
+              <div className="h-[200px] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-                <span className="text-sm text-slate-600">Screen</span>
+            ) : overviewData?.onHandQuantityChartData &&
+              overviewData.onHandQuantityChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={overviewData.onHandQuantityChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12 }}
+                    stroke="#94a3b8"
+                  />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #e2e8f0",
+                    }}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="productQuantity"
+                    name="Products"
+                    stroke="#f97316"
+                    fill="#f97316"
+                    fillOpacity={0.3}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="componentQuantity"
+                    name="Components"
+                    stroke="#8b5cf6"
+                    fill="#8b5cf6"
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center border border-slate-200 rounded-lg bg-slate-50/50">
+                <p className="text-sm text-slate-500">
+                  No chart data available
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                <span className="text-sm text-slate-600">Mouse</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -282,7 +359,7 @@ export default function InventoryOverviewPage() {
                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
                       </TableCell>
                     </TableRow>
-                  ) : lowStockProducts.length === 0 ? (
+                  ) : paginatedProducts.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={4}
@@ -292,20 +369,20 @@ export default function InventoryOverviewPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    lowStockProducts.map((product) => (
+                    paginatedProducts.map((product: LowStockProductItem) => (
                       <TableRow
-                        key={product.id}
+                        key={product.productVariantId}
                         className="hover:bg-slate-50/50"
                       >
                         <TableCell className="font-medium text-slate-800 text-sm">
-                          {product.productVariant?.productName || "N/A"} -{" "}
-                          {product.productVariant?.variantName || "N/A"}
+                          {product.productName || "N/A"} -{" "}
+                          {product.variantName || "N/A"}
                         </TableCell>
                         <TableCell className="text-slate-600">
-                          {product.productVariant?.sku || "N/A"}
+                          {product.sku || "N/A"}
                         </TableCell>
                         <TableCell className="text-amber-600 font-semibold">
-                          {product.quantityAvailable}
+                          {product.currentStock}
                         </TableCell>
                         <TableCell className="text-slate-600">
                           {product.minThreshold}
@@ -316,23 +393,54 @@ export default function InventoryOverviewPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious href="#" />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLink href="#" isActive>
-                      1
-                    </PaginationLink>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext href="#" />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+            {totalProductPages > 1 && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setProductPage((p) => Math.max(1, p - 1))
+                        }
+                        className={
+                          productPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from(
+                      { length: totalProductPages },
+                      (_, i) => i + 1,
+                    ).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setProductPage(page)}
+                          isActive={productPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setProductPage((p) =>
+                            Math.min(totalProductPages, p + 1),
+                          )
+                        }
+                        className={
+                          productPage === totalProductPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -369,7 +477,7 @@ export default function InventoryOverviewPage() {
                         <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
                       </TableCell>
                     </TableRow>
-                  ) : lowStockParts.length === 0 ? (
+                  ) : paginatedComponents.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={4}
@@ -379,8 +487,11 @@ export default function InventoryOverviewPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    lowStockParts.map((part) => (
-                      <TableRow key={part.id} className="hover:bg-slate-50/50">
+                    paginatedComponents.map((part: LowStockComponentItem) => (
+                      <TableRow
+                        key={part.partComponentId}
+                        className="hover:bg-slate-50/50"
+                      >
                         <TableCell className="font-medium text-slate-800">
                           {part.name}
                         </TableCell>
@@ -399,23 +510,54 @@ export default function InventoryOverviewPage() {
                 </TableBody>
               </Table>
             </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious href="#" />
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationLink href="#" isActive>
-                      1
-                    </PaginationLink>
-                  </PaginationItem>
-                  <PaginationItem>
-                    <PaginationNext href="#" />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+            {totalComponentPages > 1 && (
+              <div className="mt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setComponentPage((p) => Math.max(1, p - 1))
+                        }
+                        className={
+                          componentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                    {Array.from(
+                      { length: totalComponentPages },
+                      (_, i) => i + 1,
+                    ).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setComponentPage(page)}
+                          isActive={componentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setComponentPage((p) =>
+                            Math.min(totalComponentPages, p + 1),
+                          )
+                        }
+                        className={
+                          componentPage === totalComponentPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

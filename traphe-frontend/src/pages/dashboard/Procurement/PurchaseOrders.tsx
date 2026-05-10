@@ -39,7 +39,6 @@ import {
   Trash2,
   Loader2,
   ShoppingCart,
-  Download,
   PackageCheck,
   FileCheck,
 } from "lucide-react";
@@ -52,8 +51,6 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
-import { toast } from "sonner";
-import { exportService, type ExportColumn } from "@/services/export.service";
 import {
   purchaseOrderService,
   type PurchaseOrderResponse,
@@ -124,7 +121,7 @@ export default function PurchaseOrdersPage() {
     actualDate: po.actualDeliveryDate
       ? new Date(po.actualDeliveryDate).toLocaleDateString("en-GB")
       : "",
-    totalAmount: po.totalAmount ? `$${po.totalAmount.toLocaleString()}` : "$0",
+    totalAmount: po.totalAmount ? `${po.totalAmount.toLocaleString()}đ` : "0đ",
     status: po.status,
   });
 
@@ -269,37 +266,6 @@ export default function PurchaseOrdersPage() {
     }
   };
 
-  // Export purchase orders to Excel
-  const handleExportExcel = () => {
-    if (filteredOrders.length === 0) {
-      toast.warning("No purchase orders to export");
-      return;
-    }
-
-    const columns: ExportColumn<PurchaseOrder>[] = [
-      { key: "poNumber", header: "PO Number" },
-      { key: "createdDate", header: "Created Date" },
-      { key: "supplier", header: "Supplier" },
-      { key: "contactName", header: "Contact Name" },
-      { key: "totalAmount", header: "Total Amount" },
-      { key: "status", header: "Status" },
-      { key: "expectedDate", header: "Expected Delivery" },
-      { key: "actualDate", header: "Actual Delivery" },
-    ];
-
-    try {
-      exportService.exportToExcel(
-        filteredOrders,
-        columns,
-        "purchase_orders_export",
-      );
-      toast.success("Purchase orders exported successfully!");
-    } catch (error) {
-      console.error("Export error:", error);
-      toast.error("Failed to export purchase orders");
-    }
-  };
-
   return (
     <PageContainer>
       <PageHeader
@@ -310,13 +276,6 @@ export default function PurchaseOrdersPage() {
 
       {/* Action Button */}
       <div className="flex justify-end gap-3 mb-6">
-        <Button
-          onClick={handleExportExcel}
-          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export Excel
-        </Button>
         <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsCreateDialogOpen(true)}
