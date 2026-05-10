@@ -109,7 +109,7 @@ function App() {
           <Route path="/procurement" element={<SuppliersPage />} />
           <Route path="/procurement/suppliers" element={<SuppliersPage />} />
           <Route
-            path="/procurement/suppliers/:supplierName"
+            path="/procurement/suppliers/:id"
             element={<SupplierDetailPage />}
           />
           <Route
@@ -117,7 +117,7 @@ function App() {
             element={<PurchaseOrdersPage />}
           />
           <Route
-            path="/procurement/purchase-orders/:poNumber"
+            path="/procurement/purchase-orders/:id"
             element={<PurchaseOrderDetailPage />}
           />
 

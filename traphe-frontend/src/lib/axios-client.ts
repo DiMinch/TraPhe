@@ -25,6 +25,10 @@ axiosClient.interceptors.request.use(
 
 axiosClient.interceptors.response.use(
   (response) => {
+    // For blob responses, return the full response data as-is
+    if (response.config.responseType === "blob") {
+      return response.data;
+    }
     return response.data;
   },
   (error) => {

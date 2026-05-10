@@ -38,17 +38,16 @@ import {
 } from "@/components/ui/dialog";
 import {
   Search,
-  Filter,
   RefreshCw,
   Edit,
   Minus,
   Plus,
-  Package,
   Loader2,
   FileSpreadsheet,
   ArrowUpDown,
   CalendarIcon,
 } from "lucide-react";
+import { exportService, type ExportColumn } from "@/services/export.service";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,11 +58,7 @@ import {
   inventoryService,
   type InventoryResponse,
 } from "@/services/inventory.service";
-import {
-  PageContainer,
-  PageHeader,
-  EmptyState,
-} from "@/components/layout/PageLayout";
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
 
 interface InventoryItem {
@@ -90,16 +85,15 @@ export default function AllInventoryPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
+  const [partsData, setPartsData] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
 
   // Filter states
   const [dateRange, setDateRange] = useState<{
     from: Date | undefined;
     to: Date | undefined;
   }>({ from: undefined, to: undefined });
-  const [categoryFilter, setCategoryFilter] = useState("all-categories");
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [submitting, setSubmitting] = useState(false);
 
@@ -118,26 +112,30 @@ export default function AllInventoryPage() {
         : (response.data as any)?.content || [];
 
       // Transform API response to match InventoryItem interface
+      // Only include PRODUCT type items (variants)
       const transformedData: InventoryItem[] = rawData
         .filter((item: InventoryResponse) => {
-          // Only include items with valid productVariant
-          if (!item.productVariant || !item.productVariant.id) {
-            console.warn("Skipping item without valid productVariant:", item);
+          // Only include items with valid productVariant (type === "PRODUCT")
+          if (
+            item.type !== "PRODUCT" ||
+            !item.productVariant ||
+            !item.productVariant.id
+          ) {
             return false;
           }
           return true;
         })
         .map((item: InventoryResponse) => {
-          console.log("Processing inventory item:", item);
+          const pv = item.productVariant!;
           return {
             id: item.id,
-            productVariantId: item.productVariant.id,
-            name: item.productVariant.variantName
-              ? `${item.productVariant.productName} - ${item.productVariant.variantName}`
-              : item.productVariant.productName || "Unknown Product",
-            sku: item.productVariant.sku || "N/A",
-            category: "Product Variant",
-            supplier: item.productVariant.supplierName || "N/A",
+            productVariantId: pv.id,
+            name: pv.variantName
+              ? `${pv.productName} - ${pv.variantName}`
+              : pv.productName || "Unknown Product",
+            sku: pv.sku || "N/A",
+            category: pv.categoryName || "N/A",
+            supplier: pv.supplier?.name || "N/A",
             physical: item.quantityPhysical || 0,
             reserved: item.quantityReserved || 0,
             available: item.quantityAvailable || 0,
@@ -184,8 +182,55 @@ export default function AllInventoryPage() {
 
   useEffect(() => {
     fetchInventory();
+    fetchParts();
     fetchCategories();
   }, []);
+
+  // Fetch parts/components data from inventory API
+  const fetchParts = async () => {
+    try {
+      const response = await inventoryService.getAllInventory();
+      console.log("Parts API response:", response);
+
+      const rawData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+
+      // Transform parts data to match InventoryItem interface
+      // Only include COMPONENT type items
+      const transformedParts: InventoryItem[] = rawData
+        .filter((item: InventoryResponse) => {
+          return (
+            item.type === "COMPONENT" &&
+            item.partComponent &&
+            item.partComponent.id
+          );
+        })
+        .map((item: InventoryResponse) => {
+          const pc = item.partComponent!;
+          return {
+            id: item.id,
+            productVariantId: pc.id, // Use part id as variant id for compatibility
+            name: pc.name,
+            sku: pc.id.substring(0, 8).toUpperCase(), // Generate a short code from ID
+            category: pc.partType || "Part Component",
+            supplier: pc.supplier?.name || "N/A",
+            physical: item.quantityPhysical || 0,
+            reserved: item.quantityReserved || 0,
+            available: item.quantityAvailable || 0,
+            status:
+              (item.quantityAvailable || 0) > 0
+                ? ("Active" as const)
+                : ("Inactive" as const),
+          };
+        });
+
+      console.log("Transformed parts data:", transformedParts);
+      setPartsData(transformedParts);
+    } catch (err: unknown) {
+      console.error("Error fetching parts:", err);
+    }
+  };
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -202,46 +247,64 @@ export default function AllInventoryPage() {
   };
 
   const productVariants: InventoryItem[] = inventoryData;
-  const partsComponents: InventoryItem[] = []; // This can be filtered or fetched separately
+  const partsComponents: InventoryItem[] = partsData;
 
-  // Filter items by search term, category, and status
+  // Filter items by search term and status
   const filteredVariants = productVariants.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory =
-      categoryFilter === "all-categories" ||
-      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
-    categoryFilter === "all-categories" ||
-      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all-status" ||
       item.status.toLowerCase() === statusFilter.toLowerCase();
 
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const filteredParts = partsComponents.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.supplier.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory =
-      categoryFilter === "all-categories" ||
-      item.category.toLowerCase().includes(categoryFilter.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all-status" ||
       item.status.toLowerCase() === statusFilter.toLowerCase();
 
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
+
+  // Export inventory data to Excel
+  const handleExportExcel = () => {
+    const dataToExport =
+      activeTab === "variants" ? filteredVariants : filteredParts;
+
+    if (dataToExport.length === 0) {
+      toast.warning("No data to export");
+      return;
+    }
+
+    const columns: ExportColumn<InventoryItem>[] = [
+      { key: "sku", header: "SKU" },
+      { key: "name", header: "Product Name" },
+      { key: "category", header: "Category" },
+      { key: "supplier", header: "Supplier" },
+      { key: "physical", header: "Physical Qty" },
+      { key: "reserved", header: "Reserved Qty" },
+      { key: "available", header: "Available Qty" },
+      { key: "status", header: "Status" },
+    ];
+
+    try {
+      exportService.exportToExcel(dataToExport, columns, "inventory_export");
+      toast.success("Inventory data exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export inventory data");
+    }
+  };
 
   const handleStockAdjustment = (item: InventoryItem) => {
     setSelectedItem(item);
@@ -402,17 +465,27 @@ export default function AllInventoryPage() {
 
   const difference = selectedItem ? newQuantity - selectedItem.physical : 0;
 
-  const items = activeTab === "variants" ? productVariants : partsComponents;
+  // Refresh data based on active tab
+  const handleRefresh = () => {
+    if (activeTab === "variants") {
+      fetchInventory();
+    } else {
+      fetchParts();
+    }
+  };
 
   return (
     <PageContainer>
       <PageHeader
         title="Inventory"
         subtitle="Manage stock levels and adjustments"
-        onRefresh={fetchInventory}
+        onRefresh={handleRefresh}
       />
       <div className="flex flex-wrap items-center justify-end gap-3 mb-4">
-        <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md">
+        <Button
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
           <FileSpreadsheet className="w-4 h-4 mr-2" />
           Export Excel
         </Button>
@@ -440,13 +513,13 @@ export default function AllInventoryPage() {
         <TabsList className="bg-white/80 backdrop-blur-sm shadow-sm">
           <TabsTrigger
             value="variants"
-            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+            className="data-[state=active]:bg-black data-[state=active]:text-white"
           >
             Product Variants
           </TabsTrigger>
           <TabsTrigger
             value="components"
-            className="data-[state=active]:bg-primary data-[state=active]:text-white"
+            className="data-[state=active]:bg-black data-[state=active]:text-white"
           >
             Parts Component
           </TabsTrigger>
@@ -523,21 +596,6 @@ export default function AllInventoryPage() {
             </PopoverContent>
           </Popover>
 
-          {/* Category Filter */}
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[160px] bg-white border-slate-200">
-              <SelectValue placeholder="All categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-categories">All categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.name}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[140px] bg-white border-slate-200">
@@ -549,6 +607,21 @@ export default function AllInventoryPage() {
               <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Apply Button */}
+          <Button
+            onClick={() => {
+              if (activeTab === "variants") {
+                fetchInventory();
+              } else {
+                fetchParts();
+              }
+            }}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Apply
+          </Button>
         </div>
       </div>
 
@@ -609,7 +682,6 @@ export default function AllInventoryPage() {
                   <TableHeader>
                     <TableRow className="bg-gray-50">
                       <TableHead>Name</TableHead>
-                      <TableHead>Category</TableHead>
                       <TableHead>Suppliers</TableHead>
                       <TableHead>Physical</TableHead>
                       <TableHead>Reserved</TableHead>
@@ -631,9 +703,6 @@ export default function AllInventoryPage() {
                               {item.sku}
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="text-gray-600">
-                          {item.category}
                         </TableCell>
                         <TableCell>{item.supplier}</TableCell>
                         <TableCell>{item.physical}</TableCell>

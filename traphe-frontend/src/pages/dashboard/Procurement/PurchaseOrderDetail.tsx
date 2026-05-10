@@ -8,22 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -34,281 +19,309 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Edit,
+  ArrowLeft,
   Trash2,
-  BellIcon,
-  ChevronRight,
-  Calendar,
+  Loader2,
   Check,
-  Save,
+  Package,
+  Calendar,
+  Building2,
+  FileText,
 } from "lucide-react";
-import { useState } from "react";
-import { purchaseOrderItems as initialItems } from "@/data/mockData";
-import { useNavigate } from "react-router";
-import { CURRENT_USER } from "@/constants/user";
-
-interface OrderItem {
-  id: number;
-  product: string;
-  sku: string;
-  referenceTicket: string;
-  quantityOrdered: number;
-  quantityReceived: number;
-  unitPrice: string;
-  subtotal: string;
-}
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router";
+import {
+  purchaseOrderService,
+  type PurchaseOrderResponse,
+  type PurchaseOrderItemResponse,
+} from "@/services/purchase-order.service";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/layout/PageLayout";
+import { toast } from "sonner";
 
 export default function PurchaseOrderDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [purchaseOrder, setPurchaseOrder] =
+    useState<PurchaseOrderResponse | null>(null);
 
-  const [orderData, setOrderData] = useState({
-    poNumber: "1",
-    supplier: "ABC",
-    status: "RECEIVED",
-    createdDate: "23/11/2024",
-    expectedDate: "23/12/2024",
-    actualDate: "23/11/2025",
-  });
+  useEffect(() => {
+    if (id) {
+      fetchPurchaseOrder();
+    }
+  }, [id]);
 
-  const [orderItems, setOrderItems] = useState<OrderItem[]>(initialItems);
-
-  const totalQuantity = orderItems.reduce(
-    (sum, item) => sum + item.quantityReceived,
-    0,
-  );
-  const totalAmount = orderItems.reduce((sum, item) => {
-    const subtotal = parseFloat(item.subtotal.replace(/[$,]/g, ""));
-    return sum + subtotal;
-  }, 0);
-
-  const handleSave = () => {
-    console.log("Saving purchase order changes...");
-    setIsEditing(false);
+  const fetchPurchaseOrder = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const response = await purchaseOrderService.getPurchaseOrderById(id);
+      setPurchaseOrder(response.data);
+    } catch (error: any) {
+      console.error("Error fetching purchase order:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to load purchase order",
+      );
+      navigate("/procurement/purchase-orders");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleClosePurchaseOrder = () => {
-    // Handle close purchase order logic
-    console.log("Closing purchase order");
+  const handleClosePurchaseOrder = async () => {
+    if (!purchaseOrder) return;
+
+    setIsClosing(true);
+    try {
+      const response = await purchaseOrderService.closePurchaseOrder(
+        purchaseOrder.id,
+      );
+      setPurchaseOrder(response.data);
+      toast.success("Purchase order closed successfully");
+    } catch (error: any) {
+      console.error("Error closing purchase order:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to close purchase order",
+      );
+    } finally {
+      setIsClosing(false);
+    }
   };
 
-  const handleDelete = () => {
-    setIsDeleteOpen(true);
+  const handleConfirmDelete = async () => {
+    if (!purchaseOrder) return;
+
+    try {
+      await purchaseOrderService.deletePurchaseOrder(purchaseOrder.id);
+      toast.success("Purchase order deleted successfully");
+      navigate("/procurement/purchase-orders");
+    } catch (error: any) {
+      console.error("Error deleting purchase order:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete purchase order",
+      );
+    } finally {
+      setIsDeleteOpen(false);
+    }
   };
 
-  const handleConfirmDelete = () => {
-    console.log("Deleting purchase order");
-    setIsDeleteOpen(false);
-    navigate("/procurement/purchase-orders");
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("vi-VN");
   };
 
-  const handleAddItem = () => {
-    const newItem: OrderItem = {
-      id: orderItems.length + 1,
-      product: "",
-      sku: "",
-      referenceTicket: "",
-      quantityOrdered: 0,
-      quantityReceived: 0,
-      unitPrice: "",
-      subtotal: "",
-    };
-    setOrderItems([...orderItems, newItem]);
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return "-";
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(amount);
   };
 
-  const handleRemoveItem = (id: number) => {
-    setOrderItems(orderItems.filter((item) => item.id !== id));
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "DRAFT":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+            Draft
+          </Badge>
+        );
+      case "RECEIVED":
+        return (
+          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+            Received
+          </Badge>
+        );
+      case "CLOSED":
+        return (
+          <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">
+            Closed
+          </Badge>
+        );
+      default:
+        return <Badge>{status}</Badge>;
+    }
   };
 
-  const handleItemChange = (
-    id: number,
-    field: keyof OrderItem,
-    value: unknown,
-  ) => {
-    setOrderItems(
-      orderItems.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
+  const getItemName = (item: PurchaseOrderItemResponse) => {
+    if (item.productVariant) {
+      return `${item.productVariant.productName} - ${item.productVariant.variantName}`;
+    }
+    if (item.partComponent) {
+      return item.partComponent.partName;
+    }
+    return "Unknown Item";
+  };
+
+  const getItemSku = (item: PurchaseOrderItemResponse) => {
+    if (item.productVariant) {
+      return item.productVariant.sku;
+    }
+    if (item.partComponent) {
+      return item.partComponent.partNumber;
+    }
+    return "-";
+  };
+
+  // Calculate totals
+  const totalQuantityOrdered =
+    purchaseOrder?.items.reduce((sum, item) => sum + item.quantityOrdered, 0) ||
+    0;
+  const totalQuantityReceived =
+    purchaseOrder?.items.reduce(
+      (sum, item) => sum + item.quantityReceived,
+      0,
+    ) || 0;
+  const totalAmount = purchaseOrder?.totalAmount || 0;
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </PageContainer>
     );
-  };
+  }
+
+  if (!purchaseOrder) {
+    return (
+      <PageContainer>
+        <EmptyState
+          icon={<FileText className="w-8 h-8 text-slate-400" />}
+          title="Purchase order not found"
+          description="The purchase order you're looking for doesn't exist or has been deleted."
+          action={
+            <Button onClick={() => navigate("/procurement/purchase-orders")}>
+              Back to Purchase Orders
+            </Button>
+          }
+        />
+      </PageContainer>
+    );
+  }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <PageContainer>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Purchase Order Detail</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
-      </div>
-
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
-        <button
+      <PageHeader
+        title="Purchase Order Detail"
+        subtitle={`PO Number: ${purchaseOrder.poNumber}`}
+        onRefresh={fetchPurchaseOrder}
+        isLoading={loading}
+      >
+        <Button
+          variant="outline"
           onClick={() => navigate("/procurement/purchase-orders")}
-          className="hover:text-gray-900"
+          className="gap-2"
         >
-          Purchase Orders
-        </button>
-        <ChevronRight className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">{orderData.poNumber}</span>
-      </div>
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+      </PageHeader>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        {isEditing ? (
+        {purchaseOrder.status === "RECEIVED" && (
           <Button
-            className="bg-indigo-900 hover:bg-indigo-800 text-white"
-            onClick={handleSave}
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleClosePurchaseOrder}
+            disabled={isClosing}
           >
-            <Save className="w-4 h-4 mr-2" />
-            Save
-          </Button>
-        ) : (
-          <>
-            <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
-            </Button>
-            <Button
-              className="bg-yellow-500 hover:bg-yellow-600 text-gray-900"
-              onClick={handleClosePurchaseOrder}
-            >
+            {isClosing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
               <Check className="w-4 h-4 mr-2" />
-              Close Purchase Order
-            </Button>
-          </>
+            )}
+            Close Purchase Order
+          </Button>
         )}
-        <Button
-          className="bg-red-600 hover:bg-red-700 text-white"
-          onClick={handleDelete}
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Delete
-        </Button>
+        {purchaseOrder.status === "DRAFT" && (
+          <Button variant="destructive" onClick={() => setIsDeleteOpen(true)}>
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </Button>
+        )}
       </div>
 
       {/* Order Information Card */}
       <Card className="shadow-md mb-6">
         <CardContent className="p-6">
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                PO Number
-              </Label>
-              <Input
-                value={orderData.poNumber}
-                onChange={(e) =>
-                  setOrderData({ ...orderData, poNumber: e.target.value })
-                }
-                disabled={!isEditing}
-                className="mt-1 bg-gray-50"
-              />
+          <h2 className="text-lg font-semibold mb-6">Order Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  PO Number
+                </Label>
+                <p className="mt-1 text-lg font-semibold">
+                  {purchaseOrder.poNumber}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  Status
+                </Label>
+                <div className="mt-1">
+                  {getStatusBadge(purchaseOrder.status)}
+                </div>
+              </div>
             </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                Supplier
-              </Label>
-              <Select
-                value={orderData.supplier}
-                onValueChange={(value) =>
-                  setOrderData({ ...orderData, supplier: value })
-                }
-                disabled={!isEditing}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ABC">ABC</SelectItem>
-                  <SelectItem value="LeM">LeM</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                Status
-              </Label>
-              <Select
-                value={orderData.status}
-                onValueChange={(value) =>
-                  setOrderData({ ...orderData, status: value })
-                }
-                disabled={!isEditing}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ORDERED">ORDERED</SelectItem>
-                  <SelectItem value="RECEIVED">RECEIVED</SelectItem>
-                  <SelectItem value="CLOSED">CLOSED</SelectItem>
-                  <SelectItem value="PENDING">PENDING</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-3 gap-6 mt-4">
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                Created Date
-              </Label>
-              <div className="relative mt-1">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  value={orderData.createdDate}
-                  onChange={(e) =>
-                    setOrderData({ ...orderData, createdDate: e.target.value })
-                  }
-                  disabled={!isEditing}
-                  className="pl-10 bg-gray-50"
-                />
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  <Building2 className="w-4 h-4 inline mr-1" />
+                  Supplier
+                </Label>
+                <p className="mt-1 font-medium">
+                  {purchaseOrder.supplier?.name || "-"}
+                </p>
+                {purchaseOrder.supplier?.contactName && (
+                  <p className="text-sm text-gray-500">
+                    Contact: {purchaseOrder.supplier.contactName}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  Total Amount
+                </Label>
+                <p className="mt-1 text-lg font-semibold text-green-600">
+                  {formatCurrency(totalAmount)}
+                </p>
               </div>
             </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                Expected Date
-              </Label>
-              <div className="relative mt-1">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  value={orderData.expectedDate}
-                  onChange={(e) =>
-                    setOrderData({ ...orderData, expectedDate: e.target.value })
-                  }
-                  disabled={!isEditing}
-                  className="pl-10 bg-gray-50"
-                />
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  <Calendar className="w-4 h-4 inline mr-1" />
+                  Created Date
+                </Label>
+                <p className="mt-1">{formatDate(purchaseOrder.createdAt)}</p>
               </div>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700">
-                Actual Date
-              </Label>
-              <div className="relative mt-1">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  value={orderData.actualDate}
-                  onChange={(e) =>
-                    setOrderData({ ...orderData, actualDate: e.target.value })
-                  }
-                  disabled={!isEditing}
-                  placeholder={isEditing ? "Select" : ""}
-                  className="pl-10 bg-gray-50"
-                />
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  Expected Delivery
+                </Label>
+                <p className="mt-1">
+                  {formatDate(purchaseOrder.expectedDeliveryDate)}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">
+                  Actual Delivery
+                </Label>
+                <p className="mt-1">
+                  {formatDate(purchaseOrder.actualDeliveryDate)}
+                </p>
               </div>
             </div>
           </div>
@@ -318,175 +331,100 @@ export default function PurchaseOrderDetailPage() {
       {/* Order Items Card */}
       <Card className="shadow-md">
         <CardContent className="p-6">
-          <h2 className="text-lg font-semibold mb-6">Order Items</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold">
+              Order Items ({purchaseOrder.items?.length || 0})
+            </h2>
+          </div>
 
-          {/* Table */}
-          <div className="rounded-md ">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Product / Component</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Reference Ticket</TableHead>
-                  <TableHead>Quantity Ordered</TableHead>
-                  <TableHead>Quantity Received</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead>Subtotal</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orderItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <Input
-                        value={item.product}
-                        onChange={(e) =>
-                          handleItemChange(item.id, "product", e.target.value)
-                        }
-                        placeholder="Product name"
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.sku}
-                        onChange={(e) =>
-                          handleItemChange(item.id, "sku", e.target.value)
-                        }
-                        placeholder="SKU"
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.referenceTicket}
-                        onChange={(e) =>
-                          handleItemChange(
-                            item.id,
-                            "referenceTicket",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Ticket #"
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={item.quantityOrdered}
-                        onChange={(e) =>
-                          handleItemChange(
-                            item.id,
-                            "quantityOrdered",
-                            parseInt(e.target.value),
-                          )
-                        }
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={item.quantityReceived || ""}
-                        onChange={(e) => {
-                          const val =
-                            e.target.value === ""
-                              ? 0
-                              : parseInt(e.target.value) || 0;
-                          handleItemChange(item.id, "quantityReceived", val);
-                        }}
-                        placeholder="Unknown"
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.unitPrice}
-                        onChange={(e) =>
-                          handleItemChange(item.id, "unitPrice", e.target.value)
-                        }
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={item.subtotal}
-                        onChange={(e) =>
-                          handleItemChange(item.id, "subtotal", e.target.value)
-                        }
-                        disabled={!isEditing}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-center gap-2">
-                        {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleRemoveItem(item.id)}
+          {!purchaseOrder.items || purchaseOrder.items.length === 0 ? (
+            <EmptyState
+              icon={<Package className="w-8 h-8 text-slate-400" />}
+              title="No items"
+              description="This purchase order doesn't have any items."
+            />
+          ) : (
+            <>
+              {/* Table */}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead>Product / Component</TableHead>
+                      <TableHead>SKU / Part Number</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="text-right">Qty Ordered</TableHead>
+                      <TableHead className="text-right">Qty Received</TableHead>
+                      <TableHead className="text-right">Unit Price</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {purchaseOrder.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          {getItemName(item)}
+                        </TableCell>
+                        <TableCell className="text-gray-600">
+                          {getItemSku(item)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={
+                              item.itemType === "PRODUCT"
+                                ? "border-blue-200 text-blue-700"
+                                : "border-orange-200 text-orange-700"
+                            }
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                            {item.itemType === "PRODUCT" ? "Product" : "Part"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.quantityOrdered}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.quantityReceived}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(item.unitPrice)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(item.subtotal)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-          {isEditing && (
-            <div className="mt-4 text-center">
-              <Button variant="link" onClick={handleAddItem}>
-                Click here to add more order items +
-              </Button>
-            </div>
+              {/* Totals */}
+              <div className="flex justify-end mt-6">
+                <div className="w-72 space-y-3 bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      Total Qty Ordered:
+                    </span>
+                    <span className="font-medium">{totalQuantityOrdered}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      Total Qty Received:
+                    </span>
+                    <span className="font-medium">{totalQuantityReceived}</span>
+                  </div>
+                  <div className="border-t pt-3 flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">
+                      Total Amount:
+                    </span>
+                    <span className="text-lg font-bold text-green-600">
+                      {formatCurrency(totalAmount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" isActive>
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-
-          {/* Totals */}
-          <div className="flex justify-end mt-6 space-y-2">
-            <div className="w-64 space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">
-                  Total Quantity:
-                </span>
-                <span className="font-semibold text-gray-900">
-                  $ {totalAmount.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">
-                  Total Amount:
-                </span>
-                <span className="font-semibold text-gray-900">
-                  {totalQuantity}
-                </span>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -497,22 +435,19 @@ export default function PurchaseOrderDetailPage() {
             <AlertDialogTitle>Delete Purchase Order</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete purchase order #
-              {orderData.poNumber}? This action cannot be undone.
+              {purchaseOrder.poNumber}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleConfirmDelete}
-            >
+            <Button variant="destructive" onClick={handleConfirmDelete}>
               Delete
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </PageContainer>
   );
 }

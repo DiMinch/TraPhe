@@ -1,15 +1,39 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 
+export interface SupplierInfo {
+  id: string;
+  name: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+export interface ProductVariantInfo {
+  id: string;
+  sku: string;
+  variantName: string;
+  productName: string;
+  categoryName?: string;
+  sellingPrice?: number;
+  supplier?: SupplierInfo;
+}
+
+export interface PartComponentInfo {
+  id: string;
+  name: string;
+  partType: string;
+  unit: string;
+  sellingPrice?: number;
+  supplier?: SupplierInfo;
+}
+
 export interface InventoryResponse {
   id: string;
-  productVariant: {
-    id: string;
-    sku: string;
-    variantName: string;
-    productName: string;
-    supplierName?: string;
-  };
+  type: "PRODUCT" | "COMPONENT" | "UNKNOWN";
+  productVariant?: ProductVariantInfo;
+  partComponent?: PartComponentInfo;
   quantityPhysical: number;
   quantityReserved: number;
   quantityAvailable: number;

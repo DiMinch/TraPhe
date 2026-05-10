@@ -42,6 +42,7 @@ import {
   Loader2,
   Building2,
   MoreHorizontal,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -51,11 +52,14 @@ import {
   type SupplierResponse,
   type SupplierRequest,
 } from "@/services/supplier.service";
+import { purchaseOrderService } from "@/services/purchase-order.service";
 import {
   PageContainer,
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { exportService, type ExportColumn } from "@/services/export.service";
+import { toast } from "sonner";
 
 interface Supplier {
   id: string;
@@ -86,14 +90,17 @@ export default function SuppliersPage() {
   const itemsPerPage = 10;
 
   // Transform backend response to frontend format
-  const transformSupplier = (s: SupplierResponse): Supplier => ({
+  const transformSupplier = (
+    s: SupplierResponse,
+    poCountMap: Map<string, number>,
+  ): Supplier => ({
     id: s.id,
     name: s.name || "",
     contactName: s.contact_name || "",
     phone: s.phone || "",
     email: s.email || "",
     address: s.address || "",
-    totalPOs: 0, // Backend doesn't provide this, could be calculated separately
+    totalPOs: poCountMap.get(s.id) || 0,
     status: s.isDeleted ? "Inactive" : "Active",
   });
 
@@ -102,12 +109,32 @@ export default function SuppliersPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await supplierService.getAllSuppliers();
+      // Fetch suppliers and purchase orders in parallel
+      const [suppliersResponse, purchaseOrdersResponse] = await Promise.all([
+        supplierService.getAllSuppliers(),
+        purchaseOrderService.getAllPurchaseOrders(),
+      ]);
+
+      // Count purchase orders per supplier
+      const poCountMap = new Map<string, number>();
+      const purchaseOrdersData = purchaseOrdersResponse.data;
+      const purchaseOrders = Array.isArray(purchaseOrdersData)
+        ? purchaseOrdersData
+        : (purchaseOrdersData as any)?.content || [];
+      purchaseOrders.forEach((po: any) => {
+        if (po.supplier?.id) {
+          const currentCount = poCountMap.get(po.supplier.id) || 0;
+          poCountMap.set(po.supplier.id, currentCount + 1);
+        }
+      });
+
       // Handle both direct array and paginated response
-      const suppliersData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || [];
-      const transformedData = suppliersData.map(transformSupplier);
+      const suppliersData = Array.isArray(suppliersResponse.data)
+        ? suppliersResponse.data
+        : (suppliersResponse.data as any)?.content || [];
+      const transformedData = suppliersData.map((s: SupplierResponse) =>
+        transformSupplier(s, poCountMap),
+      );
       setSuppliers(transformedData);
     } catch (err: any) {
       console.error("Error fetching suppliers:", err);
@@ -273,6 +300,32 @@ export default function SuppliersPage() {
     }
   };
 
+  // Export suppliers to Excel
+  const handleExportExcel = () => {
+    if (suppliers.length === 0) {
+      toast.warning("No suppliers to export");
+      return;
+    }
+
+    const columns: ExportColumn<Supplier>[] = [
+      { key: "name", header: "Supplier Name" },
+      { key: "contactName", header: "Contact Name" },
+      { key: "email", header: "Email" },
+      { key: "phone", header: "Phone" },
+      { key: "address", header: "Address" },
+      { key: "totalPOs", header: "Total POs" },
+      { key: "status", header: "Status" },
+    ];
+
+    try {
+      exportService.exportToExcel(suppliers, columns, "suppliers_export");
+      toast.success("Suppliers exported successfully!");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export suppliers");
+    }
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -283,6 +336,13 @@ export default function SuppliersPage() {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 mb-6 justify-end">
+        <Button
+          onClick={handleExportExcel}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-md"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Excel
+        </Button>
         <Button
           className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
           onClick={() => setIsNewSupplierOpen(true)}
@@ -476,7 +536,7 @@ export default function SuppliersPage() {
                       <PaginationLink
                         onClick={() => setCurrentPage(page)}
                         isActive={currentPage === page}
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${currentPage === page ? "bg-primary text-white hover:bg-primary/90" : "text-black"}`}
                       >
                         {page}
                       </PaginationLink>

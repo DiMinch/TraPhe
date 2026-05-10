@@ -1,18 +1,34 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 
-// Revenue Report Types
+// Revenue Report Types - matching backend structure
 export interface RevenueReportResponse {
-  period: string;
   totalRevenue: number;
   totalOrders: number;
-  averageOrderValue: number;
-  revenueGrowth: number;
-  breakdown: RevenueBreakdown;
-  comparison: RevenueComparison;
-  dailyRevenue: DailyRevenue[];
+  breakdown: RevenueByPeriod[];
+  byOrderType: RevenueByType[];
+  comparison: ComparisonData | null;
 }
 
+export interface RevenueByPeriod {
+  period: string; // date string like "2026-01-12"
+  revenue: number;
+  orderCount: number;
+}
+
+export interface RevenueByType {
+  orderType: string; // ONLINE_COD, OFFLINE, etc.
+  revenue: number;
+  orderCount: number;
+}
+
+export interface ComparisonData {
+  previousRevenue: number;
+  difference: number;
+  percentageChange: number;
+}
+
+// Legacy interfaces for backwards compatibility
 export interface RevenueBreakdown {
   onlineRevenue: number;
   offlineRevenue: number;
@@ -33,49 +49,57 @@ export interface DailyRevenue {
   orders: number;
 }
 
-// Profit Report Types
+// Profit Report Types - matching backend structure
 export interface ProfitReportResponse {
-  period: string;
   totalRevenue: number;
   totalCost: number;
   grossProfit: number;
   profitMargin: number;
-  products: ProductProfit[];
+  details: ProductProfit[];
 }
 
 export interface ProductProfit {
-  productId: string;
+  productVariantId: string;
   productName: string;
   variantName: string;
+  sku: string;
   quantitySold: number;
   revenue: number;
   cost: number;
-  profit: number;
+  grossProfit: number;
   profitMargin: number;
 }
 
-// Inventory Report Types
+// Inventory Report Types - matching backend structure
 export interface InventoryReportResponse {
   totalProducts: number;
-  totalVariants: number;
-  totalStockValue: number;
-  lowStockItems: number;
-  outOfStockItems: number;
+  lowStockProducts: number;
+  outOfStockProducts: number;
   items: InventoryReportItem[];
-  alerts: InventoryAlert[];
+  fastMovingItems: FastMovingItem[];
 }
 
 export interface InventoryReportItem {
-  id: string;
-  sku: string;
+  productVariantId: string;
   productName: string;
   variantName: string;
+  sku: string;
   quantityPhysical: number;
   quantityReserved: number;
   quantityAvailable: number;
   minThreshold: number;
-  stockValue: number;
-  status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  isLowStock: boolean;
+  isOutOfStock: boolean;
+}
+
+export interface FastMovingItem {
+  productVariantId: string;
+  productName: string;
+  variantName: string;
+  sku: string;
+  quantitySold: number;
+  daysSinceFirstSale: number;
+  averageDailySales: number;
 }
 
 export interface InventoryAlert {
@@ -88,23 +112,19 @@ export interface InventoryAlert {
   severity: "CRITICAL" | "WARNING";
 }
 
-// Top Products Report Types
+// Top Products Report Types - matching backend structure
 export interface TopProductsReportResponse {
-  period: string;
-  sortBy: "quantity" | "revenue";
-  products: TopProduct[];
+  topProducts: TopProduct[];
 }
 
 export interface TopProduct {
   rank: number;
-  productId: string;
+  productVariantId: string;
   productName: string;
   variantName: string;
   sku: string;
   quantitySold: number;
-  revenue: number;
-  orders: number;
-  averagePrice: number;
+  totalRevenue: number;
 }
 
 // Export Request Types
@@ -122,7 +142,8 @@ export interface ExportReportRequest {
 
 export interface ExportInventoryRequest {
   format: ExportFormat;
-  includeAlerts?: boolean;
+  lowStockOnly?: boolean;
+  fastMovingOnly?: boolean;
   status?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
 }
 
@@ -199,12 +220,26 @@ export const reportService = {
    * @returns Blob data for file download
    */
   exportReport: async (data: ExportReportRequest) => {
-    return axiosClient.post<any, Blob>(`${BASE_URL}/export`, data, {
+    const { reportType, format, startDate, endDate, sortBy, limit } = data;
+
+    // Build request body matching ReportFilterRequest
+    const requestBody: Record<string, unknown> = {};
+    if (startDate) requestBody.startDate = startDate;
+    if (endDate) requestBody.endDate = endDate;
+    if (sortBy) requestBody.sortBy = sortBy.toUpperCase();
+    if (limit) requestBody.limit = limit;
+
+    const response = await axiosClient.post(`${BASE_URL}/export`, requestBody, {
+      params: {
+        type: reportType,
+        format: format,
+      },
       responseType: "blob",
       headers: {
-        Accept: data.format === "PDF" ? "application/pdf" : "text/csv",
+        Accept: format === "PDF" ? "application/pdf" : "text/csv",
       },
     });
+    return response as unknown as Blob;
   },
 
   /**
@@ -213,12 +248,20 @@ export const reportService = {
    * @returns Blob data for file download
    */
   exportInventoryReport: async (data: ExportInventoryRequest) => {
-    return axiosClient.post<any, Blob>(`${BASE_URL}/export/inventory`, data, {
-      responseType: "blob",
-      headers: {
-        Accept: data.format === "PDF" ? "application/pdf" : "text/csv",
+    const { format, ...filterParams } = data;
+    return axiosClient.post<any, Blob>(
+      `${BASE_URL}/export/inventory`,
+      filterParams,
+      {
+        params: {
+          format: format,
+        },
+        responseType: "blob",
+        headers: {
+          Accept: format === "PDF" ? "application/pdf" : "text/csv",
+        },
       },
-    });
+    );
   },
 
   /**
@@ -278,7 +321,7 @@ export const reportService = {
    */
   exportAndDownloadTopProducts: async (
     format: ExportFormat,
-    sortBy?: "quantity" | "revenue",
+    sortBy?: "QUANTITY" | "REVENUE",
     limit?: number,
     startDate?: string,
     endDate?: string,
@@ -286,7 +329,7 @@ export const reportService = {
     const blob = await reportService.exportReport({
       reportType: "TOP_PRODUCTS",
       format,
-      sortBy,
+      sortBy: sortBy?.toLowerCase(),
       limit,
       startDate,
       endDate,
