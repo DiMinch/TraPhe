@@ -199,23 +199,26 @@ export default function ShippingAddress({
                 <Label
                   htmlFor="new_address"
                   className="cursor-pointer font-medium flex items-center gap-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddAddress();
+                  }}
                 >
                   <Plus className="w-4 h-4" /> Ship to a different address
                 </Label>
               </div>
 
-              <Button
+              {/* <Button
                 variant="ghost"
                 onClick={onAddAddress}
                 className="w-full text-sm text-gray-500 hover:text-black hover:bg-gray-100 mt-2 cursor-pointer justify-center"
               >
-                <Plus className="w-3 h-3 mr-2" /> Add permanent address to
-                profile
-              </Button>
+                <Plus className="w-3 h-3 mr-2" /> Add permanent address to profile
+              </Button> */}
             </RadioGroup>
           )}
 
-          {isUsingNewAddress && (
+          {isGuest && (
             <div className="pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
               {!isGuest && (
                 <div className="border-t border-gray-100 my-4"></div>
