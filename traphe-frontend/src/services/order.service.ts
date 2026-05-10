@@ -80,11 +80,11 @@ export const orderService = {
       size: params?.size || 100,
       ...(params?.status &&
         params.status !== "all-status" && {
-          status: params.status.toUpperCase(),
+          status: params.status,
         }),
       ...(params?.orderType &&
         params.orderType !== "all-type" && {
-          orderType: params.orderType.toUpperCase().replace("-", "_"),
+          orderType: params.orderType,
         }),
       ...(params?.startDate && { startDate: params.startDate }),
       ...(params?.endDate && { endDate: params.endDate }),

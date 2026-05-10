@@ -18,7 +18,7 @@ export default function Header() {
           <div className="w-12 h-12 overflow-hidden flex items-center justify-center">
             <img
               src="/logo.svg"
-              alt="Viti"
+              alt="TRAPHE"
               className="w-full h-full object-cover scale-250"
             />
           </div>

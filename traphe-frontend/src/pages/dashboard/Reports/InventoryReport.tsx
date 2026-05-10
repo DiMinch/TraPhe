@@ -21,11 +21,11 @@ import {
   Download,
   Package,
   AlertTriangle,
-  DollarSign,
   RefreshCw,
   FileDown,
   Loader2,
   TrendingDown,
+  Calendar,
 } from "lucide-react";
 import {
   reportService,
@@ -48,7 +48,9 @@ export default function InventoryReportPage() {
         lowStockOnly: lowStockOnly || undefined,
         fastMovingOnly: fastMovingOnly || undefined,
       });
-      setReport(response.data);
+      // axios interceptor returns response.data, so use response directly or response.data if wrapped
+      const reportData = (response as any).data ?? response;
+      setReport(reportData as InventoryReportResponse);
     } catch (error) {
       console.error("Inventory report error:", error);
       const errorMessage =
@@ -85,50 +87,45 @@ export default function InventoryReportPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "IN_STOCK":
-        return (
-          <Badge variant="default" className="bg-green-600">
-            In Stock
-          </Badge>
-        );
-      case "LOW_STOCK":
-        return (
-          <Badge variant="secondary" className="bg-yellow-600 text-white">
-            Low Stock
-          </Badge>
-        );
-      case "OUT_OF_STOCK":
-        return <Badge variant="destructive">Out of Stock</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getSeverityBadge = (severity: string) => {
-    return severity === "CRITICAL" ? (
-      <Badge variant="destructive">Critical</Badge>
-    ) : (
-      <Badge variant="secondary" className="bg-yellow-600 text-white">
-        Warning
-      </Badge>
-    );
-  };
-
   return (
     <PageContainer>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Inventory Report</h1>
-        <p className="text-gray-600 mt-1">
-          Monitor stock levels and receive low stock alerts
-        </p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Inventory Report</h1>
+          <p className="text-gray-600 mt-1">
+            Monitor stock levels and receive low stock alerts
+          </p>
+        </div>
+        <div className="flex gap-2 mt-4 md:mt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("CSV")}
+            disabled={exporting}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleExport("PDF")}
+            disabled={exporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Filters</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Filters
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -162,8 +159,12 @@ export default function InventoryReportPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={fetchReport} className="flex-1">
+            <div className="flex items-end">
+              <Button
+                onClick={fetchReport}
+                variant="outline"
+                className="w-full"
+              >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Apply
               </Button>
@@ -179,7 +180,7 @@ export default function InventoryReportPage() {
       ) : report ? (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -188,26 +189,11 @@ export default function InventoryReportPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{report.totalProducts}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {report.totalVariants} variants
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Stock Value
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
                 <div className="text-2xl font-bold">
-                  ${report.totalStockValue.toLocaleString()}
+                  {report.totalProducts || 0}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total inventory value
+                  {report.items?.length || 0} variants tracked
                 </p>
               </CardContent>
             </Card>
@@ -221,7 +207,7 @@ export default function InventoryReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">
-                  {report.lowStockItems}
+                  {report.lowStockProducts || 0}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Need restocking
@@ -238,7 +224,7 @@ export default function InventoryReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {report.outOfStockItems}
+                  {report.outOfStockProducts || 0}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Urgent action needed
@@ -247,8 +233,9 @@ export default function InventoryReportPage() {
             </Card>
           </div>
 
-          {/* Alerts */}
-          {report.alerts.length > 0 && (
+          {/* Low Stock Alerts */}
+          {report.items?.filter((i) => i.isLowStock || i.isOutOfStock).length >
+            0 && (
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -258,38 +245,49 @@ export default function InventoryReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {report.alerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{alert.productName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {alert.variantName} • SKU: {alert.sku}
+                  {report.items
+                    .filter((item) => item.isLowStock || item.isOutOfStock)
+                    .map((item) => (
+                      <div
+                        key={item.productVariantId}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium">{item.productName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.variantName} • SKU: {item.sku}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">
+                              Available
+                            </div>
+                            <div className="font-semibold">
+                              {item.quantityAvailable}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-muted-foreground">
+                              Threshold
+                            </div>
+                            <div className="font-semibold">
+                              {item.minThreshold}
+                            </div>
+                          </div>
+                          {item.isOutOfStock ? (
+                            <Badge variant="destructive">Critical</Badge>
+                          ) : (
+                            <Badge
+                              variant="secondary"
+                              className="bg-yellow-600 text-white"
+                            >
+                              Warning
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">
-                            Available
-                          </div>
-                          <div className="font-semibold">
-                            {alert.quantityAvailable}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">
-                            Threshold
-                          </div>
-                          <div className="font-semibold">
-                            {alert.minThreshold}
-                          </div>
-                        </div>
-                        {getSeverityBadge(alert.severity)}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -332,15 +330,14 @@ export default function InventoryReportPage() {
                       <TableHead className="text-right">Reserved</TableHead>
                       <TableHead className="text-right">Available</TableHead>
                       <TableHead className="text-right">Threshold</TableHead>
-                      <TableHead className="text-right">Value</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {report.items.length === 0 ? (
+                    {!report.items || report.items.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={9}
+                          colSpan={8}
                           className="text-center text-muted-foreground"
                         >
                           No inventory items found
@@ -348,7 +345,7 @@ export default function InventoryReportPage() {
                       </TableRow>
                     ) : (
                       report.items.map((item) => (
-                        <TableRow key={item.id}>
+                        <TableRow key={item.productVariantId}>
                           <TableCell className="font-mono text-sm">
                             {item.sku}
                           </TableCell>
@@ -370,10 +367,22 @@ export default function InventoryReportPage() {
                           <TableCell className="text-right text-muted-foreground">
                             {item.minThreshold}
                           </TableCell>
-                          <TableCell className="text-right">
-                            ${item.stockValue.toLocaleString()}
+                          <TableCell>
+                            {item.isOutOfStock ? (
+                              <Badge variant="destructive">Out of Stock</Badge>
+                            ) : item.isLowStock ? (
+                              <Badge
+                                variant="secondary"
+                                className="bg-yellow-600 text-white"
+                              >
+                                Low Stock
+                              </Badge>
+                            ) : (
+                              <Badge variant="default" className="bg-green-600">
+                                In Stock
+                              </Badge>
+                            )}
                           </TableCell>
-                          <TableCell>{getStatusBadge(item.status)}</TableCell>
                         </TableRow>
                       ))
                     )}

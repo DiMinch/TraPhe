@@ -18,6 +18,7 @@ export interface CreateEmployeeRequest {
   password: string;
   fullName: string;
   phone?: string;
+  roleName: string;
 }
 
 export interface Role {

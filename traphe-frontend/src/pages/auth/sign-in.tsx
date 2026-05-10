@@ -71,7 +71,7 @@ export default function SignInPage() {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-2">Sign In</h1>
-            <p className="text-gray-500">Start your journey with Viti</p>
+            <p className="text-gray-500">Start your journey with Traphe</p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSignIn}>
@@ -130,7 +130,7 @@ export default function SignInPage() {
             </Button>
 
             <p className="text-center text-sm text-gray-600">
-              New to Viti?{" "}
+              New to TraPhe?{" "}
               <Link
                 to="/sign-up"
                 className="font-semibold text-gray-900 hover:underline"
