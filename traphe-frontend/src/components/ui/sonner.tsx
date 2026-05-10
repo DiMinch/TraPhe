@@ -29,13 +29,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-gray-900 group-[.toast]:text-gray-50",
           cancelButton:
             "group-[.toast]:bg-gray-100 group-[.toast]:text-gray-500",
-          success: "!border-green-200 !bg-green-50/30",
-          error: "!border-red-200 !bg-red-50/30",
-          warning: "!border-yellow-200 !bg-yellow-50/30",
-          info: "!border-blue-200 !bg-blue-50/30",
+          success: "!border-green-200 !bg-green-50",
+          error: "!border-red-200 !bg-red-50",
+          warning: "!border-yellow-200 !bg-yellow-50",
+          info: "!border-blue-200 !bg-blue-50",
         },
       }}
       {...props}
     />
   );
 };
+
+export { Toaster };

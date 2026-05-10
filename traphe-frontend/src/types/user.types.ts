@@ -38,6 +38,8 @@ export interface UserAddress {
   isPrimary: boolean;
   postalCode?: string;
   detailAddress?: string;
+  contactName?: string;
+  contactPhone?: string;
 }
 
 export interface CreateAddressRequest {
@@ -47,4 +49,6 @@ export interface CreateAddressRequest {
   type: string;
   isPrimary: boolean;
   postalCode?: string;
+  contactName?: string;
+  contactPhone?: string;
 }

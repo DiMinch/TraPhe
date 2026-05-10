@@ -2,12 +2,27 @@ import { Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ProductCardProps } from "./ProductCard.types";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 export default function ProductCard({
   product,
 }: {
   product: ProductCardProps;
 }) {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (product.variantId) {
+      await addToCart(product.variantId, 1);
+    } else {
+      toast.error("Sản phẩm này chưa có phiên bản để mua.");
+    }
+  };
+
   return (
     <div className="group relative flex flex-col h-full cursor-pointer">
       <div className="relative bg-[#F3F5F7] aspect-4/5 mb-4 overflow-hidden rounded-sm w-full">
@@ -37,8 +52,11 @@ export default function ProductCard({
           />
         </div>
 
-        <div className="absolute bottom-0 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20">
-          <Button className="w-full bg-black text-white hover:bg-gray-800 h-10 shadow-lg cursor-pointer">
+        <div className="absolute bottom-0 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-20 pb-4">
+          <Button
+            onClick={handleAddToCart}
+            className="w-full bg-black text-white hover:bg-gray-800 h-10 shadow-lg cursor-pointer"
+          >
             Add to cart
           </Button>
         </div>

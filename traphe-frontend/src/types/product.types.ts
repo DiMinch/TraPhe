@@ -22,6 +22,17 @@ export interface Product {
   variants: ProductVariant[];
 }
 
+export interface ProductPageResponse {
+  content: Product[];
+  totalElements: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+  last: boolean;
+  first: boolean;
+  numberOfElements: number;
+}
+
 export interface CreateProductRequest {
   name: string;
   categoryId: string;

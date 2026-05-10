@@ -2,6 +2,7 @@ import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 import type {
   Product,
+  ProductPageResponse,
   CreateProductRequest,
   UpdateProductRequest,
   ProductVariant,
@@ -11,8 +12,10 @@ import type {
 
 export const productService = {
   // Product CRUD
-  getAllProducts: async () => {
-    return axiosClient.get<any, ApiResponse<Product[]>>("/products");
+  getAllProducts: async (page = 0, size = 12) => {
+    return axiosClient.get<any, ApiResponse<ProductPageResponse>>("/products", {
+      params: { page, size },
+    });
   },
 
   getProductById: async (id: string) => {

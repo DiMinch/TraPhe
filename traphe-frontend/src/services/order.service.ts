@@ -60,6 +60,7 @@ export interface CreateOrderRequest {
   guestName?: string;
   guestPhone?: string;
   guestEmail?: string;
+  addressId?: string;
 }
 
 export const orderService = {
@@ -139,5 +140,22 @@ export const orderService = {
   // Delete order
   deleteOrder: async (id: string) => {
     return axiosClient.delete<any, ApiResponse<void>>(`/orders/${id}`);
+  },
+
+  getMyOrders: async (params?: {
+    page?: number;
+    size?: number;
+    sort?: string[];
+  }) => {
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      "/orders/user",
+      {
+        params: {
+          page: params?.page || 0,
+          size: params?.size || 20,
+          sort: params?.sort || ["createdAt,desc"],
+        },
+      },
+    );
   },
 };

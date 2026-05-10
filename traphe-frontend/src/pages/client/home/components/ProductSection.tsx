@@ -12,9 +12,9 @@ export default function ProductSection() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productService.getAllProducts();
+        const res = await productService.getAllProducts(0, 8);
         if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.slice(0, 8));
+          setProducts(res.data.content);
         }
       } catch (error) {
         console.error("Failed to fetch products", error);
@@ -49,6 +49,7 @@ export default function ProductSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
         {products.map((product) => {
+          const firstVariant = product.variants?.[0];
           const displayPrice = product.variants?.[0]?.sellingPrice || 0;
 
           return (
@@ -56,6 +57,7 @@ export default function ProductSection() {
               <ProductCard
                 product={{
                   id: product.id,
+                  variantId: firstVariant?.id,
                   name: product.name,
                   price: displayPrice,
                   image: product.imageUrl,

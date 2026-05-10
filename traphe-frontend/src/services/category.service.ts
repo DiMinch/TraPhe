@@ -10,7 +10,7 @@ import type {
 
 export const categoryService = {
   getAllCategories: async () => {
-    return axiosClient.get<unknown, ApiResponse<Category[]>>("/categories");
+    return axiosClient.get<any, ApiResponse<Category[]>>("/categories");
   },
 
   getCategoryById: async (id: string) => {

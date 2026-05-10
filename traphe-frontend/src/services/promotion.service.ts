@@ -69,11 +69,12 @@ export interface PromotionUsageReportResponse {
 
 // Apply promotion request
 export interface ApplyPromotionCodeRequest {
-  cartItems: Array<{
+  items: Array<{
     productVariantId: string;
     quantity: number;
     unitPrice: number;
   }>;
+  code?: string;
   promotionCode?: string;
   customerId?: string;
 }

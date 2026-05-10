@@ -1,5 +1,6 @@
 export interface ProductCardProps {
   id: number | string;
+  variantId?: string;
   name: string;
   price: number;
   originalPrice?: number;

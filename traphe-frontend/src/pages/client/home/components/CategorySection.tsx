@@ -42,9 +42,23 @@ export default function CategorySection() {
 
     const style = styles[index % styles.length];
 
+    let finalImage = style.image;
+
+    if (cat.imageUrl && cat.imageUrl.trim() !== "") {
+      if (cat.imageUrl.startsWith("http")) {
+        finalImage = cat.imageUrl;
+      } else {
+        const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
+        const cleanPath = cat.imageUrl.startsWith("/")
+          ? cat.imageUrl
+          : `/${cat.imageUrl}`;
+        finalImage = `${baseUrl}${cleanPath}`;
+      }
+    }
+
     return {
       ...cat,
-      image: style.image,
+      image: finalImage,
       className: style.className,
       link: `/shop?category=${cat.id}`,
     };

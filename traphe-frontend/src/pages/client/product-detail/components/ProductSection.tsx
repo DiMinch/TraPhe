@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import SpecsSheet from "./SpecsSheet";
 import type { Product, ProductVariant } from "@/types/product.types";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/contexts/CartContext";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
 
 interface ProductSectionProps {
   product: Product;
@@ -18,6 +21,8 @@ export default function ProductSection({
 }: ProductSectionProps) {
   const images = [product.imageUrl];
   const [currentImage, setCurrentImage] = useState(0);
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setCurrentImage(0);
@@ -28,6 +33,23 @@ export default function ProductSection({
     setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
 
   const price = selectedVariant ? selectedVariant.sellingPrice : 0;
+
+  const handleAddToCart = async () => {
+    if (selectedVariant) {
+      await addToCart(selectedVariant.id, 1);
+    } else {
+      toast.error("Vui lòng chọn phiên bản sản phẩm");
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (selectedVariant) {
+      await addToCart(selectedVariant.id, 1);
+      navigate("/cart");
+    } else {
+      toast.error("Vui lòng chọn phiên bản sản phẩm");
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
@@ -114,11 +136,15 @@ export default function ProductSection({
         <div className="flex gap-4 mt-auto">
           <Button
             variant="outline"
+            onClick={handleAddToCart}
             className="h-14 w-14 border-2 border-black rounded-sm flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
           >
             <ShoppingCart className="w-6 h-6" />
           </Button>
-          <Button className="h-14 flex-1 bg-[#222222] hover:bg-black text-white text-lg font-medium rounded-sm uppercase tracking-wide transition-colors cursor-pointer">
+          <Button
+            onClick={handleBuyNow}
+            className="h-14 flex-1 bg-[#222222] hover:bg-black text-white text-lg font-medium rounded-sm uppercase tracking-wide transition-colors cursor-pointer"
+          >
             Buy Now
           </Button>
         </div>

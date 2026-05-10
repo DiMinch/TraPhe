@@ -8,32 +8,13 @@ import type {
   Commune,
 } from "@/types/user.types";
 
-export interface Address {
-  id: string;
-  userId: string;
-  province: string;
-  district: string;
-  commune: string;
-  detail: string;
-  isDefault: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AddAddressRequest {
-  province: string;
-  district: string;
-  commune: string;
-  detail: string;
-}
-
 export const userService = {
   getProfile: async () => {
-    return axiosClient.get<unknown, ApiResponse<UserInfo>>("/users/profile");
+    return axiosClient.get<any, ApiResponse<UserInfo>>("/users/profile");
   },
 
   updateProfile: async (formData: FormData) => {
-    return axiosClient.put<unknown, ApiResponse<UserInfo>>(
+    return axiosClient.put<any, ApiResponse<UserInfo>>(
       "/users/profile",
       formData,
       {
@@ -44,21 +25,30 @@ export const userService = {
     );
   },
 
-  // Address management
   getAddresses: async () => {
-    return axiosClient.get<unknown, ApiResponse<Address[]>>("/users/addresses");
+    return axiosClient.get<any, ApiResponse<UserAddress[]>>("/users/addresses");
   },
 
-  addAddress: async (data: AddAddressRequest) => {
-    return axiosClient.post<unknown, ApiResponse<Address>>(
+  addAddress: async (data: CreateAddressRequest) => {
+    return axiosClient.post<any, ApiResponse<UserAddress>>(
       "/users/addresses",
       data,
     );
   },
 
   deleteAddress: async (addressId: string) => {
-    return axiosClient.delete<unknown, ApiResponse<void>>(
+    return axiosClient.delete<any, ApiResponse<null>>(
       `/users/addresses/${addressId}`,
     );
+  },
+
+  getProvinces: async () => {
+    return axiosClient.get<any, ApiResponse<Province[]>>("/address/provinces");
+  },
+
+  getCommunes: async (provinceCode: string) => {
+    return axiosClient.get<any, ApiResponse<Commune[]>>("/address/communes", {
+      params: { provinceCode },
+    });
   },
 };

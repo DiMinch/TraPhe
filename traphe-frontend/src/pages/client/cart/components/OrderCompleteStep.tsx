@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { cartItems } from "@/data/mockData";
 import { useNavigate } from "react-router";
 import {
   CheckCircle2,
@@ -8,9 +7,37 @@ import {
   Receipt,
   CreditCard,
 } from "lucide-react";
+import type { OrderResponse } from "@/services/order.service";
+import { format } from "date-fns";
 
-export default function OrderCompleteStep() {
+interface OrderCompleteStepProps {
+  order?: OrderResponse | null;
+}
+
+export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
   const navigate = useNavigate();
+
+  if (!order) {
+    return (
+      <div className="text-center py-20 animate-in fade-in duration-500">
+        <div className="mb-4 text-gray-300">
+          <Package className="w-16 h-16 mx-auto" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900">
+          No order details found
+        </h2>
+        <p className="text-gray-500 mt-2 mb-6">
+          Your session might have expired or you refreshed the page.
+        </p>
+        <Button
+          onClick={() => navigate("/products")}
+          className="bg-black text-white hover:bg-gray-800"
+        >
+          Back to Shop
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 md:py-12 flex flex-col items-center animate-in fade-in duration-500">
@@ -27,8 +54,8 @@ export default function OrderCompleteStep() {
         Your order is confirmed!
       </h1>
       <p className="text-sm md:text-base text-gray-500 text-center max-w-md mb-8 md:mb-10 px-4">
-        Thank you for shopping with VITI. We have received your order and will
-        begin processing it right away.
+        Thank you for shopping with VITI. We have received your order{" "}
+        <b>#{order.orderNumber}</b> and will begin processing it right away.
       </p>
 
       <div className="w-full bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-10">
@@ -39,7 +66,7 @@ export default function OrderCompleteStep() {
                 <Package className="w-4 h-4" /> Order Code
               </div>
               <p className="font-bold text-sm md:text-base text-gray-900 break-all">
-                #ORD-8291
+                #{order.orderNumber}
               </p>
             </div>
             <div className="space-y-1">
@@ -47,7 +74,9 @@ export default function OrderCompleteStep() {
                 <CalendarDays className="w-4 h-4" /> Date
               </div>
               <p className="font-bold text-sm md:text-base text-gray-900">
-                Oct 19, 2023
+                {order.createdAt
+                  ? format(new Date(order.createdAt), "MMM dd, yyyy")
+                  : "N/A"}
               </p>
             </div>
             <div className="space-y-1">
@@ -55,15 +84,15 @@ export default function OrderCompleteStep() {
                 <Receipt className="w-4 h-4" /> Total
               </div>
               <p className="font-bold text-sm md:text-base text-gray-900">
-                58.970.000₫
+                {order.finalAmount.toLocaleString("vi-VN")}₫
               </p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase">
                 <CreditCard className="w-4 h-4" /> Payment
               </div>
-              <p className="font-bold text-sm md:text-base text-gray-900">
-                Credit Card
+              <p className="font-bold text-sm md:text-base text-gray-900 capitalize">
+                {order.paymentMethod.replace("_", " ").toLowerCase()}
               </p>
             </div>
           </div>
@@ -71,20 +100,31 @@ export default function OrderCompleteStep() {
 
         <div className="p-6 md:p-8">
           <h3 className="font-semibold text-gray-900 mb-4 text-sm md:text-base">
-            Order Items ({cartItems.length})
+            Order Items ({order.items.length})
           </h3>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-            {cartItems.map((item) => (
+            {order.items.map((item) => (
               <div key={item.id} className="group relative w-full">
                 <div className="aspect-3/4 w-full bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden transition-transform group-hover:border-black/20">
-                  <span className="text-[10px] md:text-xs text-gray-400 font-medium select-none">
-                    Img
-                  </span>
+                  {item.productImage ? (
+                    <img
+                      src={item.productImage}
+                      alt={item.productName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] md:text-xs text-gray-400 font-medium select-none">
+                      Img
+                    </span>
+                  )}
                 </div>
 
                 <div className="absolute -top-2 -right-2 bg-black text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm z-10">
                   {item.quantity}
                 </div>
+                <p className="text-xs text-center mt-2 truncate text-gray-600 px-1">
+                  {item.productName}
+                </p>
               </div>
             ))}
           </div>

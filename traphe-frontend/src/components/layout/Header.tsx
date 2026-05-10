@@ -2,8 +2,11 @@ import { Link } from "react-router";
 import { Search, User, ShoppingBag } from "lucide-react";
 import { navLinks } from "@/lib/menu";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/contexts/CartContext";
 
 export default function Header() {
+  const { count } = useCart();
+
   return (
     <header className="w-full bg-white py-4 px-6 sticky top-0 z-50 shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -38,9 +41,11 @@ export default function Header() {
           </Link>
           <Link to="/cart" className="text-gray-700 hover:text-black relative">
             <ShoppingBag className="w-5 h-5" />
-            <Badge className="absolute -top-2 -right-2 h-4 w-4 flex items-center justify-center p-0 text-[10px] bg-black text-white rounded-full">
-              2
-            </Badge>
+            {count > 0 && (
+              <Badge className="absolute -top-2 -right-2 h-4 w-4 flex items-center justify-center p-0 text-[10px] bg-black text-white rounded-full">
+                {count > 99 ? "99+" : count}
+              </Badge>
+            )}
           </Link>
         </div>
       </div>
