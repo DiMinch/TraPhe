@@ -21,15 +21,14 @@ import {
 import {
   Search,
   QrCode,
-  UserPlus,
   Plus,
   Minus,
-  Edit,
   Trash2,
   RefreshCw,
   X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   inventoryService,
   type InventoryResponse,
@@ -39,6 +38,12 @@ import {
   type CreateOrderRequest,
   type OrderItemRequest,
 } from "@/services/order.service";
+import {
+  promotionService,
+  type CartDiscountCalculationResponse,
+} from "@/services/promotion.service";
+import { customerService } from "@/services/customer.service";
+import type { Customer } from "@/types/customer.types";
 
 interface Product {
   id: string;
@@ -62,19 +67,23 @@ interface OrderItem {
   image: string;
 }
 
-interface Promotion {
-  id: number;
-  code: string;
-  type: string;
-  discount: string;
+interface AppliedPromotion {
+  promotionId: string;
+  promotionCode: string;
+  discountAmount: number;
 }
 
 export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [guestPhone, setGuestPhone] = useState("");
   const [voucherCode, setVoucherCode] = useState("");
-  const [exchangePoint, setExchangePoint] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -84,7 +93,12 @@ export default function POSPage() {
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [appliedPromotions, setAppliedPromotions] = useState<
+    AppliedPromotion[]
+  >([]);
+  const [discountCalculation, setDiscountCalculation] =
+    useState<CartDiscountCalculationResponse | null>(null);
+  const [applyingPromotion, setApplyingPromotion] = useState(false);
 
   // Transform inventory to products
   const transformInventory = (inv: InventoryResponse): Product => ({
@@ -104,9 +118,13 @@ export default function POSPage() {
     setError(null);
     try {
       const response = await inventoryService.getAllInventory();
-      const transformedData = response.data
+      const inventoryData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      const transformedData = inventoryData
         .filter(
-          (inv) => inv.quantityAvailable > 0 && inv.productVariant !== null,
+          (inv: any) =>
+            inv.quantityAvailable > 0 && inv.productVariant !== null,
         )
         .map(transformInventory);
       setProducts(transformedData);
@@ -121,7 +139,47 @@ export default function POSPage() {
   // Fetch products on component mount
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
   }, []);
+
+  // Fetch customers
+  const fetchCustomers = async () => {
+    try {
+      const response = await customerService.getCustomers();
+      const customerData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      setCustomers(Array.isArray(customerData) ? customerData : []);
+    } catch (err: any) {
+      console.error("Error fetching customers:", err);
+    }
+  };
+
+  // Filter customers based on search
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      (customer.fullName?.toLowerCase() || "").includes(
+        customerSearch.toLowerCase(),
+      ) ||
+      (customer.phone || "").includes(customerSearch) ||
+      (customer.email?.toLowerCase() || "").includes(
+        customerSearch.toLowerCase(),
+      ),
+  );
+
+  // Handle customer selection
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setCustomerSearch(customer.fullName);
+    setShowCustomerDropdown(false);
+    setGuestPhone(""); // Clear guest phone when customer is selected
+  };
+
+  // Handle clear customer
+  const handleClearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerSearch("");
+  };
 
   // Add product to cart
   const handleAddToCart = (product: Product) => {
@@ -140,7 +198,7 @@ export default function POSPage() {
           ),
         );
       } else {
-        alert("Not enough stock available");
+        toast.error("Not enough stock available");
       }
     } else {
       // Add new item to cart
@@ -165,7 +223,7 @@ export default function POSPage() {
           const newQuantity = item.quantity + delta;
           if (newQuantity < 1) return item;
           if (newQuantity > item.available) {
-            alert("Not enough stock available");
+            toast.error("Not enough stock available");
             return item;
           }
           return { ...item, quantity: newQuantity };
@@ -177,10 +235,79 @@ export default function POSPage() {
 
   const handleRemoveItem = (id: string) => {
     setOrderItems(orderItems.filter((item) => item.id !== id));
+    // Clear promotions when items change
+    setAppliedPromotions([]);
+    setDiscountCalculation(null);
+    setVoucherCode("");
   };
 
-  const handleRemovePromotion = (id: number) => {
-    setPromotions(promotions.filter((promo) => promo.id !== id));
+  const handleApplyPromotion = async () => {
+    if (!voucherCode.trim()) {
+      toast.error("Please enter a promotion code");
+      return;
+    }
+
+    if (orderItems.length === 0) {
+      toast.error("Please add items to cart first");
+      return;
+    }
+
+    setApplyingPromotion(true);
+    try {
+      const items = orderItems.map((item) => ({
+        productVariantId: item.productVariantId,
+        quantity: item.quantity,
+        unitPrice: item.price,
+      }));
+
+      const response = await promotionService.applyPromotionCode({
+        items,
+        code: voucherCode.trim(),
+      });
+
+      const calculation = (response.data as any)?.data || response.data;
+      setDiscountCalculation(calculation);
+      setAppliedPromotions(calculation.appliedPromotions || []);
+      toast.success(`Promotion "${voucherCode}" applied successfully!`);
+    } catch (err: any) {
+      console.error("Error applying promotion:", err);
+      toast.error(err.response?.data?.message || "Invalid promotion code");
+    } finally {
+      setApplyingPromotion(false);
+    }
+  };
+
+  const handleRemovePromotion = async (promotionCode: string) => {
+    setApplyingPromotion(true);
+    try {
+      const items = orderItems.map((item) => ({
+        productVariantId: item.productVariantId,
+        quantity: item.quantity,
+        unitPrice: item.price,
+      }));
+
+      // Remove the promotion
+      const response = await promotionService.removePromotionCode({
+        items,
+        code: promotionCode,
+      });
+
+      const calculation = (response.data as any)?.data || response.data;
+      setDiscountCalculation(calculation);
+      setAppliedPromotions(calculation.appliedPromotions || []);
+
+      // Clear voucher code if it matches
+      if (voucherCode === promotionCode) {
+        setVoucherCode("");
+      }
+
+      toast.success(`Promotion "${promotionCode}" removed`);
+    } catch (err: any) {
+      console.error("Error removing promotion:", err);
+      toast.error(err.response?.data?.message || "Failed to remove promotion");
+    } finally {
+      setApplyingPromotion(false);
+    }
   };
 
   // Calculate totals
@@ -188,29 +315,55 @@ export default function POSPage() {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const discount = 0; // Calculate from promotions
+
+  // Calculate tier discount if customer is selected
+  const tierDiscount = selectedCustomer?.tier
+    ? subtotal * (selectedCustomer.tier.discountRate / 100)
+    : 0;
+
+  // Total discount includes both promotion and tier discounts
+  const promotionDiscount = discountCalculation?.totalDiscount || 0;
+  const discount = promotionDiscount + tierDiscount;
+
+  // Final total after all discounts
   const total = subtotal - discount;
 
   // Create order
   const handleProceed = async () => {
     if (orderItems.length === 0) {
-      alert("Please add items to cart");
+      toast.error("Please add items to cart");
       return;
     }
 
     if (!paymentMethod) {
-      alert("Please select a payment method");
+      toast.error("Please select a payment method");
+      return;
+    }
+
+    // Validate customer or guest phone
+    if (!selectedCustomer && !guestPhone.trim()) {
+      toast.error("Please select a customer or enter guest phone number");
       return;
     }
 
     setProcessing(true);
     try {
-      const items: OrderItemRequest[] = orderItems.map((item) => ({
-        productVariantId: item.productVariantId,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        discount: 0,
-      }));
+      // Calculate discount per item (proportional distribution)
+      const totalItemsValue = orderItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
+      const items: OrderItemRequest[] = orderItems.map((item) => {
+        const itemTotal = item.price * item.quantity;
+        const itemDiscount =
+          totalItemsValue > 0 ? (itemTotal / totalItemsValue) * discount : 0;
+        return {
+          productVariantId: item.productVariantId,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          discount: Math.round(itemDiscount * 100) / 100, // Round to 2 decimals
+        };
+      });
 
       const orderData: CreateOrderRequest = {
         orderType: "OFFLINE",
@@ -219,28 +372,33 @@ export default function POSPage() {
           | "TRANSFER"
           | "COD",
         items,
-        guestName: customerSearch || undefined,
+        promotionIds: appliedPromotions.map((p) => p.promotionId),
+        customerId: selectedCustomer?.id,
+        guestName: selectedCustomer ? undefined : customerSearch || "Guest",
+        guestPhone: selectedCustomer ? undefined : guestPhone,
       };
 
       const response = await orderService.createOrder(orderData);
 
-      alert(
+      toast.success(
         `Order created successfully! Order Number: ${response.data.orderNumber}`,
       );
 
       // Reset form
       setOrderItems([]);
+      setSelectedCustomer(null);
       setCustomerSearch("");
+      setGuestPhone("");
       setVoucherCode("");
-      setExchangePoint("");
       setPaymentMethod("");
-      setPromotions([]);
+      setAppliedPromotions([]);
+      setDiscountCalculation(null);
 
       // Refresh products to update availability
       fetchProducts();
     } catch (err: any) {
       console.error("Error creating order:", err);
-      alert(err.response?.data?.message || "Failed to create order");
+      toast.error(err.response?.data?.message || "Failed to create order");
     } finally {
       setProcessing(false);
     }
@@ -386,22 +544,100 @@ export default function POSPage() {
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
             Customer
           </Label>
-          <div className="relative">
+          <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               placeholder="Find by Name, Phone or Email"
               className="pl-10 pr-10"
               value={customerSearch}
-              onChange={(e) => setCustomerSearch(e.target.value)}
+              onChange={(e) => {
+                setCustomerSearch(e.target.value);
+                setShowCustomerDropdown(e.target.value.length > 0);
+              }}
+              onFocus={() => {
+                if (customerSearch.length > 0) setShowCustomerDropdown(true);
+              }}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2"
-            >
-              <UserPlus className="w-4 h-4" />
-            </Button>
+            {selectedCustomer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                onClick={handleClearCustomer}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
           </div>
+
+          {/* Customer Dropdown */}
+          {showCustomerDropdown && filteredCustomers.length > 0 && (
+            <div className="absolute z-10 w-[368px] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {filteredCustomers.slice(0, 10).map((customer) => (
+                <div
+                  key={customer.id}
+                  className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0"
+                  onClick={() => handleSelectCustomer(customer)}
+                >
+                  <div className="font-medium text-sm">{customer.fullName}</div>
+                  <div className="text-xs text-gray-500">{customer.phone}</div>
+                  <div className="text-xs text-gray-500">{customer.email}</div>
+                  {customer.tier && (
+                    <Badge variant="outline" className="mt-1 text-xs">
+                      {customer.tier.name} - {customer.tier.discountRate}% off
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Selected Customer Info */}
+          {selectedCustomer && (
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="font-medium text-sm">
+                    {selectedCustomer.fullName}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {selectedCustomer.phone}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {selectedCustomer.email}
+                  </div>
+                  {selectedCustomer.tier && (
+                    <Badge className="mt-2 bg-indigo-600">
+                      {selectedCustomer.tier.name} Tier -{" "}
+                      {selectedCustomer.tier.discountRate}% Discount
+                    </Badge>
+                  )}
+                  {selectedCustomer.loyaltyPoint && (
+                    <div className="text-xs text-green-600 mt-1">
+                      Points:{" "}
+                      {selectedCustomer.loyaltyPoint.pointsAvailable.toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Guest Phone Field (only show when no customer selected) */}
+          {!selectedCustomer && (
+            <div className="mt-2">
+              <Input
+                placeholder="Guest Phone Number *"
+                className="text-sm"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+                type="tel"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Required for guest checkout
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Order Items */}
@@ -482,44 +718,53 @@ export default function POSPage() {
                 className="text-sm"
                 value={voucherCode}
                 onChange={(e) => setVoucherCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleApplyPromotion();
+                  }
+                }}
+                disabled={applyingPromotion}
               />
             </div>
-            <div className="relative flex-1">
-              <Input
-                placeholder="Exchange Point"
-                className="text-sm"
-                value={exchangePoint}
-                onChange={(e) => setExchangePoint(e.target.value)}
-              />
-            </div>
+            <Button
+              onClick={handleApplyPromotion}
+              disabled={applyingPromotion || !voucherCode.trim()}
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
+            >
+              {applyingPromotion ? "Applying..." : "Apply"}
+            </Button>
           </div>
 
-          {promotions.length > 0 && (
+          {appliedPromotions.length > 0 && (
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
                   <TableHead className="text-xs">Code</TableHead>
-                  <TableHead className="text-xs">Type</TableHead>
-                  <TableHead className="text-xs">Discount</TableHead>
-                  <TableHead className="text-xs text-center">Actions</TableHead>
+                  <TableHead className="text-xs text-right">Discount</TableHead>
+                  <TableHead className="text-xs text-center w-16">
+                    Action
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {promotions.map((promo) => (
-                  <TableRow key={promo.id}>
-                    <TableCell className="text-sm">{promo.code}</TableCell>
-                    <TableCell className="text-sm">{promo.type}</TableCell>
-                    <TableCell className="text-sm">{promo.discount}</TableCell>
+                {appliedPromotions.map((promo) => (
+                  <TableRow key={promo.promotionId}>
+                    <TableCell className="text-sm font-medium">
+                      {promo.promotionCode}
+                    </TableCell>
+                    <TableCell className="text-sm text-right text-green-600 font-semibold">
+                      -$ {promo.discountAmount.toFixed(2)}
+                    </TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Edit className="w-3 h-3" />
-                        </Button>
+                      <div className="flex items-center justify-center">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleRemovePromotion(promo.id)}
+                          className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() =>
+                            handleRemovePromotion(promo.promotionCode)
+                          }
+                          disabled={applyingPromotion}
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -538,10 +783,31 @@ export default function POSPage() {
             <span className="text-gray-700">Subtotal:</span>
             <span className="font-semibold">$ {subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-700">Discount:</span>
-            <span className="font-semibold">$ {discount.toFixed(2)}</span>
-          </div>
+          {tierDiscount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-700">
+                Tier Discount ({selectedCustomer?.tier?.name} -{" "}
+                {selectedCustomer?.tier?.discountRate}%):
+              </span>
+              <span className="font-semibold text-green-600">
+                -$ {tierDiscount.toFixed(2)}
+              </span>
+            </div>
+          )}
+          {promotionDiscount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-700">Promotion Discount:</span>
+              <span className="font-semibold text-green-600">
+                -$ {promotionDiscount.toFixed(2)}
+              </span>
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="flex justify-between text-sm font-semibold border-t pt-2">
+              <span className="text-gray-700">Total Discount:</span>
+              <span className="text-green-600">-$ {discount.toFixed(2)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-base font-semibold border-t pt-2">
             <span>Total:</span>
             <span>$ {total.toFixed(2)}</span>

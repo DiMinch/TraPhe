@@ -36,6 +36,10 @@ import { Edit, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { productService } from "@/services/product.service";
 import { categoryService } from "@/services/category.service";
+import {
+  supplierService,
+  type SupplierResponse,
+} from "@/services/supplier.service";
 import type { Product } from "@/types/product.types";
 import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
@@ -63,10 +67,12 @@ export default function NewProductDialog({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
 
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchSuppliers();
     }
   }, [open]);
 
@@ -82,6 +88,21 @@ export default function NewProductDialog({
       }
     } catch (error: unknown) {
       console.error("Failed to load categories:", error);
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await supplierService.getAllSuppliers();
+      if (response.data) {
+        // Handle both direct array and paginated response
+        const suppliersData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setSuppliers(suppliersData);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load suppliers:", error);
     }
   };
 
@@ -194,16 +215,24 @@ export default function NewProductDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="supplier">Supplier ID *</Label>
-              <Input
-                id="supplier"
-                placeholder="Enter supplier UUID"
-                className="bg-white"
+              <Label htmlFor="supplier">Supplier *</Label>
+              <Select
                 value={formData.supplierId}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplierId: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, supplierId: value })
                 }
-              />
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="threshold">Min Stock Threshold</Label>

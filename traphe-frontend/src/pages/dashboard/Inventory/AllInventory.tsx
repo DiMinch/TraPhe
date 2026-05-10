@@ -56,6 +56,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { toast } from "sonner";
 
 interface InventoryItem {
   id: string;
@@ -222,8 +223,8 @@ export default function AllInventoryPage() {
   const handleEditClick = (item: InventoryItem) => {
     // Validate that item has productVariantId
     if (!item.productVariantId || item.productVariantId === "") {
-      alert(
-        "Cannot edit this item: Product Variant information is missing. Please ensure the product variant is properly linked.",
+      toast.error(
+        "Cannot edit this item: Product Variant information is missing.",
       );
       console.error("Item missing productVariantId:", item);
       return;
@@ -238,63 +239,69 @@ export default function AllInventoryPage() {
 
     // Validate productVariantId
     if (!editItem.productVariantId || editItem.productVariantId === "") {
-      alert("Error: Product Variant ID is missing. Cannot update inventory.");
+      toast.error("Product Variant ID is missing. Cannot update inventory.");
       console.error("Invalid productVariantId:", editItem);
-      setSubmitting(false);
+      return;
+    }
+
+    // Check if physical quantity changed
+    const originalItem = inventoryData.find((item) => item.id === editItem.id);
+    if (!originalItem) {
+      toast.error("Original item not found!");
+      return;
+    }
+
+    const difference = editItem.physical - originalItem.physical;
+
+    // Don't send adjustment if no change
+    if (difference === 0) {
+      toast.info("No changes detected in stock quantity.");
+      setIsEditDialogOpen(false);
       return;
     }
 
     setSubmitting(true);
     try {
-      // Check if physical quantity changed
-      const originalItem = inventoryData.find(
-        (item) => item.id === editItem.id,
-      );
-      if (!originalItem) {
-        alert("Original item not found!");
-        setSubmitting(false);
-        return;
-      }
-
       console.log("Original item:", originalItem);
       console.log("Edited item:", editItem);
+      console.log("Difference:", difference);
 
-      if (originalItem.physical !== editItem.physical) {
-        const difference = editItem.physical - originalItem.physical;
+      // Use STOCK_IN for adding, STOCK_OUT for removing
+      const transactionType = difference > 0 ? "STOCK_IN" : "STOCK_OUT";
 
-        // Don't send adjustment if no change
-        if (difference === 0) {
-          setIsEditDialogOpen(false);
-          return;
-        }
+      const adjustmentData = {
+        reason: `Manual Edit - Inventory Update (${difference > 0 ? "+" : ""}${difference})`,
+        items: [
+          {
+            productVariantId: editItem.productVariantId,
+            type: transactionType,
+            quantity: Math.abs(difference),
+            reason: `Manual Edit - Inventory Update (${difference > 0 ? "+" : ""}${difference})`,
+          },
+        ],
+      };
 
-        const adjustmentData = {
-          reason: "Manual Edit - Inventory Update",
-          items: [
-            {
-              productVariantId: editItem.productVariantId,
-              type: "ADJUSTMENT" as const,
-              quantity: Math.abs(difference),
-              reason: `Manual Edit - Inventory Update (${difference > 0 ? "+" : ""}${difference})`,
-            },
-          ],
-        };
+      console.log(
+        "Sending adjustment data:",
+        JSON.stringify(adjustmentData, null, 2),
+      );
 
-        console.log(
-          "Sending adjustment data:",
-          JSON.stringify(adjustmentData, null, 2),
+      // Step 1: Create the adjustment (PENDING status)
+      const createResponse =
+        await inventoryService.createStockAdjustment(adjustmentData);
+      console.log("Adjustment created:", createResponse);
+
+      // Step 2: Auto-approve the adjustment to apply changes
+      if (createResponse.data?.id) {
+        const approveResponse = await inventoryService.approveStockAdjustment(
+          createResponse.data.id,
         );
-
-        const response =
-          await inventoryService.createStockAdjustment(adjustmentData);
-        console.log("Adjustment response:", response);
-
-        alert(
-          `Inventory updated successfully! ${difference > 0 ? "Added" : "Removed"} ${Math.abs(difference)} units.`,
-        );
-      } else {
-        alert("No changes detected in physical quantity.");
+        console.log("Adjustment approved:", approveResponse);
       }
+
+      toast.success(
+        `Stock updated! ${difference > 0 ? "Added" : "Removed"} ${Math.abs(difference)} units.`,
+      );
 
       setIsEditDialogOpen(false);
       await fetchInventory();
@@ -305,7 +312,7 @@ export default function AllInventoryPage() {
         err.response?.data?.message ||
         err.message ||
         "Failed to update inventory";
-      alert(`Error: ${errorMsg}`);
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -316,25 +323,39 @@ export default function AllInventoryPage() {
 
     // Don't send if no change
     if (difference === 0) {
-      alert("No changes detected. Please adjust the quantity.");
+      toast.info("No changes detected. Please adjust the quantity.");
       return;
     }
 
     setSubmitting(true);
     try {
+      // Use STOCK_IN for adding, STOCK_OUT for removing
+      const transactionType = difference > 0 ? "STOCK_IN" : "STOCK_OUT";
+
       const adjustmentData = {
         reason: note || reason,
         items: [
           {
             productVariantId: selectedItem.productVariantId,
-            type: "ADJUSTMENT" as const,
+            type: transactionType,
             quantity: Math.abs(difference),
             reason: note || reason,
           },
         ],
       };
 
-      await inventoryService.createStockAdjustment(adjustmentData);
+      // Step 1: Create the adjustment (PENDING status)
+      const createResponse =
+        await inventoryService.createStockAdjustment(adjustmentData);
+
+      // Step 2: Auto-approve the adjustment to apply changes
+      if (createResponse.data?.id) {
+        await inventoryService.approveStockAdjustment(createResponse.data.id);
+      }
+
+      toast.success(
+        `Stock adjusted! ${difference > 0 ? "Added" : "Removed"} ${Math.abs(difference)} units.`,
+      );
       setIsStockAdjustmentOpen(false);
       fetchInventory();
       setNote("");
@@ -344,7 +365,7 @@ export default function AllInventoryPage() {
         err.response?.data?.message ||
         err.message ||
         "Failed to create stock adjustment";
-      alert(`Error: ${errorMsg}`);
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -372,7 +393,7 @@ export default function AllInventoryPage() {
             if (filteredVariants.length > 0) {
               handleStockAdjustment(filteredVariants[0]);
             } else {
-              alert("No inventory items available to adjust");
+              toast.warning("No inventory items available to adjust");
             }
           }}
         >
@@ -765,139 +786,130 @@ export default function AllInventoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Item Dialog */}
+      {/* Edit Item Dialog - Stock Adjustment */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-[600px] bg-white">
+        <DialogContent className="max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
-              Edit Item
+              Edit Inventory
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
+            {/* Product Info (Read-only) */}
+            <div className="space-y-2">
+              <Label>Product</Label>
+              <Input
+                value={editItem?.name || ""}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  value={editItem?.name || ""}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev ? { ...prev, name: e.target.value } : prev,
-                    )
-                  }
-                  className="bg-white"
-                />
-              </div>
               <div className="space-y-2">
                 <Label>SKU</Label>
                 <Input
                   value={editItem?.sku || ""}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev ? { ...prev, sku: e.target.value } : prev,
-                    )
-                  }
-                  className="bg-white"
+                  disabled
+                  className="bg-gray-50"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Input
                   value={editItem?.category || ""}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev ? { ...prev, category: e.target.value } : prev,
-                    )
-                  }
-                  className="bg-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Supplier</Label>
-                <Input
-                  value={editItem?.supplier || ""}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev ? { ...prev, supplier: e.target.value } : prev,
-                    )
-                  }
-                  className="bg-white"
+                  disabled
+                  className="bg-gray-50"
                 />
               </div>
             </div>
 
+            {/* Editable Stock Quantity */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Physical</Label>
-                <Input
-                  type="number"
-                  value={editItem?.physical ?? 0}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev
-                        ? { ...prev, physical: parseInt(e.target.value) || 0 }
-                        : prev,
-                    )
-                  }
-                  className="bg-white"
-                />
+                <Label>Physical Stock *</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setEditItem((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              physical: Math.max(0, prev.physical - 1),
+                            }
+                          : prev,
+                      )
+                    }
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <Input
+                    type="number"
+                    value={editItem?.physical ?? 0}
+                    onChange={(e) =>
+                      setEditItem((prev) =>
+                        prev
+                          ? { ...prev, physical: parseInt(e.target.value) || 0 }
+                          : prev,
+                      )
+                    }
+                    className="bg-white text-center"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setEditItem((prev) =>
+                        prev ? { ...prev, physical: prev.physical + 1 } : prev,
+                      )
+                    }
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Reserved</Label>
                 <Input
                   type="number"
                   value={editItem?.reserved ?? 0}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev
-                        ? { ...prev, reserved: parseInt(e.target.value) || 0 }
-                        : prev,
-                    )
-                  }
-                  className="bg-white"
+                  disabled
+                  className="bg-gray-50"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Available</Label>
                 <Input
                   type="number"
-                  value={editItem?.available ?? 0}
-                  onChange={(e) =>
-                    setEditItem((prev) =>
-                      prev
-                        ? { ...prev, available: parseInt(e.target.value) || 0 }
-                        : prev,
-                    )
-                  }
-                  className="bg-white"
+                  value={(editItem?.physical ?? 0) - (editItem?.reserved ?? 0)}
+                  disabled
+                  className="bg-gray-50"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={editItem?.status || "Active"}
-                onValueChange={(val) =>
-                  setEditItem((prev) =>
-                    prev
-                      ? { ...prev, status: val as "Active" | "Inactive" }
-                      : prev,
-                  )
-                }
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Difference indicator */}
+            {editItem && (
+              <div className="text-sm">
+                {(() => {
+                  const originalItem = inventoryData.find(
+                    (item) => item.id === editItem.id,
+                  );
+                  const diff =
+                    editItem.physical - (originalItem?.physical ?? 0);
+                  if (diff === 0) return null;
+                  return (
+                    <p className={diff > 0 ? "text-green-600" : "text-red-600"}>
+                      Stock change: {diff > 0 ? "+" : ""}
+                      {diff} units
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button
@@ -918,7 +930,7 @@ export default function AllInventoryPage() {
                     Updating...
                   </>
                 ) : (
-                  "Update"
+                  "Update Stock"
                 )}
               </Button>
             </div>

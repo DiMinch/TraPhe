@@ -37,6 +37,10 @@ import UserAccountsPage from "./pages/dashboard/UsersRoles/UserAccounts";
 import RolesPermissionsPage from "./pages/dashboard/UsersRoles/RolesPermissions";
 import PromotionListPage from "./pages/dashboard/Promotions/PromotionList";
 import PromotionDetailPage from "./pages/dashboard/Promotions/PromotionDetail";
+import RevenueReportPage from "./pages/dashboard/Reports/RevenueReport";
+import ProfitReportPage from "./pages/dashboard/Reports/ProfitReport";
+import TopProductsReportPage from "./pages/dashboard/Reports/TopProductsReport";
+import InventoryReportPage from "./pages/dashboard/Reports/InventoryReport";
 import AdminLayout from "./components/layout/AdminLayout";
 
 // Client Pages
@@ -156,10 +160,16 @@ function App() {
           />
 
           <Route path="/promotions" element={<PromotionListPage />} />
+          <Route path="/promotions/:id" element={<PromotionDetailPage />} />
+
+          <Route path="/reports" element={<RevenueReportPage />} />
+          <Route path="/reports/revenue" element={<RevenueReportPage />} />
+          <Route path="/reports/profit" element={<ProfitReportPage />} />
           <Route
-            path="/promotions/:promotionCode"
-            element={<PromotionDetailPage />}
+            path="/reports/top-products"
+            element={<TopProductsReportPage />}
           />
+          <Route path="/reports/inventory" element={<InventoryReportPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

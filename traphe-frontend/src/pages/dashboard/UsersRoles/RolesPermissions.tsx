@@ -9,10 +9,33 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Download, Edit, Trash2, Shield, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Plus,
+  Download,
+  Edit,
+  Trash2,
+  Shield,
+  Loader2,
+  Users,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { adminService, type Role } from "@/services/admin.service";
+import {
+  roleService,
+  type Role,
+  type UserInRole,
+} from "@/services/role.service";
 import { toast } from "sonner";
 import {
   PageContainer,
@@ -36,6 +59,7 @@ export default function RolesPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<{
     id: string;
@@ -45,6 +69,22 @@ export default function RolesPermissionsPage() {
     Record<string, PermissionModule[]>
   >({});
 
+  // New Role Dialog State
+  const [isNewRoleDialogOpen, setIsNewRoleDialogOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleDescription, setNewRoleDescription] = useState("");
+
+  // Edit Role Dialog State
+  const [isEditRoleDialogOpen, setIsEditRoleDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editRoleName, setEditRoleName] = useState("");
+  const [editRoleDescription, setEditRoleDescription] = useState("");
+
+  // Users in Role Dialog State
+  const [isUsersDialogOpen, setIsUsersDialogOpen] = useState(false);
+  const [usersInRole, setUsersInRole] = useState<UserInRole[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   useEffect(() => {
     fetchRoles();
   }, []);
@@ -52,7 +92,7 @@ export default function RolesPermissionsPage() {
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAllRoles();
+      const response = await roleService.getAllRolesNoPagination();
 
       if (response.statusCode === 200 && response.data) {
         // Handle both direct array and paginated response
@@ -66,7 +106,6 @@ export default function RolesPermissionsPage() {
           initialPermissions[role.id] = getDefaultPermissions();
         });
         setRolePermissions(initialPermissions);
-        toast.success("Roles loaded successfully");
       } else {
         toast.error("Failed to load roles");
       }
@@ -192,11 +231,124 @@ export default function RolesPermissionsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (roleToDelete) {
-      toast.info("Role deletion - Backend endpoint not yet available");
+  const handleDeleteConfirm = async () => {
+    if (!roleToDelete) return;
+
+    try {
+      setSubmitting(true);
+      await roleService.deleteRole(roleToDelete.id);
+      toast.success(`Role "${roleToDelete.name}" deleted successfully`);
       setIsDeleteDialogOpen(false);
       setRoleToDelete(null);
+      if (selectedRole === roleToDelete.id) {
+        setSelectedRole(null);
+      }
+      await fetchRoles();
+    } catch (error: any) {
+      console.error("Error deleting role:", error);
+      const errorMsg = error.response?.data?.message || "Failed to delete role";
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Create new role
+  const handleCreateRole = async () => {
+    if (!newRoleName.trim()) {
+      toast.error("Role name is required");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      // Check if role name exists
+      const existsResponse = await roleService.checkRoleExists(newRoleName);
+      if (existsResponse.data === true) {
+        toast.error("A role with this name already exists");
+        return;
+      }
+
+      await roleService.createRole({
+        name: newRoleName.trim(),
+        description: newRoleDescription.trim() || undefined,
+      });
+      toast.success(`Role "${newRoleName}" created successfully`);
+      setIsNewRoleDialogOpen(false);
+      setNewRoleName("");
+      setNewRoleDescription("");
+      await fetchRoles();
+    } catch (error: any) {
+      console.error("Error creating role:", error);
+      const errorMsg = error.response?.data?.message || "Failed to create role";
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Edit role handlers
+  const handleEditClick = (role: Role, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRole(role);
+    setEditRoleName(role.name);
+    setEditRoleDescription(role.description || "");
+    setIsEditRoleDialogOpen(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!editingRole) return;
+    if (!editRoleName.trim()) {
+      toast.error("Role name is required");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      // Check if name changed and new name exists
+      if (editRoleName.trim() !== editingRole.name) {
+        const existsResponse = await roleService.checkRoleExists(editRoleName);
+        if (existsResponse.data === true) {
+          toast.error("A role with this name already exists");
+          return;
+        }
+      }
+
+      await roleService.updateRole(editingRole.id, {
+        name: editRoleName.trim(),
+        description: editRoleDescription.trim() || undefined,
+      });
+      toast.success(`Role updated successfully`);
+      setIsEditRoleDialogOpen(false);
+      setEditingRole(null);
+      await fetchRoles();
+    } catch (error: any) {
+      console.error("Error updating role:", error);
+      const errorMsg = error.response?.data?.message || "Failed to update role";
+      toast.error(errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // View users in role
+  const handleViewUsers = async (role: Role, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingRole(role);
+    setIsUsersDialogOpen(true);
+    try {
+      setLoadingUsers(true);
+      const response = await roleService.getUsersByRole(role.id);
+      const usersData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || [];
+      setUsersInRole(usersData);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users for this role");
+      setUsersInRole([]);
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -232,7 +384,10 @@ export default function RolesPermissionsPage() {
             <CardTitle className="text-base font-semibold text-slate-800">
               Role List
             </CardTitle>
-            <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8">
+            <Button
+              onClick={() => setIsNewRoleDialogOpen(true)}
+              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8"
+            >
               <Plus className="mr-1 w-4 h-4" />
               New Role
             </Button>
@@ -241,6 +396,9 @@ export default function RolesPermissionsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                  <TableHead className="font-semibold text-slate-600">
+                    Name
+                  </TableHead>
                   <TableHead className="font-semibold text-slate-600">
                     Description
                   </TableHead>
@@ -291,7 +449,18 @@ export default function RolesPermissionsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-7 w-7 hover:bg-blue-50"
+                            onClick={(e) => handleViewUsers(role, e)}
+                            title="View users"
+                          >
+                            <Users className="w-4 h-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-7 w-7 hover:bg-slate-100"
+                            onClick={(e) => handleEditClick(role, e)}
+                            title="Edit role"
                           >
                             <Edit className="w-4 h-4 text-slate-600" />
                           </Button>
@@ -306,6 +475,7 @@ export default function RolesPermissionsPage() {
                                 name: role.name,
                               });
                             }}
+                            title="Delete role"
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
@@ -388,6 +558,177 @@ export default function RolesPermissionsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="role"
       />
+
+      {/* New Role Dialog */}
+      <Dialog open={isNewRoleDialogOpen} onOpenChange={setIsNewRoleDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white">
+          <DialogHeader>
+            <DialogTitle>Create New Role</DialogTitle>
+            <DialogDescription>
+              Add a new role to manage user permissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="roleName">Role Name *</Label>
+              <Input
+                id="roleName"
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
+                placeholder="e.g., MANAGER, SALES_STAFF"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="roleDescription">Description</Label>
+              <Textarea
+                id="roleDescription"
+                value={newRoleDescription}
+                onChange={(e) => setNewRoleDescription(e.target.value)}
+                placeholder="Describe the role's responsibilities..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsNewRoleDialogOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateRole} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Role"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog
+        open={isEditRoleDialogOpen}
+        onOpenChange={setIsEditRoleDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Role</DialogTitle>
+            <DialogDescription>
+              Update the role name and description.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="editRoleName">Role Name *</Label>
+              <Input
+                id="editRoleName"
+                value={editRoleName}
+                onChange={(e) => setEditRoleName(e.target.value)}
+                placeholder="e.g., MANAGER, SALES_STAFF"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="editRoleDescription">Description</Label>
+              <Textarea
+                id="editRoleDescription"
+                value={editRoleDescription}
+                onChange={(e) => setEditRoleDescription(e.target.value)}
+                placeholder="Describe the role's responsibilities..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditRoleDialogOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRole} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Users in Role Dialog */}
+      <Dialog open={isUsersDialogOpen} onOpenChange={setIsUsersDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Users with "{editingRole?.name}" Role</DialogTitle>
+            <DialogDescription>
+              List of users assigned to this role.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {loadingUsers ? (
+              <div className="flex flex-col items-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="mt-2 text-gray-500">Loading users...</span>
+              </div>
+            ) : usersInRole.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                <p>No users assigned to this role</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersInRole.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {user.fullName}
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            user.status === "ACTIVE"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {user.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUsersDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

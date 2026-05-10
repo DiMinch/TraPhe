@@ -10,6 +10,7 @@ import {
   UserCog,
   ClipboardList,
   Wrench,
+  BarChart3,
 } from "lucide-react";
 
 export interface NavItem {
@@ -88,6 +89,17 @@ export const navItems: NavItem[] = [
     title: "Promotions",
     path: "/promotions",
     icon: Tag,
+  },
+  {
+    title: "Reports",
+    path: "/reports",
+    icon: BarChart3,
+    subItems: [
+      { title: "Revenue Report", path: "/reports/revenue" },
+      { title: "Profit Report", path: "/reports/profit" },
+      { title: "Top Products", path: "/reports/top-products" },
+      { title: "Inventory Report", path: "/reports/inventory" },
+    ],
   },
   {
     title: "System",

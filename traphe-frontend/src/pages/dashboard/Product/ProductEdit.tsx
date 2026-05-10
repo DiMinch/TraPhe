@@ -14,6 +14,10 @@ import {
 } from "@/components/ui/select";
 import { productService } from "@/services/product.service";
 import { categoryService } from "@/services/category.service";
+import {
+  supplierService,
+  type SupplierResponse,
+} from "@/services/supplier.service";
 import type { Product } from "@/types/product.types";
 import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
@@ -26,6 +30,7 @@ export default function ProductEditPage() {
   const [loading, setLoading] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
@@ -41,6 +46,7 @@ export default function ProductEditPage() {
     if (id) {
       fetchProduct();
       fetchCategories();
+      fetchSuppliers();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -60,16 +66,47 @@ export default function ProductEditPage() {
     }
   };
 
+  const fetchSuppliers = async () => {
+    try {
+      const response = await supplierService.getAllSuppliers();
+      if (response.data) {
+        // Handle both direct array and paginated response
+        const suppliersData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setSuppliers(suppliersData);
+      }
+    } catch (error: unknown) {
+      console.error("Failed to load suppliers:", error);
+    }
+  };
+
   const fetchProduct = async () => {
     try {
       setLoading(true);
       const response = await productService.getProductById(id!);
       if (response.data) {
         setProduct(response.data);
+        // Fetch suppliers first to find the matching supplierId by name
+        const suppliersResponse = await supplierService.getAllSuppliers();
+        let matchedSupplierId = "";
+        if (suppliersResponse.data) {
+          const suppliersData = Array.isArray(suppliersResponse.data)
+            ? suppliersResponse.data
+            : (suppliersResponse.data as any)?.content || [];
+          setSuppliers(suppliersData);
+          // Find supplier by name
+          const matchedSupplier = suppliersData.find(
+            (s: SupplierResponse) => s.name === response.data.supplierName,
+          );
+          if (matchedSupplier) {
+            matchedSupplierId = matchedSupplier.id;
+          }
+        }
         setFormData({
           name: response.data.name || "",
           categoryId: response.data.categoryId || "",
-          supplierId: "", // We don't have supplierId in response
+          supplierId: matchedSupplierId,
           description: response.data.description || "",
           minStockThreshold: response.data.minStockThreshold?.toString() || "",
           warrantyPeriod: response.data.warrantyPeriod?.toString() || "",
@@ -183,15 +220,24 @@ export default function ProductEditPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="supplierId">Supplier ID</Label>
-              <Input
-                id="supplierId"
+              <Label htmlFor="supplierId">Supplier</Label>
+              <Select
                 value={formData.supplierId}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplierId: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, supplierId: value })
                 }
-                placeholder="Supplier UUID"
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

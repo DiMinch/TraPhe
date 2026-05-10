@@ -15,6 +15,7 @@ export interface Product {
   status: string;
   categoryName: string;
   categoryId: string;
+  supplierId?: string; // Not returned by API, but needed for edit form
   supplierName: string;
   minStockThreshold: number;
   warrantyPeriod: number;
@@ -80,5 +81,5 @@ export interface GetProductsParams {
   supplierId?: string;
   minPrice?: number;
   maxPrice?: number;
-  keyword?: string; // Optional: thêm nếu cần search text
+  keyword?: string;
 }

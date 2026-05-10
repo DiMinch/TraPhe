@@ -73,10 +73,16 @@ export const productService = {
 
   // Variant CRUD
   createVariant: async (data: CreateVariantRequest) => {
-    return axiosClient.post<any, ApiResponse<ProductVariant>>(
-      "/products/variants",
-      data,
-    );
+    console.log("Creating variant with data:", data);
+    try {
+      return await axiosClient.post<any, ApiResponse<ProductVariant>>(
+        "/products/variants",
+        data,
+      );
+    } catch (error: any) {
+      console.error("Variant creation error:", error.response?.data || error);
+      throw error;
+    }
   },
 
   updateVariant: async (id: string, data: UpdateVariantRequest) => {

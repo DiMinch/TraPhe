@@ -1,7 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -9,278 +10,815 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Edit,
   Trash2,
-  BellIcon,
   ChevronRight,
-  Calendar,
   Save,
+  Loader2,
+  BarChart3,
+  ArrowLeft,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
-import { useState } from "react";
-import { CURRENT_USER } from "@/constants/user";
+import { useState, useEffect } from "react";
+import {
+  promotionService,
+  type PromotionResponse,
+  type PromotionRequest,
+  type PromotionUsageReportResponse,
+} from "@/services/promotion.service";
+import { categoryService } from "@/services/category.service";
+import { productService } from "@/services/product.service";
+import type { Category } from "@/types/category.types";
+import type { Product } from "@/types/product.types";
+import { toast } from "sonner";
+import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
+import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 
 export default function PromotionDetailPage() {
   const navigate = useNavigate();
-  const { promotionCode } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [promotion, setPromotion] = useState<PromotionResponse | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const handleSave = () => {
-    // Save logic here
-    console.log("Saving changes...");
-    setIsEditing(false);
+  // Usage report state
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [usageReport, setUsageReport] =
+    useState<PromotionUsageReportResponse | null>(null);
+
+  // Form data
+  const [formData, setFormData] = useState<PromotionRequest>({
+    code: "",
+    name: "",
+    type: "PERCENTAGE",
+    scope: "ORDER",
+    value: 0,
+    minOrderValue: 0,
+    maxDiscountAmount: 0,
+    applicableCustomerTiers: [],
+    startDate: "",
+    endDate: "",
+    usageLimit: undefined,
+    usagePerCustomer: undefined,
+    priority: 0,
+    description: "",
+    applicableCategoryIds: [],
+    applicableProductIds: [],
+    conflictingPromotionIds: [],
+  });
+
+  // Categories and products for selection
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPromotion();
+      fetchCategoriesAndProducts();
+    }
+  }, [id]);
+
+  const fetchPromotion = async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const response = await promotionService.getPromotionById(id);
+      const data = response.data?.data || response.data;
+      if (data) {
+        setPromotion(data);
+        setFormData({
+          code: data.code,
+          name: data.name,
+          type: data.type,
+          scope: data.scope,
+          value: data.value,
+          minOrderValue: data.minOrderValue || undefined,
+          maxDiscountAmount: data.maxDiscountAmount || undefined,
+          applicableCustomerTiers: data.applicableCustomerTiers || [],
+          startDate: data.startDate?.substring(0, 16) || "",
+          endDate: data.endDate?.substring(0, 16) || "",
+          usageLimit: data.usageLimit || undefined,
+          usagePerCustomer: data.usagePerCustomer || undefined,
+          priority: data.priority,
+          description: data.description || "",
+          applicableCategoryIds: data.applicableCategoryIds || [],
+          applicableProductIds: data.applicableProductIds || [],
+          conflictingPromotionIds: data.conflictingPromotionIds || [],
+        });
+      }
+    } catch (err: any) {
+      console.error("Error fetching promotion:", err);
+      toast.error(err.response?.data?.message || "Failed to load promotion");
+      navigate("/dashboard/promotions");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const fetchCategoriesAndProducts = async () => {
+    try {
+      const [categoriesRes, productsRes] = await Promise.all([
+        categoryService.getAllCategories(),
+        productService.getAllProducts(),
+      ]);
+      const categoryData = Array.isArray(categoriesRes.data)
+        ? categoriesRes.data
+        : (categoriesRes.data as any)?.content || [];
+      const productData = Array.isArray(productsRes.data)
+        ? productsRes.data
+        : (productsRes.data as any)?.content || [];
+      setCategories(categoryData);
+      setProducts(productData);
+    } catch (err) {
+      console.error("Error fetching categories/products:", err);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!id || !promotion) return;
+
+    if (
+      !formData.code ||
+      !formData.name ||
+      !formData.startDate ||
+      !formData.endDate
+    ) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await promotionService.updatePromotion(id, formData);
+      const updated = response.data?.data || response.data;
+      if (updated) {
+        setPromotion(updated);
+      }
+      toast.success("Promotion updated successfully");
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Error updating promotion:", err);
+      toast.error(err.response?.data?.message || "Failed to update promotion");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    try {
+      await promotionService.deletePromotion(id);
+      toast.success("Promotion deleted successfully");
+      navigate("/dashboard/promotions");
+    } catch (err: any) {
+      console.error("Error deleting promotion:", err);
+      toast.error(err.response?.data?.message || "Failed to delete promotion");
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    if (!id || !promotion) return;
+    try {
+      const response = await promotionService.togglePromotionStatus(id);
+      const updated = response.data?.data || response.data;
+      if (updated) {
+        setPromotion(updated);
+        toast.success(
+          `Promotion ${updated.isActive ? "activated" : "deactivated"} successfully`,
+        );
+      }
+    } catch (err: any) {
+      console.error("Error toggling status:", err);
+      toast.error(err.response?.data?.message || "Failed to toggle status");
+    }
+  };
+
+  const handleViewReport = async () => {
+    if (!id) return;
+    setIsReportDialogOpen(true);
+    setLoadingReport(true);
+    try {
+      const response = await promotionService.getPromotionUsageReport(id);
+      const data = response.data?.data || response.data;
+      setUsageReport(data);
+    } catch (err: any) {
+      console.error("Error fetching report:", err);
+      toast.error(err.response?.data?.message || "Failed to load usage report");
+    } finally {
+      setLoadingReport(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "ACTIVE":
+        return "bg-green-100 text-green-800";
+      case "INACTIVE":
+        return "bg-gray-100 text-gray-800";
+      case "EXPIRED":
+        return "bg-red-100 text-red-800";
+      case "SCHEDULED":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
+  };
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!promotion) {
+    return (
+      <PageContainer>
+        <div className="text-center py-20">
+          <p className="text-gray-500">Promotion not found</p>
+          <Button
+            onClick={() => navigate("/dashboard/promotions")}
+            className="mt-4"
+          >
+            Back to Promotions
+          </Button>
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold mb-2">Promotion Detail</h1>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <button
-              onClick={() => navigate("/promotions")}
-              className="hover:text-indigo-900"
-            >
-              Promotion List
-            </button>
-            <ChevronRight className="w-4 h-4" />
-            <span className="font-medium">{promotionCode}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            Welcome {CURRENT_USER.role} {CURRENT_USER.name}
-          </span>
-          <Button variant="outline" size="icon">
-            <BellIcon />
-          </Button>
-          <Button variant="outline" size="sm">
-            CN
-          </Button>
-        </div>
+    <PageContainer>
+      <PageHeader
+        title="Promotion Detail"
+        subtitle={`${promotion.code} - ${promotion.name}`}
+        onRefresh={fetchPromotion}
+      />
+
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+        <button
+          onClick={() => navigate("/dashboard/promotions")}
+          className="hover:text-indigo-900 flex items-center gap-1"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Promotion List
+        </button>
+        <ChevronRight className="w-4 h-4" />
+        <span className="font-medium">{promotion.code}</span>
       </div>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
+        <Button variant="outline" onClick={handleViewReport}>
+          <BarChart3 className="mr-2 w-4 h-4" />
+          Usage Report
+        </Button>
+        <Button variant="outline" onClick={handleToggleStatus}>
+          {promotion.isActive ? (
+            <>
+              <ToggleRight className="mr-2 w-4 h-4" />
+              Deactivate
+            </>
+          ) : (
+            <>
+              <ToggleLeft className="mr-2 w-4 h-4" />
+              Activate
+            </>
+          )}
+        </Button>
         {isEditing ? (
-          <Button
-            className="bg-indigo-900 hover:bg-indigo-800 text-white"
-            onClick={handleSave}
-          >
-            <Save className="mr-2" />
-            Save
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 w-4 h-4" />
+                  Save
+                </>
+              )}
+            </Button>
+          </>
         ) : (
-          <Button
-            className="bg-indigo-900 hover:bg-indigo-800 text-white"
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit className="mr-2" />
+          <Button onClick={() => setIsEditing(true)}>
+            <Edit className="mr-2 w-4 h-4" />
             Edit
           </Button>
         )}
-        <Button className="bg-red-600 hover:bg-red-700 text-white">
-          <Trash2 className="mr-2" />
+        <Button
+          variant="destructive"
+          onClick={() => setIsDeleteDialogOpen(true)}
+        >
+          <Trash2 className="mr-2 w-4 h-4" />
           Delete
         </Button>
       </div>
 
-      {/* Main Card */}
-      <Card className="shadow-md">
-        <CardContent className="p-6 space-y-8">
-          {/* General Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4">General</h2>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  defaultValue="Mùa hè IT 2025"
-                  className="bg-white"
-                  disabled={!isEditing}
-                />
+      {/* Status Badge */}
+      <div className="mb-6">
+        <Badge
+          className={`${getStatusColor(promotion.status)} text-sm px-3 py-1`}
+        >
+          {promotion.status}
+        </Badge>
+        {promotion.hasQuota && (
+          <span className="ml-3 text-sm text-gray-600">
+            Remaining: {promotion.remainingQuota} / {promotion.usageLimit}
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* General Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">General Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Code</Label>
+                {isEditing ? (
+                  <Input
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">{promotion.code}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="code">Code</Label>
-                <Input
-                  id="code"
-                  defaultValue="SUMMER2025"
-                  className="bg-white"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Input
-                  id="priority"
-                  defaultValue="10"
-                  className="bg-white"
-                  type="number"
-                  disabled={!isEditing}
-                />
+              <div>
+                <Label>Name</Label>
+                {isEditing ? (
+                  <Input
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">{promotion.name}</p>
+                )}
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-6 mt-6">
-              <div className="space-y-2">
-                <Label htmlFor="start-date">Start Date</Label>
-                <div className="relative">
+            <div>
+              <Label>Description</Label>
+              {isEditing ? (
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  rows={3}
+                />
+              ) : (
+                <p className="text-gray-600">
+                  {promotion.description || "No description"}
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Priority</Label>
+                {isEditing ? (
                   <Input
-                    id="start-date"
-                    defaultValue="23/11/2024"
-                    className="bg-white"
-                    disabled={!isEditing}
+                    type="number"
+                    value={formData.priority}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        priority: parseInt(e.target.value) || 0,
+                      })
+                    }
                   />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
+                ) : (
+                  <p className="font-medium">{promotion.priority}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="end-date">End Date</Label>
-                <div className="relative">
-                  <Input
-                    id="end-date"
-                    defaultValue="23/12/2024"
-                    className="bg-white"
-                    disabled={!isEditing}
-                  />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select defaultValue="active" disabled={!isEditing}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select an item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label>Usage Count</Label>
+                <p className="font-medium">{promotion.usageCount || 0}</p>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Rule and Scope Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Rule and Scope</h2>
-            <div className="grid grid-cols-4 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Select defaultValue="percentage" disabled={!isEditing}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="PERCENTAGE" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">PERCENTAGE</SelectItem>
-                    <SelectItem value="fixed">FIXED AMOUNT</SelectItem>
-                    <SelectItem value="bogo">BOGO</SelectItem>
-                  </SelectContent>
-                </Select>
+        {/* Type & Value */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Discount Type & Value</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Type</Label>
+                {isEditing ? (
+                  <Select
+                    value={formData.type}
+                    onValueChange={(v: any) =>
+                      setFormData({ ...formData, type: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PERCENTAGE">Percentage</SelectItem>
+                      <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
+                      <SelectItem value="BUY_X_GET_Y">Buy X Get Y</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="font-medium">{promotion.type}</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="value">Value (optional)</Label>
-                <Input
-                  id="value"
-                  defaultValue="10%"
-                  className="bg-white"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="max-discount">Max Discount Amount</Label>
-                <Input
-                  id="max-discount"
-                  defaultValue="$ 1000"
-                  className="bg-white"
-                  disabled={!isEditing}
-                />
-              </div>
-              <div className="space-y-2">
+              <div>
                 <Label>Scope</Label>
-                <RadioGroup
-                  defaultValue="order"
-                  className="flex items-center gap-6 mt-2"
-                  disabled={!isEditing}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="order" id="order" />
-                    <Label
-                      htmlFor="order"
-                      className="font-normal cursor-pointer"
-                    >
-                      Order
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="product" id="product" />
-                    <Label
-                      htmlFor="product"
-                      className="font-normal cursor-pointer"
-                    >
-                      Product
-                    </Label>
-                  </div>
-                </RadioGroup>
+                {isEditing ? (
+                  <Select
+                    value={formData.scope}
+                    onValueChange={(v: any) =>
+                      setFormData({ ...formData, scope: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ORDER">Order</SelectItem>
+                      <SelectItem value="PRODUCT">Product</SelectItem>
+                      <SelectItem value="CATEGORY">Category</SelectItem>
+                      <SelectItem value="SHIPPING">Shipping</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="font-medium">{promotion.scope}</p>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Conditions Section */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Conditions</h2>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="customer-tiers">
-                  Applicable Customer Tiers
-                </Label>
-                <Select defaultValue="gold-platinum" disabled={!isEditing}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="GOLD, PLATINUM" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gold-platinum">
-                      GOLD, PLATINUM
-                    </SelectItem>
-                    <SelectItem value="gold">GOLD</SelectItem>
-                    <SelectItem value="platinum">PLATINUM</SelectItem>
-                    <SelectItem value="silver">SILVER</SelectItem>
-                    <SelectItem value="all">All Tiers</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Value</Label>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={formData.value}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        value: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {promotion.type === "PERCENTAGE"
+                      ? `${promotion.value}%`
+                      : formatCurrency(promotion.value)}
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="categories">Promoted Categories</Label>
-                <Select defaultValue="laptop" disabled={!isEditing}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Laptop" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="laptop">Laptop</SelectItem>
-                    <SelectItem value="mouse">Mouse</SelectItem>
-                    <SelectItem value="keyboard">Keyboard</SelectItem>
-                    <SelectItem value="monitor">Monitor</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div>
+                <Label>Max Discount</Label>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={formData.maxDiscountAmount || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        maxDiscountAmount:
+                          parseFloat(e.target.value) || undefined,
+                      })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {promotion.maxDiscountAmount
+                      ? formatCurrency(promotion.maxDiscountAmount)
+                      : "No limit"}
+                  </p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="min-order">Min Order Value</Label>
+            </div>
+            <div>
+              <Label>Min Order Value</Label>
+              {isEditing ? (
                 <Input
-                  id="min-order"
-                  defaultValue="$ 1000"
-                  className="bg-white"
-                  disabled={!isEditing}
+                  type="number"
+                  value={formData.minOrderValue || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minOrderValue: parseFloat(e.target.value) || undefined,
+                    })
+                  }
                 />
+              ) : (
+                <p className="font-medium">
+                  {promotion.minOrderValue
+                    ? formatCurrency(promotion.minOrderValue)
+                    : "No minimum"}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Date & Usage Limits */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Schedule & Limits</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Start Date</Label>
+                {isEditing ? (
+                  <Input
+                    type="datetime-local"
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {formatDate(promotion.startDate)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>End Date</Label>
+                {isEditing ? (
+                  <Input
+                    type="datetime-local"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
+                  />
+                ) : (
+                  <p className="font-medium">{formatDate(promotion.endDate)}</p>
+                )}
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Usage Limit (Total)</Label>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={formData.usageLimit || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        usageLimit: parseInt(e.target.value) || undefined,
+                      })
+                    }
+                    placeholder="Unlimited"
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {promotion.usageLimit || "Unlimited"}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Usage Per Customer</Label>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={formData.usagePerCustomer || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        usagePerCustomer: parseInt(e.target.value) || undefined,
+                      })
+                    }
+                    placeholder="Unlimited"
+                  />
+                ) : (
+                  <p className="font-medium">
+                    {promotion.usagePerCustomer || "Unlimited"}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Applicable Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Applicable Items</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Customer Tiers</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {promotion.applicableCustomerTiers?.length ? (
+                  promotion.applicableCustomerTiers.map((tier, i) => (
+                    <Badge key={i} variant="secondary">
+                      {tier}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-gray-500">All tiers</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Categories</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {promotion.applicableCategoryIds?.length ? (
+                  promotion.applicableCategoryIds.map((catId, i) => {
+                    const cat = categories.find((c) => c.id === catId);
+                    return (
+                      <Badge key={i} variant="outline">
+                        {cat?.name || catId}
+                      </Badge>
+                    );
+                  })
+                ) : (
+                  <span className="text-gray-500">All categories</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Products</Label>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {promotion.applicableProductIds?.length ? (
+                  promotion.applicableProductIds.map((prodId, i) => {
+                    const prod = products.find((p) => p.id === prodId);
+                    return (
+                      <Badge key={i} variant="outline">
+                        {prod?.name || prodId}
+                      </Badge>
+                    );
+                  })
+                ) : (
+                  <span className="text-gray-500">All products</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Timestamps */}
+      <Card className="mt-6">
+        <CardContent className="py-4">
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>Created: {formatDate(promotion.createdAt)}</span>
+            <span>Updated: {formatDate(promotion.updatedAt)}</span>
           </div>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Delete Dialog */}
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        itemName={promotion.name}
+        onConfirm={handleDelete}
+        contextMessage="promotion"
+      />
+
+      {/* Usage Report Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Promotion Usage Report</DialogTitle>
+            <DialogDescription>
+              Usage statistics for {promotion.code}
+            </DialogDescription>
+          </DialogHeader>
+          {loadingReport ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : usageReport ? (
+            <div className="py-4 space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <p className="text-3xl font-bold text-primary">
+                      {usageReport.totalUsage}
+                    </p>
+                    <p className="text-sm text-gray-500">Total Uses</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <p className="text-3xl font-bold text-green-600">
+                      {formatCurrency(usageReport.totalDiscountGiven)}
+                    </p>
+                    <p className="text-sm text-gray-500">Total Discount</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <p className="text-3xl font-bold text-blue-600">
+                      {formatCurrency(usageReport.averageDiscountPerUse)}
+                    </p>
+                    <p className="text-sm text-gray-500">Avg. Discount</p>
+                  </CardContent>
+                </Card>
+              </div>
+              {usageReport.usageByDate &&
+                Object.keys(usageReport.usageByDate).length > 0 && (
+                  <div>
+                    <Label className="mb-2 block">Usage by Date</Label>
+                    <div className="max-h-[200px] overflow-y-auto border rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2">Date</th>
+                            <th className="text-right p-2">Uses</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(usageReport.usageByDate)
+                            .sort(([a], [b]) => b.localeCompare(a))
+                            .map(([date, count]) => (
+                              <tr key={date} className="border-t">
+                                <td className="p-2">{date}</td>
+                                <td className="p-2 text-right font-medium">
+                                  {count}
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+            </div>
+          ) : (
+            <div className="py-10 text-center text-gray-500">
+              No usage data available
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsReportDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
   );
 }

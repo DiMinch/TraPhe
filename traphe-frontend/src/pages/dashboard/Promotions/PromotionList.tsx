@@ -37,6 +37,7 @@ import {
   ToggleRight,
   Tag,
   MoreHorizontal,
+  Star,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -69,6 +70,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { toast } from "sonner";
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
@@ -120,6 +122,11 @@ export default function PromotionListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
 
+  // Top promotions
+  const [topPromotions, setTopPromotions] = useState<PromotionResponse[]>([]);
+  const [loadingTopPromotions, setLoadingTopPromotions] = useState(false);
+  const [showTopPromotions, setShowTopPromotions] = useState(true);
+
   // Fetch categories and products when dialog opens
   useEffect(() => {
     if (
@@ -164,8 +171,10 @@ export default function PromotionListPage() {
       const response = await promotionService.getAllPromotions();
       console.log("Fetch promotions response:", response);
 
-      // Handle different response structures
-      const promotionData = response.data?.data || response.data || [];
+      // Handle both direct array and paginated response
+      const promotionData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || response.data?.data || [];
       console.log("Promotion data:", promotionData);
 
       setPromotions(Array.isArray(promotionData) ? promotionData : []);
@@ -186,19 +195,44 @@ export default function PromotionListPage() {
 
   useEffect(() => {
     fetchPromotions();
+    fetchTopPromotions();
   }, []);
 
-  // Filter promotions
+  // Fetch top promotions
+  const fetchTopPromotions = async () => {
+    setLoadingTopPromotions(true);
+    try {
+      const response = await promotionService.getTopPromotions(5);
+      console.log("Top promotions response:", response);
+
+      // Handle response structure
+      const topData = Array.isArray(response.data)
+        ? response.data
+        : (response.data as any)?.content || response.data?.data || [];
+
+      setTopPromotions(Array.isArray(topData) ? topData : []);
+    } catch (err: any) {
+      console.error("Error fetching top promotions:", err);
+      setTopPromotions([]);
+    } finally {
+      setLoadingTopPromotions(false);
+    }
+  };
+
+  // Filter promotions (client-side)
   const filteredPromotions = promotions.filter((promo) => {
     const matchesSearch =
       promo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       promo.code.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus =
       statusFilter === "all-status" ||
       promo.status.toLowerCase() === statusFilter.toLowerCase();
+
     const matchesType =
       typeFilter === "all-type" ||
       promo.type.toLowerCase() === typeFilter.toLowerCase();
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -253,12 +287,15 @@ export default function PromotionListPage() {
     if (promotionToDelete) {
       try {
         await promotionService.deletePromotion(promotionToDelete.id);
+        toast.success("Promotion deleted successfully");
         setPromotions(promotions.filter((p) => p.id !== promotionToDelete.id));
         setIsDeleteDialogOpen(false);
         setPromotionToDelete(null);
       } catch (err: any) {
         console.error("Error deleting promotion:", err);
-        alert(err.response?.data?.message || "Failed to delete promotion");
+        toast.error(
+          err.response?.data?.message || "Failed to delete promotion",
+        );
       }
     }
   };
@@ -277,13 +314,19 @@ export default function PromotionListPage() {
         setPromotions(
           promotions.map((p) => (p.id === promotion.id ? updatedPromotion : p)),
         );
+        toast.success(
+          `Promotion ${updatedPromotion.isActive ? "activated" : "deactivated"} successfully`,
+        );
       } else {
         // Fallback: just refresh the list
         await fetchPromotions();
+        toast.success("Promotion status updated");
       }
     } catch (err: any) {
       console.error("Error toggling promotion status:", err);
-      alert(err.response?.data?.message || "Failed to toggle promotion status");
+      toast.error(
+        err.response?.data?.message || "Failed to toggle promotion status",
+      );
     }
   };
 
@@ -317,7 +360,7 @@ export default function PromotionListPage() {
         !formData.applicableCategoryIds ||
         formData.applicableCategoryIds.length === 0
       ) {
-        alert("CATEGORY promotion must have at least one category");
+        toast.error("CATEGORY promotion must have at least one category");
         return;
       }
     }
@@ -336,12 +379,13 @@ export default function PromotionListPage() {
 
       setIsCreateDialogOpen(false);
       resetForm();
+      toast.success("Promotion created successfully");
 
       // Refresh the list to ensure we have the latest data
       await fetchPromotions();
     } catch (err: any) {
       console.error("Error creating promotion:", err);
-      alert(err.response?.data?.message || "Failed to create promotion");
+      toast.error(err.response?.data?.message || "Failed to create promotion");
     } finally {
       setCreating(false);
     }
@@ -403,7 +447,7 @@ export default function PromotionListPage() {
       !formData.startDate ||
       !formData.endDate
     ) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -415,7 +459,9 @@ export default function PromotionListPage() {
         (!formData.applicableProductIds ||
           formData.applicableProductIds.length === 0)
       ) {
-        alert("PRODUCT promotion must have at least one category or product");
+        toast.error(
+          "PRODUCT promotion must have at least one category or product",
+        );
         return;
       }
     }
@@ -426,7 +472,7 @@ export default function PromotionListPage() {
         !formData.applicableCategoryIds ||
         formData.applicableCategoryIds.length === 0
       ) {
-        alert("CATEGORY promotion must have at least one category");
+        toast.error("CATEGORY promotion must have at least one category");
         return;
       }
     }
@@ -451,12 +497,13 @@ export default function PromotionListPage() {
 
       setIsEditDialogOpen(false);
       resetForm();
+      toast.success("Promotion updated successfully");
 
       // Refresh the list to ensure we have the latest data
       await fetchPromotions();
     } catch (err: any) {
       console.error("Error updating promotion:", err);
-      alert(err.response?.data?.message || "Failed to update promotion");
+      toast.error(err.response?.data?.message || "Failed to update promotion");
     } finally {
       setEditing(false);
     }
@@ -497,6 +544,78 @@ export default function PromotionListPage() {
           Bulk Update
         </Button>
       </div>
+
+      {/* Top Promotions Section */}
+      <Card className="shadow-lg border-0 bg-gradient-to-r from-indigo-50 to-purple-50 mb-6">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold text-lg text-slate-800">
+                Top Performing Promotions
+              </h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTopPromotions(!showTopPromotions)}
+            >
+              {showTopPromotions ? "Hide" : "Show"}
+            </Button>
+          </div>
+
+          {showTopPromotions && (
+            <>
+              {loadingTopPromotions ? (
+                <div className="text-center py-6 text-slate-500">
+                  Loading top promotions...
+                </div>
+              ) : topPromotions.length === 0 ? (
+                <div className="text-center py-6 text-slate-500">
+                  No promotion usage data yet
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {topPromotions.map((promo, index) => (
+                    <div
+                      key={promo.id}
+                      className="bg-white rounded-lg p-4 shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() =>
+                        navigate(`/dashboard/promotions/${promo.id}`)
+                      }
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-2xl font-bold text-indigo-600">
+                          #{index + 1}
+                        </span>
+                        <Badge className={getStatusColor(promo.status)}>
+                          {promo.status}
+                        </Badge>
+                      </div>
+                      <h4 className="font-medium text-slate-800 truncate mb-1">
+                        {promo.name}
+                      </h4>
+                      <p className="text-sm text-slate-500 mb-2">
+                        Code: {promo.code}
+                      </p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-600">
+                          {promo.type === "PERCENTAGE"
+                            ? `${promo.value || 0}%`
+                            : `${(promo.value || 0).toLocaleString()}₫`}
+                        </span>
+                        <span className="text-green-600 font-medium">
+                          {promo.usageCount || 0} uses
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Main Card */}
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -587,7 +706,9 @@ export default function PromotionListPage() {
                       </TableCell>
                       <TableCell>
                         <button
-                          onClick={() => navigate(`/promotions/${promo.id}`)}
+                          onClick={() =>
+                            navigate(`/dashboard/promotions/${promo.id}`)
+                          }
                           className="font-medium text-indigo-900 hover:underline cursor-pointer"
                         >
                           {promo.name}

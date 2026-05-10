@@ -55,7 +55,7 @@ export const inventoryService = {
     );
   },
 
-  // Create stock adjustment
+  // Create stock adjustment (creates in PENDING status)
   createStockAdjustment: async (data: {
     reason: string;
     items: Array<{
@@ -68,6 +68,22 @@ export const inventoryService = {
     return axiosClient.post<any, ApiResponse<any>>(
       "/v1/inventory-adjustments",
       data,
+    );
+  },
+
+  // Approve stock adjustment (applies the changes to inventory)
+  approveStockAdjustment: async (adjustmentId: string) => {
+    return axiosClient.put<any, ApiResponse<any>>(
+      `/v1/inventory-adjustments/${adjustmentId}/approve`,
+    );
+  },
+
+  // Reject stock adjustment
+  rejectStockAdjustment: async (adjustmentId: string, reason: string) => {
+    return axiosClient.put<any, ApiResponse<any>>(
+      `/v1/inventory-adjustments/${adjustmentId}/reject`,
+      null,
+      { params: { reason } },
     );
   },
 };

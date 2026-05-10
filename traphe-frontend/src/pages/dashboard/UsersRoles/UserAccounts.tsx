@@ -25,19 +25,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Search,
   Plus,
   Download,
-  Edit,
   Trash2,
   Filter,
   Loader2,
   Users,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+  Ban,
+  Shield,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import { adminService, type UserAccount } from "@/services/admin.service";
+import {
+  adminService,
+  type UserAccount,
+  type Role,
+} from "@/services/admin.service";
+import { roleService } from "@/services/role.service";
 import { toast } from "sonner";
 import {
   PageContainer,
@@ -54,14 +80,26 @@ export default function UserAccountsPage() {
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [roleFilter, setRoleFilter] = useState("all-role");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // Roles management
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [isRolesDialogOpen, setIsRolesDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+
+  // User details dialog
+  const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
+  const [userDetails, setUserDetails] = useState<UserAccount | null>(null);
+
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   useEffect(() => {
@@ -87,6 +125,20 @@ export default function UserAccountsPage() {
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await roleService.getAllRolesNoPagination();
+      if (response.data) {
+        const rolesData = Array.isArray(response.data)
+          ? response.data
+          : (response.data as any)?.content || [];
+        setAvailableRoles(rolesData);
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
     }
   };
 
@@ -137,8 +189,102 @@ export default function UserAccountsPage() {
       case "INACTIVE":
       case "PENDING":
         return "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0";
+      case "SUSPENDED":
+        return "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-0";
+      case "TERMINATED":
+        return "bg-red-100 text-red-700 hover:bg-red-100 border-0";
       default:
         return "bg-slate-100 text-slate-700 hover:bg-slate-100 border-0";
+    }
+  };
+
+  // User status actions
+  const handleActivateUser = async (userId: string) => {
+    try {
+      setSubmitting(true);
+      await adminService.activateUser(userId);
+      toast.success("User activated successfully");
+      await fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to activate user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSuspendUser = async (userId: string) => {
+    try {
+      setSubmitting(true);
+      await adminService.suspendUser(userId);
+      toast.success("User suspended successfully");
+      await fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to suspend user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTerminateUser = async (userId: string) => {
+    try {
+      setSubmitting(true);
+      await adminService.terminateUser(userId);
+      toast.success("User terminated successfully");
+      await fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to terminate user");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Roles management
+  const handleEditRoles = (user: UserAccount) => {
+    setSelectedUser(user);
+    // Map role names to role IDs
+    const userRoleIds = availableRoles
+      .filter((role) => user.roles?.includes(role.name))
+      .map((role) => role.id);
+    setSelectedRoleIds(userRoleIds);
+    setIsRolesDialogOpen(true);
+  };
+
+  const handleRoleToggle = (roleId: string) => {
+    setSelectedRoleIds((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId],
+    );
+  };
+
+  const handleSaveRoles = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setSubmitting(true);
+      await adminService.replaceUserRoles(selectedUser.id, selectedRoleIds);
+      toast.success("User roles updated successfully");
+      setIsRolesDialogOpen(false);
+      await fetchUsers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to update roles");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // View user details
+  const handleViewUser = async (userId: string) => {
+    try {
+      const response = await adminService.getUserById(userId);
+      if (response.data) {
+        setUserDetails(response.data);
+        setIsUserDetailsOpen(true);
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to load user details",
+      );
     }
   };
 
@@ -222,6 +368,8 @@ export default function UserAccountsPage() {
                 <SelectItem value="all-status">All status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
 
@@ -318,26 +466,73 @@ export default function UserAccountsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-600 hover:text-primary hover:bg-primary/10"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            onClick={() =>
-                              handleDeleteClick({
-                                id: user.id,
-                                name: user.fullName || user.username,
-                              })
-                            }
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={submitting}
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleViewUser(user.id)}
+                              >
+                                <Users className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEditRoles(user)}
+                              >
+                                <Shield className="w-4 h-4 mr-2" />
+                                Manage Roles
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {user.status?.toUpperCase() !== "ACTIVE" && (
+                                <DropdownMenuItem
+                                  onClick={() => handleActivateUser(user.id)}
+                                  className="text-green-600"
+                                >
+                                  <UserCheck className="w-4 h-4 mr-2" />
+                                  Activate
+                                </DropdownMenuItem>
+                              )}
+                              {user.status?.toUpperCase() !== "SUSPENDED" && (
+                                <DropdownMenuItem
+                                  onClick={() => handleSuspendUser(user.id)}
+                                  className="text-yellow-600"
+                                >
+                                  <UserX className="w-4 h-4 mr-2" />
+                                  Suspend
+                                </DropdownMenuItem>
+                              )}
+                              {user.status?.toUpperCase() !== "TERMINATED" && (
+                                <DropdownMenuItem
+                                  onClick={() => handleTerminateUser(user.id)}
+                                  className="text-red-600"
+                                >
+                                  <Ban className="w-4 h-4 mr-2" />
+                                  Terminate
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDeleteClick({
+                                    id: user.id,
+                                    name: user.fullName || user.username,
+                                  })
+                                }
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -411,6 +606,150 @@ export default function UserAccountsPage() {
         onConfirm={handleDeleteConfirm}
         contextMessage="from the user accounts"
       />
+
+      {/* Manage Roles Dialog */}
+      <Dialog open={isRolesDialogOpen} onOpenChange={setIsRolesDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Manage User Roles</DialogTitle>
+            <DialogDescription>
+              Update roles for{" "}
+              {selectedUser?.fullName || selectedUser?.username}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="mb-3 block">Select Roles</Label>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {availableRoles.map((role) => (
+                <div
+                  key={role.id}
+                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50"
+                >
+                  <Checkbox
+                    id={role.id}
+                    checked={selectedRoleIds.includes(role.id)}
+                    onCheckedChange={() => handleRoleToggle(role.id)}
+                  />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor={role.id}
+                      className="font-medium cursor-pointer"
+                    >
+                      {role.name}
+                    </Label>
+                    {role.description && (
+                      <p className="text-sm text-slate-500">
+                        {role.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsRolesDialogOpen(false)}
+              disabled={submitting}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRoles} disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Roles"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Details Dialog */}
+      <Dialog open={isUserDetailsOpen} onOpenChange={setIsUserDetailsOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+          </DialogHeader>
+          {userDetails && (
+            <div className="py-4 space-y-4">
+              <div className="flex items-center gap-4">
+                {userDetails.avatar ? (
+                  <img
+                    src={userDetails.avatar}
+                    alt={userDetails.fullName}
+                    className="w-16 h-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center">
+                    <Users className="w-8 h-8 text-slate-500" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {userDetails.fullName}
+                  </h3>
+                  <p className="text-slate-500">@{userDetails.username}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-slate-500">Email</Label>
+                  <p className="font-medium">{userDetails.email}</p>
+                </div>
+                <div>
+                  <Label className="text-slate-500">Phone</Label>
+                  <p className="font-medium">{userDetails.phone || "N/A"}</p>
+                </div>
+                <div>
+                  <Label className="text-slate-500">Status</Label>
+                  <Badge className={getStatusColor(userDetails.status)}>
+                    {userDetails.status}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-slate-500">Roles</Label>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {userDetails.roles?.map((role, i) => (
+                      <Badge key={i} variant="secondary">
+                        {role.replace("ROLE_", "")}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-slate-500">Created At</Label>
+                  <p className="font-medium">
+                    {userDetails.createdAt
+                      ? new Date(userDetails.createdAt).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-slate-500">Updated At</Label>
+                  <p className="font-medium">
+                    {userDetails.updatedAt
+                      ? new Date(userDetails.updatedAt).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUserDetailsOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
