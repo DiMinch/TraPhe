@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { toast } from "sonner";
@@ -84,181 +81,227 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="flex flex-col justify-center items-center w-full md:w-1/2 bg-white p-8 md:p-12">
-        <div className="w-full max-w-md space-y-6">
-          <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              {step === 1 ? "Create Account" : "Verify Email"}
-            </h1>
-            <p className="text-gray-500">
-              {step === 1
-                ? "Join Viti today for exclusive deals"
-                : `Enter the OTP sent to ${formData.email}`}
-            </p>
+    <div className="bg-foam font-ui-body text-on-surface antialiased selection:bg-roast selection:text-white">
+      <main className="flex min-h-screen w-full">
+        {/* Left Side: Atmospheric Background Image */}
+        <div className="hidden lg:flex lg:w-1/2 relative bg-surface-variant overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            title="A beautiful, atmospheric top-down shot of a rustic wooden table in a Vietnamese coffee shop"
+            style={{
+              backgroundImage:
+                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBPHaUjCN2b-Hn6h8Mt_oqMGIZGq7jA7eYiUgiYc31a0CA18AMYVX5LfPTe7dQovUxVjJ3OxLz5CMbhLYkvVvrpfir4NVVAMFq0aInEHZo8pDi2H7_RJkAESuwFCDbIBuMDuY4Nhp_b2V-ZSD_Y6x748b_MHG2qVmF7tY7l7x7HfVmJR39aUJC_PdbqvkfvFC5xakMkdgDwDb3lKbtBT2yezfIh03hr_JgLXDnoELjHowz3VJepIPzAGrgS1mBhYHdzmL3h8Mwi1cY')",
+            }}
+          ></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-foam/30"></div>
+        </div>
+
+        {/* Right Side: Registration Form */}
+        <div className="w-full lg:w-1/2 flex flex-col px-space-6 py-space-8 lg:px-space-20 relative bg-surface-container-lowest lg:bg-transparent justify-center items-center">
+          <div className="absolute top-space-6 left-space-6 lg:left-space-12">
+            <Link
+              to="/"
+              aria-label="Quay lại"
+              className="flex items-center gap-2 text-dust hover:text-roast transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
           </div>
 
-          {step === 1 && (
-            <form className="space-y-4" onSubmit={handleRegister}>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  placeholder="Nguyen Van A"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  placeholder="nguyenvana"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="example@gmail.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    placeholder="0909 xxx xxx"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a password"
-                    className="pr-10"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    disabled={isLoading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Sign Up"
-                )}
-              </Button>
-
-              <p className="text-center text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link
-                  to="/sign-in"
-                  className="font-semibold text-gray-900 hover:underline"
-                >
-                  Sign in
-                </Link>
+          <div className="w-full max-w-[480px]">
+            <div className="mb-space-8 text-center lg:text-left">
+              <h1 className="text-[36px] font-display-md text-espresso mb-space-2">
+                {step === 1 ? "Đăng ký tài khoản" : "Xác thực email"}
+              </h1>
+              <p className="text-[16px] font-body-md text-dust">
+                {step === 1
+                  ? "Tạo tài khoản mới để trải nghiệm dịch vụ của TraPhe"
+                  : `Nhập OTP đã gửi đến ${formData.email}`}
               </p>
-            </form>
-          )}
+            </div>
 
-          {step === 2 && (
-            <form
-              className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300"
-              onSubmit={handleVerifyOtp}
-            >
-              <div className="space-y-2">
-                <Label htmlFor="otp">OTP Code</Label>
-                <Input
-                  id="otp"
-                  placeholder="Enter 6-digit code"
-                  className="h-12 text-center text-lg tracking-widest"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
+            {step === 1 && (
+              <form className="flex flex-col gap-space-4" onSubmit={handleRegister}>
+                <label className="flex flex-col w-full group">
+                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                    Họ và tên
+                  </span>
+                  <input
+                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                    id="fullName"
+                    name="fullName"
+                    placeholder="Nhập họ và tên của bạn"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                  />
+                </label>
+
+                <label className="flex flex-col w-full group">
+                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                    Tên đăng nhập
+                  </span>
+                  <input
+                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                    id="username"
+                    name="username"
+                    placeholder="Nhập tên đăng nhập"
+                    value={formData.username}
+                    onChange={handleChange}
+                    required
+                    disabled={isLoading}
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-4">
+                  <label className="flex flex-col w-full group">
+                    <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                      Email
+                    </span>
+                    <input
+                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Nhập địa chỉ email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </label>
+                  <label className="flex flex-col w-full group">
+                    <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                      Số điện thoại
+                    </span>
+                    <input
+                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      id="phone"
+                      name="phone"
+                      placeholder="Nhập số điện thoại"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                  </label>
+                </div>
+
+                <label className="flex flex-col w-full group">
+                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                    Mật khẩu
+                  </span>
+                  <div className="relative">
+                    <input
+                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 pr-12 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      id="password"
+                      name="password"
+                      placeholder="Tạo mật khẩu"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      disabled={isLoading}
+                    />
+                    <button
+                      aria-label="Hiện mật khẩu"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-dust hover:text-roast"
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </label>
+
+                <button
+                  className="w-full bg-roast hover:bg-espresso text-white font-heading-lg text-[15px] rounded-full py-[14px] transition-colors duration-300 shadow-sm mt-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  type="submit"
                   disabled={isLoading}
-                />
-                <p className="text-xs text-gray-500 text-center">
-                  Please check your inbox or spam folder.
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    "Đăng ký"
+                  )}
+                </button>
+              </form>
+            )}
+
+            {step === 2 && (
+              <form
+                className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300"
+                onSubmit={handleVerifyOtp}
+              >
+                <div className="space-y-space-2">
+                  <label
+                    className="block text-[14px] font-ui-body text-ink font-medium"
+                    htmlFor="otp"
+                  >
+                    Mã OTP
+                  </label>
+                  <input
+                    id="otp"
+                    placeholder="Nhập 6 chữ số"
+                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[16px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none text-center tracking-widest"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                  <p className="text-[12px] text-dust text-center">
+                    Vui lòng kiểm tra hộp thư hoặc thư rác.
+                  </p>
+                </div>
+
+                <button
+                  className="w-full bg-roast hover:bg-espresso text-white font-heading-lg text-[15px] rounded-full py-[14px] transition-colors duration-300 shadow-sm mt-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    "Xác thực"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full rounded-full border border-mist text-dust hover:text-roast hover:border-roast py-[12px] transition-colors"
+                  onClick={() => setStep(1)}
+                  disabled={isLoading}
+                >
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <ArrowLeft className="w-4 h-4" /> Quay lại đăng ký
+                  </span>
+                </button>
+              </form>
+            )}
+
+            {step === 1 && (
+              <div className="mt-space-8 text-center">
+                <p className="text-[14px] font-ui-body text-dust">
+                  Đã có tài khoản?{" "}
+                  <Link
+                    className="text-caramel hover:text-roast font-medium ml-1"
+                    to="/sign-in"
+                  >
+                    Đăng nhập ngay
+                  </Link>
                 </p>
               </div>
-
-              <Button
-                type="submit"
-                className="w-full h-12 bg-slate-900 hover:bg-slate-800 text-white font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Verify & Complete"
-                )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setStep(1)}
-                disabled={isLoading}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Registration
-              </Button>
-            </form>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="hidden md:block w-1/2 bg-gray-200 relative overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <img
-            src="/logo.svg"
-            alt="Decorative"
-            className="object-cover h-1/2 w-1/2"
-          />
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

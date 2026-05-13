@@ -65,31 +65,22 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="flex flex-col w-[281px] min-h-screen bg-white border-r-3 border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+    <nav className="fixed left-0 top-0 h-full w-[240px] z-40 bg-espresso text-caramel border-r border-admin-border shadow-none flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 pb-0 ">
-        <h1 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Admin
-        </h1>
-        <button className="text-gray-400 hover:text-gray-600">
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Logo */}
-      <div className="flex flex-col items-center justify-center  px-6">
-        <img src="/logo.svg" alt="logo" width={200} height={200} />
-      </div>
-
-      {/* Navigation Label */}
-      <div className="px-6 py-3 -mt-10">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Navigation
-        </h2>
+      <div className="p-space-6 flex items-center gap-space-3 border-b border-smoke">
+        <div className="w-10 h-10 rounded-full bg-caramel flex items-center justify-center text-white font-bold text-lg">
+          T
+        </div>
+        <div>
+          <h1 className="text-white font-bold tracking-tight text-lg">
+            TraPhe Admin
+          </h1>
+          <p className="text-dust text-xs">Management Portal</p>
+        </div>
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 px-3 pb-4 overflow-y-auto">
+      <div className="flex-1 py-space-4">
         <NavigationMenu
           orientation="vertical"
           className="max-w-none items-start"
@@ -112,11 +103,11 @@ export default function Navigation() {
                         <NavigationMenuLink
                           asChild
                           className={cn(
-                            "flex items-center justify-between w-full px-4 py-2.5 h-auto rounded-md text-sm font-normal",
-                            "hover:bg-gray-100 transition-colors",
+                            "flex items-center justify-between w-full px-4 py-3 h-auto text-sm font-medium",
+                            "transition-colors",
                             isActive
-                              ? "bg-gray-100 text-gray-900"
-                              : "text-gray-700",
+                              ? "bg-roast text-white border-l-4 border-caramel"
+                              : "text-dust hover:bg-smoke/40 hover:text-white",
                           )}
                         >
                           <div className="flex flex-row items-center justify-between w-full">
@@ -125,9 +116,9 @@ export default function Navigation() {
                               <span>{item.title}</span>
                             </div>
                             {isExpanded ? (
-                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                              <ChevronDown className="h-4 w-4 text-dust" />
                             ) : (
-                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                              <ChevronRight className="h-4 w-4 text-dust" />
                             )}
                           </div>
                         </NavigationMenuLink>
@@ -138,11 +129,11 @@ export default function Navigation() {
                           active={isActive}
                           asChild
                           className={cn(
-                            "flex items-center justify-between w-full px-4 py-2.5 h-auto rounded-md text-sm font-normal",
-                            "hover:bg-gray-100 transition-colors",
+                            "flex items-center justify-between w-full px-4 py-3 h-auto text-sm font-medium",
+                            "transition-colors",
                             isActive
-                              ? "bg-gray-100 text-gray-900"
-                              : "text-gray-700",
+                              ? "bg-roast text-white border-l-4 border-caramel"
+                              : "text-dust hover:bg-smoke/40 hover:text-white",
                           )}
                         >
                           <div className="flex flex-row items-center justify-between w-full">
@@ -150,7 +141,7 @@ export default function Navigation() {
                               <Icon className="h-4 w-4" />
                               <span>{item.title}</span>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-dust" />
                           </div>
                         </NavigationMenuLink>
                       </Link>
@@ -169,8 +160,8 @@ export default function Navigation() {
                             className={cn(
                               "block px-4 py-2 text-sm rounded-md transition-colors",
                               isSubActive
-                                ? "bg-gray-100 text-gray-900 font-medium"
-                                : "text-gray-600 hover:bg-gray-50",
+                                ? "bg-roast/80 text-white font-medium"
+                                : "text-dust hover:bg-smoke/40 hover:text-white",
                             )}
                           >
                             {subItem.title}
@@ -187,10 +178,10 @@ export default function Navigation() {
       </div>
 
       {/* Logout */}
-      <div className="p-3 ">
+      <div className="py-space-4 border-t border-smoke">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          className="flex items-center gap-3 w-full px-4 py-3 text-sm text-dust hover:bg-smoke/40 hover:text-white transition-colors"
         >
           <LogOut className="h-4 w-4" />
           <span>Logout</span>

@@ -50,22 +50,21 @@ import { warrantyService } from "@/services/warranty.service";
 import { customerService } from "@/services/customer.service";
 import { auditLogService } from "@/services/audit-log.service";
 import { authService } from "@/services/auth.service";
-import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 import type { WarrantyTicket } from "@/types/warranty.types";
 import type { Customer } from "@/types/customer.types";
 
 const chartConfig = {
   revenue: {
     label: "Revenue",
-    color: "#6366f1",
+    color: "#A0622A",
   },
   grossProfit: {
     label: "Gross Profit",
-    color: "#10b981",
+    color: "#2C1A0E",
   },
   orders: {
     label: "Orders",
-    color: "#f59e0b",
+    color: "#5C3317",
   },
 } satisfies ChartConfig;
 
@@ -614,13 +613,13 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-slate-50 to-slate-100">
+      <div className="flex items-center justify-center min-h-screen bg-admin-bg text-on-background">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
-            <div className="w-16 h-16 rounded-full border-4 border-slate-200 animate-pulse"></div>
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <div className="w-16 h-16 rounded-full border-4 border-mist animate-pulse"></div>
+            <Loader2 className="w-8 h-8 animate-spin text-roast absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-sm text-dust font-medium">
             Loading dashboard...
           </p>
         </div>
@@ -629,157 +628,156 @@ export default function DashboardPage() {
   }
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`Welcome back, ${currentUser?.fullName || "User"}! Here's your business overview.`}
-        onRefresh={handleRefresh}
-        isLoading={refreshing}
-      />
+    <div className="min-h-screen bg-admin-bg text-on-background font-ui-body text-ui-body">
+      <div className="px-space-8 py-space-6 max-w-[1440px] mx-auto">
+        <div className="mb-space-6">
+          <h2 className="font-ui-heading text-ui-heading text-ink">
+            Dashboard Overview
+          </h2>
+          <p className="text-sm text-dust mt-1">
+            Welcome back, {currentUser?.fullName || "User"}.
+          </p>
+        </div>
 
-      {/* Time Range Selector */}
-      <div className="flex justify-end mb-6">
-        <Select value={timeRange} onValueChange={handleTimeRangeChange}>
-          <SelectTrigger className="w-36 h-9 text-sm bg-white border-slate-200">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Last 7 Days</SelectItem>
-            <SelectItem value="month">Last 30 Days</SelectItem>
-            <SelectItem value="year">Last Year</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-space-4 mb-space-6">
+          <div className="flex items-center gap-space-3">
+            <Button
+              variant="outline"
+              className="border-admin-border text-sm text-dust hover:text-roast hover:border-roast bg-admin-surface"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Activity className="w-4 h-4 mr-2" />
+              )}
+              Refresh
+            </Button>
+          </div>
+          <Select value={timeRange} onValueChange={handleTimeRangeChange}>
+            <SelectTrigger className="w-40 h-9 text-sm bg-admin-surface border-admin-border text-ink">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Last 7 Days</SelectItem>
+              <SelectItem value="month">Last 30 Days</SelectItem>
+              <SelectItem value="year">Last Year</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
       {/* Stats Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-6 mb-space-8">
         {/* Revenue Card */}
-        <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 text-white rounded-2xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <Badge
-                className={`${stats.revenueGrowth >= 0 ? "bg-emerald-400/30 text-emerald-100" : "bg-red-400/30 text-red-100"} border-0 backdrop-blur-sm`}
-              >
-                {stats.revenueGrowth >= 0 ? (
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                ) : (
-                  <TrendingDown className="w-3 h-3 mr-1" />
-                )}
-                {Math.abs(stats.revenueGrowth).toFixed(1)}%
-              </Badge>
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
+          <CardContent className="p-space-6 flex items-center gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+              <DollarSign className="w-5 h-5" />
             </div>
-            <p className="text-indigo-100 text-sm font-medium mb-1">
-              Total Revenue
-            </p>
-            <p className="text-3xl font-bold tracking-tight">
-              {formatCurrency(stats.totalRevenue)}
-            </p>
+            <div className="flex-1">
+              <p className="text-dust text-sm font-medium">Today Revenue</p>
+              <p className="font-pos-total text-pos-total text-ink">
+                {formatCurrency(stats.totalRevenue)}
+              </p>
+            </div>
+            <Badge
+              className={`border-0 ${stats.revenueGrowth >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}
+            >
+              {stats.revenueGrowth >= 0 ? (
+                <TrendingUp className="w-3 h-3 mr-1" />
+              ) : (
+                <TrendingDown className="w-3 h-3 mr-1" />
+              )}
+              {Math.abs(stats.revenueGrowth).toFixed(1)}%
+            </Badge>
           </CardContent>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
         </Card>
 
         {/* Gross Profit Card */}
-        <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white rounded-2xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                {stats.profitMargin.toFixed(1)}% margin
-              </Badge>
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
+          <CardContent className="p-space-6 flex items-center gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+              <TrendingUp className="w-5 h-5" />
             </div>
-            <p className="text-emerald-100 text-sm font-medium mb-1">
-              Gross Profit
-            </p>
-            <p className="text-3xl font-bold tracking-tight">
-              {formatCurrency(stats.grossProfit)}
-            </p>
+            <div className="flex-1">
+              <p className="text-dust text-sm font-medium">Gross Profit</p>
+              <p className="font-pos-total text-pos-total text-ink">
+                {formatCurrency(stats.grossProfit)}
+              </p>
+            </div>
+            <Badge className="bg-cream text-roast border-0">
+              {stats.profitMargin.toFixed(1)}% margin
+            </Badge>
           </CardContent>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
         </Card>
 
         {/* Orders Card */}
-        <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 text-white rounded-2xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <ShoppingCart className="w-6 h-6" />
-              </div>
-              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                {orderStats.pending} pending
-              </Badge>
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
+          <CardContent className="p-space-6 flex items-center gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+              <ShoppingCart className="w-5 h-5" />
             </div>
-            <p className="text-amber-100 text-sm font-medium mb-1">
-              Total Orders
-            </p>
-            <p className="text-3xl font-bold tracking-tight">
-              {stats.totalOrders.toLocaleString()}
-            </p>
+            <div className="flex-1">
+              <p className="text-dust text-sm font-medium">Active Orders</p>
+              <p className="font-pos-total text-pos-total text-ink">
+                {stats.totalOrders.toLocaleString()}
+              </p>
+            </div>
+            <Badge className="bg-cream text-roast border-0">
+              {orderStats.pending} pending
+            </Badge>
           </CardContent>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
         </Card>
 
         {/* Customers Card */}
-        <Card className="relative overflow-hidden border-0 shadow-xl bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white rounded-2xl">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <Users className="w-6 h-6" />
-              </div>
-              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
-                Active
-              </Badge>
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
+          <CardContent className="p-space-6 flex items-center gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+              <Users className="w-5 h-5" />
             </div>
-            <p className="text-purple-100 text-sm font-medium mb-1">
-              Total Customers
-            </p>
-            <p className="text-3xl font-bold tracking-tight">
-              {stats.totalCustomers.toLocaleString()}
-            </p>
+            <div className="flex-1">
+              <p className="text-dust text-sm font-medium">Total Customers</p>
+              <p className="font-pos-total text-pos-total text-ink">
+                {stats.totalCustomers.toLocaleString()}
+              </p>
+            </div>
+            <Badge className="bg-cream text-roast border-0">Active</Badge>
           </CardContent>
-          <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-          <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full blur-xl"></div>
         </Card>
       </div>
 
       {/* Chart + Order Status Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-6 mb-space-8">
         {/* Revenue Chart */}
-        <Card className="lg:col-span-8 shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="lg:col-span-8 bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-indigo-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-caramel/10 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-caramel" />
               </div>
-              Revenue Trends
+              Weekly Revenue
             </CardTitle>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800 transition-colors">
+              <label className="flex items-center gap-2 text-sm text-dust cursor-pointer hover:text-ink transition-colors">
                 <Checkbox
                   checked={showRevenue}
                   onCheckedChange={(c) => setShowRevenue(c as boolean)}
-                  className="data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                  className="data-[state=checked]:bg-caramel data-[state=checked]:border-caramel"
                 />
                 Revenue
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer hover:text-slate-800 transition-colors">
+              <label className="flex items-center gap-2 text-sm text-dust cursor-pointer hover:text-ink transition-colors">
                 <Checkbox
                   checked={showGrossProfit}
                   onCheckedChange={(c) => setShowGrossProfit(c as boolean)}
-                  className="data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                  className="data-[state=checked]:bg-roast data-[state=checked]:border-roast"
                 />
                 Profit
               </label>
             </div>
           </CardHeader>
-          <CardContent className="pb-4">
+          <CardContent className="pb-space-4">
             {chartData.length > 0 ? (
               <ChartContainer config={chartConfig} className="h-64 w-full">
                 <LineChart
@@ -789,7 +787,7 @@ export default function DashboardPage() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#e2e8f0"
+                    stroke="#E2DDD7"
                   />
                   <XAxis
                     dataKey="period"
@@ -797,14 +795,14 @@ export default function DashboardPage() {
                     axisLine={false}
                     tickMargin={8}
                     fontSize={12}
-                    stroke="#94a3b8"
+                    stroke="#8C7B6E"
                   />
                   <YAxis
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
                     fontSize={12}
-                    stroke="#94a3b8"
+                    stroke="#8C7B6E"
                     tickFormatter={(v) =>
                       `${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}đ`
                     }
@@ -814,9 +812,9 @@ export default function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#6366f1"
+                      stroke="#A0622A"
                       strokeWidth={3}
-                      dot={{ fill: "#6366f1", strokeWidth: 2, r: 4 }}
+                      dot={{ fill: "#A0622A", strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6 }}
                     />
                   )}
@@ -824,19 +822,19 @@ export default function DashboardPage() {
                     <Line
                       type="monotone"
                       dataKey="grossProfit"
-                      stroke="#10b981"
+                      stroke="#5C3317"
                       strokeWidth={3}
-                      dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                      dot={{ fill: "#5C3317", strokeWidth: 2, r: 4 }}
                       activeDot={{ r: 6 }}
                     />
                   )}
                 </LineChart>
               </ChartContainer>
             ) : (
-              <div className="h-64 flex items-center justify-center text-slate-400">
+              <div className="h-64 flex items-center justify-center text-dust">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <BarChart3 className="w-8 h-8 opacity-50" />
+                  <div className="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                    <BarChart3 className="w-8 h-8 text-dust" />
                   </div>
                   <p className="font-medium">
                     No data available for the selected period
@@ -848,71 +846,69 @@ export default function DashboardPage() {
         </Card>
 
         {/* Order Status Breakdown */}
-        <Card className="lg:col-span-4 shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="lg:col-span-4 bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <ShoppingCart className="w-5 h-5 text-amber-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-roast/10 rounded-lg">
+                <ShoppingCart className="w-5 h-5 text-roast" />
               </div>
               Order Status
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-amber-100/50 rounded-xl border border-amber-200/50 hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-200/50 rounded-lg">
-                  <Clock className="w-5 h-5 text-amber-600" />
+          <CardContent className="space-y-space-3">
+            <div className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border">
+              <div className="flex items-center gap-space-3">
+                <div className="p-2 bg-cream rounded-lg">
+                  <Clock className="w-5 h-5 text-roast" />
                 </div>
-                <span className="text-sm font-semibold text-slate-700">
-                  Pending
-                </span>
+                <span className="text-sm font-semibold text-ink">Pending</span>
               </div>
-              <Badge className="bg-amber-500 text-white hover:bg-amber-500 border-0 px-3 py-1 font-bold">
+              <Badge className="bg-cream text-roast border-0 font-bold">
                 {orderStats.pending}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl border border-blue-200/50 hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-200/50 rounded-lg">
-                  <Package className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border">
+              <div className="flex items-center gap-space-3">
+                <div className="p-2 bg-cream rounded-lg">
+                  <Package className="w-5 h-5 text-roast" />
                 </div>
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-sm font-semibold text-ink">
                   Confirmed
                 </span>
               </div>
-              <Badge className="bg-blue-500 text-white hover:bg-blue-500 border-0 px-3 py-1 font-bold">
+              <Badge className="bg-cream text-roast border-0 font-bold">
                 {orderStats.confirmed}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-emerald-100/50 rounded-xl border border-emerald-200/50 hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-200/50 rounded-lg">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <div className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border">
+              <div className="flex items-center gap-space-3">
+                <div className="p-2 bg-cream rounded-lg">
+                  <CheckCircle2 className="w-5 h-5 text-roast" />
                 </div>
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-sm font-semibold text-ink">
                   Completed
                 </span>
               </div>
-              <Badge className="bg-emerald-500 text-white hover:bg-emerald-500 border-0 px-3 py-1 font-bold">
+              <Badge className="bg-cream text-roast border-0 font-bold">
                 {orderStats.completed}
               </Badge>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-red-100/50 rounded-xl border border-red-200/50 hover:shadow-md transition-all duration-200">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-200/50 rounded-lg">
-                  <XCircle className="w-5 h-5 text-red-600" />
+            <div className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border">
+              <div className="flex items-center gap-space-3">
+                <div className="p-2 bg-cream rounded-lg">
+                  <XCircle className="w-5 h-5 text-roast" />
                 </div>
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-sm font-semibold text-ink">
                   Cancelled
                 </span>
               </div>
-              <Badge className="bg-red-500 text-white hover:bg-red-500 border-0 px-3 py-1 font-bold">
+              <Badge className="bg-cream text-roast border-0 font-bold">
                 {orderStats.cancelled}
               </Badge>
             </div>
             <Button
               variant="outline"
-              className="w-full mt-3 rounded-xl border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all font-medium"
+              className="w-full mt-3 rounded-lg border-admin-border hover:bg-surface-container-low text-dust hover:text-roast"
               onClick={() => navigate("/sales/orders")}
             >
               <Eye className="w-4 h-4 mr-2" />
@@ -923,40 +919,40 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Products + Low Stock Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-6 mb-space-8">
         {/* Top Products */}
-        <Card className="shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-emerald-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-caramel/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-caramel" />
               </div>
               Top Selling Products
             </CardTitle>
             <Button
               variant="ghost"
               size="sm"
-              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg font-medium"
+              className="text-caramel hover:text-roast hover:bg-surface-container-low rounded-lg font-medium"
               onClick={() => navigate("/reports/top-products")}
             >
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-6 pb-5">
-            <div className="rounded-xl border border-slate-200/60 overflow-hidden">
+          <CardContent className="p-0 px-space-6 pb-space-5">
+            <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 hover:bg-slate-50 border-b border-slate-200">
-                    <TableHead className="py-3 text-xs font-semibold text-slate-600 w-12">
+                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
+                    <TableHead className="py-3 text-xs font-semibold text-dust w-12">
                       #
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-slate-600">
+                    <TableHead className="py-3 text-xs font-semibold text-dust">
                       Product
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-slate-600">
+                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
                       Sold
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-slate-600">
+                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
                       Revenue
                     </TableHead>
                   </TableRow>
@@ -965,30 +961,30 @@ export default function DashboardPage() {
                   {topProducts.map((product) => (
                     <TableRow
                       key={product.sku}
-                      className="border-slate-100 hover:bg-slate-50/50 transition-colors"
+                      className="border-admin-border/60 hover:bg-surface-container-low transition-colors"
                     >
                       <TableCell className="py-3">
                         <Badge
                           variant={product.rank === 1 ? "default" : "outline"}
-                          className={`font-bold ${product.rank === 1 ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-500 hover:to-orange-500 shadow-sm" : product.rank === 2 ? "bg-slate-200 text-slate-700 border-0" : product.rank === 3 ? "bg-amber-100 text-amber-700 border-0" : ""}`}
+                          className={`font-bold ${product.rank === 1 ? "bg-roast text-white border-0" : product.rank === 2 ? "bg-cream text-roast border-0" : product.rank === 3 ? "bg-parchment text-roast border-0" : ""}`}
                         >
                           {product.rank}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3">
                         <div>
-                          <p className="font-semibold text-slate-700 text-sm line-clamp-1">
+                          <p className="font-semibold text-ink text-sm line-clamp-1">
                             {product.productName}
                           </p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-dust">
                             {product.variantName || product.sku}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-slate-700">
+                      <TableCell className="py-3 text-right font-bold text-ink">
                         {product.quantitySold.toLocaleString()}
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-emerald-600">
+                      <TableCell className="py-3 text-right font-bold text-roast">
                         {formatCurrency(product.totalRevenue)}
                       </TableCell>
                     </TableRow>
@@ -997,10 +993,10 @@ export default function DashboardPage() {
                     <TableRow>
                       <TableCell
                         colSpan={4}
-                        className="py-12 text-center text-slate-400"
+                        className="py-12 text-center text-dust"
                       >
-                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                          <Package className="w-7 h-7 opacity-50" />
+                        <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                          <Package className="w-7 h-7 text-dust" />
                         </div>
                         <p className="font-medium">No sales data available</p>
                       </TableCell>
@@ -1013,17 +1009,17 @@ export default function DashboardPage() {
         </Card>
 
         {/* Low Stock Alert */}
-        <Card className="shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-error-container rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-error" />
               </div>
               Low Stock Alert
               {lowStockItems.length > 0 && (
                 <Badge
                   variant="destructive"
-                  className="ml-2 bg-red-500 shadow-sm"
+                  className="ml-2 bg-error text-white border-0"
                 >
                   {lowStockItems.length}
                 </Badge>
@@ -1032,24 +1028,24 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg font-medium"
+              className="text-caramel hover:text-roast hover:bg-surface-container-low rounded-lg font-medium"
               onClick={() => navigate("/inventory/all")}
             >
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-6 pb-5">
-            <div className="rounded-xl border border-slate-200/60 overflow-hidden">
+          <CardContent className="p-0 px-space-6 pb-space-5">
+            <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 hover:bg-slate-50 border-b border-slate-200">
-                    <TableHead className="py-3 text-xs font-semibold text-slate-600">
+                  <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
+                    <TableHead className="py-3 text-xs font-semibold text-dust">
                       Product
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-slate-600">
+                    <TableHead className="py-3 text-xs font-semibold text-dust">
                       SKU
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-slate-600">
+                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
                       Stock
                     </TableHead>
                   </TableRow>
@@ -1058,14 +1054,14 @@ export default function DashboardPage() {
                   {lowStockItems.map((item) => (
                     <TableRow
                       key={item.id}
-                      className="border-slate-100 hover:bg-red-50/50 transition-colors"
+                      className="border-admin-border/60 hover:bg-error-container/40 transition-colors"
                     >
                       <TableCell className="py-3">
                         <div>
-                          <p className="font-semibold text-slate-700 text-sm line-clamp-1">
+                          <p className="font-semibold text-ink text-sm line-clamp-1">
                             {item.productName}
                           </p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-dust">
                             {item.variantName}
                           </p>
                         </div>
@@ -1073,7 +1069,7 @@ export default function DashboardPage() {
                       <TableCell className="py-3">
                         <Badge
                           variant="outline"
-                          className="font-mono text-xs bg-slate-50"
+                          className="font-mono text-xs bg-surface-container-low"
                         >
                           {item.sku}
                         </Badge>
@@ -1083,7 +1079,7 @@ export default function DashboardPage() {
                           variant={
                             item.isOutOfStock ? "destructive" : "secondary"
                           }
-                          className={`font-bold ${item.isOutOfStock ? "bg-red-500" : "bg-amber-100 text-amber-700"}`}
+                          className={`font-bold ${item.isOutOfStock ? "bg-error text-white" : "bg-cream text-roast"}`}
                         >
                           {item.quantityAvailable} / {item.minThreshold}
                         </Badge>
@@ -1094,12 +1090,12 @@ export default function DashboardPage() {
                     <TableRow>
                       <TableCell
                         colSpan={3}
-                        className="py-12 text-center text-slate-400"
+                        className="py-12 text-center text-dust"
                       >
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-                          <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+                        <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                          <CheckCircle2 className="w-7 h-7 text-roast" />
                         </div>
-                        <p className="font-medium text-emerald-600">
+                        <p className="font-medium text-roast">
                           All items are well stocked
                         </p>
                       </TableCell>
@@ -1113,36 +1109,36 @@ export default function DashboardPage() {
       </div>
 
       {/* Pending Orders + Warranty Tickets + Audit Logs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-6">
         {/* Pending Orders */}
-        <Card className="shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Clock className="w-5 h-5 text-amber-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-cream rounded-lg">
+                <Clock className="w-5 h-5 text-roast" />
               </div>
               Pending Orders
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-5 pb-5">
-            <div className="space-y-3">
+          <CardContent className="p-0 px-space-5 pb-space-5">
+            <div className="space-y-space-3">
               {pendingOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200/50 hover:shadow-md hover:border-slate-300/50 transition-all duration-200 cursor-pointer"
+                  className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border hover:shadow-md transition-all duration-200 cursor-pointer"
                   onClick={() => navigate(`/sales/orders`)}
                 >
                   <div>
-                    <p className="font-semibold text-slate-700 text-sm">
+                    <p className="font-semibold text-ink text-sm">
                       {order.orderNumber}
                     </p>
-                    <p className="text-xs text-slate-500">{order.customer}</p>
+                    <p className="text-xs text-dust">{order.customer}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-amber-600">
+                    <p className="font-bold text-roast">
                       {formatCurrency(order.total)}
                     </p>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-dust">
                       {order.createdAt
                         ? format(new Date(order.createdAt), "dd/MM HH:mm")
                         : ""}
@@ -1151,11 +1147,11 @@ export default function DashboardPage() {
                 </div>
               ))}
               {pendingOrders.length === 0 && (
-                <div className="py-10 text-center text-slate-400">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+                <div className="py-10 text-center text-dust">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="w-7 h-7 text-roast" />
                   </div>
-                  <p className="font-medium text-emerald-600">
+                  <p className="font-medium text-roast">
                     No pending orders
                   </p>
                 </div>
@@ -1165,40 +1161,40 @@ export default function DashboardPage() {
         </Card>
 
         {/* Warranty Tickets */}
-        <Card className="shadow-xl border-0 bg-white rounded-2xl">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Wrench className="w-5 h-5 text-purple-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-cream rounded-lg">
+                <Wrench className="w-5 h-5 text-roast" />
               </div>
               Recent Warranty Tickets
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-5 pb-5">
-            <div className="space-y-3">
+          <CardContent className="p-0 px-space-5 pb-space-5">
+            <div className="space-y-space-3">
               {warrantyTickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200/50 hover:shadow-md hover:border-slate-300/50 transition-all duration-200 cursor-pointer"
+                  className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border hover:shadow-md transition-all duration-200 cursor-pointer"
                   onClick={() => navigate(`/warranty/tickets`)}
                 >
                   <div>
-                    <p className="font-semibold text-slate-700 text-sm">
+                    <p className="font-semibold text-ink text-sm">
                       {ticket.ticketNumber}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-dust">
                       {ticket.customerName}
                     </p>
                   </div>
                   <Badge
                     className={`text-xs font-medium ${
                       ticket.status.toLowerCase().includes("completed")
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-cream text-roast"
                         : ticket.status.toLowerCase().includes("progress")
-                          ? "bg-blue-100 text-blue-700"
+                          ? "bg-parchment text-roast"
                           : ticket.status.toLowerCase().includes("pending")
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-slate-100 text-slate-700"
+                            ? "bg-cream text-roast"
+                            : "bg-surface-container-high text-dust"
                     } border-0`}
                   >
                     {ticket.status}
@@ -1206,9 +1202,9 @@ export default function DashboardPage() {
                 </div>
               ))}
               {warrantyTickets.length === 0 && (
-                <div className="py-10 text-center text-slate-400">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <Wrench className="w-7 h-7 opacity-50" />
+                <div className="py-10 text-center text-dust">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                    <Wrench className="w-7 h-7 text-dust" />
                   </div>
                   <p className="font-medium">No warranty tickets</p>
                 </div>
@@ -1218,32 +1214,32 @@ export default function DashboardPage() {
         </Card>
 
         {/* Audit Logs */}
-        <Card className="shadow-xl border-0 bg-white rounded-2xl md:col-span-2 lg:col-span-1">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm md:col-span-2 lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Activity className="w-5 h-5 text-indigo-600" />
+            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
+              <div className="p-2 bg-cream rounded-lg">
+                <Activity className="w-5 h-5 text-roast" />
               </div>
               Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-5 pb-5">
-            <div className="space-y-3">
+          <CardContent className="p-0 px-space-5 pb-space-5">
+            <div className="space-y-space-3">
               {auditLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-start gap-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-xl border border-slate-200/50"
+                  className="flex items-start gap-3 p-space-4 bg-surface-container-low rounded-lg border border-admin-border"
                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 mt-2 shrink-0 shadow-sm"></div>
+                  <div className="w-2.5 h-2.5 rounded-full bg-roast mt-2 shrink-0 shadow-sm"></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-700 font-medium">
-                      <span className="text-indigo-600 font-semibold">
+                    <p className="text-sm text-ink font-medium">
+                      <span className="text-roast font-semibold">
                         {log.actorName}
                       </span>{" "}
                       {log.action.toLowerCase()} in{" "}
-                      <span className="text-slate-500">{log.module}</span>
+                      <span className="text-dust">{log.module}</span>
                     </p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-dust mt-1">
                       {log.createdAt
                         ? format(new Date(log.createdAt), "dd/MM/yyyy HH:mm")
                         : ""}
@@ -1252,9 +1248,9 @@ export default function DashboardPage() {
                 </div>
               ))}
               {auditLogs.length === 0 && (
-                <div className="py-10 text-center text-slate-400">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                    <Activity className="w-7 h-7 opacity-50" />
+                <div className="py-10 text-center text-dust">
+                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
+                    <Activity className="w-7 h-7 text-dust" />
                   </div>
                   <p className="font-medium">No recent activity</p>
                 </div>
@@ -1263,6 +1259,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </PageContainer>
+      </div>
+    </div>
   );
 }
