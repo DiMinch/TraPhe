@@ -42,9 +42,9 @@ public class AuthService {
             throw new EmailAlreadyExistsException("Email is already registered");
         }
 
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
+        Role userRole = roleRepository.findByName(RoleName.ROLE_CUSTOMER)
                 .orElseGet(() -> {
-                    Role role = Role.builder().name(RoleName.ROLE_USER).build();
+                    Role role = Role.builder().name(RoleName.ROLE_CUSTOMER).build();
                     return roleRepository.save(role);
                 });
 
