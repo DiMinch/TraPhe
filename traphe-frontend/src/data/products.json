@@ -1,0 +1,405 @@
+[
+  {
+    "id": 1,
+    "image": "/logo.svg",
+    "name": "MacBook Pro M1 2020",
+    "variants": "3 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 5,
+    "status": "Active",
+    "minStockThreshold": 5,
+    "generalSpec": {
+      "Screen_Size": "1920x1080",
+      "Battery": "60Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "MB-M1-GR-256",
+        "barcode": "1155464853",
+        "spec": {
+          "RAM": "8GB"
+        },
+        "purchasePrice": "$1,000",
+        "sellingPrice": "$3,000",
+        "inventory": 5,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "MB-M1-SL-512",
+        "barcode": "0511554894",
+        "spec": {
+          "RAM": "12GB"
+        },
+        "purchasePrice": "$2,000",
+        "sellingPrice": "$5,000",
+        "inventory": 0,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "image": "¥",
+    "name": "ZADEZ Mouse Gaming 2025",
+    "variants": "2 variants",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 10,
+    "status": "Active",
+    "minStockThreshold": 3,
+    "generalSpec": {
+      "DPI": "16000",
+      "Buttons": "8"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "ZD-MS-BK",
+        "barcode": "2255464853",
+        "spec": {
+          "Color": "Black"
+        },
+        "purchasePrice": "$20",
+        "sellingPrice": "$50",
+        "inventory": 5,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "ZD-MS-WH",
+        "barcode": "2255464854",
+        "spec": {
+          "Color": "White"
+        },
+        "purchasePrice": "$20",
+        "sellingPrice": "$50",
+        "inventory": 5,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "image": "/logo.svg",
+    "name": "Dell XPS 15 2024",
+    "variants": "2 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 8,
+    "status": "Active",
+    "minStockThreshold": 4,
+    "generalSpec": {
+      "Screen_Size": "1920x1200",
+      "Battery": "86Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "DL-XPS-I5",
+        "barcode": "3355464853",
+        "spec": {
+          "RAM": "16GB"
+        },
+        "purchasePrice": "$1,200",
+        "sellingPrice": "$2,800",
+        "inventory": 4,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "DL-XPS-I7",
+        "barcode": "3355464854",
+        "spec": {
+          "RAM": "32GB"
+        },
+        "purchasePrice": "$1,800",
+        "sellingPrice": "$3,500",
+        "inventory": 4,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "image": "¥",
+    "name": "Logitech MX Master 3S",
+    "variants": "1 variant",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 15,
+    "status": "Active",
+    "minStockThreshold": 5,
+    "generalSpec": {
+      "DPI": "8000",
+      "Buttons": "7"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "LG-MX3S",
+        "barcode": "4455464853",
+        "spec": {
+          "Color": "Graphite"
+        },
+        "purchasePrice": "$70",
+        "sellingPrice": "$120",
+        "inventory": 15,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "image": "/logo.svg",
+    "name": "HP Pavilion 14",
+    "variants": "2 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 12,
+    "status": "Active",
+    "minStockThreshold": 6,
+    "generalSpec": {
+      "Screen_Size": "1920x1080",
+      "Battery": "43Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "HP-PV-I3",
+        "barcode": "5555464853",
+        "spec": {
+          "RAM": "8GB"
+        },
+        "purchasePrice": "$500",
+        "sellingPrice": "$900",
+        "inventory": 6,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "HP-PV-I5",
+        "barcode": "5555464854",
+        "spec": {
+          "RAM": "16GB"
+        },
+        "purchasePrice": "$700",
+        "sellingPrice": "$1,200",
+        "inventory": 6,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "image": "¥",
+    "name": "Razer DeathAdder V3",
+    "variants": "1 variant",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 20,
+    "status": "Active",
+    "minStockThreshold": 8,
+    "generalSpec": {
+      "DPI": "30000",
+      "Buttons": "5"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "RZ-DA-V3",
+        "barcode": "6655464853",
+        "spec": {
+          "Color": "Black"
+        },
+        "purchasePrice": "$50",
+        "sellingPrice": "$90",
+        "inventory": 20,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "image": "/logo.svg",
+    "name": "Lenovo ThinkPad X1",
+    "variants": "2 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 6,
+    "status": "Active",
+    "minStockThreshold": 3,
+    "generalSpec": {
+      "Screen_Size": "2560x1600",
+      "Battery": "57Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "LN-TP-I5",
+        "barcode": "7755464853",
+        "spec": {
+          "RAM": "16GB"
+        },
+        "purchasePrice": "$1,100",
+        "sellingPrice": "$2,200",
+        "inventory": 3,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "LN-TP-I7",
+        "barcode": "7755464854",
+        "spec": {
+          "RAM": "32GB"
+        },
+        "purchasePrice": "$1,500",
+        "sellingPrice": "$2,800",
+        "inventory": 3,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "image": "¥",
+    "name": "SteelSeries Rival 5",
+    "variants": "1 variant",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 18,
+    "status": "Active",
+    "minStockThreshold": 7,
+    "generalSpec": {
+      "DPI": "18000",
+      "Buttons": "9"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "SS-RV-5",
+        "barcode": "8855464853",
+        "spec": {
+          "Color": "Black"
+        },
+        "purchasePrice": "$40",
+        "sellingPrice": "$75",
+        "inventory": 18,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "image": "/logo.svg",
+    "name": "ASUS ROG Zephyrus",
+    "variants": "2 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 4,
+    "status": "Active",
+    "minStockThreshold": 2,
+    "generalSpec": {
+      "Screen_Size": "2560x1440",
+      "Battery": "90Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "AS-ROG-R7",
+        "barcode": "9955464853",
+        "spec": {
+          "RAM": "16GB"
+        },
+        "purchasePrice": "$1,600",
+        "sellingPrice": "$3,200",
+        "inventory": 2,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "AS-ROG-R9",
+        "barcode": "9955464854",
+        "spec": {
+          "RAM": "32GB"
+        },
+        "purchasePrice": "$2,200",
+        "sellingPrice": "$4,000",
+        "inventory": 2,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "image": "¥",
+    "name": "Corsair Dark Core RGB",
+    "variants": "1 variant",
+    "category": "Mouse",
+    "suppliers": "LeM",
+    "inventory": 14,
+    "status": "Active",
+    "minStockThreshold": 6,
+    "generalSpec": {
+      "DPI": "18000",
+      "Buttons": "8"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "CS-DC-RGB",
+        "barcode": "1055464853",
+        "spec": {
+          "Color": "Black"
+        },
+        "purchasePrice": "$60",
+        "sellingPrice": "$100",
+        "inventory": 14,
+        "status": "Active"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "image": "/logo.svg",
+    "name": "Acer Aspire 5",
+    "variants": "2 variants",
+    "category": "Laptop",
+    "suppliers": "ABC",
+    "inventory": 10,
+    "status": "Active",
+    "minStockThreshold": 5,
+    "generalSpec": {
+      "Screen_Size": "1920x1080",
+      "Battery": "50Wh"
+    },
+    "variantList": [
+      {
+        "displayOrder": 1,
+        "sku": "AC-AS-I3",
+        "barcode": "1155464855",
+        "spec": {
+          "RAM": "8GB"
+        },
+        "purchasePrice": "$450",
+        "sellingPrice": "$800",
+        "inventory": 5,
+        "status": "Active"
+      },
+      {
+        "displayOrder": 2,
+        "sku": "AC-AS-I5",
+        "barcode": "1155464856",
+        "spec": {
+          "RAM": "16GB"
+        },
+        "purchasePrice": "$650",
+        "sellingPrice": "$1,100",
+        "inventory": 5,
+        "status": "Active"
+      }
+    ]
+  }
+]
