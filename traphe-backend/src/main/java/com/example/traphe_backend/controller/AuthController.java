@@ -31,8 +31,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -42,9 +42,16 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // In-memory buckets for rate limiting based on IP Address
-    private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> generalAuthBuckets = new ConcurrentHashMap<>();
+    // In-memory buckets for rate limiting based on IP Address, using Caffeine to prevent memory leaks
+    private final Cache<String, Bucket> loginBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(30))
+            .maximumSize(10000)
+            .build();
+            
+    private final Cache<String, Bucket> generalAuthBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(15))
+            .maximumSize(10000)
+            .build();
 
     // ======================== REGISTER ========================
 
@@ -277,11 +284,11 @@ public class AuthController {
     // ======================== RATE LIMITING HELPERS ========================
 
     private Bucket resolveLoginBucket(String ip) {
-        return loginBuckets.computeIfAbsent(ip, this::newLoginBucket);
+        return loginBuckets.get(ip, this::newLoginBucket);
     }
 
     private Bucket resolveGeneralAuthBucket(String ip) {
-        return generalAuthBuckets.computeIfAbsent(ip, this::newGeneralAuthBucket);
+        return generalAuthBuckets.get(ip, this::newGeneralAuthBucket);
     }
 
     // 5 attempts per 15 minutes for login

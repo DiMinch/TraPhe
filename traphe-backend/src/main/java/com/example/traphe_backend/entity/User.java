@@ -28,6 +28,9 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(name = "phone_number", unique = true, length = 20)
+    private String phoneNumber;
+
     @Column(nullable = true) // Nullable for OAuth users
     private String password;
 
@@ -63,4 +66,8 @@ public class User extends BaseEntity {
     )
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    @jakarta.persistence.ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
 }
