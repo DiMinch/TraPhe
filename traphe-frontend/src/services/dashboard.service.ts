@@ -1,7 +1,6 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse, PageResponse } from "@/types/api.types";
 import type { OrderResponse } from "./order.service";
-import type { WarrantyDashboardStats } from "@/types/warranty.types";
 
 // Dashboard Stats Response
 export interface DashboardStats {
@@ -44,14 +43,6 @@ export interface PendingOrder {
   totalAmount: number;
 }
 
-// Warranty Ticket (simplified for dashboard)
-export interface DashboardWarrantyTicket {
-  id: string;
-  ticketNumber: string;
-  technicianName: string;
-  status: string;
-}
-
 // Audit Log
 export interface AuditLog {
   id: string;
@@ -69,13 +60,6 @@ export interface ChartDataPoint {
 }
 
 export const dashboardService = {
-  // Get warranty dashboard stats (includes revenue data)
-  getWarrantyDashboard: async () => {
-    return axiosClient.get<unknown, ApiResponse<WarrantyDashboardStats>>(
-      "/warranty-tickets/admin/dashboard",
-    );
-  },
-
   // Get all inventory items (for low stock)
   getLowStockItems: async () => {
     return axiosClient.get<unknown, ApiResponse<LowStockItem[]>>("/inventory");
@@ -98,13 +82,6 @@ export const dashboardService = {
       {
         params: { page: 0, size: 100 },
       },
-    );
-  },
-
-  // Get warranty tickets for dashboard
-  getWarrantyTickets: async () => {
-    return axiosClient.get<unknown, ApiResponse<unknown[]>>(
-      "/warranty-tickets/admin",
     );
   },
 };

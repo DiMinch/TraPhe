@@ -14,6 +14,10 @@ import com.example.traphe_backend.repository.CombinedCheckoutRepository;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.CheckoutService;
+import com.example.traphe_backend.service.LoyaltyService;
+import com.example.traphe_backend.service.PaymentService;
+import com.example.traphe_backend.service.PromotionService;
+import com.example.traphe_backend.util.VnPayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,9 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final OrderRepository orderRepository;
     private final CombinedCheckoutRepository combinedCheckoutRepository;
     private final UserRepository userRepository;
+    private final PromotionService promotionService;
+    private final LoyaltyService loyaltyService;
+    private final PaymentService paymentService;
 
     @Override
     @Transactional
@@ -92,10 +99,37 @@ public class CheckoutServiceImpl implements CheckoutService {
         // ========== 6. Calculate totals ==========
         BigDecimal totalAmount = drinkAmount.add(merchandiseAmount);
         BigDecimal discountAmount = BigDecimal.ZERO;
-        // TODO: Apply voucher/loyalty when those systems are implemented
-        // if (request.getVoucherCode() != null) { ... }
-        // if (request.getPointsUsed() > 0) { ... }
+
+        // --- Apply voucher code (if provided) ---
+        Order primaryOrder = drinkOrder != null ? drinkOrder : merchandiseOrder;
+        if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
+            try {
+                BigDecimal voucherDiscount = promotionService.applyPromotion(
+                        request.getVoucherCode(), primaryOrder, customer);
+                discountAmount = discountAmount.add(voucherDiscount);
+                log.info("Applied voucher '{}' — discount {} VND", request.getVoucherCode(), voucherDiscount);
+            } catch (Exception e) {
+                log.warn("Voucher '{}' could not be applied: {}", request.getVoucherCode(), e.getMessage());
+                // Không throw — cho phép checkout tiếp mà không có giảm giá voucher
+            }
+        }
+
+        // --- Redeem loyalty points (if requested) ---
+        if (request.getPointsUsed() > 0) {
+            try {
+                BigDecimal pointsDiscount = loyaltyService.redeemPoints(
+                        customer, primaryOrder, request.getPointsUsed());
+                discountAmount = discountAmount.add(pointsDiscount);
+                log.info("Redeemed {} loyalty points — discount {} VND", request.getPointsUsed(), pointsDiscount);
+            } catch (Exception e) {
+                log.warn("Could not redeem {} points: {}", request.getPointsUsed(), e.getMessage());
+            }
+        }
+
         BigDecimal finalAmount = totalAmount.subtract(discountAmount);
+        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            finalAmount = BigDecimal.ZERO;
+        }
 
         // ========== 7. Generate unique transaction reference ==========
         String transactionRef = generateTransactionRef();
@@ -122,14 +156,30 @@ public class CheckoutServiceImpl implements CheckoutService {
             merchandiseOrder.setCombinedCheckoutId(savedCheckout.getId());
         }
 
-        // ========== 10. Mock payment processing ==========
-        boolean paymentSuccess = processPayment(paymentMethod, finalAmount, transactionRef);
+        // ========== 10. Process payment ==========
+        String paymentUrl = null;
 
-        if (paymentSuccess) {
-            // Update checkout
+        if (paymentMethod == PaymentMethod.VNPAY || paymentMethod == PaymentMethod.MOMO) {
+            // Online payment — generate redirect URL, status stays PENDING until IPN
+            savedCheckout.setPaymentStatus(PaymentStatus.PENDING);
+
+            if (paymentMethod == PaymentMethod.VNPAY) {
+                String clientIp = VnPayUtil.getClientIp(
+                        ((jakarta.servlet.http.HttpServletRequest)
+                                org.springframework.web.context.request.RequestContextHolder
+                                        .currentRequestAttributes()
+                                        instanceof org.springframework.web.context.request.ServletRequestAttributes sra
+                                ? sra.getRequest() : null));
+                paymentUrl = paymentService.createVnPayPaymentUrl(primaryOrder, clientIp != null ? clientIp : "127.0.0.1");
+            } else {
+                paymentUrl = paymentService.createMoMoPaymentUrl(primaryOrder);
+            }
+
+            log.info("Online checkout {} PENDING — redirecting to {}", transactionRef, paymentMethod);
+        } else {
+            // CASH / QR — mark as completed immediately
             savedCheckout.setPaymentStatus(PaymentStatus.COMPLETED);
 
-            // Update each order
             if (drinkOrder != null) {
                 drinkOrder.setPaymentStatus(PaymentStatus.COMPLETED);
                 drinkOrder.setStatus(OrderStatus.CONFIRMED);
@@ -146,19 +196,6 @@ public class CheckoutServiceImpl implements CheckoutService {
                     drinkOrder != null ? drinkOrder.getOrderNumber() : "N/A",
                     merchandiseOrder != null ? merchandiseOrder.getOrderNumber() : "N/A",
                     finalAmount);
-        } else {
-            savedCheckout.setPaymentStatus(PaymentStatus.FAILED);
-
-            if (drinkOrder != null) {
-                drinkOrder.setPaymentStatus(PaymentStatus.FAILED);
-                orderRepository.save(drinkOrder);
-            }
-            if (merchandiseOrder != null) {
-                merchandiseOrder.setPaymentStatus(PaymentStatus.FAILED);
-                orderRepository.save(merchandiseOrder);
-            }
-
-            log.warn("Checkout {} FAILED for amount {}", transactionRef, finalAmount);
         }
 
         combinedCheckoutRepository.save(savedCheckout);
@@ -171,6 +208,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .finalAmount(finalAmount)
                 .paymentStatus(savedCheckout.getPaymentStatus().name())
                 .transactionRef(transactionRef)
+                .paymentUrl(paymentUrl)
                 .build();
     }
 
@@ -220,16 +258,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         return order;
-    }
-
-    /**
-     * Mock payment processing. In production, this would call VNPay/MoMo/etc.
-     * Currently always returns true (success).
-     */
-    private boolean processPayment(PaymentMethod method, BigDecimal amount, String transactionRef) {
-        log.info("Processing {} payment of {} VND, ref: {}", method, amount, transactionRef);
-        // TODO: Replace with real payment gateway integration
-        return true;
     }
 
     /**

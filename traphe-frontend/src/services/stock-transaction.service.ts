@@ -3,64 +3,50 @@ import type { ApiResponse } from "@/types/api.types";
 
 export interface StockTransactionResponse {
   id: string;
-  inventoryId: string;
-  type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "RETURN" | "TRANSFER";
-  quantity: number;
+  ingredientName: string | null;
+  type: string;
+  quantityChange: number;
   quantityBefore: number;
   quantityAfter: number;
+  referenceType: string | null;
+  referenceId: string | null;
   reason: string;
-  referenceId: string;
   createdAt: string;
-  createdBy: string;
 }
 
 export const stockTransactionService = {
-  // Get all stock transactions
-  // TODO: Backend endpoint not yet available
-  // Expected: GET /api/stock-transactions
-  getAllTransactions: async () => {
-    return axiosClient.get<any, ApiResponse<StockTransactionResponse[]>>(
-      "/stock-transactions",
-    );
+  /**
+   * GET /api/stock-transactions
+   * Backend requires branchId. Supports filter by ingredientId, type, date range.
+   */
+  getTransactions: async (params: {
+    branchId: string;
+    ingredientId?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    size?: number;
+  }) => {
+    return axiosClient.get<any, ApiResponse<any>>("/stock-transactions", {
+      params,
+    });
   },
 
-  // Get transactions by inventory ID
-  // TODO: Backend endpoint not yet available
-  // Expected: GET /api/stock-transactions/inventory/{inventoryId}
-  getTransactionsByInventoryId: async (inventoryId: string) => {
-    return axiosClient.get<any, ApiResponse<StockTransactionResponse[]>>(
-      `/stock-transactions/inventory/${inventoryId}`,
-    );
-  },
-
-  // Get transactions by type
-  // TODO: Backend endpoint not yet available
-  // Expected: GET /api/stock-transactions/type/{type}
-  getTransactionsByType: async (
-    type: "STOCK_IN" | "STOCK_OUT" | "ADJUSTMENT" | "RETURN" | "TRANSFER",
+  /**
+   * GET /api/stock-transactions/ingredient
+   * Lịch sử biến động 1 nguyên liệu tại chi nhánh.
+   */
+  getByIngredient: async (
+    branchId: string,
+    ingredientId: string,
+    page = 0,
+    size = 20,
   ) => {
-    return axiosClient.get<any, ApiResponse<StockTransactionResponse[]>>(
-      `/stock-transactions/type/${type}`,
-    );
-  },
-
-  // Get transactions by reference ID (PO number, Order number, etc.)
-  // TODO: Backend endpoint not yet available
-  // Expected: GET /api/stock-transactions/reference/{referenceId}
-  getTransactionsByReferenceId: async (referenceId: string) => {
-    return axiosClient.get<any, ApiResponse<StockTransactionResponse[]>>(
-      `/stock-transactions/reference/${referenceId}`,
-    );
-  },
-
-  // Get transactions by date range
-  // TODO: Backend endpoint not yet available
-  // Expected: GET /api/stock-transactions/date-range?startDate={startDate}&endDate={endDate}
-  getTransactionsByDateRange: async (startDate: string, endDate: string) => {
-    return axiosClient.get<any, ApiResponse<StockTransactionResponse[]>>(
-      `/stock-transactions/date-range`,
+    return axiosClient.get<any, ApiResponse<any>>(
+      "/stock-transactions/ingredient",
       {
-        params: { startDate, endDate },
+        params: { branchId, ingredientId, page, size },
       },
     );
   },

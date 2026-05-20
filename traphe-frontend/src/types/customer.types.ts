@@ -4,7 +4,7 @@ export interface CustomerTier {
   minPoint: number;
   discountRate: number;
   description?: string;
-  status: "ACTIVE" | "INACTIVE"; //TODO: redefine later
+  status: "ACTIVE" | "INACTIVE";
   customerCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -19,9 +19,14 @@ export interface LoyaltyPoint {
 }
 
 export interface CustomerAddress {
-  id?: number;
-  address: string;
-  // TODO: add another field later
+  id?: string;
+  label?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  province?: string;
+  ward?: string;
+  addressDetail: string;
+  isPrimary?: boolean;
 }
 
 export interface Customer {

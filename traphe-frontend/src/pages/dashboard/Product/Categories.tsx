@@ -93,7 +93,7 @@ export default function CategoriesPage() {
             name: cat.name,
             description: cat.description || "No description",
             parent: cat.parentName || "",
-            productCount: 0, // TODO: Get actual product count from API
+            productCount: cat.productCount ?? cat.menuItemCount ?? 0,
             status: "Active" as const,
             image: cat.imageUrl,
           }),
@@ -135,7 +135,7 @@ export default function CategoriesPage() {
       // Find the original API category to get the UUID
       const response = await categoryService.getAllCategories();
       const apiCategory = response.data?.find(
-        (cat) => cat.name === selectedCategory.name,
+        (cat: any) => cat.name === selectedCategory.name,
       );
 
       if (apiCategory) {

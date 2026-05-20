@@ -35,6 +35,7 @@ import com.example.traphe_backend.repository.OptionGroupRepository;
 import com.example.traphe_backend.repository.OptionValueRepository;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
+import com.example.traphe_backend.repository.PromotionRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +77,8 @@ public class OrderService {
     private final LoyaltyService loyaltyService;
     private final PaymentService paymentService;
     private final InventoryDeductionService inventoryDeductionService;
+    private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
+    private final PromotionRepository promotionRepository;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -369,8 +372,17 @@ public class OrderService {
         // ========== 10. Save (cascades to items, options, toppings) ==========
         Order savedOrder = orderRepository.save(order);
 
-        // ========== 11. Build response ==========
-        return mapToOrderResponse(savedOrder);
+        // ========== 11. Build response & generate payment gateway URLs ==========
+        OrderResponse response = mapToOrderResponse(savedOrder);
+        if (savedOrder.getPaymentStatus() == PaymentStatus.PENDING) {
+            if (savedOrder.getPaymentMethod() == PaymentMethod.VNPAY) {
+                String ipAddress = com.example.traphe_backend.util.VnPayUtil.getIpAddress(httpServletRequest);
+                response.setPaymentUrl(paymentService.createVnPayPaymentUrl(savedOrder, ipAddress));
+            } else if (savedOrder.getPaymentMethod() == PaymentMethod.MOMO) {
+                response.setPaymentUrl(paymentService.createMoMoPaymentUrl(savedOrder));
+            }
+        }
+        return response;
     }
 
     // ==========================================
@@ -438,6 +450,16 @@ public class OrderService {
             } catch (Exception e) {
                 log.error("Stock deduction failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
                 throw e; // Re-throw to rollback the transaction
+            }
+
+            // 6. Auto-earn loyalty points for the customer
+            if (saved.getCustomer() != null) {
+                try {
+                    loyaltyService.earnPointsForOrder(saved.getCustomer(), saved);
+                } catch (Exception e) {
+                    log.error("Loyalty point earning failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                    // Non-critical: log but don't rollback the entire transaction
+                }
             }
         }
 
@@ -624,6 +646,95 @@ public class OrderService {
                 .items(itemDetails)
                 .paymentUrl(null)
                 .build();
+    }
+
+    @Transactional
+    public OrderResponse createCompatibleOrder(Map<String, Object> payload, String userEmail) {
+        log.info("Processing compatible order creation for: {}", userEmail);
+
+        // 1. Resolve Branch ID
+        UUID branchId = null;
+        if (payload.containsKey("branchId") && payload.get("branchId") != null) {
+            branchId = UUID.fromString(payload.get("branchId").toString());
+        } else {
+            branchId = branchRepository.findAll().stream()
+                    .filter(b -> !b.isDeleted())
+                    .map(Branch::getId)
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("No active branch found"));
+        }
+
+        // 2. Resolve items
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) payload.get("items");
+        List<OrderItemRequest> mappedItems = new java.util.ArrayList<>();
+
+        if (itemsList != null) {
+            for (Map<String, Object> itemMap : itemsList) {
+                String variantIdStr = (String) itemMap.get("productVariantId");
+                UUID variantId = UUID.fromString(variantIdStr);
+                int qty = itemMap.containsKey("quantity") ? ((Number) itemMap.get("quantity")).intValue() : 1;
+
+                OrderItemRequest itemReq = new OrderItemRequest();
+                itemReq.setQuantity(qty);
+
+                // Check if variantId is a MenuItemSize
+                if (menuItemSizeRepository.existsById(variantId)) {
+                    MenuItemSize size = menuItemSizeRepository.findById(variantId).orElse(null);
+                    if (size != null) {
+                        itemReq.setMenuItemSizeId(size.getId());
+                        if (size.getMenuItem() != null) {
+                            itemReq.setMenuItemId(size.getMenuItem().getId());
+                        }
+                    }
+                } else {
+                    // Otherwise treat as MenuItem
+                    itemReq.setMenuItemId(variantId);
+                }
+                mappedItems.add(itemReq);
+            }
+        }
+
+        // 3. Construct CreateDrinkOrderRequest
+        CreateDrinkOrderRequest drinkReq = new CreateDrinkOrderRequest();
+        drinkReq.setBranchId(branchId);
+        drinkReq.setItems(mappedItems);
+
+        // Resolve order type
+        String orderType = (String) payload.get("orderType");
+        if ("ONLINE_COD".equals(orderType) || "ONLINE_TRANSFER".equals(orderType)) {
+            drinkReq.setOrderType("DRINK_DELIVERY");
+        } else {
+            drinkReq.setOrderType("DRINK_PICKUP");
+        }
+
+        // Resolve delivery address
+        if (payload.containsKey("addressId") && payload.get("addressId") != null) {
+            drinkReq.setDeliveryAddressId(UUID.fromString(payload.get("addressId").toString()));
+        }
+
+        // Voucher & Loyalty
+        if (payload.containsKey("promotionIds") && payload.get("promotionIds") != null) {
+            @SuppressWarnings("unchecked")
+            List<String> promoIds = (List<String>) payload.get("promotionIds");
+            if (promoIds != null && !promoIds.isEmpty()) {
+                UUID promoId = UUID.fromString(promoIds.get(0));
+                com.example.traphe_backend.entity.Promotion promo = promotionRepository.findById(promoId).orElse(null);
+                if (promo != null) {
+                    drinkReq.setVoucherCode(promo.getCode());
+                }
+            }
+        }
+
+        if (payload.containsKey("loyaltyPointsToUse")) {
+            drinkReq.setLoyaltyPointsUsed(((Number) payload.get("loyaltyPointsToUse")).intValue());
+        }
+
+        String paymentMethod = (String) payload.get("paymentMethod");
+        drinkReq.setPaymentMethod(paymentMethod != null ? paymentMethod : "CASH");
+
+        // 4. Call createDrinkOrder
+        return createDrinkOrder(drinkReq, userEmail);
     }
 
     /**

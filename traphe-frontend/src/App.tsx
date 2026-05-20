@@ -29,10 +29,6 @@ import PurchaseOrderDetailPage from "./pages/dashboard/Procurement/PurchaseOrder
 import POSPage from "./pages/dashboard/Sales/POS";
 import OrdersPage from "./pages/dashboard/Sales/Orders";
 import OrderDetailPage from "./pages/dashboard/Sales/OrderDetail";
-import WarrantyTicketsPage from "./pages/dashboard/Warranty/WarrantyTickets";
-import WarrantyTicketDetailPage from "./pages/dashboard/Warranty/WarrantyTicketDetail";
-import ServiceTypesPage from "./pages/dashboard/Warranty/ServiceTypes";
-import PartsAndComponentsPage from "./pages/dashboard/Warranty/PartsAndComponents";
 import UserPage from "./pages/dashboard/User";
 import AuditLogsPage from "./pages/dashboard/AuditLogs";
 import ConfigurationsPage from "./pages/dashboard/System/Configurations";
@@ -55,6 +51,7 @@ import ShopPage from "./pages/client/shop/ShopPage";
 import ContactPage from "./pages/client/contact/ContactPage";
 import CartPage from "./pages/client/cart/CartPage";
 import ProfilePage from "./pages/client/profile/ProfilePage";
+import PaymentCallbackPage from "./pages/client/cart/PaymentCallbackPage";
 
 import "./App.css";
 
@@ -75,6 +72,7 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/order/payment-callback" element={<PaymentCallbackPage />} />
         </Route>
 
         {/* Admin - Protected Routes */}
@@ -370,57 +368,6 @@ function App() {
             }
           />
 
-          {/* Warranty & Service - Admin, Employee */}
-          <Route
-            path="/warranty"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
-              >
-                <WarrantyTicketsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/warranty/tickets"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
-              >
-                <WarrantyTicketsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/warranty/tickets/:id"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
-              >
-                <WarrantyTicketDetailPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/warranty/service-types"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
-              >
-                <ServiceTypesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/warranty/parts-components"
-            element={
-              <ProtectedRoute
-                allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}
-              >
-                <PartsAndComponentsPage />
-              </ProtectedRoute>
-            }
-          />
 
           {/* User Profile - Admin, Employee */}
           <Route

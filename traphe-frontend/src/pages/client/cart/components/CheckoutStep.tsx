@@ -29,7 +29,7 @@ export default function CheckoutStep({
 }: CheckoutStepProps) {
   const { cart, clearCart } = useCart();
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "banking">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "vnpay" | "momo">("cod");
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
@@ -206,8 +206,6 @@ export default function CheckoutStep({
 
     setIsLoading(true);
     try {
-      // [ĐÃ XOÁ] Phần logic gọi applyPromotionCode tại đây theo yêu cầu
-
       const orderItems = cart.items.map((item) => ({
         productVariantId: item.productVariantId,
         quantity: item.quantity,
@@ -215,12 +213,11 @@ export default function CheckoutStep({
         discount: 0,
       }));
 
-      const payload: CreateOrderRequest = {
+      const payload: any = {
         items: orderItems,
         orderType: paymentMethod === "cod" ? "ONLINE_COD" : "ONLINE_TRANSFER",
-        paymentMethod: paymentMethod === "cod" ? "COD" : "TRANSFER",
+        paymentMethod: paymentMethod === "cod" ? "COD" : paymentMethod === "vnpay" ? "VNPAY" : "MOMO",
         loyaltyPointsToUse: 0,
-        // Sử dụng trực tiếp danh sách promotion đã lưu từ bước Apply
         promotionIds: appliedPromotionIds,
       };
 
@@ -243,7 +240,11 @@ export default function CheckoutStep({
       if (res.statusCode === 200 || res.statusCode === 201) {
         await clearCart();
         onOrderSuccess(res.data);
-        onNext();
+        if (res.data?.paymentUrl) {
+          window.location.href = res.data.paymentUrl;
+        } else {
+          onNext();
+        }
       }
     } catch (error: any) {
       console.error(error);

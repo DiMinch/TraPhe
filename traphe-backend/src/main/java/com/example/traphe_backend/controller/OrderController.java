@@ -94,6 +94,22 @@ public class OrderController {
     // ======================== DRINK ORDER ========================
 
     /**
+     * POST /api/orders — Tạo đơn hàng chung (được gọi từ client checkout step)
+     */
+    @PostMapping
+    @Operation(summary = "Tạo đơn hàng tương thích (Client Online)",
+            description = "Endpoint tương thích hỗ trợ tạo đơn hàng trực tiếp từ giỏ hàng client. Tự động ánh xạ sản phẩm sang cấu trúc đồ uống F&B.")
+    public ResponseEntity<ApiResponse<OrderResponse>> createCompatibleOrder(
+            @RequestBody java.util.Map<String, Object> request,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        OrderResponse response = orderService.createCompatibleOrder(request, userEmail);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response, "Tạo đơn hàng thành công"));
+    }
+
+    /**
      * POST /api/orders/drink — Tạo đơn đồ uống
      * Requires JWT authentication.
      */

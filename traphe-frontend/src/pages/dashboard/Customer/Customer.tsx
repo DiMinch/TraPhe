@@ -42,7 +42,6 @@ import {
   Users,
   UserPlus,
   Crown,
-  RefreshCw,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
@@ -79,7 +78,7 @@ export default function CustomerPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // TODO: implement pagination later
+  // Client-side pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -173,7 +172,6 @@ export default function CustomerPage() {
     }
   };
 
-  // TODO: delete after implementing pagination
   const totalPages = Math.ceil(customers.length / itemsPerPage);
   const currentCustomers = customers.slice(
     (currentPage - 1) * itemsPerPage,
@@ -477,7 +475,7 @@ export default function CustomerPage() {
               <Label>Tier *</Label>
               <Select
                 value={newCustomer.tierId}
-                onValueChange={(value) =>
+                onValueChange={(value: string) =>
                   setNewCustomer({ ...newCustomer, tierId: value })
                 }
               >

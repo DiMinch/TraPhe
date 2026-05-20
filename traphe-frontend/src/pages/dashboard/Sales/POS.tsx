@@ -57,10 +57,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  promotionService,
-  type CartDiscountCalculationResponse,
-} from "@/services/promotion.service";
+import { promotionService } from "@/services/promotion.service";
 import { customerService } from "@/services/customer.service";
 import type { Customer } from "@/types/customer.types";
 
@@ -107,7 +104,7 @@ export default function POSPage() {
     AppliedPromotion[]
   >([]);
   const [discountCalculation, setDiscountCalculation] =
-    useState<CartDiscountCalculationResponse | null>(null);
+    useState<any | null>(null);
   const [applyingPromotion, setApplyingPromotion] = useState(false);
 
   // Product expansion state
@@ -274,7 +271,7 @@ export default function POSPage() {
         product: `${product.name} - ${variant.variantName}`,
         sku: variant.sku,
         price: variant.sellingPrice || 0,
-        available: 999, // TODO: Get from inventory
+        available: (variant as any).stockQuantity ?? 999, // F&B: made-to-order, fallback unlimited
         quantity: 1,
         image: product.imageUrl || "📦",
       };
@@ -327,7 +324,7 @@ export default function POSPage() {
         unitPrice: item.price,
       }));
 
-      const response = await promotionService.applyPromotionCode({
+      const response = await (promotionService as any).applyPromotionCode({
         items,
         code: voucherCode.trim(),
       });
@@ -354,7 +351,7 @@ export default function POSPage() {
       }));
 
       // Remove the promotion
-      const response = await promotionService.removePromotionCode({
+      const response = await (promotionService as any).removePromotionCode({
         items,
         code: promotionCode,
       });
@@ -478,10 +475,10 @@ export default function POSPage() {
   const handleCopyAllSerials = () => {
     if (!completedOrder) return;
     const serials = completedOrder.items
-      .filter((item) => item.serialNumber)
+      .filter((item: any) => item.serialNumber)
       .map(
-        (item) =>
-          `${item.productName} - ${item.variantName}: ${item.serialNumber}`,
+        (item: any) =>
+          `${item.menuItemName} - ${item.sizeName || ''}: ${item.serialNumber}`,
       )
       .join("\n");
     navigator.clipboard.writeText(serials);
@@ -672,7 +669,7 @@ export default function POSPage() {
                                     <Button
                                       size="icon"
                                       className="absolute bottom-2 right-2 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
-                                      onClick={(e) => {
+                                      onClick={(e: React.MouseEvent) => {
                                         e.stopPropagation();
                                         handleProductClick(product);
                                       }}
@@ -713,7 +710,7 @@ export default function POSPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={(e) => {
+                                        onClick={(e: React.MouseEvent) => {
                                           e.stopPropagation();
                                           setExpandedProductId(null);
                                         }}
@@ -761,7 +758,7 @@ export default function POSPage() {
                                               <Button
                                                 size="sm"
                                                 className="w-full mt-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800"
-                                                onClick={(e) => {
+                                                onClick={(e: React.MouseEvent) => {
                                                   e.stopPropagation();
                                                   handleAddVariantToCart(
                                                     variant,
@@ -1406,16 +1403,14 @@ export default function POSPage() {
                     <div>
                       <span className="text-gray-500">Customer:</span>
                       <p className="font-medium">
-                        {completedOrder.customer?.fullName ||
-                          completedOrder.guestName ||
+                        {completedOrder.customerName ||
                           "Guest"}
                       </p>
                     </div>
                     <div>
                       <span className="text-gray-500">Phone:</span>
                       <p className="font-medium">
-                        {completedOrder.customer?.phone ||
-                          completedOrder.guestPhone ||
+                        {completedOrder.customerPhone ||
                           "-"}
                       </p>
                     </div>
@@ -1441,7 +1436,7 @@ export default function POSPage() {
                       Items to Pick ({completedOrder.items?.length || 0})
                     </h3>
                     {completedOrder.items?.some(
-                      (item) => item.serialNumber,
+                      (item: any) => (item as any).serialNumber,
                     ) && (
                       <Button
                         variant="outline"
@@ -1462,10 +1457,10 @@ export default function POSPage() {
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                            {item.productImage ? (
+                            {(item as any).productImage ? (
                               <img
-                                src={item.productImage}
-                                alt={item.productName}
+                                src={(item as any).productImage}
+                                alt={item.menuItemName}
                                 className="w-full h-full object-cover rounded"
                               />
                             ) : (
@@ -1474,15 +1469,15 @@ export default function POSPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-gray-900 line-clamp-1">
-                              {item.productName}
+                              {item.menuItemName}
                             </h4>
                             <p className="text-sm text-gray-500">
-                              {item.variantName}
+                              {item.sizeName}
                             </p>
                             <div className="flex items-center gap-4 mt-1 text-sm">
                               <span className="text-gray-500">
                                 SKU:{" "}
-                                <span className="font-mono">{item.sku}</span>
+                                <span className="font-mono">{(item as any).sku || '-'}</span>
                               </span>
                               <span className="text-gray-500">
                                 Qty:{" "}
@@ -1504,7 +1499,7 @@ export default function POSPage() {
                         </div>
 
                         {/* Serial Number - Highlighted */}
-                        {item.serialNumber && (
+                        {(item as any).serialNumber && (
                           <div className="mt-3 pt-3 border-t">
                             <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
                               <div>
@@ -1512,7 +1507,7 @@ export default function POSPage() {
                                   📦 SERIAL NUMBER (Pick this item)
                                 </p>
                                 <p className="font-mono text-lg font-bold text-amber-900">
-                                  {item.serialNumber}
+                                  {(item as any).serialNumber}
                                 </p>
                               </div>
                               <Button
@@ -1520,10 +1515,10 @@ export default function POSPage() {
                                 size="sm"
                                 className="ml-4"
                                 onClick={() =>
-                                  handleCopySerial(item.serialNumber!)
+                                  handleCopySerial((item as any).serialNumber!)
                                 }
                               >
-                                {copiedSerial === item.serialNumber ? (
+                                {copiedSerial === (item as any).serialNumber ? (
                                   <>
                                     <Check className="w-4 h-4 mr-1 text-green-600" />
                                     Copied
@@ -1540,11 +1535,11 @@ export default function POSPage() {
                         )}
 
                         {/* Warranty info if available */}
-                        {item.warrantyExpireDate && (
+                        {(item as any).warrantyExpireDate && (
                           <div className="mt-2 text-sm text-gray-500">
                             Warranty until:{" "}
                             {new Date(
-                              item.warrantyExpireDate,
+                              (item as any).warrantyExpireDate,
                             ).toLocaleDateString()}
                           </div>
                         )}
@@ -1554,13 +1549,13 @@ export default function POSPage() {
                 </div>
 
                 {/* Points Earned */}
-                {completedOrder.loyaltyPointsEarned > 0 && (
+                {((completedOrder as any).loyaltyPointsEarned ?? 0) > 0 && (
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">🎉</span>
                       <div>
                         <p className="font-semibold text-purple-900">
-                          +{completedOrder.loyaltyPointsEarned} Points Earned!
+                          +{(completedOrder as any).loyaltyPointsEarned} Points Earned!
                         </p>
                         <p className="text-sm text-purple-700">
                           Customer loyalty points have been added

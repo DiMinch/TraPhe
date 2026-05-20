@@ -67,6 +67,7 @@ export default function AuditLogsPage() {
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogResponse[]>([]);
+  const [actors, setActors] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,6 +114,15 @@ export default function AuditLogsPage() {
         });
 
         setAuditLogs(logsData);
+
+        // Extract unique actors for the filter dropdown
+        const actorMap = new Map<string, string>();
+        logsData.forEach((log: AuditLogResponse) => {
+          if (log.actorId && !actorMap.has(log.actorId)) {
+            actorMap.set(log.actorId, log.actorName || log.actorId);
+          }
+        });
+        setActors(Array.from(actorMap, ([id, name]) => ({ id, name })));
       }
 
       // Show error message only if there's a meaningful error
@@ -215,7 +225,7 @@ export default function AuditLogsPage() {
                 <CalendarComponent
                   mode="range"
                   selected={{ from: dateRange.from, to: dateRange.to }}
-                  onSelect={(range) => {
+                  onSelect={(range: { from?: Date; to?: Date } | undefined) => {
                     setDateRange({
                       from: range?.from,
                       to: range?.to,
@@ -233,7 +243,11 @@ export default function AuditLogsPage() {
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                 <SelectItem value="all-actor">All actor</SelectItem>
-                {/* TODO: Populate from actual user list */}
+                {actors.map((actor) => (
+                  <SelectItem key={actor.id} value={actor.id}>
+                    {actor.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

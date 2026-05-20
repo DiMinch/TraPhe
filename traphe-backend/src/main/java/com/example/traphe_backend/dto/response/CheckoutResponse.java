@@ -20,4 +20,5 @@ public class CheckoutResponse {
     private BigDecimal finalAmount;
     private String paymentStatus;
     private String transactionRef;
+    private String paymentUrl;
 }
