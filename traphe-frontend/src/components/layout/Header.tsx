@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { Search, User, ShoppingBag, LogIn } from "lucide-react";
+import { User, ShoppingBag } from "lucide-react";
 import { navLinks } from "@/lib/menu";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";

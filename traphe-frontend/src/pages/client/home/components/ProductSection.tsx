@@ -12,7 +12,7 @@ export default function ProductSection() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productService.getAllProducts(0, 8);
+        const res = await productService.getAllProducts({ page: 0, size: 8 });
         if (res.statusCode === 200 && res.data) {
           setProducts(res.data.content);
         }

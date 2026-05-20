@@ -208,7 +208,7 @@ export default function CustomerDetailPage() {
                                 <Checkbox checked={idx === 0} />
                               </TableCell>
                               <TableCell className="text-gray-700">
-                                {address.address}
+                                {address.addressDetail}
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center justify-center gap-2">

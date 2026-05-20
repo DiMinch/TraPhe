@@ -90,10 +90,10 @@ export default function OrdersPage() {
   const transformOrder = (o: OrderResponse): Order => {
     const createdDate = o.createdAt ? new Date(o.createdAt) : new Date();
     return {
-      id: o.id,
+      id: o.orderId,
       orderNumber: o.orderNumber,
-      customer: o.customer?.fullName || o.guestName || "Guest",
-      phone: o.customer?.phone || o.guestPhone || "N/A",
+      customer: o.customerName || "Guest",
+      phone: o.customerPhone || "N/A",
       orderType: o.orderType,
       date: createdDate.toLocaleDateString("en-GB"),
       rawDate: createdDate,

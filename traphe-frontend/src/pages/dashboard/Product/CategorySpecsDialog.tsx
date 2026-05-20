@@ -24,7 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, X, Check } from "lucide-react";
+import { Plus, Edit, Trash2, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { categoryService } from "@/services/category.service";
 import type { CategorySpec } from "@/types/category.types";

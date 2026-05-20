@@ -33,7 +33,7 @@ import {
   supplierService,
   type SupplierResponse,
 } from "@/services/supplier.service";
-import type { Product, ProductVariant } from "@/types/product.types";
+import type { Product } from "@/types/product.types";
 import type { Category, CategorySpec } from "@/types/category.types";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";

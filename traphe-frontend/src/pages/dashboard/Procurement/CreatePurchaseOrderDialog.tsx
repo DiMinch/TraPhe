@@ -42,8 +42,6 @@ import {
   type SupplierResponse,
 } from "@/services/supplier.service";
 import { productService } from "@/services/product.service";
-import { partService } from "@/services/part.service";
-import type { PartComponent } from "@/types/part.types";
 
 interface Product {
   id: string;
@@ -87,7 +85,7 @@ export default function CreatePurchaseOrderDialog({
   const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [allVariants, setAllVariants] = useState<ProductVariant[]>([]);
-  const [parts, setParts] = useState<PartComponent[]>([]);
+  const [parts, setParts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Form states
@@ -120,7 +118,7 @@ export default function CreatePurchaseOrderDialog({
       const [suppliersRes, productsRes, partsRes] = await Promise.all([
         supplierService.getAllSuppliers(),
         productService.getAllProducts(),
-        partService.getAllParts(),
+        Promise.resolve({ data: [] }),
       ]);
 
       console.log("Suppliers response:", suppliersRes);

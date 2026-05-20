@@ -43,7 +43,6 @@ export default function ProductEditPage() {
     commonSpecs: "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [existingSpecKeys, setExistingSpecKeys] = useState<string[]>([]); // Keys from product's commonSpecs
   const [customSpecs, setCustomSpecs] = useState<
     { key: string; name: string }[]
   >([]); // Custom added specs
@@ -88,7 +87,6 @@ export default function ProductEditPage() {
         setSpecValues(parsed);
         // Store the keys from existing specs
         const keys = Object.keys(parsed);
-        setExistingSpecKeys(keys);
 
         // Identify specs that are NOT in category specs (custom specs)
         const categorySpecKeys = categorySpecs.map((s) => s.specKey);
@@ -103,7 +101,6 @@ export default function ProductEditPage() {
         );
       } catch {
         setSpecValues({});
-        setExistingSpecKeys([]);
         setCustomSpecs([]);
       }
     }

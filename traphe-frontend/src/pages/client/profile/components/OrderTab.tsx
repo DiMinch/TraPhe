@@ -86,7 +86,7 @@ export default function OrderTab() {
           <div className="space-y-4 md:space-y-0">
             {orders.map((order) => (
               <div
-                key={order.id}
+                key={order.orderId}
                 className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center py-4 border-b border-gray-100 md:hover:bg-gray-50 transition-colors group"
               >
                 <div className="col-span-3 font-semibold text-sm text-gray-900 flex justify-between md:block">

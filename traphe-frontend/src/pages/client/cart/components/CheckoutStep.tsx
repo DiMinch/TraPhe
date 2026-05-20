@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import {
   orderService,
   type OrderResponse,
-  type CreateOrderRequest,
 } from "@/services/order.service";
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
@@ -147,7 +146,7 @@ export default function CheckoutStep({
           const promoIds: string[] = [];
           if (data.orderPromotion)
             promoIds.push(data.orderPromotion.promotionId);
-          data.productPromotions.forEach((p) => promoIds.push(p.promotionId));
+          data.productPromotions.forEach((p: any) => promoIds.push(p.promotionId));
 
           setAppliedPromotionIds([...new Set(promoIds)]);
           if (!appliedCodes.includes(code)) {

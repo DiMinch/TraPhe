@@ -132,7 +132,8 @@ export default function NewCategoryDialog({
       // If specs were added, save them to the newly created category
       if (response.data?.id && specs.length > 0) {
         for (const spec of specs) {
-          await categoryService.createSpec(response.data.id, {
+          await categoryService.createSpec({
+            categoryId: response.data.id,
             specKey: spec.specKey,
             specName: spec.specName,
             isRequired: spec.isRequired,
@@ -211,7 +212,7 @@ export default function NewCategoryDialog({
       options:
         specFormData.dataType === "SELECT" && specFormData.options
           ? specFormData.options.split(",").map((opt) => opt.trim())
-          : undefined,
+          : [],
     };
 
     if (editingSpecIndex !== null) {

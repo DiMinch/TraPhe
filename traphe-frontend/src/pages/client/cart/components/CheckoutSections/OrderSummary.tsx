@@ -143,8 +143,8 @@ export default function OrderSummary({
                           </span>
                           <span className="text-[10px] text-gray-500">
                             {promo.type === "PERCENTAGE"
-                              ? `Giảm ${promo.value}%`
-                              : `Giảm ${promo.value.toLocaleString()}₫`}
+                              ? `Giảm ${promo.value ?? 0}%`
+                              : `Giảm ${(promo.value ?? 0).toLocaleString()}₫`}
                           </span>
                         </div>
                         <Badge

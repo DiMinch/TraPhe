@@ -31,7 +31,6 @@ import {
   DollarSign,
   Package,
   ShoppingCart,
-  Wrench,
   AlertTriangle,
   Activity,
   BarChart3,
@@ -46,11 +45,9 @@ import { useNavigate } from "react-router";
 import { format, subDays } from "date-fns";
 import { reportService } from "@/services/report.service";
 import { orderService, type OrderResponse } from "@/services/order.service";
-import { warrantyService } from "@/services/warranty.service";
 import { customerService } from "@/services/customer.service";
 import { auditLogService } from "@/services/audit-log.service";
 import { authService } from "@/services/auth.service";
-import type { WarrantyTicket } from "@/types/warranty.types";
 import type { Customer } from "@/types/customer.types";
 
 const chartConfig = {
@@ -107,14 +104,6 @@ interface PendingOrder {
   createdAt: string;
 }
 
-interface WarrantyTicketDisplay {
-  id: string;
-  ticketNumber: string;
-  customerName: string;
-  status: string;
-  createdAt: string;
-}
-
 interface AuditLogDisplay {
   id: string;
   action: string;
@@ -157,9 +146,6 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
-  const [warrantyTickets, setWarrantyTickets] = useState<
-    WarrantyTicketDisplay[]
-  >([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogDisplay[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [orderStats, setOrderStats] = useState({
@@ -218,7 +204,6 @@ export default function DashboardPage() {
         inventoryResponse,
         ordersResponse,
         customersResponse,
-        warrantyResponse,
         auditLogsResponse,
       ] = await Promise.allSettled([
         reportService.getRevenueReport(dateRange),
@@ -231,7 +216,6 @@ export default function DashboardPage() {
         reportService.getInventoryReport({}), // Get all inventory, not just low stock
         orderService.getAllOrders({ page: 0, size: 100 }),
         customerService.getCustomers(),
-        warrantyService.getAllTickets(),
         auditLogService.getAllAuditLogs({ size: 5 }),
       ]);
 
@@ -289,9 +273,9 @@ export default function DashboardPage() {
           .filter((order: OrderResponse) => order.status === "PENDING")
           .slice(0, 5)
           .map((order: OrderResponse) => ({
-            id: order.id,
+            id: order.orderId,
             orderNumber: order.orderNumber,
-            customer: order.customer?.fullName || order.guestName || "Guest",
+            customer: order.customerName || "Guest",
             total: order.finalAmount || 0,
             createdAt: order.createdAt,
           }));
@@ -316,11 +300,11 @@ export default function DashboardPage() {
         ordersData.forEach((order: OrderResponse) => {
           if (order.items && order.items.length > 0) {
             order.items.forEach((item) => {
-              const key = item.productVariantId || item.sku;
+              const key = item.id || item.menuItemName;
               const existing = productSales.get(key) || {
-                productName: item.productName,
-                variantName: item.variantName || "",
-                sku: item.sku,
+                productName: item.menuItemName,
+                variantName: item.sizeName || "",
+                sku: item.sizeName || "Standard",
                 quantitySold: 0,
                 totalRevenue: 0,
               };
@@ -528,25 +512,6 @@ export default function DashboardPage() {
         }));
       }
 
-      // Process warranty tickets
-      if (
-        warrantyResponse.status === "fulfilled" &&
-        warrantyResponse.value.data
-      ) {
-        const ticketsData = Array.isArray(warrantyResponse.value.data)
-          ? warrantyResponse.value.data
-          : [];
-        const tickets = ticketsData
-          .slice(0, 5)
-          .map((ticket: WarrantyTicket) => ({
-            id: ticket.id,
-            ticketNumber: ticket.ticketNumber,
-            customerName: ticket.customerName || "Unknown",
-            status: ticket.status?.replace(/_/g, " ") || "Unknown",
-            createdAt: ticket.createdAt,
-          }));
-        setWarrantyTickets(tickets);
-      }
 
       // Process audit logs
       if (
@@ -1108,8 +1073,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Pending Orders + Warranty Tickets + Audit Logs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-6">
+      {/* Pending Orders + Audit Logs Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-6">
         {/* Pending Orders */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -1160,61 +1125,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Warranty Tickets */}
-        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
-              <div className="p-2 bg-cream rounded-lg">
-                <Wrench className="w-5 h-5 text-roast" />
-              </div>
-              Recent Warranty Tickets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
-            <div className="space-y-space-3">
-              {warrantyTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border hover:shadow-md transition-all duration-200 cursor-pointer"
-                  onClick={() => navigate(`/warranty/tickets`)}
-                >
-                  <div>
-                    <p className="font-semibold text-ink text-sm">
-                      {ticket.ticketNumber}
-                    </p>
-                    <p className="text-xs text-dust">
-                      {ticket.customerName}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-xs font-medium ${
-                      ticket.status.toLowerCase().includes("completed")
-                        ? "bg-cream text-roast"
-                        : ticket.status.toLowerCase().includes("progress")
-                          ? "bg-parchment text-roast"
-                          : ticket.status.toLowerCase().includes("pending")
-                            ? "bg-cream text-roast"
-                            : "bg-surface-container-high text-dust"
-                    } border-0`}
-                  >
-                    {ticket.status}
-                  </Badge>
-                </div>
-              ))}
-              {warrantyTickets.length === 0 && (
-                <div className="py-10 text-center text-dust">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
-                    <Wrench className="w-7 h-7 text-dust" />
-                  </div>
-                  <p className="font-medium">No warranty tickets</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Audit Logs */}
-        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm md:col-span-2 lg:col-span-1">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
               <div className="p-2 bg-cream rounded-lg">

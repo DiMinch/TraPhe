@@ -254,13 +254,14 @@ export default function ProductDetailPage() {
     return (
       <PageContainer>
         <EmptyState
-          icon={Package}
+          icon={<Package className="w-10 h-10 text-slate-400" />}
           title="Product not found"
           description="The product you're looking for doesn't exist."
-          action={{
-            label: "Back to Products",
-            onClick: () => navigate("/product/productlist"),
-          }}
+          action={
+            <Button onClick={() => navigate("/product/productlist")}>
+              Back to Products
+            </Button>
+          }
         />
       </PageContainer>
     );
@@ -465,7 +466,7 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <EmptyState
-                icon={Package}
+                icon={<Package className="w-10 h-10 text-slate-400" />}
                 title="No variants available"
                 description="This product doesn't have any variants yet."
               />

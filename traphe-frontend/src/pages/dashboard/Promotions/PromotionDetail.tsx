@@ -36,6 +36,8 @@ import {
   promotionService,
   type PromotionResponse,
   type PromotionRequest,
+  type PromotionStatus,
+  type PromotionType,
   type PromotionUsageReportResponse,
 } from "@/services/promotion.service";
 import { categoryService } from "@/services/category.service";
@@ -45,6 +47,42 @@ import type { Product } from "@/types/product.types";
 import { toast } from "sonner";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
+
+const enrichPromotion = (data: PromotionResponse): PromotionResponse => {
+  const type: PromotionType = data.discountType || "PERCENTAGE";
+  const value = data.discountValue || 0;
+  const perUserLimit = data.perUserLimit || 1;
+
+  let status: PromotionStatus = "INACTIVE";
+  if (data.isActive) {
+    const now = new Date();
+    const start = new Date(data.startDate);
+    const end = new Date(data.endDate);
+    if (now > end) {
+      status = "EXPIRED";
+    } else if (now < start) {
+      status = "SCHEDULED";
+    } else {
+      status = "ACTIVE";
+    }
+  }
+
+  return {
+    ...data,
+    type,
+    value,
+    status,
+    scope: data.scope || "ORDER",
+    priority: data.priority || 0,
+    usagePerCustomer: perUserLimit,
+    applicableCategoryIds: data.applicableCategoryIds || [],
+    applicableProductIds: data.applicableProductIds || [],
+    applicableCustomerTiers: data.applicableCustomerTiers || [],
+    conflictingPromotionIds: data.conflictingPromotionIds || [],
+    hasQuota: data.usageLimit ? true : false,
+    remainingQuota: data.usageLimit ? (data.usageLimit - data.usageCount) : undefined
+  };
+};
 
 export default function PromotionDetailPage() {
   const navigate = useNavigate();
@@ -98,27 +136,28 @@ export default function PromotionDetailPage() {
     setLoading(true);
     try {
       const response = await promotionService.getPromotionById(id);
-      const data = response.data?.data || response.data;
+      const data = response.data;
       if (data) {
-        setPromotion(data);
+        const enrichedPromotion = enrichPromotion(data);
+        setPromotion(enrichedPromotion);
         setFormData({
-          code: data.code,
-          name: data.name,
-          type: data.type,
-          scope: data.scope,
-          value: data.value,
-          minOrderValue: data.minOrderValue || undefined,
-          maxDiscountAmount: data.maxDiscountAmount || undefined,
-          applicableCustomerTiers: data.applicableCustomerTiers || [],
-          startDate: data.startDate?.substring(0, 16) || "",
-          endDate: data.endDate?.substring(0, 16) || "",
-          usageLimit: data.usageLimit || undefined,
-          usagePerCustomer: data.usagePerCustomer || undefined,
-          priority: data.priority,
-          description: data.description || "",
-          applicableCategoryIds: data.applicableCategoryIds || [],
-          applicableProductIds: data.applicableProductIds || [],
-          conflictingPromotionIds: data.conflictingPromotionIds || [],
+          code: enrichedPromotion.code,
+          name: enrichedPromotion.name,
+          type: enrichedPromotion.type,
+          scope: enrichedPromotion.scope,
+          value: enrichedPromotion.value,
+          minOrderValue: enrichedPromotion.minOrderValue || undefined,
+          maxDiscountAmount: enrichedPromotion.maxDiscountAmount || undefined,
+          applicableCustomerTiers: enrichedPromotion.applicableCustomerTiers || [],
+          startDate: enrichedPromotion.startDate?.substring(0, 16) || "",
+          endDate: enrichedPromotion.endDate?.substring(0, 16) || "",
+          usageLimit: enrichedPromotion.usageLimit || undefined,
+          usagePerCustomer: enrichedPromotion.usagePerCustomer || undefined,
+          priority: enrichedPromotion.priority,
+          description: enrichedPromotion.description || "",
+          applicableCategoryIds: enrichedPromotion.applicableCategoryIds || [],
+          applicableProductIds: enrichedPromotion.applicableProductIds || [],
+          conflictingPromotionIds: enrichedPromotion.conflictingPromotionIds || [],
         });
       }
     } catch (err: any) {
@@ -164,10 +203,24 @@ export default function PromotionDetailPage() {
 
     setSaving(true);
     try {
-      const response = await promotionService.updatePromotion(id, formData);
-      const updated = response.data?.data || response.data;
+      const requestData: PromotionRequest = {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        discountType: formData.type === "PERCENTAGE" ? "PERCENTAGE" : "FIXED_AMOUNT",
+        discountValue: formData.value || 0,
+        minOrderValue: formData.minOrderValue,
+        maxDiscountAmount: formData.maxDiscountAmount,
+        usageLimit: formData.usageLimit,
+        perUserLimit: formData.usagePerCustomer || 1,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      };
+
+      const response = await promotionService.updatePromotion(id, requestData);
+      const updated = response.data;
       if (updated) {
-        setPromotion(updated);
+        setPromotion(enrichPromotion(updated));
       }
       toast.success("Promotion updated successfully");
       setIsEditing(false);
@@ -195,9 +248,9 @@ export default function PromotionDetailPage() {
     if (!id || !promotion) return;
     try {
       const response = await promotionService.togglePromotionStatus(id);
-      const updated = response.data?.data || response.data;
+      const updated = response.data;
       if (updated) {
-        setPromotion(updated);
+        setPromotion(enrichPromotion(updated));
         toast.success(
           `Promotion ${updated.isActive ? "activated" : "deactivated"} successfully`,
         );
@@ -364,9 +417,9 @@ export default function PromotionDetailPage() {
       {/* Status Badge */}
       <div className="mb-6">
         <Badge
-          className={`${getStatusColor(promotion.status)} text-sm px-3 py-1`}
+          className={`${getStatusColor(promotion.status || "INACTIVE")} text-sm px-3 py-1`}
         >
-          {promotion.status}
+          {promotion.status || "INACTIVE"}
         </Badge>
         {promotion.hasQuota && (
           <span className="ml-3 text-sm text-gray-600">
@@ -521,9 +574,9 @@ export default function PromotionDetailPage() {
                   />
                 ) : (
                   <p className="font-medium">
-                    {promotion.type === "PERCENTAGE"
-                      ? `${promotion.value}%`
-                      : formatCurrency(promotion.value)}
+                    {(promotion.type || "PERCENTAGE") === "PERCENTAGE"
+                      ? `${promotion.value || 0}%`
+                      : formatCurrency(promotion.value || 0)}
                   </p>
                 )}
               </div>
@@ -720,7 +773,7 @@ export default function PromotionDetailPage() {
         <CardContent className="py-4">
           <div className="flex justify-between text-sm text-gray-500">
             <span>Created: {formatDate(promotion.createdAt)}</span>
-            <span>Updated: {formatDate(promotion.updatedAt)}</span>
+            <span>Updated: {formatDate(promotion.createdAt)}</span>
           </div>
         </CardContent>
       </Card>

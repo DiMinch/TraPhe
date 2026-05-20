@@ -1,7 +1,7 @@
 import { Outlet } from "react-router";
 import Navigation from "@/components/Navigation";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import NotificationDropdown from "../common/NotificationDropdown";
+import NotificationDropdown from "../common/NotificationDropDown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authService } from "@/services/auth.service";
 import { useState } from "react";

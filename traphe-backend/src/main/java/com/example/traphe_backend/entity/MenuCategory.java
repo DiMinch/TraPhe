@@ -35,7 +35,7 @@ public class MenuCategory extends BaseEntity {
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
-    @Column(name = "is_drink_category", nullable = false)
+    @Column(name = "is_drink_category", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean isDrinkCategory = false;
 }

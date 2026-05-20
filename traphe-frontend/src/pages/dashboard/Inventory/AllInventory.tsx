@@ -181,7 +181,6 @@ export default function AllInventoryPage() {
   useEffect(() => {
     fetchInventory();
     fetchParts();
-    fetchCategories();
   }, []);
 
   // Fetch parts/components data from inventory API
@@ -230,19 +229,6 @@ export default function AllInventoryPage() {
     }
   };
 
-  // Fetch categories
-  const fetchCategories = async () => {
-    try {
-      const { categoryService } = await import("@/services/category.service");
-      const response = await categoryService.getAllCategories();
-      const categoriesData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || [];
-      setCategories(categoriesData);
-    } catch (err: any) {
-      console.error("Error fetching categories:", err);
-    }
-  };
 
   const productVariants: InventoryItem[] = inventoryData;
   const partsComponents: InventoryItem[] = partsData;

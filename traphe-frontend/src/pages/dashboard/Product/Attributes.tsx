@@ -41,7 +41,7 @@ interface Attribute {
 export default function AttributesPage() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
-  const [attributes, setAttributes] = useState<Attribute[]>([
+  const [attributes] = useState<Attribute[]>([
     {
       id: 1,
       name: "RAM",

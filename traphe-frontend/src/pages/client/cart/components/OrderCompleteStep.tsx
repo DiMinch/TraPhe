@@ -93,7 +93,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                 <CreditCard className="w-4 h-4" /> Payment
               </div>
               <p className="font-bold text-sm md:text-base text-gray-900 capitalize">
-                {order.paymentMethod.replace("_", " ").toLowerCase()}
+                {(order.paymentMethod || "N/A").replace("_", " ").toLowerCase()}
               </p>
             </div>
           </div>
@@ -110,17 +110,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                 className="group relative w-full flex flex-col gap-3"
               >
                 <div className="aspect-square w-full bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-black/20 group-hover:shadow-md relative">
-                  {item.productImage ? (
-                    <img
-                      src={item.productImage}
-                      alt={item.productName}
-                      className="w-full h-full object-contain p-2 mix-blend-multiply"
-                    />
-                  ) : (
-                    <span className="text-xs text-gray-400 font-medium select-none">
-                      No Img
-                    </span>
-                  )}
+                  <Package className="w-8 h-8 text-slate-400" />
 
                   <div className="absolute top-2 right-2 bg-black text-white text-[10px] font-bold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white shadow-sm z-10">
                     {item.quantity}
@@ -129,10 +119,10 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
 
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug group-hover:text-black transition-colors">
-                    {item.productName}
+                    {item.menuItemName}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {item.variantName}
+                    {item.sizeName || "Default Size"}
                   </p>
                   <p className="text-sm font-bold text-black pt-1">
                     {item.unitPrice.toLocaleString("vi-VN")}₫

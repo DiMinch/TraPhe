@@ -4,7 +4,6 @@ import {
   Grid,
   StretchHorizontal,
   AlignJustify,
-  ChevronDown,
   Loader2,
   ChevronLeft,
   ChevronRight,
@@ -19,12 +18,6 @@ import type { FilterParams } from "@/components/common/filter/FilterSection.type
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Link, useSearchParams } from "react-router"; // [1] Import useSearchParams
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
 export default function ShopPage() {

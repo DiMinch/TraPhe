@@ -72,6 +72,16 @@ import {
 } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
 
+const getPromotionStatus = (promo: PromotionResponse): PromotionStatus => {
+  if (!promo.isActive) return "INACTIVE";
+  const now = new Date();
+  const start = new Date(promo.startDate);
+  const end = new Date(promo.endDate);
+  if (now > end) return "EXPIRED";
+  if (now < start) return "SCHEDULED";
+  return "ACTIVE";
+};
+
 export default function PromotionListPage() {
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -143,14 +153,16 @@ export default function PromotionListPage() {
       console.log("Products response:", productsRes);
 
       // Handle different response structures
-      const categoryData = categoriesRes.data?.data || categoriesRes.data || [];
-      const productData = productsRes.data?.data || productsRes.data || [];
+      const categoryData = Array.isArray(categoriesRes.data)
+        ? categoriesRes.data
+        : (categoriesRes.data as any)?.data || [];
+      const productData = productsRes.data?.content || (productsRes.data as any)?.data || [];
 
       console.log("Category data:", categoryData);
       console.log("Product data:", productData);
 
-      setCategories(Array.isArray(categoryData) ? categoryData : []);
-      setProducts(Array.isArray(productData) ? productData : []);
+      setCategories(categoryData);
+      setProducts(productData);
     } catch (err: any) {
       console.error("Error fetching categories/products:", err);
     } finally {
@@ -167,21 +179,58 @@ export default function PromotionListPage() {
       console.log("Fetch promotions response:", response);
 
       // Handle both direct array and paginated response
-      const promotionData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || response.data?.data || [];
+      const responseData = response.data as any;
+      const promotionData = Array.isArray(responseData)
+        ? responseData
+        : responseData?.content || responseData?.data || [];
       console.log("Promotion data:", promotionData);
 
       const promotionArray = Array.isArray(promotionData) ? promotionData : [];
 
+      const enrichedArray = promotionArray.map((p: PromotionResponse) => {
+        const type = p.discountType || "PERCENTAGE";
+        const value = p.discountValue || 0;
+        const perUserLimit = p.perUserLimit || 1;
+
+        let status: PromotionStatus = "INACTIVE";
+        if (p.isActive) {
+          const now = new Date();
+          const start = new Date(p.startDate);
+          const end = new Date(p.endDate);
+          if (now > end) {
+            status = "EXPIRED";
+          } else if (now < start) {
+            status = "SCHEDULED";
+          } else {
+            status = "ACTIVE";
+          }
+        }
+
+        return {
+          ...p,
+          type,
+          value,
+          status,
+          scope: p.scope || "ORDER",
+          priority: p.priority || 0,
+          usagePerCustomer: perUserLimit,
+          applicableCategoryIds: p.applicableCategoryIds || [],
+          applicableProductIds: p.applicableProductIds || [],
+          applicableCustomerTiers: p.applicableCustomerTiers || [],
+          conflictingPromotionIds: p.conflictingPromotionIds || [],
+          hasQuota: p.usageLimit ? true : false,
+          remainingQuota: p.usageLimit ? (p.usageLimit - p.usageCount) : undefined
+        };
+      });
+
       // Sort by createdAt descending (newest first)
-      promotionArray.sort((a: PromotionResponse, b: PromotionResponse) => {
+      enrichedArray.sort((a: PromotionResponse, b: PromotionResponse) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
         return dateB.getTime() - dateA.getTime();
       });
 
-      setPromotions(promotionArray);
+      setPromotions(enrichedArray);
     } catch (err: any) {
       console.error("Error fetching promotions:", err);
       if (err.response?.status === 401) {
@@ -209,11 +258,11 @@ export default function PromotionListPage() {
 
     const matchesStatus =
       statusFilter === "all-status" ||
-      promo.status.toLowerCase() === statusFilter.toLowerCase();
+      (promo.status || "INACTIVE").toLowerCase() === statusFilter.toLowerCase();
 
     const matchesType =
       typeFilter === "all-type" ||
-      promo.type.toLowerCase() === typeFilter.toLowerCase();
+      (promo.type || "PERCENTAGE").toLowerCase() === typeFilter.toLowerCase();
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -290,14 +339,30 @@ export default function PromotionListPage() {
       console.log("Toggle status response:", response);
 
       // Handle response structure
-      const updatedPromotion = response.data?.data || response.data;
+      const updatedPromotion = response.data;
 
       if (updatedPromotion) {
+        const enrichedUpdated = {
+          ...updatedPromotion,
+          type: updatedPromotion.discountType || "PERCENTAGE",
+          value: updatedPromotion.discountValue || 0,
+          status: getPromotionStatus(updatedPromotion),
+          scope: updatedPromotion.scope || "ORDER",
+          priority: updatedPromotion.priority || 0,
+          usagePerCustomer: updatedPromotion.perUserLimit || 1,
+          applicableCategoryIds: updatedPromotion.applicableCategoryIds || [],
+          applicableProductIds: updatedPromotion.applicableProductIds || [],
+          applicableCustomerTiers: updatedPromotion.applicableCustomerTiers || [],
+          conflictingPromotionIds: updatedPromotion.conflictingPromotionIds || [],
+          hasQuota: updatedPromotion.usageLimit ? true : false,
+          remainingQuota: updatedPromotion.usageLimit ? (updatedPromotion.usageLimit - updatedPromotion.usageCount) : undefined
+        };
+
         setPromotions(
-          promotions.map((p) => (p.id === promotion.id ? updatedPromotion : p)),
+          promotions.map((p) => (p.id === promotion.id ? enrichedUpdated : p)),
         );
         toast.success(
-          `Promotion ${updatedPromotion.isActive ? "activated" : "deactivated"} successfully`,
+          `Promotion ${enrichedUpdated.isActive ? "activated" : "deactivated"} successfully`,
         );
       } else {
         // Fallback: just refresh the list
@@ -349,14 +414,44 @@ export default function PromotionListPage() {
 
     setCreating(true);
     try {
-      const response = await promotionService.createPromotion(formData);
+      const requestData: PromotionRequest = {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        discountType: formData.type === "PERCENTAGE" ? "PERCENTAGE" : "FIXED_AMOUNT",
+        discountValue: formData.value || 0,
+        minOrderValue: formData.minOrderValue,
+        maxDiscountAmount: formData.maxDiscountAmount,
+        usageLimit: formData.usageLimit,
+        perUserLimit: formData.usagePerCustomer || 1,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      };
+
+      const response = await promotionService.createPromotion(requestData);
       console.log("Create promotion response:", response);
 
       // Handle response structure - might be response.data or response.data.data
-      const newPromotion = response.data?.data || response.data;
+      const newPromotion = response.data;
 
       if (newPromotion) {
-        setPromotions([newPromotion, ...promotions]);
+        const enrichedNew = {
+          ...newPromotion,
+          type: newPromotion.discountType || "PERCENTAGE",
+          value: newPromotion.discountValue || 0,
+          status: getPromotionStatus(newPromotion),
+          scope: newPromotion.scope || "ORDER",
+          priority: newPromotion.priority || 0,
+          usagePerCustomer: newPromotion.perUserLimit || 1,
+          applicableCategoryIds: newPromotion.applicableCategoryIds || [],
+          applicableProductIds: newPromotion.applicableProductIds || [],
+          applicableCustomerTiers: newPromotion.applicableCustomerTiers || [],
+          conflictingPromotionIds: newPromotion.conflictingPromotionIds || [],
+          hasQuota: newPromotion.usageLimit ? true : false,
+          remainingQuota: newPromotion.usageLimit ? (newPromotion.usageLimit - newPromotion.usageCount) : undefined
+        };
+
+        setPromotions([enrichedNew, ...promotions]);
       }
 
       setIsCreateDialogOpen(false);
@@ -401,17 +496,17 @@ export default function PromotionListPage() {
     setFormData({
       code: promotion.code,
       name: promotion.name,
-      type: promotion.type,
-      scope: promotion.scope,
-      value: promotion.value,
+      type: promotion.type || promotion.discountType || "PERCENTAGE",
+      scope: promotion.scope || "ORDER",
+      value: promotion.value !== undefined ? promotion.value : promotion.discountValue,
       minOrderValue: promotion.minOrderValue || undefined,
       maxDiscountAmount: promotion.maxDiscountAmount || undefined,
       applicableCustomerTiers: promotion.applicableCustomerTiers || [],
       startDate: promotion.startDate.substring(0, 16),
       endDate: promotion.endDate.substring(0, 16),
       usageLimit: promotion.usageLimit || undefined,
-      usagePerCustomer: promotion.usagePerCustomer || undefined,
-      priority: promotion.priority,
+      usagePerCustomer: promotion.usagePerCustomer || promotion.perUserLimit || undefined,
+      priority: promotion.priority || 0,
       description: promotion.description || "",
       applicableCategoryIds: promotion.applicableCategoryIds || [],
       applicableProductIds: promotion.applicableProductIds || [],
@@ -461,18 +556,48 @@ export default function PromotionListPage() {
 
     setEditing(true);
     try {
+      const requestData: PromotionRequest = {
+        code: formData.code,
+        name: formData.name,
+        description: formData.description,
+        discountType: formData.type === "PERCENTAGE" ? "PERCENTAGE" : "FIXED_AMOUNT",
+        discountValue: formData.value || 0,
+        minOrderValue: formData.minOrderValue,
+        maxDiscountAmount: formData.maxDiscountAmount,
+        usageLimit: formData.usageLimit,
+        perUserLimit: formData.usagePerCustomer || 1,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      };
+
       const response = await promotionService.updatePromotion(
         editingPromotion.id,
-        formData,
+        requestData,
       );
       console.log("Update promotion response:", response);
 
-      const updatedPromotion = response.data?.data || response.data;
+      const updatedPromotion = response.data;
 
       if (updatedPromotion) {
+        const enrichedUpdated = {
+          ...updatedPromotion,
+          type: updatedPromotion.discountType || "PERCENTAGE",
+          value: updatedPromotion.discountValue || 0,
+          status: getPromotionStatus(updatedPromotion),
+          scope: updatedPromotion.scope || "ORDER",
+          priority: updatedPromotion.priority || 0,
+          usagePerCustomer: updatedPromotion.perUserLimit || 1,
+          applicableCategoryIds: updatedPromotion.applicableCategoryIds || [],
+          applicableProductIds: updatedPromotion.applicableProductIds || [],
+          applicableCustomerTiers: updatedPromotion.applicableCustomerTiers || [],
+          conflictingPromotionIds: updatedPromotion.conflictingPromotionIds || [],
+          hasQuota: updatedPromotion.usageLimit ? true : false,
+          remainingQuota: updatedPromotion.usageLimit ? (updatedPromotion.usageLimit - updatedPromotion.usageCount) : undefined
+        };
+
         setPromotions(
           promotions.map((p) =>
-            p.id === editingPromotion.id ? updatedPromotion : p,
+            p.id === editingPromotion.id ? enrichedUpdated : p,
           ),
         );
       }
@@ -706,17 +831,17 @@ export default function PromotionListPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {getTypeIcon(promo.type)}
+                            {getTypeIcon(promo.type || "PERCENTAGE")}
                             <span className="text-sm font-medium">
-                              {getTypeLabel(promo.type)}
+                              {getTypeLabel(promo.type || "PERCENTAGE")}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <span className="font-bold text-emerald-600">
-                            {promo.type === "PERCENTAGE"
-                              ? `${promo.value}%`
-                              : `${promo.value.toLocaleString()}₫`}
+                            {(promo.type || "PERCENTAGE") === "PERCENTAGE"
+                              ? `${promo.value || 0}%`
+                              : `${(promo.value || 0).toLocaleString()}₫`}
                           </span>
                           {promo.maxDiscountAmount &&
                             promo.maxDiscountAmount > 0 && (
@@ -737,10 +862,10 @@ export default function PromotionListPage() {
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={`font-medium px-3 py-1 ${getStatusColor(promo.status)}`}
+                            className={`font-medium px-3 py-1 ${getStatusColor(promo.status || "INACTIVE")}`}
                             variant="secondary"
                           >
-                            {promo.status}
+                            {promo.status || "INACTIVE"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -1275,7 +1400,7 @@ export default function PromotionListPage() {
                             setFormData({
                               ...formData,
                               applicableCustomerTiers: tiers.filter(
-                                (t) => t !== tier,
+                                (t: string) => t !== tier,
                               ),
                             });
                           }
@@ -1681,7 +1806,7 @@ export default function PromotionListPage() {
                               ...formData,
                               applicableCustomerTiers: checked
                                 ? [...currentTiers, tier]
-                                : currentTiers.filter((t) => t !== tier),
+                                : currentTiers.filter((t: string) => t !== tier),
                             });
                           }}
                         />

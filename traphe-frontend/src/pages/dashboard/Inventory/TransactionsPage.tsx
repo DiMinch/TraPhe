@@ -35,7 +35,6 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
-import { toast } from "sonner";
 
 interface Transaction {
   id: string;

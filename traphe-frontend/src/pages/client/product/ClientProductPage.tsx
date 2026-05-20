@@ -4,17 +4,10 @@ import {
   Grid,
   StretchHorizontal,
   AlignJustify,
-  ChevronDown,
   Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import FilterSection from "@/components/common/filter/FilterSection";
 import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";

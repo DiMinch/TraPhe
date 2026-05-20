@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { RefreshCw, Bell } from "lucide-react";
 import { authService } from "@/services/auth.service";
-import NotificationDropdown from "@/components/common/NotificationDropdown";
+import NotificationDropdown from "@/components/common/NotificationDropDown";
 
 interface PageHeaderProps {
   title: string;

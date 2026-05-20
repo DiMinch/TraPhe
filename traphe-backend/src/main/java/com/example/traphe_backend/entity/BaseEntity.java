@@ -39,7 +39,7 @@ public abstract class BaseEntity {
     @Column(name = "updated_by")
     private UUID updatedBy;
 
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     private boolean isDeleted = false;
 
     @Column(name = "deleted_at")

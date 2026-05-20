@@ -115,7 +115,7 @@ public class Order extends BaseEntity {
     @Column(name = "point_discount_amount", precision = 15, scale = 2)
     private BigDecimal pointDiscountAmount;
 
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean isDeleted = false;
 
