@@ -37,8 +37,6 @@ public class User extends BaseEntity {
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;
 
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
@@ -55,7 +53,7 @@ public class User extends BaseEntity {
      * Chi nhánh được gán (dùng cho BRANCH_MANAGER).
      * Nullable — chỉ có giá trị khi user là BRANCH_MANAGER.
      */
-    @Column(name = "branch_id")
+    @Column(name = "branch_id", insertable = false, updatable = false)
     private java.util.UUID branchId;
 
     @ManyToMany(fetch = FetchType.EAGER)

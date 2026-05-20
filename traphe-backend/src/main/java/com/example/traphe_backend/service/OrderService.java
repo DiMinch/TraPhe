@@ -38,6 +38,8 @@ import com.example.traphe_backend.repository.ToppingRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -533,13 +535,93 @@ public class OrderService {
     /**
      * Map Order entity to OrderResponse DTO.
      */
+    // ==========================================
+    // GET /api/orders/:id — Chi tiết đơn hàng
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(UUID orderId) {
+        Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Đơn hàng không tồn tại với ID: " + orderId));
+        return mapToOrderResponse(order);
+    }
+
+    // ==========================================
+    // GET /api/orders/user — Lịch sử đơn hàng của User
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return orderRepository
+                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
+                .map(this::mapToOrderResponse);
+    }
+
+    // ==========================================
+    // GET /api/orders — Danh sách đơn hàng (Admin)
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
+        OrderStatus status = null;
+        if (statusStr != null && !statusStr.isBlank() && !"all-status".equalsIgnoreCase(statusStr)) {
+            try {
+                status = OrderStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Trạng thái không hợp lệ: " + statusStr);
+            }
+        }
+        return orderRepository.findAllWithFilters(status, branchId, pageable)
+                .map(this::mapToOrderResponse);
+    }
+
     private OrderResponse mapToOrderResponse(Order order) {
+        // Build item details
+        List<OrderResponse.OrderItemDetail> itemDetails = order.getItems().stream()
+                .map(item -> {
+                    List<String> optionNames = item.getSelectedOptions().stream()
+                            .map(opt -> opt.getOptionGroup().getName() + ": " + opt.getOptionValue().getLabel())
+                            .collect(Collectors.toList());
+                    List<String> toppingNames = item.getSelectedToppings().stream()
+                            .map(top -> top.getTopping().getName() + (top.getQuantity() > 1 ? " x" + top.getQuantity() : ""))
+                            .collect(Collectors.toList());
+                    return OrderResponse.OrderItemDetail.builder()
+                            .id(item.getId())
+                            .menuItemName(item.getMenuItem() != null ? item.getMenuItem().getName() : null)
+                            .sizeName(item.getMenuItemSize() != null ? item.getMenuItemSize().getSizeName() : null)
+                            .quantity(item.getQuantity())
+                            .unitPrice(item.getUnitPrice())
+                            .subtotal(item.getSubtotal())
+                            .notes(item.getNotes())
+                            .options(optionNames)
+                            .toppings(toppingNames)
+                            .build();
+                }).collect(Collectors.toList());
+
         return OrderResponse.builder()
                 .orderId(order.getId())
                 .orderNumber(order.getOrderNumber())
+                .orderType(order.getOrderType() != null ? order.getOrderType().name() : null)
                 .status(order.getStatus().name())
-                .estimatedReadyTime(order.getEstimatedReadyTime())
+                .brewingStatus(order.getBrewingStatus() != null ? order.getBrewingStatus().name() : null)
+                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null)
+                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : null)
+                .subtotal(order.getSubtotal())
+                .totalDiscount(order.getTotalDiscount())
+                .shippingFee(order.getShippingFee())
                 .finalAmount(order.getFinalAmount())
+                .loyaltyPointsUsed(order.getLoyaltyPointsUsed())
+                .branchId(order.getBranch() != null ? order.getBranch().getId() : null)
+                .branchName(order.getBranch() != null ? order.getBranch().getName() : null)
+                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
+                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
+                .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhoneNumber() : null)
+                .estimatedReadyTime(order.getEstimatedReadyTime())
+                .createdAt(order.getCreatedAt())
+                .items(itemDetails)
                 .paymentUrl(null)
                 .build();
     }

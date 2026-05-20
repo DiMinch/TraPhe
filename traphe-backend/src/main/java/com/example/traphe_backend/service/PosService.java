@@ -28,9 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -46,11 +44,9 @@ public class PosService {
     private final BranchRepository branchRepository;
     private final MenuItemRepository menuItemRepository;
     private final MenuItemSizeRepository menuItemSizeRepository;
-    private final MenuItemOptionGroupRepository menuItemOptionGroupRepository;
     private final OptionGroupRepository optionGroupRepository;
     private final OptionValueRepository optionValueRepository;
     private final ToppingRepository toppingRepository;
-    private final MenuItemToppingRepository menuItemToppingRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final LoyaltyPointRepository loyaltyPointRepository;
 

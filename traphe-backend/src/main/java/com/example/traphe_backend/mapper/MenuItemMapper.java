@@ -9,10 +9,11 @@ import com.example.traphe_backend.entity.MenuItem;
 import com.example.traphe_backend.entity.MenuItemSize;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface MenuItemMapper {
 
     @Mapping(target = "categoryId", source = "item.category.id")

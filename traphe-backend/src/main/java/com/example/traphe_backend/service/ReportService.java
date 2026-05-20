@@ -18,9 +18,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -97,7 +95,7 @@ public class ReportService {
 
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();
              CSVPrinter csvPrinter = new CSVPrinter(new PrintWriter(out, true, StandardCharsets.UTF_8), 
-                 CSVFormat.DEFAULT.withHeader("Period Type", "Start Date", "End Date", "Total Orders", "Total Revenue"))) {
+                 CSVFormat.DEFAULT.builder().setHeader("Period Type", "Start Date", "End Date", "Total Orders", "Total Revenue").build())) {
 
             // Write BOM for UTF-8 to ensure Excel reads it correctly
             out.write(0xEF);

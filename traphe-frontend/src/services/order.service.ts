@@ -1,44 +1,46 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse, PageResponse } from "@/types/api.types";
 
-// Order response from backend
+// Order response from backend (enriched)
 export interface OrderResponse {
-  id: string;
+  orderId: string;
   orderNumber: string;
-  customer: {
-    id: string;
-    fullName: string;
-    phone: string;
-    email: string;
-  } | null;
-  guestName: string | null;
-  guestPhone: string | null;
   orderType: string;
   status: string;
-  paymentMethod: string;
-  items: OrderItemResponse[];
-  promotions: any[];
+  brewingStatus: string | null;
+  paymentMethod: string | null;
+  paymentStatus: string;
+  // Pricing
   subtotal: number;
   totalDiscount: number;
+  shippingFee: number | null;
   finalAmount: number;
   loyaltyPointsUsed: number;
-  loyaltyPointsEarned: number;
+  // Branch
+  branchId: string | null;
+  branchName: string | null;
+  // Customer (nullable for POS anonymous)
+  customerId: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  // Timing
+  estimatedReadyTime: string | null;
   createdAt: string;
+  // Items
+  items: OrderItemDetail[];
+  paymentUrl: string | null;
 }
 
-export interface OrderItemResponse {
+export interface OrderItemDetail {
   id: string;
-  productVariantId: string;
-  sku: string;
-  productName: string;
-  variantName: string;
-  productImage: string | null;
-  serialNumber: string | null;
+  menuItemName: string;
+  sizeName: string | null;
   quantity: number;
   unitPrice: number;
-  discount: number;
   subtotal: number;
-  warrantyExpireDate: string | null;
+  notes: string | null;
+  options: string[];
+  toppings: string[];
 }
 
 // Request interfaces

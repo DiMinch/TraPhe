@@ -48,6 +48,7 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     @Transactional
+    @SuppressWarnings("unused")
     public void run(String... args) {
         if (branchRepository.count() > 0) {
             log.info("Data already seeded, skipping...");
