@@ -172,7 +172,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     @Cacheable(value = "menu:categories", key = "T(java.util.Objects).hash(#search, #parentId, #sortBy, #sortDir)")
-    public List<MenuCategoryResponse> getCategories(String search, UUID parentId,
+    public MenuCategoryResponse[] getCategories(String search, UUID parentId,
                                                      String sortBy, String sortDir) {
         Sort sort = buildSort(sortBy, sortDir, "displayOrder");
 
@@ -188,18 +188,18 @@ public class MenuServiceImpl implements MenuService {
             };
             return menuCategoryRepository.findAll(spec, sort).stream()
                     .map(menuCategoryMapper::toResponse)
-                    .toList();
+                    .toArray(MenuCategoryResponse[]::new);
         }
 
         if (parentId != null) {
             return menuCategoryRepository.findAllByParentIdAndIsDeletedFalse(parentId, sort).stream()
                     .map(menuCategoryMapper::toResponse)
-                    .toList();
+                    .toArray(MenuCategoryResponse[]::new);
         }
 
         return menuCategoryRepository.findAllByIsDeletedFalse(sort).stream()
                 .map(menuCategoryMapper::toResponse)
-                .toList();
+                .toArray(MenuCategoryResponse[]::new);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     @Cacheable(value = "menu:tree", key = "#branchId != null ? #branchId.toString() : 'all'")
-    public List<MenuTreeResponse> getMenuTree(UUID branchId) {
+    public MenuTreeResponse[] getMenuTree(UUID branchId) {
         // Get all active categories
         List<MenuCategory> categories = menuCategoryRepository
                 .findAllByIsDeletedFalse(Sort.by("displayOrder").ascending());
@@ -267,7 +267,7 @@ public class MenuServiceImpl implements MenuService {
                 .filter(cat -> cat.getParent() == null)
                 .map(cat -> buildCategoryTree(cat, categories, itemsByCategory,
                         sizesByItemId, finalBranchOverlay, branchId))
-                .toList();
+                .toArray(MenuTreeResponse[]::new);
     }
 
     // ---- Private helpers ----

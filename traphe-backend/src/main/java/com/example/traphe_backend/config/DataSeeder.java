@@ -50,14 +50,22 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     @SuppressWarnings("unused")
     public void run(String... args) {
-        if (branchRepository.count() > 0) {
-            log.info("Data already seeded, skipping...");
-            return;
-        }
+        // Fix old categories isDrinkCategory field if they exist
+        menuCategoryRepository.findAll().forEach(cat -> {
+            log.info("Category check: name='{}', isDrinkCategory={}", cat.getName(), cat.isDrinkCategory());
+            if ("Trà Sữa".equals(cat.getName()) || "Cà Phê & Trà".equals(cat.getName()) || "Sinh Tố & Nước Ép".equals(cat.getName())) {
+                if (!cat.isDrinkCategory()) {
+                    log.info("UPDATING isDrinkCategory to true for category '{}'", cat.getName());
+                    cat.setDrinkCategory(true);
+                    menuCategoryRepository.save(cat);
+                }
+            }
+        });
 
-        log.info("========== Seeding TraPhe sample data ==========");
+        if (branchRepository.count() == 0) {
+            log.info("========== Seeding TraPhe sample data ==========");
 
-        // ==================== BRANCHES ====================
+            // ==================== BRANCHES ====================
         Branch branchQ1 = branchRepository.save(Branch.builder()
                 .name("TraPhe - Quận 1")
                 .address("123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM")
@@ -240,6 +248,127 @@ public class DataSeeder implements CommandLineRunner {
         linkBranchMenu(branchQ3, traDaoCamSa, true, null);
 
         log.info("✅ Branch menu items seeded: Q1={} items, Q3={} items", 5, 5);
+        }
+
+        // ==================== MERCHANDISE SEEDING ====================
+        if (menuCategoryRepository.findAll().stream().noneMatch(cat -> "Coffee Beans".equals(cat.getName()))) {
+            log.info("Seeding Merchandise categories & items...");
+            MenuCategory catCoffeeBeans = menuCategoryRepository.save(MenuCategory.builder()
+                    .name("Coffee Beans").isDrinkCategory(false).displayOrder(4).build());
+            MenuCategory catPremiumTea = menuCategoryRepository.save(MenuCategory.builder()
+                    .name("Premium Tea").isDrinkCategory(false).displayOrder(5).build());
+            MenuCategory catGiftSets = menuCategoryRepository.save(MenuCategory.builder()
+                    .name("Gift Sets").isDrinkCategory(false).displayOrder(6).build());
+            MenuCategory catCombos = menuCategoryRepository.save(MenuCategory.builder()
+                    .name("Combos").isDrinkCategory(false).displayOrder(7).build());
+            MenuCategory catBrewingGear = menuCategoryRepository.save(MenuCategory.builder()
+                    .name("Brewing Gear").isDrinkCategory(false).displayOrder(8).build());
+
+            // 1. Heritage Robusta Blend (Price: 250000, Category: Coffee Beans)
+            MenuItem robustaBeans = menuItemRepository.save(MenuItem.builder()
+                    .name("Heritage Robusta Blend")
+                    .description("Our signature dark roast with bold chocolate and subtle nutty notes. Sourced from the highlands.")
+                    .category(catCoffeeBeans).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("250000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuDNLGQym2sE--xUV5eKh4hjYg0WMwJwSpFdaaNdNvObf7aECBeYlWMs47KaPu8N2BsXXMOTf70UrddDMKrrF2uoK_H9KiSVfkV8SK8ZmwXezYUE2Ko8F9h9XQf9GB_fOzYdbCExqS6gIYuUkzEE4AqAO82PWpX6t7lBl8Q6inv0gh2_V-p4wNWOjnc26MBYOLerQV5HfOuRcyG3Y7j6EHPQHlbHPX3c_cfP8FhlGbRJ943HTa2LJD0fGDvmJvW_ZmvMM5JEgv-PWtA")
+                    .build());
+
+            // 2. Imperial Lotus Tea (Price: 420000, Category: Premium Tea)
+            MenuItem lotusTea = menuItemRepository.save(MenuItem.builder()
+                    .name("Imperial Lotus Tea")
+                    .description("Delicate green tea meticulously infused with the fragrance of fresh lotus blossoms. A refined experience.")
+                    .category(catPremiumTea).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("420000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuC7HHrEuKakXgsx0XXwY58sqG_zXOA1blmeJlIPeXneogC5kefd6Lh-5GQLbd9y8loUonXLzh6XIOuVV0QusAyJFfhiL6GH_my5LbPZtrPtSlklTYi46RYZLl8JGJusbSICA_BvQacdpOPLpBWSzsSLAmPb21juJD5u_ATCCwzq5Df-4v6evZ6nfGk9H_2wnl1AWU-dKK2t62oy8X1Gnh8oPRlXzCGwnF3cstZjkePZ3iNJwn_RLQHwKzvAw2y9npy6uCxbLgc_0QQ")
+                    .build());
+
+            // 3. Artisan Phin Filter (Price: 150000, Category: Brewing Gear)
+            MenuItem phinFilter = menuItemRepository.save(MenuItem.builder()
+                    .name("Artisan Phin Filter")
+                    .description("High-grade stainless steel Phin filter for the authentic slow-drip Vietnamese coffee experience at home.")
+                    .category(catBrewingGear).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("150000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuBOMbVNHImwMKE_BA1GVndQpdqSX1WDyUaUcc-6QrfKP5MOBeU_EXjwc6O3Uw-2d2NrK3VRkBNfLzIR--7oT-KouZ55KyvsUrB7HusEVgIi_tGQD27AcE18aqkhLC51RNFGoEbV4VIYU_uPV_2Z8Ng7RpGhc5q5zRtxFkApaLRlfc1VlmMi2rSNTSfOcvQsqEMhmRRE2CrRj3q9DRSIbNWB7JmVAThDR64xW-w5AWcF9UKG5pGUCwyRnZSCcIqyxxDh4JaQsOrb65Y")
+                    .build());
+
+            // 4. The Explorer's Kit (Price: 680000, Category: Gift Sets)
+            MenuItem explorerKit = menuItemRepository.save(MenuItem.builder()
+                    .name("The Explorer's Kit")
+                    .description("A curated selection of our top three single-origin roasts. Perfect for gifting or discovering your new favorite.")
+                    .category(catGiftSets).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("680000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuDlbiE1OgZvhusvN3QwPfv5SaS3pUr6p89WKlWDsE39J8R9QpDyBdHeWbO2jJ1AzuaP0VH2oxuclkUGp9oX1GrkabQ3BTsYBK3qhFdMdxV1Lj63Oyyv4EsPwAXbx6Ergt1eOmSZH8cN-yYdgWdyjImgNFKx3YqBdDVYEYAzjC8QGWvG1UYkF88nLme4A1bhfOIxi0SHyQ5SmZirCKGIW-k9Yvv76gy6RwgU4RfD0f7AwaoGJHhR4BSnVFawOm6a9wN3YL93ZxCC5fo")
+                    .build());
+
+            // 5. Da Lat Arabica (Price: 280000, Category: Coffee Beans)
+            MenuItem arabicaBeans = menuItemRepository.save(MenuItem.builder()
+                    .name("Da Lat Arabica")
+                    .description("A bright, medium roast with floral notes and a clean, citrusy finish. Cultivated in the cool mist of Da Lat.")
+                    .category(catCoffeeBeans).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("280000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuBJa12pK6LoZxvgzxSaEHTN5MuuNmobka2AP4WitQauczz6quZ1SX-nM60pUtXcFPr9zK8Yh1WGPaXYhp6qNBywdxthVzIrcCtv4-EZQCPIVNsM4Q067oaPTSfjsTad5Hlg_Js7oT_5f6U9wrvSbYiXx6rXxRMG8DnFHiP1J0lCfqT67GB-jm93VPHLj9ZhQJB_OSg5dfXiBOUP0p5MDhVFvpIA3jmicLubG5e_EngZ9q-g-2LNywxe9mc3hRkotk592XGuZLZnSXQ")
+                    .build());
+
+            // 6. Highland Oolong (Price: 350000, Category: Premium Tea)
+            MenuItem oolongTea = menuItemRepository.save(MenuItem.builder()
+                    .name("Highland Oolong")
+                    .description("Premium semi-oxidized tea leaves offering a complex profile of roasted nuts and sweet orchids.")
+                    .category(catPremiumTea).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("350000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuClx18lOW_TF9oKAeH5ZiE_PjXipq4K7Ecd4Jn45HNcuPuhQVmjTCO-Zb1mfK_32Ga_Qa6EAEqUe_wfrLZKFEOmCt_YqaaMd13-oR7KNUrI00IueqMVurp6mPuwmJikXA8cP0b2qZj3v6ELg9GT11GSTcyuymU3BPKcyhrfAWGe9K4s4TLClWKNazBQAoRQ3CNAbBMRBbmOjCK-VfI2RBxXQNU22x7lhLNL--z2BbwghRecPlJgSNsHVUROg9AVXQISM1s5RRpPXrI")
+                    .build());
+
+            // 7. Artisan Ceramic Mug (Price: 220000, Category: Brewing Gear)
+            MenuItem ceramicMug = menuItemRepository.save(MenuItem.builder()
+                    .name("Artisan Ceramic Mug")
+                    .description("Handcrafted by local artisans. Each mug features a unique glaze, designed to retain heat perfectly.")
+                    .category(catBrewingGear).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("220000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuATDRN1LpMhKz0mO0Mg6RsZ6bZOXuNq2vyCgYZW37uaOp6tTN52X4iiPQxsOijQkWz3UkBOpA2RUO6jcY62ctZErUgbCta9OP4J5gWZ-HDLAdE02mU8vqzjOg91F9rPcCChVD4YWswenJnSfOlyHnqc1w4AUtZVghkPnmhi2s0Bfv5GVE4lr3rJhXpHXMEUcxACA0T7A5lyEDt6q_OEavpflUE0KesqcYMHA5uez3lPhjZNlgT7qxo4GcprkKTDjYUAMMlTk924dXg")
+                    .build());
+
+            // 8. The Authentic Combo (Price: 380000, Category: Combos)
+            MenuItem authenticCombo = menuItemRepository.save(MenuItem.builder()
+                    .name("The Authentic Combo")
+                    .description("Everything you need: Robusta beans, a Phin filter, and premium sweetened condensed milk. Start brewing instantly.")
+                    .category(catCombos).isDrink(false).allowToppings(false)
+                    .preparationTime(0).status(MenuItemStatus.ACTIVE)
+                    .basePrice(new BigDecimal("380000"))
+                    .imageUrl("https://lh3.googleusercontent.com/aida-public/AB6AXuDCVK21d2kD1lZFcmmI_-htpGflGhFwveGcW89v0qzV_OPVa1wUYtB9O5q0VKb6RtdYhlzgP_tHirBP5NQy_cFSi5N-mhFvmaOontDeeXQFiaOM3yqnyoJF1fBcLbXKzUXgf4PssaQHozWTZh3OKNncZycXavp7fw_xb8bDoPGiXyCBHiNhRFU4RT_JqtnVfVvOmNA9hTynY06QRF5XVy2gYRmgvDkG1lHyIRm7g1uLLfjDsTELkMJOsuGkfXuqK4ZfZoxlxi_Xlm0")
+                    .build());
+
+            Branch branchQ1 = branchRepository.findAll().stream().filter(b -> b.getName().contains("Quận 1")).findFirst().orElse(null);
+            Branch branchQ3 = branchRepository.findAll().stream().filter(b -> b.getName().contains("Quận 3")).findFirst().orElse(null);
+
+            if (branchQ1 != null) {
+                linkBranchMenu(branchQ1, robustaBeans, true, null);
+                linkBranchMenu(branchQ1, lotusTea, true, null);
+                linkBranchMenu(branchQ1, phinFilter, true, null);
+                linkBranchMenu(branchQ1, explorerKit, true, null);
+                linkBranchMenu(branchQ1, arabicaBeans, true, null);
+                linkBranchMenu(branchQ1, oolongTea, true, null);
+                linkBranchMenu(branchQ1, ceramicMug, true, null);
+                linkBranchMenu(branchQ1, authenticCombo, true, null);
+            }
+            if (branchQ3 != null) {
+                linkBranchMenu(branchQ3, robustaBeans, true, null);
+                linkBranchMenu(branchQ3, lotusTea, true, null);
+                linkBranchMenu(branchQ3, phinFilter, true, null);
+                linkBranchMenu(branchQ3, explorerKit, true, null);
+                linkBranchMenu(branchQ3, arabicaBeans, true, null);
+                linkBranchMenu(branchQ3, oolongTea, true, null);
+                linkBranchMenu(branchQ3, ceramicMug, true, null);
+                linkBranchMenu(branchQ3, authenticCombo, true, null);
+            }
+            log.info("✅ Merchandise categories & items seeded successfully!");
+        }
 
         // ========== Summary ==========
         log.info("===========================================");

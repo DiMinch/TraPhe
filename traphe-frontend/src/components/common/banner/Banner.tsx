@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 const bannerImages = [
-  "https://images.unsplash.com/photo-1661961112951-f2bfd1f253ce?q=80&w=2672&auto=format&fit=crop", // Laptop Gaming / Tech
-  "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=2069&auto=format&fit=crop", // Macbook
-  "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=2070&auto=format&fit=crop", // Setup
+  "https://images6.alphacoders.com/329/thumb-1920-329631.jpg", // Laptop Gaming / Tech
+  "https://images.pexels.com/photos/1749303/pexels-photo-1749303.jpeg", // Macbook
+  "https://images6.alphacoders.com/870/thumb-1920-870574.jpg", // Setup
 ];
 
 export default function Banner() {

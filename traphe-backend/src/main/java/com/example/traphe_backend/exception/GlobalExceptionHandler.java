@@ -82,7 +82,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // Print stack trace to console for developer
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", 
+                        "An unexpected error occurred: [" + ex.getClass().getSimpleName() + "] " + ex.getMessage()));
     }
 }

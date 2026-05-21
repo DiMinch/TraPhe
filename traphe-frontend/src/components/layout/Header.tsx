@@ -7,7 +7,7 @@ import { authService } from "@/services/auth.service";
 import { Button } from "../ui/button";
 
 export default function Header() {
-  const { count } = useCart();
+  const { count, openLoginPrompt } = useCart();
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
 
@@ -19,7 +19,7 @@ export default function Header() {
             <img
               src="/logo.svg"
               alt="TRAPHE"
-              className="w-full h-full object-cover scale-250"
+              className="w-full h-full object-cover"
             />
           </div>
         </Link>
@@ -37,14 +37,24 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-5">
-          <Link to="/cart" className="text-gray-700 hover:text-black relative">
+          <button
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+                openLoginPrompt();
+              } else {
+                navigate("/cart");
+              }
+            }}
+            className="text-gray-700 hover:text-black relative bg-transparent border-none p-0 cursor-pointer"
+          >
             <ShoppingBag className="w-5 h-5" />
             {count > 0 && (
               <Badge className="absolute -top-2 -right-2 h-4 w-4 flex items-center justify-center p-0 text-[10px] bg-black text-white rounded-full">
                 {count > 99 ? "99+" : count}
               </Badge>
             )}
-          </Link>
+          </button>
 
           {user ? (
             <Link

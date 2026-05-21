@@ -38,19 +38,15 @@ export const authService = {
   },
 
   getCurrentUser: (): UserInfo | null => {
-    // TẠM THỜI BYPASS ĐĂNG NHẬP
-    return {
-      id: 1,
-      email: "admin@traphe.com",
-      username: "admin",
-      fullName: "Admin Bypass",
-      roles: ["ROLE_ADMIN", "ROLE_USER", "ROLE_MANAGER", "ROLE_EMPLOYEE"], // Cấp full quyền
-      status: "ACTIVE"
-    } as any;
-    
-    // const userStr = localStorage.getItem("user");
-    // if (userStr) return JSON.parse(userStr);
-    // return null;
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        return JSON.parse(userStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   },
 
   loginGoogle: async (payload: GoogleLoginRequest) => {

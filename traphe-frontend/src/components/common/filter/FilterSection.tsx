@@ -23,12 +23,18 @@ import CategoryFilter from "./CategoryFilter";
 import PriceFilter from "./PriceFilter";
 import type { PriceRange } from "./PriceFilter";
 
-// F&B price ranges (VND) — appropriate for drinks & food
-const PRICE_RANGES: PriceRange[] = [
+const DRINK_PRICE_RANGES: PriceRange[] = [
   { id: "p1", label: "Dưới 30.000₫", min: 0, max: 30000 },
   { id: "p2", label: "30.000₫ - 50.000₫", min: 30000, max: 50000 },
   { id: "p3", label: "50.000₫ - 80.000₫", min: 50000, max: 80000 },
   { id: "p4", label: "Trên 80.000₫", min: 80000, max: undefined },
+];
+
+const MERCHANDISE_PRICE_RANGES: PriceRange[] = [
+  { id: "p1", label: "Dưới 200.000₫", min: 0, max: 200000 },
+  { id: "p2", label: "200.000₫ - 400.000₫", min: 200000, max: 400000 },
+  { id: "p3", label: "400.000₫ - 600.000₫", min: 400000, max: 600000 },
+  { id: "p4", label: "Trên 600.000₫", min: 600000, max: undefined },
 ];
 
 interface Category {
@@ -36,6 +42,7 @@ interface Category {
   name: string;
   description?: string;
   parentId?: string | null;
+  drinkCategory?: boolean;
 }
 
 interface CategoryNode extends Category {
@@ -46,6 +53,7 @@ export default function FilterSection({
   className,
   onFilterChange,
   categoryId,
+  isDrink,
 }: FilterSectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCats, setLoadingCats] = useState(true);
@@ -58,6 +66,10 @@ export default function FilterSection({
     Record<string, boolean>
   >({});
 
+  const activePriceRanges = useMemo(() => {
+    return isDrink === false ? MERCHANDISE_PRICE_RANGES : DRINK_PRICE_RANGES;
+  }, [isDrink]);
+
   useEffect(() => {
     setSelectedCategoryId(categoryId);
   }, [categoryId]);
@@ -65,11 +77,15 @@ export default function FilterSection({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setLoadingCats(true);
         const res = await axiosClient.get<any, ApiResponse<Category[]>>(
           "/categories",
         );
         if (res.statusCode === 200 && res.data) {
-          setCategories(res.data);
+          const filtered = isDrink !== undefined
+            ? res.data.filter((cat) => cat.drinkCategory === isDrink)
+            : res.data;
+          setCategories(filtered);
         }
       } catch (error) {
         console.error("Failed to load categories", error);
@@ -78,7 +94,7 @@ export default function FilterSection({
       }
     };
     fetchCategories();
-  }, []);
+  }, [isDrink]);
 
   const categoryTree = useMemo(() => {
     const tree: CategoryNode[] = [];
@@ -117,7 +133,7 @@ export default function FilterSection({
     let maxPrice: number | undefined = undefined;
 
     if (currentPrices.length > 0) {
-      const selectedRanges = PRICE_RANGES.filter((r) =>
+      const selectedRanges = activePriceRanges.filter((r) =>
         currentPrices.includes(r.id),
       );
       const mins = selectedRanges.map((r) => r.min);
@@ -166,16 +182,16 @@ export default function FilterSection({
         defaultValue={["category", "price"]}
         className="w-full"
       >
-        <AccordionItem value="category" className="border-b border-gray-100">
+        <AccordionItem value="category" className="border-b border-mist/20">
           <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
-            <span className="font-bold text-base uppercase tracking-wide text-gray-900 cursor-pointer">
+            <span className="font-ui-heading font-semibold text-base uppercase tracking-wide text-espresso hover:text-roast cursor-pointer">
               Danh mục
             </span>
           </AccordionTrigger>
           <AccordionContent>
             {loadingCats ? (
               <div className="flex justify-center py-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-roast" />
               </div>
             ) : (
               <CategoryFilter
@@ -190,15 +206,15 @@ export default function FilterSection({
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="price" className="border-b border-gray-100">
+        <AccordionItem value="price" className="border-b border-mist/20">
           <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
-            <span className="font-bold text-base uppercase tracking-wide text-gray-900">
+            <span className="font-ui-heading font-semibold text-base uppercase tracking-wide text-espresso hover:text-roast">
               Giá
             </span>
           </AccordionTrigger>
           <AccordionContent>
             <PriceFilter
-              priceRanges={PRICE_RANGES}
+              priceRanges={activePriceRanges}
               selectedPriceRanges={selectedPriceRanges}
               onTogglePrice={handlePriceCheck}
             />
@@ -209,7 +225,7 @@ export default function FilterSection({
       <Button
         variant="outline"
         onClick={handleReset}
-        className="w-full border-dashed border-gray-400 hover:border-black hover:bg-gray-50 mt-4 cursor-pointer"
+        className="w-full border-dashed border-roast hover:bg-cream text-roast hover:text-roast mt-4 cursor-pointer"
       >
         Xóa bộ lọc
       </Button>
@@ -223,15 +239,15 @@ export default function FilterSection({
           <SheetTrigger asChild>
             <Button
               variant="outline"
-              className="w-full flex items-center justify-between h-12 border-gray-300 bg-white shadow-sm"
+              className="w-full flex items-center justify-between h-12 border-mist/30 bg-parchment hover:bg-cream text-espresso shadow-sm"
             >
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4" />
-                <span className="font-medium">Bộ lọc</span>
+                <SlidersHorizontal className="w-4 h-4 text-roast" />
+                <span className="font-medium font-ui-body">Bộ lọc</span>
               </div>
               {(selectedCategoryId ||
                 selectedPriceRanges.length > 0) && (
-                <span className="bg-black text-white text-xs px-2 py-0.5 rounded-full">
+                <span className="bg-roast text-white text-xs px-2 py-0.5 rounded-full">
                   •
                 </span>
               )}
@@ -239,11 +255,11 @@ export default function FilterSection({
           </SheetTrigger>
           <SheetContent
             side="left"
-            className="w-[300px] overflow-y-auto bg-white z-100 p-4"
+            className="w-[300px] overflow-y-auto bg-parchment border-r border-mist/30 z-100 p-4"
           >
             <SheetHeader className="mb-6 text-left">
-              <SheetTitle className="text-xl font-bold flex items-center gap-2">
-                <Filter className="w-5 h-5" /> Bộ lọc
+              <SheetTitle className="text-xl font-bold flex items-center gap-2 text-espresso font-ui-heading">
+                <Filter className="w-5 h-5 text-roast" /> Bộ lọc
               </SheetTitle>
             </SheetHeader>
             <FilterContent />
@@ -252,23 +268,23 @@ export default function FilterSection({
       </div>
 
       <div className={cn("hidden lg:block w-[280px] shrink-0", className)}>
-        <div className="sticky top-24 bg-white border border-gray-200 rounded-xl p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="sticky top-24 bg-parchment border border-mist/30 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
-              <SlidersHorizontal className="w-5 h-5" />
+            <div className="flex items-center gap-2 text-espresso font-bold text-lg font-ui-heading">
+              <SlidersHorizontal className="w-5 h-5 text-roast" />
               <span>Bộ lọc</span>
             </div>
             {(selectedCategoryId ||
               selectedPriceRanges.length > 0) && (
               <button
                 onClick={handleReset}
-                className="text-xs text-gray-400 hover:text-black underline cursor-pointer"
+                className="text-xs text-dust hover:text-roast underline cursor-pointer"
               >
                 Xóa tất cả
               </button>
             )}
           </div>
-          <Separator className="mb-4 mt-2" />
+          <Separator className="mb-4 mt-2 bg-mist/20" />
           <FilterContent />
         </div>
       </div>

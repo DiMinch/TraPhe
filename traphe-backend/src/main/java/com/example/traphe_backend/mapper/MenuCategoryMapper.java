@@ -2,13 +2,22 @@ package com.example.traphe_backend.mapper;
 
 import com.example.traphe_backend.dto.response.MenuCategoryResponse;
 import com.example.traphe_backend.entity.MenuCategory;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.ReportingPolicy;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface MenuCategoryMapper {
+@Component
+public class MenuCategoryMapper {
 
-    @Mapping(target = "parentId", source = "parent.id")
-    MenuCategoryResponse toResponse(MenuCategory category);
+    public MenuCategoryResponse toResponse(MenuCategory category) {
+        if (category == null) {
+            return null;
+        }
+        return MenuCategoryResponse.builder()
+                .id(category.getId())
+                .name(category.getName())
+                .parentId(category.getParent() != null ? category.getParent().getId() : null)
+                .displayOrder(category.getDisplayOrder())
+                .imageUrl(category.getImageUrl())
+                .isDrinkCategory(category.isDrinkCategory())
+                .build();
+    }
 }

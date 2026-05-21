@@ -8,4 +8,7 @@ export interface ProductCardProps {
   image?: string;
   isNew?: boolean;
   discount?: string;
+  description?: string;
+  categoryName?: string;
+  layout?: "grid" | "list";
 }

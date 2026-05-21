@@ -8,5 +8,6 @@ export interface FilterParams {
 export interface FilterSectionProps {
   className?: string;
   categoryId?: string;
+  isDrink?: boolean;
   onFilterChange: (params: FilterParams) => void;
 }

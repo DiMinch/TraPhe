@@ -3,7 +3,8 @@ package com.example.traphe_backend.config;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -33,20 +34,22 @@ public class CacheConfig {
             // Test Redis connection first
             connectionFactory.getConnection().ping();
 
-            // Configure Jackson serializer for Redis cache values
-            ObjectMapper cacheMapper = new ObjectMapper();
-            cacheMapper.registerModule(new JavaTimeModule());
-            cacheMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            cacheMapper.activateDefaultTyping(
-                    LaissezFaireSubTypeValidator.instance,
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.registerModule(new JavaTimeModule());
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+            
+            // Configure default typing with WRAPPER_ARRAY to handle both concrete classes and arrays/lists
+            mapper.activateDefaultTyping(
+                    mapper.getPolymorphicTypeValidator(),
                     ObjectMapper.DefaultTyping.NON_FINAL,
-                    JsonTypeInfo.As.PROPERTY);
-
-            GenericJackson2JsonRedisSerializer jsonSerializer =
-                    new GenericJackson2JsonRedisSerializer(cacheMapper);
+                    JsonTypeInfo.As.WRAPPER_ARRAY
+            );
+            
+            GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(mapper);
 
             RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                     .entryTtl(Duration.ofMinutes(10))
+                    .prefixCacheNameWith("traphe:v9:") // Force cache invalidation — bypass all old corrupt data
                     .serializeKeysWith(
                             RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                     .serializeValuesWith(

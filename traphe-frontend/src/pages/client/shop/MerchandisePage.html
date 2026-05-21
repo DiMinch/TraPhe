@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Danh sách Merchandise</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Source+Serif+4:wght@400;600&amp;family=Viaoda+Libre&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#93000a",
+                    "ink": "#1A1410",
+                    "secondary-fixed": "#fedcc8",
+                    "surface-container-highest": "#ebe0db",
+                    "surface-container-low": "#fdf1ec",
+                    "parchment": "#EFE5D3",
+                    "error-container": "#ffdad6",
+                    "admin-surface": "#FFFFFF",
+                    "tertiary-fixed-dim": "#99d0d6",
+                    "surface-container-high": "#f1e6e1",
+                    "on-secondary-fixed-variant": "#594234",
+                    "inverse-primary": "#f8b993",
+                    "dust": "#8C7B6E",
+                    "primary-fixed-dim": "#f8b993",
+                    "on-background": "#201b18",
+                    "outline": "#84746c",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#ffdbc8",
+                    "on-primary-fixed": "#321300",
+                    "on-tertiary-fixed": "#002022",
+                    "latte": "#C89A6E",
+                    "surface-container-lowest": "#ffffff",
+                    "roast": "#5C3317",
+                    "on-tertiary-fixed-variant": "#114e53",
+                    "surface-bright": "#fff8f5",
+                    "smoke": "#4A3F35",
+                    "on-surface-variant": "#51443d",
+                    "on-secondary": "#ffffff",
+                    "surface-dim": "#e3d8d3",
+                    "admin-bg": "#F7F5F2",
+                    "surface": "#fff8f5",
+                    "background": "#fff8f5",
+                    "primary-container": "#5c3317",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#673c1f",
+                    "error": "#ba1a1a",
+                    "on-surface": "#201b18",
+                    "outline-variant": "#d6c3b9",
+                    "inverse-on-surface": "#faeeea",
+                    "caramel": "#A0622A",
+                    "on-tertiary": "#ffffff",
+                    "foam": "#FBF5EC",
+                    "surface-container": "#f7ece7",
+                    "secondary-fixed-dim": "#e1c0ad",
+                    "on-secondary-fixed": "#29170c",
+                    "cloud": "#F0EBE3",
+                    "on-tertiary-container": "#7cb2b7",
+                    "espresso": "#2C1A0E",
+                    "secondary-container": "#fbd9c5",
+                    "secondary": "#72594a",
+                    "on-primary-container": "#d69b77",
+                    "inverse-surface": "#352f2c",
+                    "tertiary": "#002d31",
+                    "admin-border": "#E2DDD7",
+                    "tertiary-fixed": "#b5ecf2",
+                    "tertiary-container": "#00454a",
+                    "surface-tint": "#835334",
+                    "surface-variant": "#ebe0db",
+                    "primary": "#421e04",
+                    "on-secondary-container": "#775d4e",
+                    "mist": "#D4C9BC",
+                    "cream": "#F5EAD8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-20": "80px",
+                    "space-1": "4px",
+                    "space-3": "12px",
+                    "space-8": "32px",
+                    "space-4": "16px",
+                    "space-6": "24px",
+                    "space-12": "48px"
+            },
+            "fontFamily": {
+                    "ui-heading": [
+                            "Google Sans"
+                    ],
+                    "heading-lg": [
+                            "Source Serif 4"
+                    ],
+                    "display-md": [
+                            "Viaoda Libre"
+                    ],
+                    "display-lg": [
+                            "Viaoda Libre"
+                    ],
+                    "ui-body": [
+                            "Google Sans"
+                    ],
+                    "display-xl": [
+                            "Viaoda Libre"
+                    ],
+                    "pos-total": [
+                            "Google Sans"
+                    ],
+                    "body-md": [
+                            "Source Serif 4"
+                    ]
+            },
+            "fontSize": {
+                    "ui-heading": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "heading-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.35",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-md": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.15",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "ui-body": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-xl": [
+                            "64px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "pos-total": [
+                            "28px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.65",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+</head>
+<body class="bg-foam text-on-surface font-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md sticky top-0 w-full z-50 border-b border-[#E2DDD7] dark:border-stone-800 shadow-md shadow-[#5C3317]/5">
+<div class="flex justify-between items-center px-6 md:px-12 py-4 max-w-[1280px] mx-auto">
+<div class="text-2xl font-bold tracking-tight text-[#5C3317] dark:text-[#E2DDD7] font-serif antialiased">
+                TraPhe
+            </div>
+<nav class="hidden md:flex gap-8">
+<a class="text-[#5C3317]/70 dark:text-[#E2DDD7]/70 font-medium font-serif antialiased hover:text-[#5C3317] dark:hover:text-white transition-all duration-300" href="#">Menu</a>
+<a class="text-[#5C3317]/70 dark:text-[#E2DDD7]/70 font-medium font-serif antialiased hover:text-[#5C3317] dark:hover:text-white transition-all duration-300" href="#">Our Story</a>
+<a class="text-[#5C3317]/70 dark:text-[#E2DDD7]/70 font-medium font-serif antialiased hover:text-[#5C3317] dark:hover:text-white transition-all duration-300" href="#">Locations</a>
+<a class="text-[#5C3317] dark:text-white font-bold border-b-2 border-[#5C3317] dark:border-[#E2DDD7] pb-1 font-serif antialiased hover:text-[#5C3317] dark:hover:text-white transition-all duration-300 opacity-80 scale-95 transition-transform" href="#">Shop</a>
+</nav>
+<div class="flex gap-4">
+<button class="text-[#5C3317] dark:text-[#E2DDD7] hover:text-[#5C3317] dark:hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined">shopping_bag</span>
+</button>
+<button class="text-[#5C3317] dark:text-[#E2DDD7] hover:text-[#5C3317] dark:hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow max-w-[1280px] mx-auto w-full px-6 md:px-12 py-space-20">
+<!-- Header & Search -->
+<div class="mb-space-12 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-space-6">
+<div class="max-w-2xl">
+<h1 class="font-display-lg text-display-lg text-roast mb-space-4">Danh sách Merchandise</h1>
+<p class="font-body-md text-body-md text-smoke">Explore our curated selection of premium Vietnamese coffee beans, fine teas, and exclusive gift sets. Crafted to bring the TraPhe heritage to your home.</p>
+</div>
+<div class="w-full md:w-auto min-w-[300px]">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-dust">search</span>
+<input class="w-full pl-10 pr-4 py-3 rounded-full border-1.5 border-mist focus:border-roast focus:ring-1 focus:ring-roast bg-white text-ink font-ui-body text-ui-body transition-colors" placeholder="Search merchandise..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Filters -->
+<div class="flex gap-space-4 overflow-x-auto pb-space-4 mb-space-8 no-scrollbar">
+<button class="px-6 py-2 rounded-full bg-roast text-white font-ui-body text-ui-body whitespace-nowrap">All Items</button>
+<button class="px-6 py-2 rounded-full border-1.5 border-mist bg-parchment text-smoke hover:bg-cream hover:border-roast font-ui-body text-ui-body whitespace-nowrap transition-colors">Coffee Beans</button>
+<button class="px-6 py-2 rounded-full border-1.5 border-mist bg-parchment text-smoke hover:bg-cream hover:border-roast font-ui-body text-ui-body whitespace-nowrap transition-colors">Premium Tea</button>
+<button class="px-6 py-2 rounded-full border-1.5 border-mist bg-parchment text-smoke hover:bg-cream hover:border-roast font-ui-body text-ui-body whitespace-nowrap transition-colors">Gift Sets</button>
+<button class="px-6 py-2 rounded-full border-1.5 border-mist bg-parchment text-smoke hover:bg-cream hover:border-roast font-ui-body text-ui-body whitespace-nowrap transition-colors">Combos</button>
+<button class="px-6 py-2 rounded-full border-1.5 border-mist bg-parchment text-smoke hover:bg-cream hover:border-roast font-ui-body text-ui-body whitespace-nowrap transition-colors">Brewing Gear</button>
+</div>
+<!-- Product Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-space-6">
+<!-- Product Card 1 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Robusta Coffee Beans" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A premium bag of roasted coffee beans sitting on a rustic wooden table. The packaging is minimalist with earthy tones. Soft, warm natural light highlights the rich texture of the beans spilling out slightly. A modern yet culturally resonant Vietnamese coffee shop aesthetic. Earth-toned palette with deep roast and parchment colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNLGQym2sE--xUV5eKh4hjYg0WMwJwSpFdaaNdNvObf7aECBeYlWMs47KaPu8N2BsXXMOTf70UrddDMKrrF2uoK_H9KiSVfkV8SK8ZmwXezYUE2Ko8F9h9XQf9GB_fOzYdbCExqS6gIYuUkzEE4AqAO82PWpX6t7lBl8Q6inv0gh2_V-p4wNWOjnc26MBYOLerQV5HfOuRcyG3Y7j6EHPQHlbHPX3c_cfP8FhlGbRJ943HTa2LJD0fGDvmJvW_ZmvMM5JEgv-PWtA"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-caramel">Best Seller</div>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Heritage Robusta Blend</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">Our signature dark roast with bold chocolate and subtle nutty notes. Sourced from the highlands.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">250,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 2 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Premium Lotus Tea" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="An elegant tin of loose-leaf lotus tea surrounded by fresh lotus petals. The setting is refined and delicate, evoking traditional Vietnamese tea ceremonies. Soft, diffused lighting creates a serene mood. The aesthetic blends modern tactile design with cultural heritage. Warm neutral tones and soft parchment backgrounds." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7HHrEuKakXgsx0XXwY58sqG_zXOA1blmeJlIPeXneogC5kefd6Lh-5GQLbd9y8loUonXLzh6XIOuVV0QusAyJFfhiL6GH_my5LbPZtrPtSlklTYi46RYZLl8JGJusbSICA_BvQacdpOPLpBWSzsSLAmPb21juJD5u_ATCCwzq5Df-4v6evZ6nfGk9H_2wnl1AWU-dKK2t62oy8X1Gnh8oPRlXzCGwnF3cstZjkePZ3iNJwn_RLQHwKzvAw2y9npy6uCxbLgc_0QQ"/>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Imperial Lotus Tea</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">Delicate green tea meticulously infused with the fragrance of fresh lotus blossoms. A refined experience.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">420,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 3 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Phin Filter Set" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A sleek, modern Vietnamese Phin coffee filter made of high-quality stainless steel, resting on an artisanal ceramic cup. The background is a sophisticated cafe counter with organic textures. High contrast lighting emphasizes the polished metal and earthy ceramics. A modern tactical approach to traditional coffee culture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOMbVNHImwMKE_BA1GVndQpdqSX1WDyUaUcc-6QrfKP5MOBeU_EXjwc6O3Uw-2d2NrK3VRkBNfLzIR--7oT-KouZ55KyvsUrB7HusEVgIi_tGQD27AcE18aqkhLC51RNFGoEbV4VIYU_uPV_2Z8Ng7RpGhc5q5zRtxFkApaLRlfc1VlmMi2rSNTSfOcvQsqEMhmRRE2CrRj3q9DRSIbNWB7JmVAThDR64xW-w5AWcF9UKG5pGUCwyRnZSCcIqyxxDh4JaQsOrb65Y"/>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Artisan Phin Filter</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">High-grade stainless steel Phin filter for the authentic slow-drip Vietnamese coffee experience at home.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">150,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 4 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Coffee Gift Set" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A luxurious coffee gift box set open on a table, revealing bags of premium coffee beans and an elegant mug. The presentation is sophisticated with rich textures. Warm, atmospheric lighting highlights the high-end packaging. Designed to evoke warm sentimentality and premium quality in an earth-toned color scheme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlbiE1OgZvhusvN3QwPfv5SaS3pUr6p89WKlWDsE39J8R9QpDyBdHeWbO2jJ1AzuaP0VH2oxuclkUGp9oX1GrkabQ3BTsYBK3qhFdMdxV1Lj63Oyyv4EsPwAXbx6Ergt1eOmSZH8cN-yYdgWdyjImgNFKx3YqBdDVYEYAzjC8QGWvG1UYkF88nLme4A1bhfOIxi0SHyQ5SmZirCKGIW-k9Yvv76gy6RwgU4RfD0f7AwaoGJHhR4BSnVFawOm6a9wN3YL93ZxCC5fo"/>
+<div class="absolute top-3 right-3 bg-latte/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white">Gift Set</div>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">The Explorer's Kit</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">A curated selection of our top three single-origin roasts. Perfect for gifting or discovering your new favorite.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">680,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 5 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Arabica Beans" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A rustic burlap sack spilling over with light-roasted Arabica coffee beans. The scene is lit by warm, golden hour sunlight streaming through a window. The aesthetic focuses on organic textures and the natural origins of coffee. Colors are rich browns, tans, and warm creams." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJa12pK6LoZxvgzxSaEHTN5MuuNmobka2AP4WitQauczz6quZ1SX-nM60pUtXcFPr9zK8Yh1WGPaXYhp6qNBywdxthVzIrcCtv4-EZQCPIVNsM4Q067oaPTSfjsTad5Hlg_Js7oT_5f6U9wrvSbYiXx6rXxRMG8DnFHiP1J0lCfqT67GB-jm93VPHLj9ZhQJB_OSg5dfXiBOUP0p5MDhVFvpIA3jmicLubG5e_EngZ9q-g-2LNywxe9mc3hRkotk592XGuZLZnSXQ"/>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Da Lat Arabica</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">A bright, medium roast with floral notes and a clean, citrusy finish. Cultivated in the cool mist of Da Lat.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">280,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 6 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Oolong Tea" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A delicate glass teapot filled with steeping Oolong tea, golden liquid glowing beautifully. The teapot rests on a smooth stone surface. Soft, ethereal lighting creates a calm, meditative atmosphere. The visual style is modern, clean, and highlights the transparent efficiency of the brewing process." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClx18lOW_TF9oKAeH5ZiE_PjXipq4K7Ecd4Jn45HNcuPuhQVmjTCO-Zb1mfK_32Ga_Qa6EAEqUe_wfrLZKFEOmCt_YqaaMd13-oR7KNUrI00IueqMVurp6mPuwmJikXA8cP0b2qZj3v6ELg9GT11GSTcyuymU3BPKcyhrfAWGe9K4s4TLClWKNazBQAoRQ3CNAbBMRBbmOjCK-VfI2RBxXQNU22x7lhLNL--z2BbwghRecPlJgSNsHVUROg9AVXQISM1s5RRpPXrI"/>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Highland Oolong</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">Premium semi-oxidized tea leaves offering a complex profile of roasted nuts and sweet orchids.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">350,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 7 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Ceramic Mugs" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A set of beautifully handcrafted ceramic coffee mugs with a textured, earthy glaze. The mugs sit on a wooden shelf in a cozy cafe setting. The lighting is warm and inviting, emphasizing the tactile nature of the ceramics. The color palette features deep roasts, warm mist, and parchment hues." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATDRN1LpMhKz0mO0Mg6RsZ6bZOXuNq2vyCgYZW37uaOp6tTN52X4iiPQxsOijQkWz3UkBOpA2RUO6jcY62ctZErUgbCta9OP4J5gWZ-HDLAdE02mU8vqzjOg91F9rPcCChVD4YWswenJnSfOlyHnqc1w4AUtZVghkPnmhi2s0Bfv5GVE4lr3rJhXpHXMEUcxACA0T7A5lyEDt6q_OEavpflUE0KesqcYMHA5uez3lPhjZNlgT7qxo4GcprkKTDjYUAMMlTk924dXg"/>
+<div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-smoke">New Arrival</div>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">Artisan Ceramic Mug</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">Handcrafted by local artisans. Each mug features a unique glaze, designed to retain heat perfectly.</p>
+<div class="mt-auto flex justify-between items-center">
+<span class="font-ui-heading text-ui-heading text-roast">220,000₫</span>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Product Card 8 -->
+<div class="bg-parchment rounded-xl shadow-md shadow-espresso/5 hover:-translate-y-1 transition-transform duration-300 overflow-hidden flex flex-col group">
+<div class="aspect-square relative overflow-hidden">
+<img alt="Coffee Combo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A visually appealing arrangement of a bag of coffee beans, a phin filter, and a small jar of condensed milk on a rustic tray. The composition represents a complete traditional Vietnamese coffee making kit. The mood is inviting and culturally rich. Rich earth tones dominate the sophisticated color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCVK21d2kD1lZFcmmI_-htpGflGhFwveGcW89v0qzV_OPVa1wUYtB9O5q0VKb6RtdYhlzgP_tHirBP5NQy_cFSi5N-mhFvmaOontDeeXQFiaOM3yqnyoJF1fBcLbXKzUXgf4PssaQHozWTZh3OKNncZycXavp7fw_xb8bDoPGiXyCBHiNhRFU4RT_JqtnVfVvOmNA9hTynY06QRF5XVy2gYRmgvDkG1lHyIRm7g1uLLfjDsTELkMJOsuGkfXuqK4ZfZoxlxi_Xlm0"/>
+<div class="absolute top-3 right-3 bg-roast/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-white">Combo Save 15%</div>
+</div>
+<div class="p-space-4 flex flex-col flex-grow">
+<h3 class="font-heading-lg text-heading-lg text-ink mb-1">The Authentic Combo</h3>
+<p class="font-body-md text-body-md text-smoke text-sm mb-3 line-clamp-2">Everything you need: Robusta beans, a Phin filter, and premium sweetened condensed milk. Start brewing instantly.</p>
+<div class="mt-auto flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-xs text-smoke line-through">450,000₫</span>
+<span class="font-ui-heading text-ui-heading text-roast">380,000₫</span>
+</div>
+<button aria-label="Add to cart" class="bg-roast text-white p-2 rounded-full hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Load More Button -->
+<div class="mt-space-12 flex justify-center">
+<button class="bg-parchment border-1.5 border-roast text-roast px-8 py-3 rounded-full font-ui-heading text-ui-heading hover:bg-cream transition-colors">
+                Load More Merchandise
+            </button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-[#F5F1EE] dark:bg-stone-950 w-full py-12 px-6 border-t border-[#E2DDD7] dark:border-stone-800 flat no shadows mt-auto">
+<div class="max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
+<div class="text-xl font-black text-[#5C3317] dark:text-[#E2DDD7] font-serif text-sm">
+                TraPhe
+            </div>
+<div class="text-[#5C3317] dark:text-[#E2DDD7] font-serif text-sm">
+                © 2024 TraPhe Heritage Coffee &amp; Tea. Celebrating Vietnamese coffee culture.
+            </div>
+<nav class="flex gap-6 flex-wrap justify-center md:justify-end">
+<a class="text-[#5C3317]/60 dark:text-[#E2DDD7]/60 font-serif text-sm hover:underline hover:text-[#5C3317] dark:hover:text-white Standard link transitions" href="#">Contact Us</a>
+<a class="text-[#5C3317]/60 dark:text-[#E2DDD7]/60 font-serif text-sm hover:underline hover:text-[#5C3317] dark:hover:text-white Standard link transitions" href="#">Sustainability</a>
+<a class="text-[#5C3317]/60 dark:text-[#E2DDD7]/60 font-serif text-sm hover:underline hover:text-[#5C3317] dark:hover:text-white Standard link transitions" href="#">Privacy Policy</a>
+<a class="text-[#5C3317]/60 dark:text-[#E2DDD7]/60 font-serif text-sm hover:underline hover:text-[#5C3317] dark:hover:text-white Standard link transitions" href="#">Terms of Service</a>
+</nav>
+</div>
+</footer>
+</body></html>

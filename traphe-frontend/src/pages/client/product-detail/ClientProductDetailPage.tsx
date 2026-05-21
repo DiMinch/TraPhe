@@ -28,7 +28,7 @@ export default function ClientProductDetailPage() {
           const mapped: Product = {
             id: raw.id,
             name: raw.name,
-            imageUrl: raw.imageUrl || "",
+            imageUrl: raw.imageUrl || null,
             description: raw.description || "",
             status: raw.status || "ACTIVE",
             categoryName: raw.categoryName || "",
@@ -43,6 +43,9 @@ export default function ClientProductDetailPage() {
             minStockThreshold: 0,
             warrantyPeriod: 0,
             commonSpecs: "",
+            // Drink customization options
+            optionGroups: raw.optionGroups || [],
+            availableToppings: raw.availableToppings || [],
             // Map sizes → variants
             variants: (raw.sizes || []).map((s: any) => ({
               id: s.id,

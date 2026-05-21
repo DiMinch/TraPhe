@@ -67,10 +67,10 @@ public class MenuController {
     @GetMapping("/tree")
     @Operation(summary = "Lấy Menu dạng cấp bậc (Tree)", description = "Trả về danh sách tất cả các nhóm món và món ăn lồng nhau (categories -> subcategories -> items) rất tiện cho Frontend build giao diện Menu bar. Hỗ trợ truyền branchId.")
 
-    public ResponseEntity<ApiResponse<List<MenuTreeResponse>>> getMenuTree(
+    public ResponseEntity<ApiResponse<MenuTreeResponse[]>> getMenuTree(
             @RequestParam(required = false) UUID branchId) {
 
-        List<MenuTreeResponse> result = menuService.getMenuTree(branchId);
+        MenuTreeResponse[] result = menuService.getMenuTree(branchId);
         return ResponseEntity.ok(ApiResponse.success(result, "Menu tree retrieved successfully"));
     }
 
@@ -109,13 +109,13 @@ public class MenuController {
     @GetMapping("/categories")
     @Operation(summary = "Lấy danh sách danh mục sản phẩm", description = "Truy vấn danh sách categories. Có thể truyền parentId để lấy các subcategories.")
 
-    public ResponseEntity<ApiResponse<List<MenuCategoryResponse>>> getCategories(
+    public ResponseEntity<ApiResponse<MenuCategoryResponse[]>> getCategories(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID parentId,
             @RequestParam(defaultValue = "displayOrder") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
-        List<MenuCategoryResponse> result = menuService.getCategories(search, parentId, sortBy, sortDir);
+        MenuCategoryResponse[] result = menuService.getCategories(search, parentId, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(result, "Categories retrieved successfully"));
     }
 

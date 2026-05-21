@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thực Đơn Mát Lạnh - TraPhe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Source+Serif+4:wght@400;600&amp;family=Viaoda+Libre&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "ink": "#1A1410",
+                      "tertiary-container": "#00454a",
+                      "inverse-surface": "#352f2c",
+                      "surface-tint": "#835334",
+                      "surface-dim": "#e3d8d3",
+                      "cream": "#F5EAD8",
+                      "on-primary-fixed-variant": "#673c1f",
+                      "admin-bg": "#F7F5F2",
+                      "secondary-container": "#fbd9c5",
+                      "secondary-fixed-dim": "#e1c0ad",
+                      "on-secondary": "#ffffff",
+                      "background": "#fff8f5",
+                      "on-secondary-container": "#775d4e",
+                      "on-primary-fixed": "#321300",
+                      "error": "#ba1a1a",
+                      "latte": "#C89A6E",
+                      "foam": "#FBF5EC",
+                      "cloud": "#F0EBE3",
+                      "tertiary-fixed-dim": "#99d0d6",
+                      "tertiary": "#002d31",
+                      "secondary": "#72594a",
+                      "error-container": "#ffdad6",
+                      "on-tertiary": "#ffffff",
+                      "caramel": "#A0622A",
+                      "on-secondary-fixed": "#29170c",
+                      "surface-container-highest": "#ebe0db",
+                      "inverse-primary": "#f8b993",
+                      "surface-bright": "#fff8f5",
+                      "on-secondary-fixed-variant": "#594234",
+                      "on-surface": "#201b18",
+                      "admin-border": "#E2DDD7",
+                      "secondary-fixed": "#fedcc8",
+                      "smoke": "#4A3F35",
+                      "on-error": "#ffffff",
+                      "outline": "#84746c",
+                      "surface-container-low": "#fdf1ec",
+                      "on-background": "#201b18",
+                      "mist": "#D4C9BC",
+                      "primary": "#421e04",
+                      "admin-surface": "#FFFFFF",
+                      "surface-container-lowest": "#ffffff",
+                      "outline-variant": "#d6c3b9",
+                      "on-primary-container": "#d69b77",
+                      "surface-variant": "#ebe0db",
+                      "primary-fixed": "#ffdbc8",
+                      "roast": "#5C3317",
+                      "surface-container-high": "#f1e6e1",
+                      "inverse-on-surface": "#faeeea",
+                      "surface-container": "#f7ece7",
+                      "dust": "#8C7B6E",
+                      "on-tertiary-fixed-variant": "#114e53",
+                      "on-tertiary-fixed": "#002022",
+                      "tertiary-fixed": "#b5ecf2",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-container": "#7cb2b7",
+                      "surface": "#fff8f5",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#51443d",
+                      "primary-container": "#5c3317",
+                      "parchment": "#EFE5D3",
+                      "espresso": "#2C1A0E",
+                      "primary-fixed-dim": "#f8b993"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-4": "16px",
+                      "space-12": "48px",
+                      "space-2": "8px",
+                      "space-8": "32px",
+                      "space-1": "4px",
+                      "space-3": "12px",
+                      "space-20": "80px",
+                      "space-6": "24px"
+              },
+              "fontFamily": {
+                      "heading-lg": [
+                              "Source Serif 4"
+                      ],
+                      "ui-body": [
+                              "Google Sans"
+                      ],
+                      "display-md": [
+                              "Viaoda Libre"
+                      ],
+                      "display-lg": [
+                              "Viaoda Libre"
+                      ],
+                      "pos-total": [
+                              "Google Sans"
+                      ],
+                      "ui-heading": [
+                              "Google Sans"
+                      ],
+                      "display-xl": [
+                              "Viaoda Libre"
+                      ],
+                      "body-md": [
+                              "Source Serif 4"
+                      ]
+              },
+              "fontSize": {
+                      "heading-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.35",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "ui-body": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "pos-total": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "ui-heading": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.65",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(239, 229, 211, 0.7); /* Parchment with opacity */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-foam text-ink font-body-md text-body-md antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md fixed top-0 w-full z-50 border-b border-stone-200 dark:border-stone-800 shadow-sm transition-all duration-300 hover:opacity-80 transition-opacity">
+<div class="flex justify-between items-center max-w-[1280px] mx-auto px-6 h-20">
+<!-- Navigation Links -->
+<nav class="hidden md:flex items-center gap-space-6 font-serif text-amber-900">
+<a class="text-amber-900 border-b-2 border-amber-900 pb-1 font-bold" href="#">Menu</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors" href="#">Our Story</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors" href="#">Locations</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors" href="#">Shop</a>
+</nav>
+<!-- Brand Logo -->
+<div class="text-2xl font-serif font-bold text-amber-900 dark:text-amber-50 absolute left-1/2 -translate-x-1/2">
+                TraPhe
+            </div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-space-4 font-serif text-amber-900">
+<button aria-label="shopping_cart" class="text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">shopping_cart</span>
+</button>
+<button aria-label="person" class="text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">person</span>
+</button>
+<button class="md:hidden text-stone-600 dark:text-stone-400 hover:text-amber-800 transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-space-20 max-w-[1280px] mx-auto w-full px-space-6 pb-space-20">
+<!-- Page Header -->
+<section class="text-center mt-space-12 mb-space-12">
+<h1 class="font-display-xl text-display-xl text-roast mb-space-4">Thực Đơn</h1>
+<p class="font-body-md text-body-md text-dust max-w-2xl mx-auto">Khám phá hương vị tinh tế từ những hạt cà phê và lá trà được tuyển chọn kỹ lưỡng, kết hợp hoàn hảo cùng các món bánh ngọt thủ công.</p>
+</section>
+<!-- Search and Filter -->
+<section class="mb-space-12 flex flex-col md:flex-row gap-space-4 items-center justify-between bg-parchment p-space-4 rounded-lg shadow-sm border border-mist">
+<div class="relative w-full md:w-1/3">
+<span class="material-symbols-outlined absolute left-space-3 top-1/2 -translate-y-1/2 text-dust">search</span>
+<input class="w-full pl-space-12 pr-space-4 py-space-3 bg-white border-[1.5px] border-mist rounded-full font-ui-body text-ui-body focus:outline-none focus:border-roast focus:ring-1 focus:ring-roast transition-colors placeholder-dust text-ink" placeholder="Tìm kiếm món yêu thích..." type="text"/>
+</div>
+<div class="flex overflow-x-auto w-full md:w-auto gap-space-2 pb-2 md:pb-0 hide-scrollbar">
+<button class="px-space-6 py-space-2 bg-roast text-white rounded-full font-ui-body text-ui-body font-medium whitespace-nowrap transition-transform hover:-translate-y-1">Tất cả</button>
+<button class="px-space-6 py-space-2 bg-white text-roast border border-roast rounded-full font-ui-body text-ui-body font-medium whitespace-nowrap hover:bg-cream transition-colors transition-transform hover:-translate-y-1">Cà phê</button>
+<button class="px-space-6 py-space-2 bg-white text-roast border border-roast rounded-full font-ui-body text-ui-body font-medium whitespace-nowrap hover:bg-cream transition-colors transition-transform hover:-translate-y-1">Trà</button>
+<button class="px-space-6 py-space-2 bg-white text-roast border border-roast rounded-full font-ui-body text-ui-body font-medium whitespace-nowrap hover:bg-cream transition-colors transition-transform hover:-translate-y-1">Đặc biệt</button>
+<button class="px-space-6 py-space-2 bg-white text-roast border border-roast rounded-full font-ui-body text-ui-body font-medium whitespace-nowrap hover:bg-cream transition-colors transition-transform hover:-translate-y-1">Bánh ngọt</button>
+</div>
+</section>
+<!-- Product Grid -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-8">
+<!-- Card 1 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Cà phê sữa đá truyền thống Việt Nam" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A macro shot of a traditional Vietnamese iced coffee (Cà phê sữa đá) in a tall glass, condensation dripping down the sides. The dark, rich espresso slowly mixes with the thick, sweet condensed milk at the bottom over clear ice cubes. Set on a rustic wooden table with scattered coffee beans in a warm, inviting cafe environment. The aesthetic is organic and sentimental, using earthy tones of espresso and caramel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbD8Y1v99_EPD2gVPHHbE3cacszIBtOQgRNHGwEjkGy1YkEVrie4uFP7Gaa2s2Zdwyi1ACkE9bQM86rQc6TnSaQk6EVK6yS5FeEVPpla5W2ED-ce2e7va212KrVzgJNDhs0YAB0CeNm-jiU4dqTP4AsGcJ8_S40PDgStwU2OkuOFUyJo8pZtdrUFn5mHohkYifU5_ulOs6mXEcUJz1ia5PRCGeE0p-YXCNy8W6CcGfLaVq5VK_cAXWzrRPXzWxZTdzekz-8g69uqA"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Cà phê</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Cà Phê Sữa Đá Truyền Thống</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Sự pha trộn hoàn hảo giữa cà phê Robusta đậm đà và sữa đặc ngọt ngào, mang đậm hương vị đường phố Việt Nam.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">45.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Matcha Latte" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A delicate ceramic cup filled with vibrant green Matcha Latte, featuring beautiful latte art on top. The cup rests on a smooth marble surface next to a traditional bamboo whisk (chasen) and a sprinkle of loose matcha powder. Soft, diffused daylight highlights the creamy texture of the milk foam against the rich green tea. The scene conveys a sense of calm and refinement, fitting a luxury cafe setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEdXAxa1HEvyLHbZLxOHK_1_n7MW-D8V4H9ON1bswXK7dQodFYUm7FVkYP75s3NJgdXyElFm1O4phRs7EmPcKUKZpoy0cfngGa1ADgefC-uT4ZyWY7KrkSt-R2qrPWoGFd1e7LTbexRoffco9GWzSqeUak6hTb-UTa_J09hEuM8xfPTK72MlqMB7BcgTsJLCN0GgESZEJ8Bxv-FJxvl2esKb4IYLxcEHRno-OFup3qlD-G5YeH_VoT-Buv-goGC_KHyOVh1JJIMco"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Trà</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Trà Xanh Matcha Latte</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Bột matcha thượng hạng từ Nhật Bản kết hợp cùng sữa tươi thanh trùng, tạo nên thức uống thanh mát, dịu nhẹ.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">65.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Bánh Croissant" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A freshly baked, golden-brown croissant resting on a minimalist white ceramic plate. The flaky layers of pastry are crisp and delicate, scattering a few crumbs on the parchment-colored table below. A warm, golden light pours from an off-screen window, casting soft shadows that accentuate the texture of the bake. The aesthetic is sophisticated, tactile, and appetizing, emphasizing artisanal quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB45opkCeyFenqcDeBVhAKdmj2ei6f9_Krl16H8dl2ZlMY2EslHaYBEXgz346_vXgj69bYGUUOHrHqQ2NrK4mQockyRBrWDQv8Np78wR-3556Vnhjm-obmg9b1lc8YD8OVQOX61Fh05oEEUvFXTslxkZupkv8rfBaAHlSPlRXEukoMwxftD18HkL7_cpBhq_c8bhGNiCJ1Ju4ETTxSoaFvST1Y0iew5ItjchymDX69RCfQcT0ICo6SyveCjfK4E7HYyVDesQHYVLhk"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Bánh ngọt</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Bánh Sừng Bò Bơ Pháp</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Lớp vỏ giòn rụm ngập tràn hương bơ Pháp cao cấp, mềm xốp bên trong. Món ăn kèm hoàn hảo cho ly cà phê sáng.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">40.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Cold Brew" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A modern glass of Cold Brew coffee over large square ice cubes, garnished with a dried orange slice. The clear, amber liquid glows intensely under elegant, directional lighting, revealing its pure texture. Set against a dark, moody background that provides a sophisticated contrast to the bright coffee. The aesthetic balances modern minimalism with the rich, organic tones of the TraPhe brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlIfMUHdZglkMxsXmYEScqrZlY4Ao2XhVZOsrYX5EstJj6GmBD2A36WnI7dDHsu8cjmGGjGjWgRZ4zjwmnkIC___QoSDe1CoAJV3hdBPPPfL6QDGz5EkMJNymh40aaDADAV2udHubFpw5BHvUu2PHkm9QyD7kkzd1sl7kuyY41AjRLY1k3nJZbFVRLKgFVqWYOUMTYuBHjTLdaSemH93qNtML_CmPnq6X042OL3v8aAgvKLMn-kA6La0ZsbGy07ED1Fl8cGQhgAhE"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Đặc biệt</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Cold Brew Hương Cam Sả</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Cà phê ủ lạnh 24 giờ kết hợp cùng siro cam sả tự chế, mang lại cảm giác sảng khoái, bừng tỉnh.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">55.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Trà Sen" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A delicate glass teapot steeping lotus flower tea, the pale golden liquid catching the soft morning light. Floating on the surface are fresh lotus petals. Beside it sits a small, matching glass teacup on a bamboo tray. The setting is bright and ethereal, using the foam and cloud tones of the brand palette to convey tranquility and Vietnamese cultural resonance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwH3VYT4pJeq51GM8JzImNWsThWd-EQsTmI2dT7zg9xH2P7G2dyXhBBwr5M8Dx_cBvUnRCkC-hiJlS_BBk96kXqOW3yib_gmPDsbxzfmh3PVTfIA8W5cnvX4P-75TkPAlevghrC6wzxAgRP_NhNcuFFKYZTWTEscvCC9378Hewwqw8xfdzU407X9WzT1c_DTPKEoUT7t9_stnAtplCwN3xhxAx0rOKl9TfL19u3lfvXz9ws1Euw6irIN229s-DX6U6kWStpcRH2RI"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Trà</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Trà Sen Hồ Tây Tinh Tuý</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Trà xanh ướp hương hoa sen tự nhiên từ Hồ Tây, vị chát nhẹ đầu lưỡi, hậu ngọt thanh tao.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">70.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 6 -->
+<article class="bg-parchment rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+<div class="h-64 overflow-hidden relative">
+<img alt="Bánh Tiramisu" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A flawless square slice of Tiramisu dusted generously with rich cocoa powder, resting on a dark slate plate. The alternating layers of espresso-soaked ladyfingers and creamy mascarpone are distinctly visible. A single espresso bean garnishes the top. The lighting is low and intimate, emphasizing the textural contrast and luxurious depth of the dessert within a modern tactical aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJimS0poO4E6Zd1TTvZPBnexpDwJfC5Ueyngdbz4vXvhYEPgXSkndo-9FNprl0jAQsQZBQ22VzsIYe0nZOJcfxj9rIEUDTkltofSyXOqnNPz9nUN696K7tN3_VB_d2XbJ_wBsKv3RKvvrvsI4dKZqb2RbxxyYvs3VyeQRadjAuYhszsDJQXfONVD3p1YTl7Dd5FhLJucPk6EGZUJIaZnEZwHhz5YXZdGESKXedNPUKKZaPOindvg6vH64-RcCWRAK0G4ohlPIyClU"/>
+<div class="absolute top-space-3 right-space-3 bg-white/80 backdrop-blur-sm px-space-3 py-space-1 rounded-full">
+<span class="font-ui-body text-ui-body font-bold text-roast">Bánh ngọt</span>
+</div>
+</div>
+<div class="p-space-4 flex-grow flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-space-2">
+<h3 class="font-heading-lg text-heading-lg text-espresso line-clamp-2">Tiramisu Espresso</h3>
+</div>
+<p class="font-body-md text-body-md text-smoke mb-space-4 line-clamp-3">Bánh quy sâm panh thấm đẫm Espresso đặc trưng của quán, kết hợp kem phô mai mascarpone béo ngậy.</p>
+</div>
+<div class="flex justify-between items-center mt-auto">
+<span class="font-ui-heading text-ui-heading text-roast">55.000 ₫</span>
+<button aria-label="Thêm vào giỏ" class="bg-roast text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-caramel transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-stone-100 dark:bg-stone-950 w-full py-12 border-t border-stone-200 dark:border-stone-800">
+<div class="max-w-[1280px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-amber-950 dark:text-stone-200 font-serif text-sm">
+<div>
+<span class="font-serif text-lg font-semibold block mb-4">TraPhe</span>
+<p>© 2024 TraPhe Coffee Culture. All rights reserved.</p>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="text-stone-500 hover:text-amber-900 transition-colors" href="#">Privacy Policy</a>
+<a class="text-stone-500 hover:text-amber-900 transition-colors" href="#">Terms of Service</a>
+<a class="text-stone-500 hover:text-amber-900 transition-colors" href="#">Contact Us</a>
+</nav>
+<div class="flex justify-start md:justify-end gap-4">
+<span class="material-symbols-outlined hover:text-amber-900 cursor-pointer transition-colors">mail</span>
+</div>
+</div>
+</footer>
+</body></html>

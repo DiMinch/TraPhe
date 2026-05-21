@@ -21,22 +21,14 @@ export default function BranchesPage() {
   useEffect(() => {
     const fetchBranches = async () => {
       try {
-        const res = await axiosClient.get<any, any>("/branches/nearest", {
-          params: { lat: 0, lon: 0, limit: 50 },
-        });
+        // Use public branches endpoint (not admin)
+        const res = await axiosClient.get<any, any>("/branches");
         if (res.data) {
-          setBranches(Array.isArray(res.data) ? res.data : []);
+          const items = Array.isArray(res.data) ? res.data : res.data.content || [];
+          setBranches(items);
         }
       } catch {
-        // Fallback: try admin endpoint
-        try {
-          const res2 = await axiosClient.get<any, any>("/admin/branches");
-          if (res2.data) {
-            setBranches(Array.isArray(res2.data) ? res2.data : res2.data.content || []);
-          }
-        } catch {
-          setBranches([]);
-        }
+        setBranches([]);
       } finally {
         setIsLoading(false);
       }

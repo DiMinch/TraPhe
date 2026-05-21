@@ -57,7 +57,6 @@ import AdminLayout from "./components/layout/AdminLayout";
 // Client Pages
 import HomePage from "./pages/client/home/HomePage";
 import ClientLayout from "./components/layout/ClientLayout";
-import ClientProductPage from "./pages/client/product/ClientProductPage";
 import ClientProductDetailPage from "./pages/client/product-detail/ClientProductDetailPage";
 import ShopPage from "./pages/client/shop/ShopPage";
 import ContactPage from "./pages/client/contact/ContactPage";
@@ -85,11 +84,10 @@ function App() {
         <Route element={<ClientLayout />}>
           <Route path="/" element={<HomePage />} />
           {/* Menu (Sitemap: /menu) */}
-          <Route path="/menu" element={<ShopPage />} />
+          <Route path="/menu" element={<ShopPage isDrink={true} />} />
           <Route path="/menu/:id" element={<ClientProductDetailPage />} />
-          {/* Merchandise shares the same product listing with category filter */}
-          <Route path="/merchandise" element={<ClientProductPage />} />
-          <Route path="/merchandise/:id" element={<ClientProductDetailPage />} />
+          {/* Merchandise */}
+          <Route path="/merchandise" element={<ShopPage isDrink={false} />} />
           {/* Branches */}
           <Route path="/branches" element={<BranchesPage />} />
           <Route path="/branches/:id" element={<BranchDetailPage />} />

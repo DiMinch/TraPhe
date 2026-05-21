@@ -25,21 +25,21 @@ export default function PriceFilter({
       {priceRanges.map((range) => (
         <div
           key={range.id}
-          className="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-50 transition-colors"
+          className="flex items-center space-x-3 p-2 rounded-md hover:bg-cream/45 transition-colors"
         >
           <Checkbox
             id={range.id}
-            className="w-5 h-5 rounded border-gray-300 data-[state=checked]:bg-black data-[state=checked]:border-black cursor-pointer"
+            className="w-5 h-5 rounded border-mist data-[state=checked]:bg-roast data-[state=checked]:border-roast cursor-pointer"
             checked={selectedPriceRanges.includes(range.id)}
             onCheckedChange={() => onTogglePrice(range.id)}
           />
           <Label
             htmlFor={range.id}
             className={cn(
-              "text-sm cursor-pointer flex-1",
+              "text-sm cursor-pointer flex-1 font-ui-body",
               selectedPriceRanges.includes(range.id)
-                ? "text-black font-medium"
-                : "text-gray-600 font-normal",
+                ? "text-espresso font-semibold"
+                : "text-smoke font-normal",
             )}
           >
             {range.label}

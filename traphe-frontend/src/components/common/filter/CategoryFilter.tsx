@@ -38,10 +38,10 @@ export default function CategoryFilter({
       <div key={node.id} className="w-full">
         <div
           className={cn(
-            "flex items-center justify-between py-2 px-2 rounded-md cursor-pointer transition-colors hover:bg-gray-100",
+            "flex items-center justify-between py-2 px-2 rounded-md cursor-pointer transition-colors font-ui-body",
             isSelected
-              ? "bg-black text-white hover:bg-gray-800"
-              : "text-gray-700",
+              ? "bg-roast text-white shadow-sm"
+              : "text-smoke hover:bg-cream hover:text-roast",
           )}
           style={{ paddingLeft: `${level * 16 + 8}px` }}
           onClick={() => onCategoryClick(node.id)}

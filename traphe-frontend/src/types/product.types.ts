@@ -8,6 +8,30 @@ export interface MenuItemSize {
   displayOrder: number;
 }
 
+export interface OptionValue {
+  id: string;
+  label: string;
+  sortOrder: number;
+  default: boolean;
+}
+
+export interface OptionGroup {
+  id: string;
+  name: string;
+  type: string; // SUGAR, ICE, TEMPERATURE, etc.
+  displayOrder: number;
+  values: OptionValue[];
+  required: boolean;
+}
+
+export interface ToppingOption {
+  id: string;
+  name: string;
+  extraPrice: number;
+  imageUrl: string | null;
+  available: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -26,6 +50,10 @@ export interface Product {
   effectivePrice?: number | null;
   unavailableReason?: string | null;
   isDrink: boolean;
+
+  // Drink customization options from backend
+  optionGroups?: OptionGroup[];
+  availableToppings?: ToppingOption[];
 
   // Legacy PC-Shop compatibility fields
   variants?: ProductVariant[];

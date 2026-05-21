@@ -73,13 +73,13 @@ public class PublicShopController {
      */
     @GetMapping("/categories")
     @Operation(summary = "List categories (public)", description = "Public category listing for the storefront. Proxies to MenuService.")
-    public ResponseEntity<ApiResponse<List<MenuCategoryResponse>>> getCategories(
+    public ResponseEntity<ApiResponse<MenuCategoryResponse[]>> getCategories(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) UUID parentId,
             @RequestParam(defaultValue = "displayOrder") String sortBy,
             @RequestParam(defaultValue = "asc") String sortDir) {
 
-        List<MenuCategoryResponse> result = menuService.getCategories(search, parentId, sortBy, sortDir);
+        MenuCategoryResponse[] result = menuService.getCategories(search, parentId, sortBy, sortDir);
         return ResponseEntity.ok(ApiResponse.success(result, "Categories retrieved successfully"));
     }
 }

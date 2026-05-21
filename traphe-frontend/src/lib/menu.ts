@@ -2,8 +2,9 @@ export const navLinks = [
   { title: "Home", path: "/" },
   { title: "Menu", path: "/menu" },
   { title: "Merchandise", path: "/merchandise" },
-  { title: "Chi nhánh", path: "/branches" },
-  { title: "Liên hệ", path: "/contact" },
+  { title: "Our Story", path: "/about" },
+  { title: "Locations", path: "/branches" },
+  { title: "Contact", path: "/contact" },
 ];
 
 export const footerLinks = {
