@@ -113,7 +113,7 @@ export default function SupplierDetailPage() {
     } catch (error: any) {
       console.error("Error fetching supplier:", error);
       toast.error(error.response?.data?.message || "Failed to load supplier");
-      navigate("/procurement/suppliers");
+      navigate("/admin/suppliers");
     } finally {
       setLoading(false);
     }
@@ -164,7 +164,7 @@ export default function SupplierDetailPage() {
     try {
       await supplierService.deleteSupplier(id!);
       toast.success("Supplier deleted successfully");
-      navigate("/procurement/suppliers");
+      navigate("/admin/suppliers");
     } catch (error: any) {
       console.error("Error deleting supplier:", error);
       toast.error(error.response?.data?.message || "Failed to delete supplier");
@@ -237,7 +237,7 @@ export default function SupplierDetailPage() {
           title="Supplier not found"
           description="The supplier you're looking for doesn't exist or has been deleted."
           action={
-            <Button onClick={() => navigate("/procurement/suppliers")}>
+            <Button onClick={() => navigate("/admin/suppliers")}>
               Back to Suppliers
             </Button>
           }
@@ -257,7 +257,7 @@ export default function SupplierDetailPage() {
       >
         <Button
           variant="outline"
-          onClick={() => navigate("/procurement/suppliers")}
+          onClick={() => navigate("/admin/suppliers")}
           className="gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -461,7 +461,7 @@ export default function SupplierDetailPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              navigate(`/procurement/purchase-orders/${po.id}`)
+                              navigate(`/admin/suppliers/purchase-orders/${po.id}`)
                             }
                           >
                             View

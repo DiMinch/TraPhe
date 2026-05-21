@@ -163,7 +163,7 @@ export default function PromotionDetailPage() {
     } catch (err: any) {
       console.error("Error fetching promotion:", err);
       toast.error(err.response?.data?.message || "Failed to load promotion");
-      navigate("/dashboard/promotions");
+      navigate("/admin/promotions");
     } finally {
       setLoading(false);
     }
@@ -237,7 +237,7 @@ export default function PromotionDetailPage() {
     try {
       await promotionService.deletePromotion(id);
       toast.success("Promotion deleted successfully");
-      navigate("/dashboard/promotions");
+      navigate("/admin/promotions");
     } catch (err: any) {
       console.error("Error deleting promotion:", err);
       toast.error(err.response?.data?.message || "Failed to delete promotion");
@@ -326,7 +326,7 @@ export default function PromotionDetailPage() {
         <div className="text-center py-20">
           <p className="text-gray-500">Promotion not found</p>
           <Button
-            onClick={() => navigate("/dashboard/promotions")}
+            onClick={() => navigate("/admin/promotions")}
             className="mt-4"
           >
             Back to Promotions
@@ -347,7 +347,7 @@ export default function PromotionDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
         <button
-          onClick={() => navigate("/dashboard/promotions")}
+          onClick={() => navigate("/admin/promotions")}
           className="hover:text-indigo-900 flex items-center gap-1"
         >
           <ArrowLeft className="w-4 h-4" />

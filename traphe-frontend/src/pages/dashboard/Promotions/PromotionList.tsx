@@ -817,7 +817,7 @@ export default function PromotionListPage() {
                         <TableCell>
                           <button
                             onClick={() =>
-                              navigate(`/dashboard/promotions/${promo.id}`)
+                              navigate(`/admin/promotions/${promo.id}`)
                             }
                             className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline cursor-pointer"
                           >

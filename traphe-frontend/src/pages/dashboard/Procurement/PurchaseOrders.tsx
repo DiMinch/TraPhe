@@ -451,7 +451,7 @@ export default function PurchaseOrdersPage() {
                     <TableCell>
                       <button
                         onClick={() =>
-                          navigate(`/procurement/purchase-orders/${po.id}`)
+                          navigate(`/admin/suppliers/purchase-orders/${po.id}`)
                         }
                         className="font-medium text-indigo-900 hover:underline cursor-pointer"
                       >

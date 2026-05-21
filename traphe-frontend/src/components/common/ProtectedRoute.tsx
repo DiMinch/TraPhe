@@ -39,7 +39,7 @@ export default function ProtectedRoute({
 
   if (!hasPermission) {
     // Redirect to specified page or dashboard with error message
-    const redirect = redirectTo || "/dashboard";
+    const redirect = redirectTo || "/admin";
     return (
       <Navigate
         to={redirect}

@@ -38,9 +38,11 @@ export default function SignInPage() {
         const userRoles = roles as string[];
         if (
           userRoles.includes(UserRole.ADMIN) ||
-          userRoles.includes(UserRole.EMPLOYEE)
+          userRoles.includes(UserRole.EMPLOYEE) ||
+          userRoles.includes(UserRole.CASHIER) ||
+          userRoles.includes(UserRole.ACCOUNTANT)
         ) {
-          navigate("/dashboard");
+          navigate("/admin");
         } else {
           navigate("/");
         }
@@ -205,7 +207,7 @@ export default function SignInPage() {
                 </label>
                 <Link
                   className="font-ui-body text-ui-body font-medium text-caramel hover:text-roast underline-offset-4 hover:underline transition-colors"
-                  to="#"
+                  to="/forgot-password"
                 >
                   Quên mật khẩu?
                 </Link>

@@ -60,7 +60,7 @@ export default function CategorySection() {
       ...cat,
       image: finalImage,
       className: style.className,
-      link: `/shop?category=${cat.id}`,
+      link: `/menu?category=${cat.id}`,
     };
   };
 

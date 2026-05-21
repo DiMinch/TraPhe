@@ -76,7 +76,7 @@ export default function AttributesPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
         <button
-          onClick={() => navigate("/product/categories")}
+          onClick={() => navigate("/admin/menu/categories")}
           className="hover:text-gray-900"
         >
           {categoryName || "Laptop Gaming"}

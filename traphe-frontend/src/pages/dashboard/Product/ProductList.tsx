@@ -399,7 +399,7 @@ export default function ProductListPage() {
                               size="icon"
                               className="h-9 w-9 hover:bg-amber-50 text-slate-600 hover:text-amber-600 rounded-lg transition-colors"
                               onClick={() =>
-                                navigate(`/product/edit/${product.id}`)
+                                navigate(`/admin/menu/items/${product.id}/edit`)
                               }
                             >
                               <Edit className="w-4 h-4" />

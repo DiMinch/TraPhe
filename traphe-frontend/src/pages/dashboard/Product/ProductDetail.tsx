@@ -134,7 +134,7 @@ export default function ProductDetailPage() {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load product";
       toast.error(errorMsg);
-      navigate("/product/productlist");
+      navigate("/admin/menu/items");
     } finally {
       setLoading(false);
     }
@@ -258,7 +258,7 @@ export default function ProductDetailPage() {
           title="Product not found"
           description="The product you're looking for doesn't exist."
           action={
-            <Button onClick={() => navigate("/product/productlist")}>
+            <Button onClick={() => navigate("/admin/menu/items")}>
               Back to Products
             </Button>
           }
@@ -277,13 +277,13 @@ export default function ProductDetailPage() {
       <div className="flex gap-3 mb-6">
         <Button
           variant="outline"
-          onClick={() => navigate("/product/productlist")}
+          onClick={() => navigate("/admin/menu/items")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Products
         </Button>
         <Button
-          onClick={() => navigate(`/product/edit/${product.id}`)}
+          onClick={() => navigate(`/admin/menu/items/${product.id}/edit`)}
           className="bg-indigo-600 hover:bg-indigo-700"
         >
           <Edit className="w-4 h-4 mr-2" />

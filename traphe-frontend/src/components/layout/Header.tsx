@@ -48,7 +48,7 @@ export default function Header() {
 
           {user ? (
             <Link
-              to="/profile"
+              to="/account"
               className="text-gray-700 hover:text-black"
               title="My Profile"
             >

@@ -280,7 +280,7 @@ export default function ProductEditPage() {
 
       if (response.data) {
         toast.success("Product updated successfully");
-        navigate("/product");
+        navigate("/admin/menu/items");
       }
     } catch (error: unknown) {
       const errorMsg =
@@ -305,7 +305,7 @@ export default function ProductEditPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/product")}
+          onClick={() => navigate("/admin/menu/items")}
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -579,7 +579,7 @@ export default function ProductEditPage() {
           <div className="flex justify-end gap-3">
             <Button
               variant="outline"
-              onClick={() => navigate("/product")}
+              onClick={() => navigate("/admin/menu/items")}
               disabled={loading}
             >
               Cancel

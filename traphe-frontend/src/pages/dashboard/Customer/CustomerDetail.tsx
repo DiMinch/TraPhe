@@ -39,7 +39,7 @@ export default function CustomerDetailPage() {
           setCustomer(res.data);
         } else {
           toast.error("Customer not found");
-          navigate("/customer");
+          navigate("/admin/loyalty/customers");
         }
       } catch (error) {
         toast.error("Failed to fetch customer details");
@@ -72,7 +72,7 @@ export default function CustomerDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
         <button
-          onClick={() => navigate("/customer")}
+          onClick={() => navigate("/admin/loyalty/customers")}
           className="hover:text-gray-900"
         >
           Customer List

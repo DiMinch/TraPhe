@@ -30,7 +30,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
           Your session might have expired or you refreshed the page.
         </p>
         <Button
-          onClick={() => navigate("/products")}
+          onClick={() => navigate("/menu")}
           className="bg-black text-white hover:bg-gray-800"
         >
           Back to Shop
@@ -136,7 +136,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
 
       <div className="flex flex-col-reverse sm:flex-row gap-3 w-full sm:w-auto">
         <Button
-          onClick={() => navigate("/products")}
+          onClick={() => navigate("/menu")}
           className="bg-black hover:bg-gray-800 text-white rounded-full h-12 md:h-14 px-10 text-sm md:text-base font-medium shadow-lg hover:shadow-xl transition-all w-full sm:w-auto cursor-pointer"
         >
           Continue Shopping

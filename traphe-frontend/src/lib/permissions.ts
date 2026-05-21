@@ -6,48 +6,56 @@ import { UserRole } from "@/enums/roles.enum";
  */
 export const routePermissions: Record<string, UserRole[]> = {
   // Dashboard - All admin roles
-  "/dashboard": [
+  "/admin": [
     UserRole.ADMIN,
     UserRole.EMPLOYEE,
     UserRole.CASHIER,
     UserRole.ACCOUNTANT,
   ],
 
-  // Customer Management - Admin, Employee
-  "/customer": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/customer/tiers": [UserRole.ADMIN],
+  // Menu & Product Management
+  "/admin/menu": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/menu/branch": [UserRole.ADMIN],
+  "/admin/category": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
-  // Product Management - Admin, Employee
-  "/product": [UserRole.ADMIN, UserRole.EMPLOYEE],
-  "/category": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Branches
+  "/admin/branches": [UserRole.ADMIN],
 
-  // Inventory - Admin, Employee
-  "/inventory": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Ingredients & Recipes
+  "/admin/ingredients": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
-  // Procurement - Admin, Employee
-  "/procurement": [UserRole.ADMIN, UserRole.EMPLOYEE],
-  "/procurement/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE],
-  "/procurement/purchase-orders": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Inventory / Stock
+  "/admin/stock": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
-  // Sales - Admin, Employee, Cashier
-  "/sales": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/sales/pos": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/sales/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  // Suppliers / Procurement
+  "/admin/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
-  // Warranty - Admin, Employee
-  "/warranty": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Orders / Sales
+  "/admin/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/orders/pos": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/orders/queue": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
 
-  // Promotions - Admin only
-  "/promotions": [UserRole.ADMIN],
+  // Loyalty & Customers
+  "/admin/loyalty": [UserRole.ADMIN],
+  "/admin/loyalty/customers": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/loyalty/tiers": [UserRole.ADMIN],
+  "/admin/loyalty/rewards": [UserRole.ADMIN],
 
-  // Reports - Admin, Accountant
-  "/reports": [UserRole.ADMIN, UserRole.ACCOUNTANT],
+  // Promotions & Vouchers
+  "/admin/promotions": [UserRole.ADMIN],
+  "/admin/vouchers": [UserRole.ADMIN],
 
-  // System & Users - Admin only
-  "/system": [UserRole.ADMIN],
-  "/users-roles": [UserRole.ADMIN],
-  "/audit-logs": [UserRole.ADMIN],
-  "/user": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Reports
+  "/admin/reports": [UserRole.ADMIN, UserRole.ACCOUNTANT],
+
+  // Staff / Users & Roles
+  "/admin/staff": [UserRole.ADMIN],
+
+  // Settings & System
+  "/admin/settings": [UserRole.ADMIN],
+
+  // User profile (admin side)
+  "/admin/user": [UserRole.ADMIN, UserRole.EMPLOYEE],
 };
 
 /**

@@ -216,7 +216,7 @@ export default function ShopPage() {
                         }
                       >
                         <Link
-                          to={`/products/${product.id}`}
+                          to={`/menu/${product.id}`}
                           className="block w-full"
                         >
                           <ProductCard

@@ -51,13 +51,13 @@ export default function PaymentCallbackPage() {
               <Button
                 variant="outline"
                 className="w-full justify-center gap-2 border-gray-200 text-gray-700 hover:bg-gray-50"
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate("/account")}
               >
                 Lịch sử đơn
               </Button>
               <Button
                 className="w-full justify-center gap-2 bg-black text-white hover:bg-gray-900"
-                onClick={() => navigate("/shop")}
+                onClick={() => navigate("/menu")}
               >
                 Mua sắm tiếp <ArrowRight className="w-4 h-4" />
               </Button>
@@ -86,7 +86,7 @@ export default function PaymentCallbackPage() {
               <Button
                 variant="outline"
                 className="w-full justify-center gap-2 border-gray-200 text-gray-700 hover:bg-gray-50"
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate("/account")}
               >
                 Xem đơn hàng
               </Button>

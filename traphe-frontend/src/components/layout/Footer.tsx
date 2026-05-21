@@ -1,4 +1,6 @@
 import { Instagram, Facebook, Youtube } from "lucide-react";
+import { Link } from "react-router";
+import { navLinks, footerLinks } from "@/lib/menu";
 
 export default function Footer() {
   return (
@@ -12,22 +14,14 @@ export default function Footer() {
             TraPhe
           </div>
 
-          <div className="text-sm text-gray-400">Laptop Store</div>
+          <div className="text-sm text-gray-400">Trà & Cà phê</div>
 
           <nav className="flex gap-6 text-sm text-gray-300">
-            <a href="#" className="hover:text-white transition-colors">
-              Home
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Shop
-            </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Product
-            </a>
-
-            <a href="#" className="hover:text-white transition-colors">
-              Contact Us
-            </a>
+            {navLinks.map((link) => (
+              <Link key={link.path} to={link.path} className="hover:text-white transition-colors">
+                {link.title}
+              </Link>
+            ))}
           </nav>
         </div>
 
@@ -47,8 +41,11 @@ export default function Footer() {
             Copyright © 2025 TraPhe. All rights reserved
           </div>
           <div className="flex gap-4 text-xs font-bold text-gray-300">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Use</a>
+            {footerLinks.support.map((link) => (
+              <Link key={link.path} to={link.path} className="hover:text-white transition-colors">
+                {link.title}
+              </Link>
+            ))}
           </div>
         </div>
       </div>

@@ -67,7 +67,7 @@ export default function OrderTab() {
             You haven't placed any orders yet.
           </p>
           <Button
-            onClick={() => navigate("/products")}
+            onClick={() => navigate("/menu")}
             className="bg-black text-white hover:bg-gray-800"
           >
             Start Shopping

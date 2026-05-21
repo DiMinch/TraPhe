@@ -72,7 +72,7 @@ export default function OrderDetailPage() {
     } catch (error: any) {
       console.error("Error fetching order:", error);
       toast.error(error.response?.data?.message || "Failed to load order");
-      navigate("/sales/orders");
+      navigate("/admin/orders");
     } finally {
       setLoading(false);
     }
@@ -141,7 +141,7 @@ export default function OrderDetailPage() {
     try {
       await orderService.deleteOrder(order.orderId);
       toast.success("Order deleted successfully");
-      navigate("/sales/orders");
+      navigate("/admin/orders");
     } catch (error: any) {
       console.error("Error deleting order:", error);
       toast.error(error.response?.data?.message || "Failed to delete order");
@@ -277,7 +277,7 @@ export default function OrderDetailPage() {
           title="Order not found"
           description="The order you're looking for doesn't exist or has been deleted."
           action={
-            <Button onClick={() => navigate("/sales/orders")}>
+            <Button onClick={() => navigate("/admin/orders")}>
               Back to Orders
             </Button>
           }
@@ -298,7 +298,7 @@ export default function OrderDetailPage() {
       >
         <Button
           variant="outline"
-          onClick={() => navigate("/sales/orders")}
+          onClick={() => navigate("/admin/orders")}
           className="gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

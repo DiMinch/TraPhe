@@ -68,7 +68,7 @@ export default function PurchaseOrderDetailPage() {
       toast.error(
         error.response?.data?.message || "Failed to load purchase order",
       );
-      navigate("/procurement/purchase-orders");
+      navigate("/admin/suppliers/purchase-orders");
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export default function PurchaseOrderDetailPage() {
     try {
       await purchaseOrderService.deletePurchaseOrder(purchaseOrder.id);
       toast.success("Purchase order deleted successfully");
-      navigate("/procurement/purchase-orders");
+      navigate("/admin/suppliers/purchase-orders");
     } catch (error: any) {
       console.error("Error deleting purchase order:", error);
       toast.error(
@@ -198,7 +198,7 @@ export default function PurchaseOrderDetailPage() {
           title="Purchase order not found"
           description="The purchase order you're looking for doesn't exist or has been deleted."
           action={
-            <Button onClick={() => navigate("/procurement/purchase-orders")}>
+            <Button onClick={() => navigate("/admin/suppliers/purchase-orders")}>
               Back to Purchase Orders
             </Button>
           }
@@ -218,7 +218,7 @@ export default function PurchaseOrderDetailPage() {
       >
         <Button
           variant="outline"
-          onClick={() => navigate("/procurement/purchase-orders")}
+          onClick={() => navigate("/admin/suppliers/purchase-orders")}
           className="gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

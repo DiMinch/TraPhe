@@ -43,7 +43,7 @@ export default function ProductSection() {
           New <br /> Arrivals
         </h2>
         <Link
-          to="/shop"
+          to="/menu"
           className="flex items-center text-sm font-medium border-b border-black pb-0.5 hover:opacity-70"
         >
           More Products <ArrowRight className="w-4 h-4 ml-2" />
@@ -58,7 +58,7 @@ export default function ProductSection() {
           const firstSizeId = product.sizes?.[0]?.id;
 
           return (
-            <Link key={product.id} to={`/products/${product.id}`}>
+            <Link key={product.id} to={`/menu/${product.id}`}>
               <ProductCard
                 product={{
                   id: product.id,

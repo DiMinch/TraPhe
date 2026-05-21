@@ -396,7 +396,7 @@ export default function SuppliersPage() {
                         <TableCell>
                           <button
                             onClick={() =>
-                              navigate(`/procurement/suppliers/${supplier.id}`)
+                              navigate(`/admin/suppliers/${supplier.id}`)
                             }
                             className="font-medium text-indigo-900 hover:underline cursor-pointer"
                           >

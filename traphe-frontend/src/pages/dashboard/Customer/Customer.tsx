@@ -325,7 +325,7 @@ export default function CustomerPage() {
                       >
                         <TableCell>
                           <button
-                            onClick={() => navigate(`/customer/${customer.id}`)}
+                            onClick={() => navigate(`/admin/loyalty/customers/${customer.id}`)}
                             className="text-left hover:text-indigo-600 cursor-pointer transition-colors"
                           >
                             <div className="font-medium text-slate-800">

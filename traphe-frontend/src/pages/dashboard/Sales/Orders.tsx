@@ -433,7 +433,7 @@ export default function OrdersPage() {
                               className="h-9 w-9 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors"
                               title="View details"
                               onClick={() =>
-                                navigate(`/sales/orders/${order.id}`)
+                                navigate(`/admin/orders/${order.id}`)
                               }
                             >
                               <Eye className="w-4 h-4" />

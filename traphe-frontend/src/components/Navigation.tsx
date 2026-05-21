@@ -88,9 +88,11 @@ export default function Navigation() {
           <NavigationMenuList className="flex-col items-start space-x-0 space-y-1 w-full">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              const isExpanded = expandedItems.includes(item.path);
               const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isActive = hasSubItems
+                ? location.pathname.startsWith(item.path)
+                : location.pathname === item.path;
+              const isExpanded = expandedItems.includes(item.path) || (hasSubItems && location.pathname.startsWith(item.path));
 
               return (
                 <div key={item.path} className="w-full">

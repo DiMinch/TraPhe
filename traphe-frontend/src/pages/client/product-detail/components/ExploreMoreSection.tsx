@@ -73,7 +73,7 @@ export default function ExploreMoreSection() {
         {products.map((product: any) => {
           const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
           return (
-            <Link key={product.id} to={`/products/${product.id}`}>
+            <Link key={product.id} to={`/menu/${product.id}`}>
               <ProductCard
                 product={{
                   id: product.id,

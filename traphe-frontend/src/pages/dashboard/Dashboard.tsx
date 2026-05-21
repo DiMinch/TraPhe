@@ -874,7 +874,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               className="w-full mt-3 rounded-lg border-admin-border hover:bg-surface-container-low text-dust hover:text-roast"
-              onClick={() => navigate("/sales/orders")}
+              onClick={() => navigate("/admin/orders")}
             >
               <Eye className="w-4 h-4 mr-2" />
               View All Orders
@@ -994,7 +994,7 @@ export default function DashboardPage() {
               variant="ghost"
               size="sm"
               className="text-caramel hover:text-roast hover:bg-surface-container-low rounded-lg font-medium"
-              onClick={() => navigate("/inventory/all")}
+              onClick={() => navigate("/admin/stock/all")}
             >
               View All
             </Button>

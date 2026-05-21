@@ -176,7 +176,7 @@ export default function ClientProductPage() {
                     return (
                       <Link
                         key={product.id}
-                        to={`/products/${product.id}`}
+                        to={`/menu/${product.id}`}
                         className={gridCols === 1 ? "w-full" : ""}
                       >
                         <div
