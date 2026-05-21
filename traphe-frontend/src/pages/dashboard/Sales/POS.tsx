@@ -269,7 +269,7 @@ export default function POSPage() {
         id: variant.id,
         productVariantId: variant.id,
         product: `${product.name} - ${variant.variantName}`,
-        sku: variant.sku,
+        sku: variant.sku || "",
         price: variant.sellingPrice || 0,
         available: (variant as any).stockQuantity ?? 999, // F&B: made-to-order, fallback unlimited
         quantity: 1,
@@ -722,7 +722,7 @@ export default function POSPage() {
                                     {/* Scrollable Variants Grid */}
                                     <div className="overflow-y-auto flex-1">
                                       <div className="grid grid-cols-3 gap-3 pr-2">
-                                        {product.variants?.map((variant) => (
+                                        {product.variants?.map((variant: ProductVariant) => (
                                           <div
                                             key={variant.id}
                                             className="border rounded-lg p-3 hover:border-indigo-400 hover:bg-indigo-50 transition-colors cursor-pointer"

@@ -16,10 +16,10 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
-    if (product.variantId) {
-      await addToCart(product.variantId, 1);
+    if (product.id) {
+      await addToCart({ menuItemId: String(product.id), quantity: 1 });
     } else {
-      toast.error("Sản phẩm này chưa có phiên bản để mua.");
+      toast.error("Sản phẩm này chưa khả dụng.");
     }
   };
 

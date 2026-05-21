@@ -1,10 +1,6 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
-import type {
-  Cart,
-  AddToCartRequest,
-  UpdateCartRequest,
-} from "@/types/cart.types";
+import type { Cart, AddToCartRequest } from "@/types/cart.types";
 
 export const cartService = {
   getCart: async () => {
@@ -19,25 +15,15 @@ export const cartService = {
     return axiosClient.post<any, ApiResponse<Cart>>("/cart/add", data);
   },
 
-  updateQuantity: async (data: UpdateCartRequest) => {
-    return axiosClient.put<any, ApiResponse<Cart>>("/cart/update", data);
-  },
-
-  incrementItem: async (variantId: string) => {
+  updateQuantity: async (cartItemId: string, quantity: number) => {
     return axiosClient.put<any, ApiResponse<Cart>>(
-      `/cart/increment/${variantId}`,
+      `/cart/update/${cartItemId}?quantity=${quantity}`,
     );
   },
 
-  decrementItem: async (variantId: string) => {
-    return axiosClient.put<any, ApiResponse<Cart>>(
-      `/cart/decrement/${variantId}`,
-    );
-  },
-
-  removeItem: async (variantId: string) => {
+  removeItem: async (cartItemId: string) => {
     return axiosClient.delete<any, ApiResponse<Cart>>(
-      `/cart/remove/${variantId}`,
+      `/cart/remove/${cartItemId}`,
     );
   },
 

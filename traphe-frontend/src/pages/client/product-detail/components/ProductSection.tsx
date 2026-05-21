@@ -6,7 +6,6 @@ import type { Product, ProductVariant } from "@/types/product.types";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
 
 interface ProductSectionProps {
   product: Product;
@@ -35,20 +34,20 @@ export default function ProductSection({
   const price = selectedVariant ? selectedVariant.sellingPrice : 0;
 
   const handleAddToCart = async () => {
-    if (selectedVariant) {
-      await addToCart(selectedVariant.id, 1);
-    } else {
-      toast.error("Vui lòng chọn phiên bản sản phẩm");
-    }
+    await addToCart({
+      menuItemId: product.id,
+      menuItemSizeId: selectedVariant?.id,
+      quantity: 1,
+    });
   };
 
   const handleBuyNow = async () => {
-    if (selectedVariant) {
-      await addToCart(selectedVariant.id, 1);
-      navigate("/cart");
-    } else {
-      toast.error("Vui lòng chọn phiên bản sản phẩm");
-    }
+    await addToCart({
+      menuItemId: product.id,
+      menuItemSizeId: selectedVariant?.id,
+      quantity: 1,
+    });
+    navigate("/cart");
   };
 
   return (
@@ -56,7 +55,7 @@ export default function ProductSection({
       <div className="flex flex-col items-center">
         <div className="relative w-full aspect-4/3 bg-gray-100 rounded-sm overflow-hidden group mb-6 flex items-center justify-center border border-gray-100">
           <img
-            src={images[currentImage]}
+            src={images[currentImage] || ""}
             alt={product.name}
             className="w-full h-full object-contain p-4 transition-opacity duration-500"
           />
@@ -92,7 +91,7 @@ export default function ProductSection({
 
         {selectedVariant && (
           <div className="text-lg text-gray-500 mb-4 font-medium">
-            Model: {selectedVariant.variantName}
+            Size: {selectedVariant.variantName}
           </div>
         )}
 
@@ -109,7 +108,7 @@ export default function ProductSection({
         {product.variants && product.variants.length > 0 && (
           <div className="mb-8">
             <label className="text-sm font-bold text-gray-900 mb-3 block">
-              Versions
+              Chọn size
             </label>
             <div className="flex flex-wrap gap-3">
               {product.variants.map((v) => {
@@ -145,7 +144,7 @@ export default function ProductSection({
             onClick={handleBuyNow}
             className="h-14 flex-1 bg-[#222222] hover:bg-black text-white text-lg font-medium rounded-sm uppercase tracking-wide transition-colors cursor-pointer"
           >
-            Buy Now
+            Mua ngay
           </Button>
         </div>
       </div>

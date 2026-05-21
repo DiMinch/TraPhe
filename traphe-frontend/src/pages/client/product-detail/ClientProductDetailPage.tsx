@@ -23,10 +23,48 @@ export default function ClientProductDetailPage() {
       try {
         const res = await productService.getProductById(id);
         if (res.statusCode === 200 && res.data) {
-          const data = res.data;
-          setProduct(data);
-          if (data.variants && data.variants.length > 0) {
-            setSelectedVariant(data.variants[0]);
+          const raw = res.data as any;
+          // Map backend MenuItemDetailResponse to frontend Product shape
+          const mapped: Product = {
+            id: raw.id,
+            name: raw.name,
+            imageUrl: raw.imageUrl || "",
+            description: raw.description || "",
+            status: raw.status || "ACTIVE",
+            categoryName: raw.categoryName || "",
+            categoryId: raw.categoryId || "",
+            basePrice: raw.basePrice || 0,
+            preparationTime: raw.preparationTime || 0,
+            allowToppings: raw.allowToppings || false,
+            sizes: raw.sizes || [],
+            isDrink: raw.drink ?? raw.isDrink ?? false,
+            createdAt: raw.createdAt || "",
+            supplierName: "",
+            minStockThreshold: 0,
+            warrantyPeriod: 0,
+            commonSpecs: "",
+            // Map sizes → variants
+            variants: (raw.sizes || []).map((s: any) => ({
+              id: s.id,
+              sku: "",
+              variantName: s.sizeName || "Default",
+              variantSpecs: "",
+              sellingPrice: Number(s.sellingPrice) || Number(raw.basePrice) || 0,
+            })),
+          };
+          // If no sizes, create a single default variant from basePrice
+          if (mapped.variants && mapped.variants.length === 0 && raw.basePrice) {
+            mapped.variants = [{
+              id: raw.id,
+              sku: "",
+              variantName: "Mặc định",
+              variantSpecs: "",
+              sellingPrice: Number(raw.basePrice),
+            }];
+          }
+          setProduct(mapped);
+          if (mapped.variants && mapped.variants.length > 0) {
+            setSelectedVariant(mapped.variants[0]);
           }
         }
       } catch (error) {

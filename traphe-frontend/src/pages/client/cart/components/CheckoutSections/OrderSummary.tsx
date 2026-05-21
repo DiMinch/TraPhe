@@ -53,9 +53,9 @@ export default function OrderSummary({
             className="flex gap-4 items-start py-2 border-b border-gray-200 last:border-0 border-dashed"
           >
             <div className="relative w-12 h-12 bg-white border border-gray-200 rounded-md flex items-center justify-center overflow-hidden">
-              {item.productImageUrl ? (
+              {item.menuItemImageUrl ? (
                 <img
-                  src={item.productImageUrl}
+                  src={item.menuItemImageUrl}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -67,9 +67,16 @@ export default function OrderSummary({
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="text-xs font-semibold text-gray-900 truncate">
-                {item.productName}
+                {item.menuItemName}
               </h4>
-              <p className="text-[10px] text-gray-500">{item.variantName}</p>
+              {item.sizeName && (
+                <p className="text-[10px] text-gray-500">Size: {item.sizeName}</p>
+              )}
+              {item.selectedToppings && item.selectedToppings.length > 0 && (
+                <p className="text-[10px] text-gray-400">
+                  {item.selectedToppings.map(t => t.toppingName).join(", ")}
+                </p>
+              )}
             </div>
             <div className="text-xs font-bold text-gray-900">
               {item.subtotal.toLocaleString("vi-VN")}₫

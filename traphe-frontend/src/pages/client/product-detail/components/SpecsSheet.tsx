@@ -19,7 +19,8 @@ export default function SpecsSheet({
   product,
   selectedVariant,
 }: SpecsSheetProps) {
-  const parseSpecs = (jsonStr: string) => {
+  const parseSpecs = (jsonStr?: string) => {
+    if (!jsonStr) return {};
     try {
       return JSON.parse(jsonStr);
     } catch (e) {
@@ -40,9 +41,9 @@ export default function SpecsSheet({
 
   specsArray.push({
     label: "Warranty",
-    value: `${product.warrantyPeriod} Months`,
+    value: `${product.warrantyPeriod || 0} Months`,
   });
-  specsArray.push({ label: "Supplier", value: product.supplierName });
+  specsArray.push({ label: "Supplier", value: product.supplierName || "" });
 
   return (
     <ScrollArea>

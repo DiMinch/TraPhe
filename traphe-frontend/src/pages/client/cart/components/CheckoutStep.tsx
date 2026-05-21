@@ -124,15 +124,16 @@ export default function CheckoutStep({
     try {
       const payload = {
         items: cart.items.map((item) => ({
-          productId: item.productId,
-          productVariantId: item.productVariantId,
+          productId: item.menuItemId,
+          productVariantId: item.menuItemSizeId || item.menuItemId,
           quantity: item.quantity,
-          unitPrice: item.currentPrice || 0,
+          unitPrice: item.unitPrice || 0,
         })),
         code: code,
         appliedCodes: appliedCodes,
         customerId: user?.customerId || user?.id,
       };
+
 
       // Vẫn giữ logic gọi calculate-discount khi bấm Apply
       const res = await promotionService.calculateCartDiscount(payload);
@@ -206,11 +207,12 @@ export default function CheckoutStep({
     setIsLoading(true);
     try {
       const orderItems = cart.items.map((item) => ({
-        productVariantId: item.productVariantId,
+        productVariantId: item.menuItemSizeId || item.menuItemId,
         quantity: item.quantity,
-        unitPrice: item.currentPrice || 0,
+        unitPrice: item.unitPrice || 0,
         discount: 0,
       }));
+
 
       const payload: any = {
         items: orderItems,

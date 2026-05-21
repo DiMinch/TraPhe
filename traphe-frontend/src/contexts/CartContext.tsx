@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { cartService } from "@/services/cart.service";
-import type { Cart } from "@/types/cart.types";
+import type { Cart, AddToCartRequest } from "@/types/cart.types";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 
@@ -15,10 +15,9 @@ interface CartContextType {
   count: number;
   isLoading: boolean;
   refreshCart: () => Promise<void>;
-  addToCart: (variantId: string, quantity?: number) => Promise<void>;
-  incrementItem: (variantId: string) => Promise<void>;
-  decrementItem: (variantId: string) => Promise<void>;
-  removeItem: (variantId: string) => Promise<void>;
+  addToCart: (data: AddToCartRequest) => Promise<void>;
+  updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
+  removeItem: (cartItemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
 }
 
@@ -32,10 +31,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const isLoggedIn = !!authService.getCurrentUser();
 
   const refreshCart = async () => {
+    if (!isLoggedIn) {
+      setCart(null);
+      setCount(0);
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await cartService.getCart();
-      if (res.statusCode === 200 && res.data) {
+      if (res.success && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
       } else {
@@ -55,51 +59,42 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     refreshCart();
   }, [isLoggedIn]);
 
-  const addToCart = async (variantId: string, quantity = 1) => {
+  const addToCart = async (data: AddToCartRequest) => {
     try {
-      await cartService.addToCart({ productVariantId: variantId, quantity });
-      await refreshCart();
-      toast.success("Added to cart");
+      const res = await cartService.addToCart(data);
+      if (res.success && res.data) {
+        setCart(res.data);
+        setCount(res.data.totalItems);
+        toast.success("Đã thêm vào giỏ hàng");
+      }
     } catch (error: any) {
       console.error(error);
-      toast.error(error.response?.data?.message || "Failed to add to cart");
+      toast.error(error.response?.data?.message || "Không thể thêm vào giỏ hàng");
     }
   };
 
-  const incrementItem = async (variantId: string) => {
+  const updateQuantity = async (cartItemId: string, quantity: number) => {
     try {
-      const res = await cartService.incrementItem(variantId);
-      if (res.data) {
+      const res = await cartService.updateQuantity(cartItemId, quantity);
+      if (res.success && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
       }
     } catch (error) {
-      toast.error("Failed to update cart");
+      toast.error("Không thể cập nhật giỏ hàng");
     }
   };
 
-  const decrementItem = async (variantId: string) => {
+  const removeItem = async (cartItemId: string) => {
     try {
-      const res = await cartService.decrementItem(variantId);
-      if (res.data) {
+      const res = await cartService.removeItem(cartItemId);
+      if (res.success && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
+        toast.success("Đã xóa khỏi giỏ hàng");
       }
     } catch (error) {
-      toast.error("Failed to update cart");
-    }
-  };
-
-  const removeItem = async (variantId: string) => {
-    try {
-      const res = await cartService.removeItem(variantId);
-      if (res.data) {
-        setCart(res.data);
-        setCount(res.data.totalItems);
-        toast.success("Item removed");
-      }
-    } catch (error) {
-      toast.error("Failed to remove item");
+      toast.error("Không thể xóa sản phẩm");
     }
   };
 
@@ -121,8 +116,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         refreshCart,
         addToCart,
-        incrementItem,
-        decrementItem,
+        updateQuantity,
         removeItem,
         clearCart,
       }}

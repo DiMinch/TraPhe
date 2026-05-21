@@ -14,7 +14,7 @@ export default function CategorySection() {
     const fetchCategories = async () => {
       try {
         const res = await categoryService.getAllCategories();
-        if (res.statusCode === 200 && res.data) {
+        if (res.success && res.data) {
           const mappedData = res.data.map((cat, index) =>
             mapCategoryToDisplay(cat, index),
           );

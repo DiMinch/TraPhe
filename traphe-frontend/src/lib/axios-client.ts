@@ -29,7 +29,14 @@ axiosClient.interceptors.response.use(
     if (response.config.responseType === "blob") {
       return response.data;
     }
-    return response.data;
+    const data = response.data;
+    // Backend returns { success, message, data, meta, error }
+    // Frontend expects { statusCode, success, message, data, ... }
+    // Map HTTP status code into the response so existing code using res.statusCode works
+    if (data && typeof data === "object" && !("statusCode" in data)) {
+      data.statusCode = response.status;
+    }
+    return data;
   },
   (error) => {
     const status = error.response ? error.response.status : null;

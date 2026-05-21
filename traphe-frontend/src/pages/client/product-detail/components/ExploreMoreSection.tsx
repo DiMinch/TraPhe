@@ -26,7 +26,7 @@ export default function ExploreMoreSection() {
       });
 
       if (res.statusCode === 200 && res.data) {
-        const newProducts = res.data.content;
+        const newProducts = Array.isArray(res.data) ? res.data : (res.data as any).content || [];
 
         if (isLoadMore) {
           setProducts((prev) => [...prev, ...newProducts]);
@@ -34,7 +34,7 @@ export default function ExploreMoreSection() {
           setProducts(newProducts);
         }
 
-        setHasMore(!res.data.last);
+        setHasMore(res.meta?.totalPages ? (pageIndex + 1 < res.meta.totalPages) : !(res.data as any).last);
         setPage(pageIndex);
       }
     } catch (error) {
@@ -70,8 +70,8 @@ export default function ExploreMoreSection() {
       <h2 className="text-3xl font-semibold mb-8 text-black">Explore more</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
-        {products.map((product) => {
-          const displayPrice = product.variants?.[0]?.sellingPrice || 0;
+        {products.map((product: any) => {
+          const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
           return (
             <Link key={product.id} to={`/products/${product.id}`}>
               <ProductCard

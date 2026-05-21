@@ -84,8 +84,10 @@ export default function ShopPage() {
         });
 
         if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.content);
-          setTotalPages(res.data.totalPages);
+          // Backend successPagination puts items in data (array) and pagination in meta
+          const items = Array.isArray(res.data) ? res.data : (res.data as any).content || [];
+          setProducts(items);
+          setTotalPages(res.meta?.totalPages || (res.data as any).totalPages || 1);
         }
       } catch (error) {
         console.error("Failed to fetch shop products", error);
@@ -201,9 +203,9 @@ export default function ShopPage() {
                                     ${gridCols === 1 ? "grid-cols-1" : ""}
                                 `}
                 >
-                  {products.map((product) => {
-                    const firstVariant = product.variants?.[0];
-                    const displayPrice = firstVariant?.sellingPrice || 0;
+                  {products.map((product: any) => {
+                    const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
+                    const firstSizeId = product.sizes?.[0]?.id;
                     return (
                       <div
                         key={product.id}
@@ -220,7 +222,7 @@ export default function ShopPage() {
                           <ProductCard
                             product={{
                               id: product.id,
-                              variantId: firstVariant?.id,
+                              variantId: firstSizeId || product.variants?.[0]?.id,
                               name: product.name,
                               price: displayPrice,
                               image: product.imageUrl,

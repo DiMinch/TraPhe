@@ -48,7 +48,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/change-password").authenticated()
                         // Public auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Public storefront endpoints (no token required)
                         .requestMatchers(HttpMethod.GET, "/api/menu/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/branches/**").permitAll()
                         .requestMatchers("/api/payment/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()

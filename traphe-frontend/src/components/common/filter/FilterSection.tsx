@@ -17,29 +17,18 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import axiosClient from "@/lib/axios-client";
-import { productService } from "@/services/product.service";
 import type { ApiResponse } from "@/types/api.types";
 import type { FilterSectionProps } from "./FilterSection.types";
 import CategoryFilter from "./CategoryFilter";
 import PriceFilter from "./PriceFilter";
-import VariantFilter from "./VariantFilter";
 import type { PriceRange } from "./PriceFilter";
 
+// F&B price ranges (VND) — appropriate for drinks & food
 const PRICE_RANGES: PriceRange[] = [
-  { id: "p1", label: "Under 10 million VND", min: 0, max: 10000000 },
-  {
-    id: "p2",
-    label: "10 million - 20 million VND",
-    min: 10000000,
-    max: 20000000,
-  },
-  {
-    id: "p3",
-    label: "20 million - 50 million VND",
-    min: 20000000,
-    max: 50000000,
-  },
-  { id: "p4", label: "Over 50 million VND", min: 50000000, max: undefined },
+  { id: "p1", label: "Dưới 30.000₫", min: 0, max: 30000 },
+  { id: "p2", label: "30.000₫ - 50.000₫", min: 30000, max: 50000 },
+  { id: "p3", label: "50.000₫ - 80.000₫", min: 50000, max: 80000 },
+  { id: "p4", label: "Trên 80.000₫", min: 80000, max: undefined },
 ];
 
 interface Category {
@@ -69,14 +58,6 @@ export default function FilterSection({
     Record<string, boolean>
   >({});
 
-  const [variantFilterOptions, setVariantFilterOptions] = useState<
-    Record<string, string[]>
-  >({});
-  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>(
-    {},
-  );
-  const [loadingSpecs, setLoadingSpecs] = useState(false);
-
   useEffect(() => {
     setSelectedCategoryId(categoryId);
   }, [categoryId]);
@@ -98,27 +79,6 @@ export default function FilterSection({
     };
     fetchCategories();
   }, []);
-
-  useEffect(() => {
-    const fetchVariantOptions = async () => {
-      setLoadingSpecs(true);
-      try {
-        const res =
-          await productService.getVariantFilterOptions(selectedCategoryId);
-        if (res.statusCode === 200 && res.data) {
-          setVariantFilterOptions(res.data.filters);
-        } else {
-          setVariantFilterOptions({});
-        }
-      } catch (error) {
-        console.error("Failed to load variant filters", error);
-      } finally {
-        setLoadingSpecs(false);
-      }
-    };
-
-    fetchVariantOptions();
-  }, [selectedCategoryId]);
 
   const categoryTree = useMemo(() => {
     const tree: CategoryNode[] = [];
@@ -149,11 +109,9 @@ export default function FilterSection({
   const applyFilters = (
     catId?: string,
     prices?: string[],
-    specs?: Record<string, string[]>,
   ) => {
     const currentCat = catId ?? selectedCategoryId;
     const currentPrices = prices ?? selectedPriceRanges;
-    const currentSpecs = specs ?? selectedSpecs;
 
     let minPrice: number | undefined = undefined;
     let maxPrice: number | undefined = undefined;
@@ -173,27 +131,17 @@ export default function FilterSection({
       }
     }
 
-    const dynamicFilters: Record<string, string> = {};
-
-    Object.entries(currentSpecs).forEach(([key, values]) => {
-      if (values.length > 0) {
-        dynamicFilters[key] = values.join(",");
-      }
-    });
-
     onFilterChange({
       categoryId: currentCat,
       minPrice,
       maxPrice,
-      ...dynamicFilters,
     });
   };
 
   const handleCategoryClick = (catId: string) => {
     const newId = selectedCategoryId === catId ? undefined : catId;
     setSelectedCategoryId(newId);
-    setSelectedSpecs({});
-    applyFilters(newId, undefined, {});
+    applyFilters(newId, undefined);
   };
 
   const handlePriceCheck = (rangeId: string) => {
@@ -202,32 +150,12 @@ export default function FilterSection({
       : [...selectedPriceRanges, rangeId];
 
     setSelectedPriceRanges(newRanges);
-    applyFilters(undefined, newRanges, undefined);
-  };
-
-  const handleSpecCheck = (key: string, value: string) => {
-    const currentValues = selectedSpecs[key] || [];
-    const newValues = currentValues.includes(value)
-      ? currentValues.filter((v) => v !== value)
-      : [...currentValues, value];
-
-    const newSelectedSpecs = {
-      ...selectedSpecs,
-      [key]: newValues,
-    };
-
-    if (newValues.length === 0) {
-      delete newSelectedSpecs[key];
-    }
-
-    setSelectedSpecs(newSelectedSpecs);
-    applyFilters(undefined, undefined, newSelectedSpecs);
+    applyFilters(undefined, newRanges);
   };
 
   const handleReset = () => {
     setSelectedCategoryId(undefined);
     setSelectedPriceRanges([]);
-    setSelectedSpecs({});
     onFilterChange({});
   };
 
@@ -235,17 +163,13 @@ export default function FilterSection({
     <div className="space-y-6">
       <Accordion
         type="multiple"
-        defaultValue={[
-          "category",
-          "price",
-          ...Object.keys(variantFilterOptions),
-        ]}
+        defaultValue={["category", "price"]}
         className="w-full"
       >
         <AccordionItem value="category" className="border-b border-gray-100">
           <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
             <span className="font-bold text-base uppercase tracking-wide text-gray-900 cursor-pointer">
-              Category
+              Danh mục
             </span>
           </AccordionTrigger>
           <AccordionContent>
@@ -269,7 +193,7 @@ export default function FilterSection({
         <AccordionItem value="price" className="border-b border-gray-100">
           <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
             <span className="font-bold text-base uppercase tracking-wide text-gray-900">
-              Price
+              Giá
             </span>
           </AccordionTrigger>
           <AccordionContent>
@@ -280,18 +204,6 @@ export default function FilterSection({
             />
           </AccordionContent>
         </AccordionItem>
-
-        {loadingSpecs ? (
-          <div className="py-4 flex justify-center">
-            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-          </div>
-        ) : (
-          <VariantFilter
-            filters={variantFilterOptions}
-            selectedSpecs={selectedSpecs}
-            onToggleSpec={handleSpecCheck}
-          />
-        )}
       </Accordion>
 
       <Button
@@ -299,7 +211,7 @@ export default function FilterSection({
         onClick={handleReset}
         className="w-full border-dashed border-gray-400 hover:border-black hover:bg-gray-50 mt-4 cursor-pointer"
       >
-        Clear All Filters
+        Xóa bộ lọc
       </Button>
     </div>
   );
@@ -315,11 +227,10 @@ export default function FilterSection({
             >
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4" />
-                <span className="font-medium">Filter & Sort</span>
+                <span className="font-medium">Bộ lọc</span>
               </div>
               {(selectedCategoryId ||
-                selectedPriceRanges.length > 0 ||
-                Object.keys(selectedSpecs).length > 0) && (
+                selectedPriceRanges.length > 0) && (
                 <span className="bg-black text-white text-xs px-2 py-0.5 rounded-full">
                   •
                 </span>
@@ -332,7 +243,7 @@ export default function FilterSection({
           >
             <SheetHeader className="mb-6 text-left">
               <SheetTitle className="text-xl font-bold flex items-center gap-2">
-                <Filter className="w-5 h-5" /> Filters
+                <Filter className="w-5 h-5" /> Bộ lọc
               </SheetTitle>
             </SheetHeader>
             <FilterContent />
@@ -345,16 +256,15 @@ export default function FilterSection({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-gray-900 font-bold text-lg">
               <SlidersHorizontal className="w-5 h-5" />
-              <span>Filter</span>
+              <span>Bộ lọc</span>
             </div>
             {(selectedCategoryId ||
-              selectedPriceRanges.length > 0 ||
-              Object.keys(selectedSpecs).length > 0) && (
+              selectedPriceRanges.length > 0) && (
               <button
                 onClick={handleReset}
                 className="text-xs text-gray-400 hover:text-black underline cursor-pointer"
               >
-                Clear All
+                Xóa tất cả
               </button>
             )}
           </div>

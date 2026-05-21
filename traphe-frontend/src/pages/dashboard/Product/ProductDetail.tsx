@@ -168,11 +168,11 @@ export default function ProductDetailPage() {
 
   const handleSaveVariant = async () => {
     // Validate required fields
-    if (!variantFormData.sku.trim()) {
+    if (!(variantFormData.sku || "").trim()) {
       toast.error("SKU is required");
       return;
     }
-    if (!variantFormData.variantName.trim()) {
+    if (!(variantFormData.variantName || "").trim()) {
       toast.error("Variant name is required");
       return;
     }
