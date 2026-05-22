@@ -20,4 +20,28 @@ public class UserResponse {
     private String avatarUrl;
     private boolean isEmailVerified;
     private List<String> roles;
+    private TierInfo tier;
+    private LoyaltyPointInfo loyaltyPoint;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TierInfo {
+        private String name;
+        private double discountRate;
+        private int minPoint;
+        private String description;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoyaltyPointInfo {
+        private int totalPoints;
+        private int pointsAvailable;
+        private int pointsUsed;
+        private Integer pointsToNextTier;
+    }
 }

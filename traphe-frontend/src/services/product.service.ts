@@ -34,8 +34,10 @@ export const productService = {
     return res;
   },
 
-  getProductById: async (id: string) => {
-    const res = await axiosClient.get<any, ApiResponse<Product>>(`/products/${id}`);
+  getProductById: async (id: string, branchId?: string | null) => {
+    const res = await axiosClient.get<any, ApiResponse<Product>>(`/products/${id}`, {
+      params: branchId ? { branchId } : {},
+    });
     if (res.data) {
       res.data.variants = res.data.sizes ? res.data.sizes.map((s: any) => ({
         id: s.id,

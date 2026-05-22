@@ -215,7 +215,7 @@ export default function OrdersPage() {
     if (!reason) return;
 
     try {
-      await orderService.cancelOrder(orderId, reason);
+      await orderService.cancelOrder(orderId);
       toast.success("Order cancelled successfully");
       fetchOrders(currentPage);
     } catch (err: unknown) {

@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, ShoppingCart, Coffee, Check, Snowflake, Flame, Droplets, Settings, PlusCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShoppingCart, Coffee, Check, Snowflake, Flame, Droplets, Settings, PlusCircle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SpecsSheet from "./SpecsSheet";
 import type { Product, ProductVariant } from "@/types/product.types";
 import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { toast } from "sonner";
 
 interface ProductSectionProps {
@@ -79,10 +79,28 @@ export default function ProductSection({
   };
 
   const handleAddToCart = async () => {
+    const formattedOptions: Record<string, string> = {};
+    if (product.optionGroups) {
+      product.optionGroups.forEach((group) => {
+        const selectedValId = selectedOptions[group.id];
+        if (selectedValId) {
+          const val = group.values.find((v) => v.id === selectedValId);
+          if (val) {
+            formattedOptions[group.id] = `${val.id}:${val.label}`;
+          }
+        }
+      });
+    }
+
     const success = await addToCart({
       menuItemId: product.id,
       menuItemSizeId: selectedVariant?.id,
       quantity: 1,
+      selectedOptions: formattedOptions,
+      selectedToppings: Array.from(selectedToppings).map((id) => ({
+        toppingId: id,
+        quantity: 1,
+      })),
     });
     if (success) {
       toast.success(`Đã thêm ${product.name} vào giỏ hàng`);
@@ -90,10 +108,28 @@ export default function ProductSection({
   };
 
   const handleBuyNow = async () => {
+    const formattedOptions: Record<string, string> = {};
+    if (product.optionGroups) {
+      product.optionGroups.forEach((group) => {
+        const selectedValId = selectedOptions[group.id];
+        if (selectedValId) {
+          const val = group.values.find((v) => v.id === selectedValId);
+          if (val) {
+            formattedOptions[group.id] = `${val.id}:${val.label}`;
+          }
+        }
+      });
+    }
+
     const success = await addToCart({
       menuItemId: product.id,
       menuItemSizeId: selectedVariant?.id,
       quantity: 1,
+      selectedOptions: formattedOptions,
+      selectedToppings: Array.from(selectedToppings).map((id) => ({
+        toppingId: id,
+        quantity: 1,
+      })),
     });
     if (success) {
       navigate("/cart");
@@ -157,6 +193,38 @@ export default function ProductSection({
 
       {/* Details Section */}
       <div className="flex flex-col justify-start lg:pl-6">
+        {/* Breadcrumb */}
+        <nav aria-label="Breadcrumb" className="flex text-sm text-[#8C7B6E] mb-4">
+          <ol className="flex items-center gap-2 font-ui-body text-xs">
+            <li>
+              <Link className="hover:text-[#5C3317] transition-colors" to="/">
+                Home
+              </Link>
+            </li>
+            <li>
+              <ChevronRight className="w-3.5 h-3.5 text-[#8C7B6E]" />
+            </li>
+            <li>
+              <Link
+                className="hover:text-[#5C3317] transition-colors"
+                to={product.isDrink ? "/menu" : "/merchandise"}
+              >
+                {product.isDrink ? "Menu" : "Merchandise"}
+              </Link>
+            </li>
+            {product.categoryName && (
+              <>
+                <li>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#8C7B6E]" />
+                </li>
+                <li aria-current="page" className="text-[#5C3317] font-semibold">
+                  {product.categoryName}
+                </li>
+              </>
+            )}
+          </ol>
+        </nav>
+
         {/* Category badge */}
         {product.categoryName && (
           <span className="text-xs font-medium text-[#A0622A] bg-[#F5EAD8] px-3 py-1 rounded-full w-fit mb-4 uppercase tracking-wider">
@@ -312,19 +380,28 @@ export default function ProductSection({
           )}
 
         {/* Action Buttons */}
+        {product.branchAvailable === false && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium flex flex-col gap-1">
+            <span className="font-bold">Không khả dụng tại chi nhánh đã chọn</span>
+            {product.unavailableReason && <span className="text-xs opacity-90">{product.unavailableReason}</span>}
+          </div>
+        )}
+
         <div className="flex gap-4 mt-auto pt-4 border-t border-[#EFE5D3]">
           <Button
             variant="outline"
             onClick={handleAddToCart}
-            className="h-14 w-14 border-2 border-[#5C3317] rounded-xl flex items-center justify-center hover:bg-[#F5EAD8] transition-colors cursor-pointer text-[#5C3317]"
+            disabled={product.branchAvailable === false}
+            className="h-14 w-14 border-2 border-[#5C3317] rounded-xl flex items-center justify-center hover:bg-[#F5EAD8] transition-colors cursor-pointer text-[#5C3317] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ShoppingCart className="w-6 h-6" />
           </Button>
           <Button
             onClick={handleBuyNow}
-            className="h-14 flex-1 bg-[#5C3317] hover:bg-[#2C1A0E] text-white text-lg font-medium rounded-xl uppercase tracking-wide transition-colors cursor-pointer"
+            disabled={product.branchAvailable === false}
+            className="h-14 flex-1 bg-[#5C3317] hover:bg-[#2C1A0E] text-white text-lg font-medium rounded-xl uppercase tracking-wide transition-colors cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Mua ngay · {totalPrice.toLocaleString("vi-VN")} ₫
+            {product.branchAvailable === false ? "Hết hàng" : `Mua ngay · ${totalPrice.toLocaleString("vi-VN")} ₫`}
           </Button>
         </div>
       </div>

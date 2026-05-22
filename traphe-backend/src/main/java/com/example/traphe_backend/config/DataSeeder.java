@@ -9,6 +9,7 @@ import com.example.traphe_backend.entity.MenuItemSize;
 import com.example.traphe_backend.entity.MenuItemTopping;
 import com.example.traphe_backend.entity.OptionGroup;
 import com.example.traphe_backend.entity.OptionValue;
+import com.example.traphe_backend.entity.Promotion;
 import com.example.traphe_backend.entity.Topping;
 import com.example.traphe_backend.enums.MenuItemStatus;
 import com.example.traphe_backend.enums.OptionGroupType;
@@ -21,6 +22,7 @@ import com.example.traphe_backend.repository.MenuItemSizeRepository;
 import com.example.traphe_backend.repository.MenuItemToppingRepository;
 import com.example.traphe_backend.repository.OptionGroupRepository;
 import com.example.traphe_backend.repository.OptionValueRepository;
+import com.example.traphe_backend.repository.PromotionRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ToppingRepository toppingRepository;
     private final MenuItemToppingRepository menuItemToppingRepository;
     private final BranchMenuItemRepository branchMenuItemRepository;
+    private final PromotionRepository promotionRepository;
 
     @Override
     @Transactional
@@ -379,6 +382,57 @@ public class DataSeeder implements CommandLineRunner {
         log.info("  Option groups: {} ({} values total)", 3, optionValueRepository.count());
         log.info("  Toppings:     {} ({} available)", toppingRepository.count(), 7);
         log.info("===========================================");
+
+        // ==================== PROMOTIONS (separate guard) ====================
+        if (promotionRepository.count() == 0) {
+            log.info("========== Seeding TraPhe promotions ==========");
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+            promotionRepository.save(Promotion.builder()
+                    .code("TRAPHE20K")
+                    .name("Giảm 20,000₫ đơn từ 100K")
+                    .description("Áp dụng cho đơn hàng từ 100,000₫. Mỗi tài khoản sử dụng 1 lần.")
+                    .discountType(Promotion.DiscountType.FIXED_AMOUNT)
+                    .discountValue(new BigDecimal("20000"))
+                    .minOrderValue(new BigDecimal("100000"))
+                    .usageLimit(500)
+                    .perUserLimit(1)
+                    .startDate(now.minusDays(5))
+                    .endDate(now.plusMonths(2))
+                    .scope(com.example.traphe_backend.enums.PromotionScope.PUBLIC)
+                    .build());
+
+            promotionRepository.save(Promotion.builder()
+                    .code("SUMMER15")
+                    .name("Summer 15% Off")
+                    .description("Enjoy 15% off on all orders this summer. Max discount 50,000₫.")
+                    .discountType(Promotion.DiscountType.PERCENTAGE)
+                    .discountValue(new BigDecimal("15"))
+                    .maxDiscountAmount(new BigDecimal("50000"))
+                    .usageLimit(1000)
+                    .perUserLimit(2)
+                    .startDate(now.minusDays(1))
+                    .endDate(now.plusMonths(3))
+                    .scope(com.example.traphe_backend.enums.PromotionScope.PUBLIC)
+                    .build());
+
+            promotionRepository.save(Promotion.builder()
+                    .code("NEWMEMBER")
+                    .name("Welcome Gift — Giảm 30K")
+                    .description("Dành cho khách hàng mới đăng ký. Đơn tối thiểu 80,000₫.")
+                    .discountType(Promotion.DiscountType.FIXED_AMOUNT)
+                    .discountValue(new BigDecimal("30000"))
+                    .minOrderValue(new BigDecimal("80000"))
+                    .usageLimit(null)
+                    .perUserLimit(1)
+                    .startDate(now.minusDays(10))
+                    .endDate(now.plusMonths(6))
+                    .scope(com.example.traphe_backend.enums.PromotionScope.PUBLIC)
+                    .build());
+
+            log.info("  Promotions seeded: 3 (PUBLIC)");
+            log.info("===========================================");
+        }
     }
 
     // ---- Helper methods ----

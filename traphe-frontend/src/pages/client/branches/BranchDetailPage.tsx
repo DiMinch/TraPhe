@@ -1,20 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
 import { MapPin, Phone, Clock, ArrowLeft, Wifi, Loader2, Coffee } from "lucide-react";
 import axiosClient from "@/lib/axios-client";
 import { Button } from "@/components/ui/button";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+// Set Mapbox token
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "";
+
+interface BranchHour {
+  id: string;
+  dayOfWeek: number;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+}
 
 interface BranchDetail {
   id: string;
   name: string;
   address: string;
   phone?: string;
-  openingHours?: string;
-  latitude?: number;
-  longitude?: number;
-  imageUrl?: string;
-  description?: string;
+  lat?: number;
+  lng?: number;
   isActive: boolean;
+  hours?: BranchHour[];
+}
+
+const DAY_NAMES = ["", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật"];
+
+function formatTime(t: string) {
+  return t?.slice(0, 5) || "";
 }
 
 export default function BranchDetailPage() {
@@ -22,10 +39,12 @@ export default function BranchDetailPage() {
   const [branch, setBranch] = useState<BranchDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+
   useEffect(() => {
     const fetchBranch = async () => {
       try {
-        // Use public branches endpoint (NOT admin)
         const res = await axiosClient.get<any, any>(`/branches/${id}`);
         if (res.data) {
           setBranch(res.data);
@@ -38,6 +57,44 @@ export default function BranchDetailPage() {
     };
     if (id) fetchBranch();
   }, [id]);
+
+  // Initialize Mapbox once branch with coordinates is loaded
+  useEffect(() => {
+    if (!branch || !branch.lat || !branch.lng || !mapContainerRef.current) return;
+
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [branch.lng, branch.lat],
+      zoom: 15,
+    });
+
+    mapRef.current = map;
+
+    // Custom marker
+    const el = document.createElement("div");
+    el.className = "flex flex-col items-center";
+    el.innerHTML = `
+      <div class="bg-white px-3 py-1.5 rounded-lg shadow-md border border-[#5C3317] mb-1 whitespace-nowrap z-20">
+        <span class="font-bold text-xs text-[#2C1A0E]">${branch.name}</span>
+      </div>
+      <div class="w-10 h-10 bg-[#A0622A] rounded-full flex items-center justify-center shadow-lg border-2 border-white relative z-10">
+        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+          <line x1="6" y1="2" x2="6" y2="4" /><line x1="10" y1="2" x2="10" y2="4" /><line x1="14" y1="2" x2="14" y2="4" />
+        </svg>
+      </div>
+      <div class="w-4 h-4 bg-[#A0622A]/30 rounded-full absolute bottom-[-4px] animate-ping"></div>
+    `;
+
+    new mapboxgl.Marker({ element: el })
+      .setLngLat([branch.lng, branch.lat])
+      .addTo(map);
+
+    return () => {
+      map.remove();
+    };
+  }, [branch]);
 
   if (isLoading) {
     return (
@@ -64,11 +121,15 @@ export default function BranchDetailPage() {
     );
   }
 
+  const hasCoords = !!branch.lat && !!branch.lng;
+  const directionsUrl = hasCoords
+    ? `https://www.google.com/maps/dir/?api=1&destination=${branch.lat},${branch.lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.address)}`;
+
   return (
     <div className="bg-[#FBF5EC] min-h-screen">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#2C1A0E] to-[#5C3317] py-20 px-6 overflow-hidden">
-        {/* Decorative circles */}
         <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#A0622A]/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#C89A6E]/10 rounded-full blur-2xl" />
 
@@ -82,16 +143,9 @@ export default function BranchDetailPage() {
           <h1 className="text-4xl lg:text-5xl font-serif text-[#F5EAD8] mb-4 leading-tight">
             {branch.name}
           </h1>
-          {branch.description && (
-            <p className="text-[#C89A6E] text-lg max-w-2xl leading-relaxed font-serif">
-              {branch.description}
-            </p>
-          )}
-          {!branch.description && (
-            <p className="text-[#C89A6E] text-lg max-w-2xl leading-relaxed font-serif italic">
-              Không gian ấm cúng mang đậm dấu ấn văn hóa cà phê Việt đương đại
-            </p>
-          )}
+          <p className="text-[#C89A6E] text-lg max-w-2xl leading-relaxed font-serif italic">
+            Không gian ấm cúng mang đậm dấu ấn văn hóa cà phê Việt đương đại
+          </p>
         </div>
       </section>
 
@@ -120,9 +174,28 @@ export default function BranchDetailPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#8C7B6E] mb-1">Giờ mở cửa</p>
-                  <p className="text-[#1A1410] leading-relaxed">
-                    {branch.openingHours || "07:00 – 22:00 hàng ngày"}
-                  </p>
+                  {branch.hours && branch.hours.length > 0 ? (
+                    <div className="space-y-1">
+                      {branch.hours
+                        .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+                        .map((h) => (
+                          <div key={h.id} className="flex items-center gap-3 text-sm">
+                            <span className="w-20 font-medium text-[#4A3F35]">
+                              {DAY_NAMES[h.dayOfWeek] || `Ngày ${h.dayOfWeek}`}
+                            </span>
+                            {h.isClosed ? (
+                              <span className="text-red-400 italic">Đóng cửa</span>
+                            ) : (
+                              <span className="text-[#1A1410]">
+                                {formatTime(h.openTime)} – {formatTime(h.closeTime)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className="text-[#1A1410]">07:00 – 22:00 hàng ngày</p>
+                  )}
                 </div>
               </div>
 
@@ -161,20 +234,13 @@ export default function BranchDetailPage() {
             </div>
           </div>
 
-          {/* Map placeholder / Quick actions */}
+          {/* Map & Quick actions */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(44,26,14,0.08)]">
               <h3 className="text-lg font-serif text-[#2C1A0E] mb-4">Vị trí</h3>
-              {branch.latitude && branch.longitude ? (
-                <div className="aspect-video rounded-xl overflow-hidden bg-[#F0EBE3]">
-                  <iframe
-                    title="Map"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    src={`https://maps.google.com/maps?q=${branch.latitude},${branch.longitude}&output=embed`}
-                  />
+              {hasCoords ? (
+                <div className="aspect-video rounded-xl overflow-hidden bg-[#F0EBE3] relative">
+                  <div ref={mapContainerRef} className="w-full h-full" />
                 </div>
               ) : (
                 <div className="aspect-video rounded-xl bg-[#F0EBE3] flex items-center justify-center">
@@ -182,7 +248,7 @@ export default function BranchDetailPage() {
                 </div>
               )}
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${branch.latitude || ""},${branch.longitude || ""}`}
+                href={directionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block mt-4"

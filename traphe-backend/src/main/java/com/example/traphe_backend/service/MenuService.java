@@ -7,7 +7,6 @@ import com.example.traphe_backend.dto.response.MenuTreeResponse;
 import com.example.traphe_backend.dto.response.PageResponse;
 import com.example.traphe_backend.dto.response.ToppingResponse;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface MenuService {

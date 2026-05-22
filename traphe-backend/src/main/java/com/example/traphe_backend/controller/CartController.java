@@ -75,6 +75,17 @@ public class CartController {
         return ResponseEntity.ok(ApiResponse.success(cart, "Cart updated"));
     }
 
+    @PutMapping("/update-customization/{cartItemId}")
+    @Operation(summary = "Update cart item customization (size/options/toppings)")
+    public ResponseEntity<ApiResponse<CartResponse>> updateCustomization(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID cartItemId,
+            @Valid @RequestBody AddToCartRequest request) {
+        UUID userId = resolveUserId(userDetails);
+        CartResponse cart = cartService.updateItemCustomization(userId, cartItemId, request);
+        return ResponseEntity.ok(ApiResponse.success(cart, "Item customization updated"));
+    }
+
     @DeleteMapping("/remove/{cartItemId}")
     @Operation(summary = "Remove item from cart")
     public ResponseEntity<ApiResponse<CartResponse>> removeItem(

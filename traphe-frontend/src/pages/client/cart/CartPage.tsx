@@ -11,32 +11,47 @@ export default function CartPage() {
     useState<OrderResponse | null>(null);
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   const getTitle = () => {
     switch (currentStep) {
       case 1:
-        return "Cart";
+        return "Your Cart";
       case 2:
-        return "Check Out";
+        return "Checkout";
       case 3:
-        return "Complete!";
+        return "Order Success";
       default:
-        return "Cart";
+        return "Your Cart";
+    }
+  };
+
+  const getBgClass = () => {
+    switch (currentStep) {
+      case 1:
+        return "bg-parchment";
+      case 2:
+        return "bg-foam";
+      case 3:
+        return "bg-foam";
+      default:
+        return "bg-parchment";
     }
   };
 
   return (
-    <div className="bg-white min-h-screen pb-20">
-      <div className="pt-10 pb-8 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">{getTitle()}</h1>
+    <div className={`${getBgClass()} min-h-screen pb-20 transition-colors duration-500`}>
+      <div className="max-w-[1280px] mx-auto px-6 pt-10 pb-4">
+        <h1 className="font-display-lg text-display-lg text-roast mb-6">{getTitle()}</h1>
+        <CartStepper currentStep={currentStep} />
       </div>
-      <CartStepper currentStep={currentStep} />
 
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {currentStep === 1 && <ShoppingCartStep onNext={nextStep} />}
         {currentStep === 2 && (
           <CheckoutStep
             onNext={nextStep}
+            onBack={prevStep}
             onOrderSuccess={setOrderSuccessData}
           />
         )}

@@ -13,7 +13,11 @@ import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    builder = @org.mapstruct.Builder(disableBuilder = true)
+)
 public interface MenuItemMapper {
 
     @Mapping(target = "categoryId", source = "item.category.id")
@@ -23,7 +27,7 @@ public interface MenuItemMapper {
     @Mapping(target = "imageUrl", source = "item.imageUrl")
     @Mapping(target = "description", source = "item.description")
     @Mapping(target = "status", source = "item.status")
-    @Mapping(target = "isDrink", source = "item.drink")
+    @Mapping(target = "drink", source = "item.drink")
     @Mapping(target = "basePrice", source = "item.basePrice")
     @Mapping(target = "preparationTime", source = "item.preparationTime")
     @Mapping(target = "allowToppings", source = "item.allowToppings")
@@ -39,7 +43,7 @@ public interface MenuItemMapper {
     @Mapping(target = "imageUrl", source = "item.imageUrl")
     @Mapping(target = "description", source = "item.description")
     @Mapping(target = "status", source = "item.status")
-    @Mapping(target = "isDrink", source = "item.drink")
+    @Mapping(target = "drink", source = "item.drink")
     @Mapping(target = "basePrice", source = "item.basePrice")
     @Mapping(target = "preparationTime", source = "item.preparationTime")
     @Mapping(target = "allowToppings", source = "item.allowToppings")

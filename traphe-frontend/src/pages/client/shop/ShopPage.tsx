@@ -17,12 +17,14 @@ import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Link, useSearchParams } from "react-router"; // [1] Import useSearchParams
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
 
 interface ShopPageProps {
   isDrink?: boolean;
 }
 
 export default function ShopPage({ isDrink = true }: ShopPageProps) {
+  const { selectedBranchId } = useCart();
   const [gridCols, setGridCols] = useState<number>(3);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,6 +86,7 @@ export default function ShopPage({ isDrink = true }: ShopPageProps) {
           isDrink,
           sortBy,
           sortDir,
+          branchId: selectedBranchId || undefined,
           ...filters,
         });
 
@@ -100,7 +103,7 @@ export default function ShopPage({ isDrink = true }: ShopPageProps) {
       }
     };
     fetchProducts();
-  }, [currentPage, filters, isDrink, sortBy, sortDir]);
+  }, [currentPage, filters, isDrink, sortBy, sortDir, selectedBranchId]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {

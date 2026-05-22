@@ -29,6 +29,7 @@ export interface OrderResponse {
   // Items
   items: OrderItemDetail[];
   paymentUrl: string | null;
+  merchandiseOrderId?: string | null;
 }
 
 export interface OrderItemDetail {
@@ -49,6 +50,9 @@ export interface OrderItemRequest {
   quantity: number;
   unitPrice: number;
   discount?: number;
+  notes?: string | null;
+  options?: { optionGroupId: string; optionValueId: string }[];
+  toppings?: { toppingId: string; quantity: number }[];
 }
 
 export interface CreateOrderRequest {
@@ -131,15 +135,9 @@ export const orderService = {
     );
   },
 
-  // Cancel order (shortcut)
-  cancelOrder: async (id: string, reason: string) => {
-    return axiosClient.put<any, ApiResponse<OrderResponse>>(
-      `/orders/${id}/cancel`,
-      null,
-      {
-        params: { reason },
-      },
-    );
+  // Cancel order
+  cancelOrder: async (id: string) => {
+    return axiosClient.delete<any, ApiResponse<OrderResponse>>(`/orders/${id}`);
   },
 
   // Delete order

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { User, ShoppingBag } from "lucide-react";
+import { User, ShoppingBag, MapPin, Coffee } from "lucide-react";
 import { navLinks } from "@/lib/menu";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
@@ -7,9 +7,19 @@ import { authService } from "@/services/auth.service";
 import { Button } from "../ui/button";
 
 export default function Header() {
-  const { count, openLoginPrompt } = useCart();
+  const {
+    count,
+    openLoginPrompt,
+    shippingMethod,
+    selectedBranchId,
+    deliveryAddress,
+    branches,
+    setIsBranchModalOpen,
+  } = useCart();
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
+
+  const selectedBranch = branches.find((b) => b.id === selectedBranchId);
 
   return (
     <header className="w-full bg-white py-4 px-6 sticky top-0 z-50 shadow-sm border-b border-gray-100">
@@ -37,6 +47,29 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-5">
+          {/* Branch / Delivery Indicator */}
+          <button
+            onClick={() => setIsBranchModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/50 text-xs font-semibold transition-colors cursor-pointer max-w-[180px] sm:max-w-[240px] truncate"
+          >
+            {shippingMethod === "delivery" && deliveryAddress ? (
+              <>
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                <span className="truncate">Giao: {deliveryAddress}</span>
+              </>
+            ) : selectedBranch ? (
+              <>
+                <Coffee className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                <span className="truncate">Lấy: {selectedBranch.name}</span>
+              </>
+            ) : (
+              <>
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-amber-700" />
+                <span>Chọn cửa hàng</span>
+              </>
+            )}
+          </button>
+
           <button
             onClick={(e) => {
               if (!user) {

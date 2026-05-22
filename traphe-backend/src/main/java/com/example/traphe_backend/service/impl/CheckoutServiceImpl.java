@@ -17,6 +17,7 @@ import com.example.traphe_backend.service.CheckoutService;
 import com.example.traphe_backend.service.LoyaltyService;
 import com.example.traphe_backend.service.PaymentService;
 import com.example.traphe_backend.service.PromotionService;
+import com.example.traphe_backend.repository.PromotionUsageRepository;
 import com.example.traphe_backend.util.VnPayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final PromotionService promotionService;
     private final LoyaltyService loyaltyService;
     private final PaymentService paymentService;
+    private final PromotionUsageRepository promotionUsageRepository;
 
     @Override
     @Transactional
@@ -64,7 +66,6 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         // ========== 4. Validate & fetch Drink Order ==========
         Order drinkOrder = null;
-        BigDecimal drinkAmount = BigDecimal.ZERO;
 
         if (request.getDrinkOrderId() != null) {
             drinkOrder = validateOrderForCheckout(
@@ -75,13 +76,10 @@ public class CheckoutServiceImpl implements CheckoutService {
                 throw new IllegalArgumentException(
                         "Đơn đồ uống " + drinkOrder.getOrderNumber() + " đã được thanh toán trước đó.");
             }
-
-            drinkAmount = drinkOrder.getFinalAmount();
         }
 
         // ========== 5. Validate & fetch Merchandise Order ==========
         Order merchandiseOrder = null;
-        BigDecimal merchandiseAmount = BigDecimal.ZERO;
 
         if (request.getMerchandiseOrderId() != null) {
             merchandiseOrder = validateOrderForCheckout(
@@ -92,43 +90,85 @@ public class CheckoutServiceImpl implements CheckoutService {
                 throw new IllegalArgumentException(
                         "Đơn merchandise " + merchandiseOrder.getOrderNumber() + " đã được thanh toán trước đó.");
             }
-
-            merchandiseAmount = merchandiseOrder.getFinalAmount();
         }
 
         // ========== 6. Calculate totals ==========
-        BigDecimal totalAmount = drinkAmount.add(merchandiseAmount);
+        BigDecimal drinkSubtotal = drinkOrder != null ? drinkOrder.getSubtotal().add(drinkOrder.getShippingFee() != null ? drinkOrder.getShippingFee() : BigDecimal.ZERO) : BigDecimal.ZERO;
+        BigDecimal merchandiseSubtotal = merchandiseOrder != null ? merchandiseOrder.getSubtotal().add(merchandiseOrder.getShippingFee() != null ? merchandiseOrder.getShippingFee() : BigDecimal.ZERO) : BigDecimal.ZERO;
+        
+        BigDecimal totalAmount = drinkSubtotal.add(merchandiseSubtotal);
         BigDecimal discountAmount = BigDecimal.ZERO;
 
         // --- Apply voucher code (if provided) ---
         Order primaryOrder = drinkOrder != null ? drinkOrder : merchandiseOrder;
         if (request.getVoucherCode() != null && !request.getVoucherCode().isBlank()) {
-            try {
-                BigDecimal voucherDiscount = promotionService.applyPromotion(
-                        request.getVoucherCode(), primaryOrder, customer);
+            java.util.Optional<com.example.traphe_backend.entity.PromotionUsage> existingPromoUsage =
+                    promotionUsageRepository.findByOrderId(primaryOrder.getId());
+            if (existingPromoUsage.isPresent()) {
+                BigDecimal voucherDiscount = existingPromoUsage.get().getDiscountApplied();
                 discountAmount = discountAmount.add(voucherDiscount);
-                log.info("Applied voucher '{}' — discount {} VND", request.getVoucherCode(), voucherDiscount);
-            } catch (Exception e) {
-                log.warn("Voucher '{}' could not be applied: {}", request.getVoucherCode(), e.getMessage());
-                // Không throw — cho phép checkout tiếp mà không có giảm giá voucher
+                log.info("Voucher '{}' was already applied to order — using existing discount {} VND",
+                        request.getVoucherCode(), voucherDiscount);
+            } else {
+                try {
+                    BigDecimal voucherDiscount = promotionService.applyPromotionForCombinedOrder(
+                            request.getVoucherCode(), primaryOrder, customer, totalAmount);
+                    discountAmount = discountAmount.add(voucherDiscount);
+                    
+                    log.info("Applied voucher '{}' during checkout — discount {} VND", request.getVoucherCode(), voucherDiscount);
+                } catch (Exception e) {
+                    log.warn("Voucher '{}' could not be applied: {}", request.getVoucherCode(), e.getMessage());
+                    // Không throw — cho phép checkout tiếp mà không có giảm giá voucher
+                }
             }
         }
 
         // --- Redeem loyalty points (if requested) ---
         if (request.getPointsUsed() > 0) {
-            try {
-                BigDecimal pointsDiscount = loyaltyService.redeemPoints(
-                        customer, primaryOrder, request.getPointsUsed());
+            if (primaryOrder.getLoyaltyPointsUsed() > 0) {
+                BigDecimal pointsDiscount = primaryOrder.getPointDiscountAmount() != null
+                        ? primaryOrder.getPointDiscountAmount()
+                        : BigDecimal.valueOf(primaryOrder.getLoyaltyPointsUsed() * 1000L);
                 discountAmount = discountAmount.add(pointsDiscount);
-                log.info("Redeemed {} loyalty points — discount {} VND", request.getPointsUsed(), pointsDiscount);
-            } catch (Exception e) {
-                log.warn("Could not redeem {} points: {}", request.getPointsUsed(), e.getMessage());
+                log.info("Loyalty points ({} points) were already redeemed for order — using existing discount {} VND",
+                        primaryOrder.getLoyaltyPointsUsed(), pointsDiscount);
+            } else {
+                try {
+                    BigDecimal pointsDiscount = loyaltyService.redeemPoints(
+                            customer, primaryOrder, request.getPointsUsed());
+                    discountAmount = discountAmount.add(pointsDiscount);
+                    
+                    // Update primary order to record points used for potential refunds
+                    primaryOrder.setLoyaltyPointsUsed(request.getPointsUsed());
+                    primaryOrder.setPointDiscountAmount(pointsDiscount);
+                    
+                    log.info("Redeemed {} loyalty points during checkout — discount {} VND", request.getPointsUsed(), pointsDiscount);
+                } catch (Exception e) {
+                    log.warn("Could not redeem {} points: {}", request.getPointsUsed(), e.getMessage());
+                }
             }
         }
 
         BigDecimal finalAmount = totalAmount.subtract(discountAmount);
         if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
             finalAmount = BigDecimal.ZERO;
+        }
+
+        // --- Distribute total discount to individual orders to ensure sum(finalAmount) == combined.finalAmount ---
+        BigDecimal remainingDiscount = discountAmount;
+        if (drinkOrder != null) {
+            BigDecimal discountForDrink = drinkSubtotal.min(remainingDiscount);
+            drinkOrder.setTotalDiscount(discountForDrink);
+            drinkOrder.setFinalAmount(drinkSubtotal.subtract(discountForDrink));
+            remainingDiscount = remainingDiscount.subtract(discountForDrink);
+            orderRepository.save(drinkOrder);
+        }
+        if (merchandiseOrder != null) {
+            BigDecimal discountForMerch = merchandiseSubtotal.min(remainingDiscount);
+            merchandiseOrder.setTotalDiscount(discountForMerch);
+            merchandiseOrder.setFinalAmount(merchandiseSubtotal.subtract(discountForMerch));
+            remainingDiscount = remainingDiscount.subtract(discountForMerch);
+            orderRepository.save(merchandiseOrder);
         }
 
         // ========== 7. Generate unique transaction reference ==========

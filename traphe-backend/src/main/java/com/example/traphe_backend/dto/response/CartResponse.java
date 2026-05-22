@@ -1,5 +1,6 @@
 package com.example.traphe_backend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +32,7 @@ public class CartResponse {
         private UUID menuItemId;
         private String menuItemName;
         private String menuItemImageUrl;
+        @JsonProperty("isDrink")
         private boolean isDrink;
         private String status; // ACTIVE, DISCONTINUED etc.
 

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-export default function ExploreMoreSection() {
+export default function ExploreMoreSection({ isDrink }: { isDrink?: boolean }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -23,6 +23,7 @@ export default function ExploreMoreSection() {
       const res = await productService.getAllProducts({
         page: pageIndex,
         size: PAGE_SIZE,
+        isDrink,
       });
 
       if (res.statusCode === 200 && res.data) {
@@ -47,7 +48,7 @@ export default function ExploreMoreSection() {
 
   useEffect(() => {
     fetchProducts(0);
-  }, []);
+  }, [isDrink]);
 
   const handleLoadMore = () => {
     fetchProducts(page + 1, true);

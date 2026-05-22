@@ -40,7 +40,6 @@ public class PublicShopController {
     public ResponseEntity<ApiResponse<List<MenuItemResponse>>> getProducts(
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean isDrink,
             @RequestParam(required = false) UUID branchId,
             @RequestParam(defaultValue = "0") int page,
@@ -49,7 +48,7 @@ public class PublicShopController {
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         PageResponse<MenuItemResponse> result = menuService.getMenuItems(
-                categoryId, search, status, isDrink, branchId, page, size, sortBy, sortDir);
+                categoryId, search, "ACTIVE", isDrink, branchId, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(ApiResponse.successPagination(result, "Products retrieved successfully"));
     }

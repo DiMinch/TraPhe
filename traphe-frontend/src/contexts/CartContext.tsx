@@ -10,6 +10,7 @@ import type { Cart, AddToCartRequest } from "@/types/cart.types";
 import { toast } from "sonner";
 import { authService } from "@/services/auth.service";
 import { useNavigate } from "react-router";
+import axiosClient from "@/lib/axios-client";
 import {
   Dialog,
   DialogContent,
@@ -28,9 +29,24 @@ interface CartContextType {
   refreshCart: () => Promise<void>;
   addToCart: (data: AddToCartRequest) => Promise<boolean>;
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
+  updateCustomization: (cartItemId: string, data: AddToCartRequest) => Promise<boolean>;
   removeItem: (cartItemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   openLoginPrompt: () => void;
+  shippingMethod: "pickup" | "delivery";
+  setShippingMethod: (method: "pickup" | "delivery") => void;
+  selectedBranchId: string | null;
+  setSelectedBranchId: (branchId: string | null) => void;
+  branches: any[];
+  isLoadingBranches: boolean;
+  deliveryAddress: string | null;
+  setDeliveryAddress: (address: string | null) => void;
+  isBranchConfirmed: boolean;
+  setIsBranchConfirmed: (confirmed: boolean) => void;
+  shippingFee: number;
+  setShippingFee: (fee: number) => void;
+  isBranchModalOpen: boolean;
+  setIsBranchModalOpen: (open: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -40,7 +56,79 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
+  const [shippingMethod, setShippingMethod] = useState<"pickup" | "delivery">(() => {
+    return (localStorage.getItem("fulfillmentMode") as "pickup" | "delivery") || "pickup";
+  });
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(() => {
+    return localStorage.getItem("selectedBranchId") || null;
+  });
+  const [deliveryAddress, setDeliveryAddress] = useState<string | null>(() => {
+    return localStorage.getItem("deliveryAddress") || null;
+  });
+  const [isBranchConfirmed, setIsBranchConfirmed] = useState<boolean>(() => {
+    return localStorage.getItem("isBranchConfirmed") === "true";
+  });
+  const [shippingFee, setShippingFee] = useState<number>(() => {
+    return Number(localStorage.getItem("shippingFee")) || 0;
+  });
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   const navigate = useNavigate();
+
+  // Sync to localStorage
+  useEffect(() => {
+    localStorage.setItem("fulfillmentMode", shippingMethod);
+  }, [shippingMethod]);
+
+  useEffect(() => {
+    if (selectedBranchId) {
+      localStorage.setItem("selectedBranchId", selectedBranchId);
+    } else {
+      localStorage.removeItem("selectedBranchId");
+    }
+  }, [selectedBranchId]);
+
+  useEffect(() => {
+    if (deliveryAddress) {
+      localStorage.setItem("deliveryAddress", deliveryAddress);
+    } else {
+      localStorage.removeItem("deliveryAddress");
+    }
+  }, [deliveryAddress]);
+
+  useEffect(() => {
+    localStorage.setItem("isBranchConfirmed", String(isBranchConfirmed));
+  }, [isBranchConfirmed]);
+
+  useEffect(() => {
+    localStorage.setItem("shippingFee", String(shippingFee));
+  }, [shippingFee]);
+
+  // Fetch branches on mount
+  useEffect(() => {
+    const fetchBranches = async () => {
+      setIsLoadingBranches(true);
+      try {
+        const res = await axiosClient.get<any, any>("/branches");
+        const items = Array.isArray(res.data) ? res.data : res.data?.content || [];
+        setBranches(items);
+        if (items.length > 0 && !localStorage.getItem("selectedBranchId")) {
+          const firstActive = items.find((item: any) => item.isActive !== false);
+          if (firstActive) {
+            setSelectedBranchId(firstActive.id);
+          } else {
+            setSelectedBranchId(items[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch branches in CartContext", err);
+      } finally {
+        setIsLoadingBranches(false);
+      }
+    };
+    fetchBranches();
+  }, []);
 
   const isLoggedIn = !!authService.getCurrentUser();
 
@@ -108,13 +196,49 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       openLoginPrompt();
       return;
     }
+    if (!cart) return;
+
+    // Optimistic UI Update
+    const previousCart = cart;
+    const updatedItems = cart.items.map((item) => {
+      if (item.id === cartItemId) {
+        return {
+          ...item,
+          quantity: quantity,
+          subtotal: item.unitPrice * quantity,
+        };
+      }
+      return item;
+    });
+
+    const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+    const optimisticCart = {
+      ...cart,
+      items: updatedItems,
+      totalItems: newTotalItems,
+      totalAmount: newTotalAmount,
+    };
+
+    setCart(optimisticCart);
+    setCount(newTotalItems);
+
     try {
       const res = await cartService.updateQuantity(cartItemId, quantity);
       if (res.success && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
+      } else {
+        // Rollback on unexpected response structure
+        setCart(previousCart);
+        setCount(previousCart.totalItems);
       }
     } catch (error: any) {
+      // Rollback
+      setCart(previousCart);
+      setCount(previousCart.totalItems);
+
       if (error.response?.status === 401) {
         toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
         localStorage.clear();
@@ -130,14 +254,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       openLoginPrompt();
       return;
     }
+    if (!cart) return;
+
+    const previousCart = cart;
+    const updatedItems = cart.items.filter((item) => item.id !== cartItemId);
+    const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+    const newTotalAmount = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+    const optimisticCart = {
+      ...cart,
+      items: updatedItems,
+      totalItems: newTotalItems,
+      totalAmount: newTotalAmount,
+    };
+
+    setCart(optimisticCart);
+    setCount(newTotalItems);
+
     try {
       const res = await cartService.removeItem(cartItemId);
       if (res.success && res.data) {
         setCart(res.data);
         setCount(res.data.totalItems);
         toast.success("Đã xóa khỏi giỏ hàng");
+      } else {
+        setCart(previousCart);
+        setCount(previousCart.totalItems);
       }
     } catch (error: any) {
+      setCart(previousCart);
+      setCount(previousCart.totalItems);
+
       if (error.response?.status === 401) {
         toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
         localStorage.clear();
@@ -145,6 +292,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       } else {
         toast.error("Không thể xóa sản phẩm");
       }
+    }
+  };
+
+  const updateCustomization = async (
+    cartItemId: string,
+    data: AddToCartRequest
+  ): Promise<boolean> => {
+    if (!authService.getCurrentUser()) {
+      openLoginPrompt();
+      return false;
+    }
+    try {
+      const res = await cartService.updateCustomization(cartItemId, data);
+      if (res.success && res.data) {
+        setCart(res.data);
+        setCount(res.data.totalItems);
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error(error);
+      if (error.response?.status === 401) {
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+        localStorage.clear();
+        openLoginPrompt();
+      } else {
+        toast.error(error.response?.data?.message || "Không thể cập nhật tùy chỉnh");
+      }
+      return false;
     }
   };
 
@@ -167,9 +343,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         refreshCart,
         addToCart,
         updateQuantity,
+        updateCustomization,
         removeItem,
         clearCart,
         openLoginPrompt,
+        shippingMethod,
+        setShippingMethod,
+        selectedBranchId,
+        setSelectedBranchId,
+        branches,
+        isLoadingBranches,
+        deliveryAddress,
+        setDeliveryAddress,
+        isBranchConfirmed,
+        setIsBranchConfirmed,
+        shippingFee,
+        setShippingFee,
+        isBranchModalOpen,
+        setIsBranchModalOpen,
       }}
     >
       {children}

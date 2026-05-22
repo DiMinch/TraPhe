@@ -97,11 +97,11 @@ export default function SignInPage() {
         {/* Right Section: Login Form */}
         <div className="flex w-full flex-col justify-center px-space-6 py-space-12 lg:w-1/2 xl:px-space-20 bg-foam relative">
           {/* Minimal Back Button */}
-          <div className="absolute top-space-8 left-space-6 xl:left-space-12">
+          <div className="absolute top-space-6 left-space-6 lg:left-space-12">
             <Link
               to="/"
               aria-label="Quay lại"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest text-dust shadow-sm border border-mist hover:text-roast hover:border-roast hover:shadow-md transition-all duration-300"
+              className="flex items-center gap-2 text-dust hover:text-roast transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>

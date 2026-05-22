@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TraPhe - Your Cart</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Source+Serif+4:wght@400;600&amp;family=Viaoda+Libre&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#00454a",
+                      "roast": "#5C3317",
+                      "smoke": "#4A3F35",
+                      "inverse-surface": "#352f2c",
+                      "ink": "#1A1410",
+                      "parchment": "#EFE5D3",
+                      "surface-container-lowest": "#ffffff",
+                      "admin-border": "#E2DDD7",
+                      "error": "#ba1a1a",
+                      "primary": "#421e04",
+                      "latte": "#C89A6E",
+                      "surface-variant": "#ebe0db",
+                      "foam": "#FBF5EC",
+                      "mist": "#D4C9BC",
+                      "tertiary": "#002d31",
+                      "surface-container-highest": "#ebe0db",
+                      "surface-container-high": "#f1e6e1",
+                      "on-secondary-container": "#775d4e",
+                      "secondary-fixed-dim": "#e1c0ad",
+                      "on-secondary-fixed-variant": "#594234",
+                      "surface-tint": "#835334",
+                      "on-tertiary-fixed": "#002022",
+                      "on-surface": "#201b18",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#ffdbc8",
+                      "on-primary-container": "#d69b77",
+                      "dust": "#8C7B6E",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#51443d",
+                      "admin-surface": "#FFFFFF",
+                      "secondary": "#72594a",
+                      "outline-variant": "#d6c3b9",
+                      "surface-dim": "#e3d8d3",
+                      "surface": "#fff8f5",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#321300",
+                      "secondary-container": "#fbd9c5",
+                      "background": "#fff8f5",
+                      "surface-container-low": "#fdf1ec",
+                      "on-secondary-fixed": "#29170c",
+                      "inverse-primary": "#f8b993",
+                      "admin-bg": "#F7F5F2",
+                      "tertiary-fixed": "#b5ecf2",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#fff8f5",
+                      "espresso": "#2C1A0E",
+                      "cloud": "#F0EBE3",
+                      "surface-container": "#f7ece7",
+                      "secondary-fixed": "#fedcc8",
+                      "inverse-on-surface": "#faeeea",
+                      "on-tertiary-fixed-variant": "#114e53",
+                      "on-secondary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "cream": "#F5EAD8",
+                      "primary-container": "#5c3317",
+                      "caramel": "#A0622A",
+                      "tertiary-fixed-dim": "#99d0d6",
+                      "on-background": "#201b18",
+                      "primary-fixed-dim": "#f8b993",
+                      "on-tertiary-container": "#7cb2b7",
+                      "on-primary-fixed-variant": "#673c1f",
+                      "outline": "#84746c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-12": "48px",
+                      "space-3": "12px",
+                      "space-20": "80px",
+                      "space-6": "24px",
+                      "space-4": "16px",
+                      "space-2": "8px",
+                      "space-8": "32px",
+                      "space-1": "4px"
+              },
+              "fontFamily": {
+                      "ui-body": [
+                              "Google Sans"
+                      ],
+                      "heading-lg": [
+                              "Source Serif 4"
+                      ],
+                      "pos-total": [
+                              "Google Sans"
+                      ],
+                      "display-xl": [
+                              "Viaoda Libre"
+                      ],
+                      "display-lg": [
+                              "Viaoda Libre"
+                      ],
+                      "ui-heading": [
+                              "Google Sans"
+                      ],
+                      "display-md": [
+                              "Viaoda Libre"
+                      ],
+                      "body-md": [
+                              "Source Serif 4"
+                      ]
+              },
+              "fontSize": {
+                      "ui-body": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "heading-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.35",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "pos-total": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "ui-heading": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.65",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+</head>
+<body class="bg-parchment antialiased text-ink">
+<header class="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md docked full-width top-0 z-50 border-b border-stone-200 dark:border-stone-800 shadow-sm sticky">
+<div class="flex justify-between items-center max-w-[1280px] mx-auto px-6 h-20 w-full">
+<div class="text-2xl font-bold tracking-tight text-[#5C3317] dark:text-stone-100 font-serif font-noto-serif antialiased">TraPhe</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 opacity-100 font-noto-serif antialiased px-3 py-2 rounded-md" href="#">Menu</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 opacity-100 font-noto-serif antialiased px-3 py-2 rounded-md" href="#">Rewards</a>
+<a class="text-[#5C3317] dark:text-white border-b-2 border-[#5C3317] dark:border-stone-200 pb-1 font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 opacity-80 scale-95 transition-transform font-noto-serif antialiased px-3 pt-2" href="#">Order Now</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 opacity-100 font-noto-serif antialiased px-3 py-2 rounded-md" href="#">Locations</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#5C3317] dark:text-[#D7CCC8] hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 p-2 rounded-full cursor-pointer">shopping_bag</span>
+<span class="material-symbols-outlined text-[#5C3317] dark:text-[#D7CCC8] hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 p-2 rounded-full cursor-pointer">notifications</span>
+<img alt="Customer Avatar" class="w-10 h-10 rounded-full border border-admin-border object-cover ml-2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqhDsZAa2U9KVqEOvzfPl-X70znIujP4kyTweM0WyHqgZbFUgqrfEfbjROVtFznzMnhfM9BUbXdRTe7Z9l-sipOoBNaKFIRibbGOcT-1okin_iebLp9JFrJys9B-1D2ChdmSWPDSKUV-qEsJBg_KL8Tl6LFO8dP430h1x9oJ23PXRzXmYv41s70IprvipOLn9xY4RL_GGBHC3kXDMFgwj7dYSu71NZu2ZHx7WcZJqUjAoRON8gloM_1_3p_FQ4jslShLWA3Y8JeO8"/>
+</div>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto px-space-6 py-space-20">
+<h1 class="font-display-lg text-display-lg text-roast mb-space-12">Your Cart</h1>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-8">
+<div class="lg:col-span-8 flex flex-col gap-space-12">
+<section>
+<h2 class="font-display-md text-display-md text-smoke mb-space-6 border-b border-mist pb-space-2">Your Drinks</h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-admin-border flex flex-col overflow-hidden">
+<div class="flex flex-col sm:flex-row items-start sm:items-center p-space-6 gap-space-6 border-b border-admin-border hover:bg-foam transition-colors duration-200 group">
+<img alt="Cà Phê Sữa Đá" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-mist" data-alt="A high-end, top-down photograph of a traditional Vietnamese iced coffee, Cà Phê Sữa Đá, served in an elegant faceted glass. The dark, rich espresso sits atop a thick layer of creamy sweetened condensed milk, filled with clear ice cubes. The glass rests on a clean, light-toned stone surface, illuminated by soft, natural morning light that creates a warm, inviting mood. The aesthetic is modern, minimalist, and deeply rooted in a sophisticated coffee culture, utilizing a color palette of deep browns, creamy whites, and warm earthy tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1pjASW5cgHgPTvhrzGxImvgdAcvWYWAAEgmKZ-7BPCkw7qGx8Z2V8MEXlPsnyuC84HXW4pzahm1i6EjhN5cIDuJC7Ymawc0tkMHcO9wIN5H12yMzTvWOgdk3ith1crJjyMNLm9cQGzCiXiS0qzcKozkN1KyUaCkpgXBp-zN5RfcnhvOw9uoDqq6JCBCRkbEtMILq4hjldsxIiKAlatCU86X82-b1LLwDupixRcyIdeLRmXujK758mswwvqG6ZWy2SMoc2BqzaCfU"/>
+<div class="flex-1 flex flex-col gap-space-2 w-full">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-ui-heading text-ui-heading text-roast">Cà Phê Sữa Đá</h3>
+<p class="font-ui-body text-ui-body text-smoke mt-1">Large • Iced</p>
+</div>
+<span class="font-ui-heading text-ui-heading text-roast">$6.50</span>
+</div>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-cream text-smoke font-ui-body text-ui-body text-xs border border-mist">Less Ice</span>
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-cream text-smoke font-ui-body text-ui-body text-xs border border-mist">Standard Sweetness</span>
+</div>
+<div class="flex justify-between items-center mt-space-4 pt-space-4 border-t border-mist/50">
+<button class="flex items-center text-dust hover:text-roast transition-colors font-ui-body text-ui-body gap-1">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit Options
+                                    </button>
+<div class="flex items-center gap-space-4">
+<div class="flex items-center border border-admin-border rounded-full h-10 bg-white">
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-l-full transition-colors"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+<span class="font-ui-body text-ui-body text-roast w-8 text-center select-none">2</span>
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-r-full transition-colors"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</div>
+<button class="text-dust hover:text-error transition-colors p-2 rounded-full hover:bg-error-container/20" title="Remove item">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-start sm:items-center p-space-6 gap-space-6 hover:bg-foam transition-colors duration-200 group">
+<img alt="Lotus Silk Tea" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-mist" data-alt="A studio-quality photograph of a refreshing iced lotus tea beverage presented in a tall, minimal, cylindrical glass. The tea has a vibrant, golden-amber hue, garnished with fresh mint leaves and a delicate dried lotus petal floating on top. Condensation beads on the outside of the cold glass. The background is a soft, out-of-focus parchment texture, bathed in bright, diffused lighting that highlights the drink's clarity and premium quality. The overall mood is serene and luxurious, aligned with a refined, earthy color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNCzNXu2iv6c9-9welYMrZZmItJYp42Gs6FimaLphJmTWRAcCPHeDEJIeouDqn3-Iv6NAdLwD2St4I-thf379gsWnK-AJT28PgVDPZEMs4oojxueHTChASQIafW0sBhCM_bxGcOzRJXBdJWsUJ2dFUasJHDUfWPfVTUQmPF6l58taRyHS0VKH8d80sV7Ewb0oNgjT3i6D6EyFOorlGXodOlSFtX53seQJ2jqkjqOqypeQWV6zk5pKyVr46UZghNdnBIDPTM4FnRgo"/>
+<div class="flex-1 flex flex-col gap-space-2 w-full">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-ui-heading text-ui-heading text-roast">Lotus Silk Tea</h3>
+<p class="font-ui-body text-ui-body text-smoke mt-1">Medium • Iced</p>
+</div>
+<span class="font-ui-heading text-ui-heading text-roast">$5.00</span>
+</div>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-cream text-smoke font-ui-body text-ui-body text-xs border border-mist">Add Lychee Jelly</span>
+</div>
+<div class="flex justify-between items-center mt-space-4 pt-space-4 border-t border-mist/50">
+<button class="flex items-center text-dust hover:text-roast transition-colors font-ui-body text-ui-body gap-1">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit Options
+                                    </button>
+<div class="flex items-center gap-space-4">
+<div class="flex items-center border border-admin-border rounded-full h-10 bg-white">
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-l-full transition-colors"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+<span class="font-ui-body text-ui-body text-roast w-8 text-center select-none">1</span>
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-r-full transition-colors"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</div>
+<button class="text-dust hover:text-error transition-colors p-2 rounded-full hover:bg-error-container/20" title="Remove item">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h2 class="font-display-md text-display-md text-smoke mb-space-6 border-b border-mist pb-space-2">Merchandise</h2>
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-admin-border flex flex-col overflow-hidden">
+<div class="flex flex-col sm:flex-row items-start sm:items-center p-space-6 gap-space-6 hover:bg-foam transition-colors duration-200 group">
+<img alt="Heritage Robusta Beans" class="w-24 h-24 sm:w-32 sm:h-32 rounded-lg object-cover shadow-sm border border-mist bg-foam" data-alt="A beautifully styled product shot of a premium bag of whole bean robusta coffee. The packaging is a sophisticated, matte-finish pouch in a rich 'Roast' brown color, featuring subtle, elegant typography. Next to the bag, a small handful of glossy, dark-roasted coffee beans is artfully scattered on a smooth, cream-colored surface. The lighting is dramatic yet soft, casting gentle shadows that emphasize the texture of the packaging and the beans. The scene conveys a sense of high-end quality, tradition, and rich flavor." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRfO5aHZ3pwS3bnhGNYMwMPRUkcWssTSGYUOjjGLBDK0lXo3UjB3WHPA5eJz9pU-oUEUaM3rl8dV_ENaSsdtJLw32duGuGFYJrym6cP2cws4yqLHoFgOKLacqRyc9YWWnq5Ii5I0Bkme5w2M-b3Y_KCT75XM3HJPDekl5_u1WrxTAwIP5_8F3Ba0a9fN_evtOHbAPRen40p7Pr_g8gTS8PN5Na0x7B0IsC3tX5ECzqVtz8RSaG1aqN_nWQdwa00CjUB8R21lzTVRQ"/>
+<div class="flex-1 flex flex-col gap-space-2 w-full">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-ui-heading text-ui-heading text-roast">Heritage Robusta Beans</h3>
+<p class="font-ui-body text-ui-body text-smoke mt-1">250g • Whole Bean</p>
+</div>
+<span class="font-ui-heading text-ui-heading text-roast">$18.00</span>
+</div>
+<div class="flex justify-end items-center mt-space-4 pt-space-4 border-t border-mist/50">
+<div class="flex items-center gap-space-4">
+<div class="flex items-center border border-admin-border rounded-full h-10 bg-white">
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-l-full transition-colors"><span class="material-symbols-outlined text-[16px]">remove</span></button>
+<span class="font-ui-body text-ui-body text-roast w-8 text-center select-none">1</span>
+<button class="w-10 h-full flex items-center justify-center text-smoke hover:text-roast hover:bg-foam rounded-r-full transition-colors"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</div>
+<button class="text-dust hover:text-error transition-colors p-2 rounded-full hover:bg-error-container/20" title="Remove item">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div class="lg:col-span-4">
+<div class="bg-surface-container-lowest rounded-xl p-space-8 shadow-sm border border-admin-border sticky top-[100px]">
+<h2 class="font-heading-lg text-heading-lg text-roast mb-space-6 pb-space-4 border-b border-mist">Cart Summary</h2>
+<div class="flex flex-col gap-space-4 mb-space-6 font-ui-body text-ui-body">
+<div class="flex justify-between text-smoke">
+<span>Subtotal (4 items)</span>
+<span>$36.00</span>
+</div>
+<div class="flex justify-between text-smoke">
+<span>Estimated Tax</span>
+<span>$2.88</span>
+</div>
+<div class="flex justify-between text-dust text-sm">
+<span>Shipping &amp; Delivery calculated at checkout.</span>
+</div>
+</div>
+<div class="flex justify-between items-end mt-space-6 pt-space-6 border-t border-admin-border mb-space-8">
+<span class="font-ui-heading text-ui-heading text-smoke">Total</span>
+<span class="font-pos-total text-pos-total text-roast">$38.88</span>
+</div>
+<button class="w-full bg-roast text-white rounded-full py-[14px] font-body-md text-body-md hover:bg-primary transition-colors flex items-center justify-center gap-2 shadow-sm">
+                        Proceed to Checkout <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<div class="mt-space-4 flex justify-center items-center gap-2 text-dust">
+<span class="material-symbols-outlined text-[16px]">lock</span>
+<span class="font-ui-body text-ui-body text-xs">Secure Checkout</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="bg-stone-100 dark:bg-stone-950 full-width mt-20 border-t border-stone-200 dark:border-stone-800 shadow-sm">
+<div class="w-full py-12 px-6 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="font-serif text-lg font-bold text-[#5C3317] dark:text-[#D7CCC8]">TraPhe</div>
+<div class="flex flex-wrap justify-center gap-6 font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500">
+<a class="hover:text-[#5C3317] hover:opacity-80 transition-opacity transition-colors" href="#">Sustainability</a>
+<a class="hover:text-[#5C3317] hover:opacity-80 transition-opacity transition-colors" href="#">Careers</a>
+<a class="hover:text-[#5C3317] hover:opacity-80 transition-opacity transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-[#5C3317] hover:opacity-80 transition-opacity transition-colors" href="#">Contact Us</a>
+</div>
+<div class="font-noto-serif text-xs uppercase tracking-widest text-[#5C3317] dark:text-[#D7CCC8] text-center md:text-right">
+                © 2024 TraPhe Coffee &amp; Tea. Inspired by Vietnamese Heritage.
+            </div>
+</div>
+</footer>
+</body></html>

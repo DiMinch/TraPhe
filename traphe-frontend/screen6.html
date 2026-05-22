@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TraPhe - My Vouchers</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Viaoda+Libre&amp;family=Source+Serif+4:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#835334",
+                        "inverse-surface": "#352f2c",
+                        "on-secondary-container": "#775d4e",
+                        "surface-container-highest": "#ebe0db",
+                        "primary-container": "#5c3317",
+                        "secondary": "#72594a",
+                        "cloud": "#F0EBE3",
+                        "tertiary-container": "#00454a",
+                        "admin-border": "#E2DDD7",
+                        "outline": "#84746c",
+                        "espresso": "#2C1A0E",
+                        "cream": "#F5EAD8",
+                        "roast": "#5C3317",
+                        "on-surface-variant": "#51443d",
+                        "on-tertiary-fixed-variant": "#114e53",
+                        "mist": "#D4C9BC",
+                        "error-container": "#ffdad6",
+                        "foam": "#FBF5EC",
+                        "tertiary-fixed": "#b5ecf2",
+                        "admin-surface": "#FFFFFF",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#594234",
+                        "surface-dim": "#e3d8d3",
+                        "on-tertiary-fixed": "#002022",
+                        "primary-fixed": "#ffdbc8",
+                        "secondary-fixed": "#fedcc8",
+                        "tertiary": "#002d31",
+                        "surface-container": "#f7ece7",
+                        "on-surface": "#201b18",
+                        "on-secondary-fixed": "#29170c",
+                        "smoke": "#4A3F35",
+                        "outline-variant": "#d6c3b9",
+                        "on-background": "#201b18",
+                        "on-secondary": "#ffffff",
+                        "primary": "#421e04",
+                        "caramel": "#A0622A",
+                        "latte": "#C89A6E",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#99d0d6",
+                        "on-primary-fixed-variant": "#673c1f",
+                        "on-primary-fixed": "#321300",
+                        "background": "#fff8f5",
+                        "surface-container-low": "#fdf1ec",
+                        "surface": "#fff8f5",
+                        "ink": "#1A1410",
+                        "admin-bg": "#F7F5F2",
+                        "inverse-primary": "#f8b993",
+                        "on-primary-container": "#d69b77",
+                        "secondary-fixed-dim": "#e1c0ad",
+                        "dust": "#8C7B6E",
+                        "secondary-container": "#fbd9c5",
+                        "surface-bright": "#fff8f5",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "parchment": "#EFE5D3",
+                        "surface-variant": "#ebe0db",
+                        "surface-container-high": "#f1e6e1",
+                        "primary-fixed-dim": "#f8b993",
+                        "on-tertiary-container": "#7cb2b7",
+                        "inverse-on-surface": "#faeeea"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-4": "16px",
+                        "space-20": "80px",
+                        "space-2": "8px",
+                        "space-8": "32px",
+                        "space-1": "4px",
+                        "space-6": "24px",
+                        "space-3": "12px",
+                        "space-12": "48px"
+                    },
+                    "fontFamily": {
+                        "ui-heading": ["Google Sans"],
+                        "display-lg": ["Viaoda Libre"],
+                        "display-xl": ["Viaoda Libre"],
+                        "ui-body": ["Google Sans"],
+                        "heading-lg": ["Source Serif 4"],
+                        "pos-total": ["Google Sans"],
+                        "display-md": ["Viaoda Libre"],
+                        "body-md": ["Source Serif 4"]
+                    },
+                    "fontSize": {
+                        "ui-heading": ["20px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.15", "fontWeight": "400" }],
+                        "display-xl": ["64px", { "lineHeight": "1.1", "fontWeight": "400" }],
+                        "ui-body": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "heading-lg": ["24px", { "lineHeight": "1.35", "fontWeight": "600" }],
+                        "pos-total": ["28px", { "lineHeight": "1.1", "fontWeight": "700" }],
+                        "display-md": ["36px", { "lineHeight": "1.2", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.65", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-admin-bg text-on-background min-h-screen flex flex-col font-body-md text-body-md antialiased">
+<!-- TopAppBar -->
+<header class="bg-white/95 dark:bg-stone-900/95 backdrop-blur-md docked full-width top-0 z-50 border-b border-stone-200 dark:border-stone-800 shadow-sm font-noto-serif antialiased">
+<div class="flex justify-between items-center max-w-[1280px] mx-auto px-6 h-20 w-full">
+<div class="flex items-center gap-6">
+<span class="text-2xl font-bold tracking-tight text-[#5C3317] dark:text-stone-100 font-serif">TraPhe</span>
+</div>
+<nav class="hidden md:flex gap-8">
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] transition-colors hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200" href="#">Menu</a>
+<a class="text-[#5C3317] dark:text-white border-b-2 border-[#5C3317] dark:border-stone-200 pb-1 font-semibold hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200" href="#">Rewards</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] transition-colors hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200" href="#">Order Now</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#5C3317] transition-colors hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200" href="#">Locations</a>
+</nav>
+<div class="flex items-center gap-4 text-[#5C3317] dark:text-[#D7CCC8]">
+<button class="Active: opacity-80 scale-95 transition-transform hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined">shopping_bag</span>
+</button>
+<button class="Active: opacity-80 scale-95 transition-transform hover:bg-stone-50 dark:hover:bg-stone-800 transition-all duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<img alt="Customer Avatar" class="w-10 h-10 rounded-full object-cover border border-admin-border" data-alt="A close-up studio portrait of a customer smiling warmly, bathed in soft, natural light against a neutral background. The lighting highlights delicate facial features, conveying a sense of relaxed sophistication consistent with the brand's aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAT-4IJ1NFsK941fONdclQL8aNra0TICVE-RbQvRKlzIENvI-7grNTXoyfxBPRmxTzD6FbaBjSDScTCvHIrErSEsugDFe6c63hnP-6UhQCmR_FeIAwkjFMoIakU6-GfpmGqATybt0mwbyy4y-O_3YfqaW9LeM20FjAG6MccUKbcuvPSusIF7U514pUJGfzpQNPSLV8MVkIUhH9R-BBYrVXOczIeFzc2bafz18hwNYSqxq3Rvz-oaVjeEXQLA_CU9qWpnGOFallQLac"/>
+</div>
+</div>
+</header>
+<div class="flex-1 flex max-w-[1440px] mx-auto w-full p-space-6 gap-space-8">
+<!-- SideNavBar -->
+<aside class="w-64 flex flex-col gap-2 p-4 h-fit sticky top-24 bg-stone-50 dark:bg-stone-950 rounded-lg border border-stone-200 dark:border-stone-800 divide-y divide-stone-100 dark:divide-stone-900 shadow-md dark:shadow-none font-noto-serif text-sm">
+<div class="pb-4 flex items-center gap-3">
+<img alt="Member Profile" class="w-12 h-12 rounded-full object-cover border border-admin-border" data-alt="A close-up studio portrait of a customer smiling warmly, bathed in soft, natural light against a neutral background. The lighting highlights delicate facial features, conveying a sense of relaxed sophistication consistent with the brand's aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOyhv5dPvZ4VFNKiFZKS-ISvCbE9NBENrhuYlWr9yUN0bMenKyHGFzNUcPWX9Px_biE-NmyJpe9TN_hZB7pEECaaQrdG1786TYtIxWmmY2RXpJaEJMXPbu4LFpzPSr_OMqp08Wry9MfaWnZ7DFhU_35cHSYZp4PkeWGXwcmUK7EmYNAxQIO0kgSy7u8dsbu7_fEtvUE5_aoFBKIxtSnYLCAr8LkI-gNFk59Mfq7gEpDO-razkeesobFFEgt-o3xgdZcipqLdUwYoY"/>
+<div>
+<div class="font-bold text-[#5C3317] dark:text-[#D7CCC8]">Xin Chào</div>
+<div class="text-stone-500 text-xs">Gold Member</div>
+</div>
+</div>
+<nav class="pt-4 flex flex-col gap-1 text-[#5C3317] dark:text-[#D7CCC8]">
+<a class="flex items-center gap-3 px-4 py-3 rounded text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900 hover:translate-x-1 transition-transform duration-300 click:scale-98 transition-all" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900 hover:translate-x-1 transition-transform duration-300 click:scale-98 transition-all" href="#">
+<span class="material-symbols-outlined text-lg">receipt_long</span>
+<span>Orders</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900 hover:translate-x-1 transition-transform duration-300 click:scale-98 transition-all" href="#">
+<span class="material-symbols-outlined text-lg">person</span>
+<span>Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-stone-700 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-900 hover:translate-x-1 transition-transform duration-300 click:scale-98 transition-all" href="#">
+<span class="material-symbols-outlined text-lg">location_on</span>
+<span>Addresses</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded bg-[#5C3317] text-white dark:bg-stone-100 dark:text-stone-900 font-bold border-l-4 border-[#C19A6B] hover:translate-x-1 transition-transform duration-300 click:scale-98 transition-all" href="#">
+<span class="material-symbols-outlined text-lg">loyalty</span>
+<span>Loyalty</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 max-w-[800px] w-full mx-auto">
+<div class="mb-space-8">
+<h1 class="font-display-md text-display-md text-roast mb-space-2">My Vouchers</h1>
+<p class="text-on-surface-variant">Manage your rewards, discounts, and special offers.</p>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-admin-border mb-space-8">
+<button class="px-space-6 py-space-3 font-ui-heading text-ui-heading text-roast border-b-2 border-roast">Available</button>
+<button class="px-space-6 py-space-3 font-ui-body text-ui-body text-outline hover:text-roast transition-colors">Used</button>
+<button class="px-space-6 py-space-3 font-ui-body text-ui-body text-outline hover:text-roast transition-colors">Expired</button>
+</div>
+<!-- Vouchers Grid -->
+<div class="grid grid-cols-1 gap-space-6">
+<!-- Voucher Card 1 -->
+<div class="bg-parchment rounded-xl shadow-sm border border-admin-border overflow-hidden flex flex-col sm:flex-row relative group hover:-translate-y-1 transition-transform duration-300">
+<!-- Ticket Edge Effect Left -->
+<div class="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-r border-admin-border z-10"></div>
+<div class="sm:w-1/3 bg-roast p-space-6 flex flex-col justify-center items-center text-center relative text-on-primary">
+<span class="material-symbols-outlined text-4xl mb-2 text-latte">local_cafe</span>
+<div class="font-display-lg text-display-lg leading-none mb-1">20%</div>
+<div class="font-ui-heading text-ui-heading uppercase tracking-wider text-latte">Off Coffee</div>
+<!-- Ticket Dotted Line -->
+<div class="absolute right-0 top-4 bottom-4 border-r-2 border-dashed border-white/30 hidden sm:block"></div>
+</div>
+<div class="sm:w-2/3 p-space-6 flex flex-col justify-between bg-white relative">
+<!-- Ticket Edge Effect Right -->
+<div class="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-l border-admin-border z-10"></div>
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-heading-lg text-heading-lg text-roast">Morning Brew Discount</h3>
+<span class="bg-foam text-roast px-3 py-1 rounded-full text-xs font-ui-heading border border-admin-border">Valid</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">Enjoy 20% off any handcrafted espresso beverage before 11 AM.</p>
+</div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-auto">
+<div>
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Code</div>
+<div class="font-ui-heading text-ui-heading text-ink tracking-widest bg-foam px-3 py-1 rounded border border-mist">TRAPHE20</div>
+</div>
+<div class="text-right">
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Expires</div>
+<div class="font-ui-body text-ui-body text-roast font-medium">Dec 31, 2024</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Voucher Card 2 -->
+<div class="bg-parchment rounded-xl shadow-sm border border-admin-border overflow-hidden flex flex-col sm:flex-row relative group hover:-translate-y-1 transition-transform duration-300">
+<div class="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-r border-admin-border z-10"></div>
+<div class="sm:w-1/3 bg-tertiary p-space-6 flex flex-col justify-center items-center text-center relative text-on-tertiary">
+<span class="material-symbols-outlined text-4xl mb-2 text-tertiary-fixed">emoji_food_beverage</span>
+<div class="font-display-lg text-display-lg leading-none mb-1">BOGO</div>
+<div class="font-ui-heading text-ui-heading uppercase tracking-wider text-tertiary-fixed">Free Tea</div>
+<div class="absolute right-0 top-4 bottom-4 border-r-2 border-dashed border-white/30 hidden sm:block"></div>
+</div>
+<div class="sm:w-2/3 p-space-6 flex flex-col justify-between bg-white relative">
+<div class="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-l border-admin-border z-10"></div>
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-heading-lg text-heading-lg text-roast">Buy 1 Get 1 Signature Tea</h3>
+<span class="bg-foam text-roast px-3 py-1 rounded-full text-xs font-ui-heading border border-admin-border">Valid</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">Purchase any large signature iced tea and get a second of equal or lesser value for free.</p>
+</div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-auto">
+<div>
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Code</div>
+<div class="font-ui-heading text-ui-heading text-ink tracking-widest bg-foam px-3 py-1 rounded border border-mist">TEATIME</div>
+</div>
+<div class="text-right">
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Expires</div>
+<div class="font-ui-body text-ui-body text-roast font-medium">Nov 15, 2024</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Voucher Card 3 -->
+<div class="bg-parchment rounded-xl shadow-sm border border-admin-border overflow-hidden flex flex-col sm:flex-row relative group hover:-translate-y-1 transition-transform duration-300">
+<div class="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-r border-admin-border z-10"></div>
+<div class="sm:w-1/3 bg-latte p-space-6 flex flex-col justify-center items-center text-center relative text-espresso">
+<span class="material-symbols-outlined text-4xl mb-2 text-espresso">cake</span>
+<div class="font-display-md text-display-md leading-none mb-1">Free</div>
+<div class="font-ui-heading text-ui-heading uppercase tracking-wider text-espresso">Pastry</div>
+<div class="absolute right-0 top-4 bottom-4 border-r-2 border-dashed border-black/20 hidden sm:block"></div>
+</div>
+<div class="sm:w-2/3 p-space-6 flex flex-col justify-between bg-white relative">
+<div class="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-admin-bg rounded-full border-l border-admin-border z-10"></div>
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-heading-lg text-heading-lg text-roast">Birthday Treat</h3>
+<span class="bg-surface-container text-roast px-3 py-1 rounded-full text-xs font-ui-heading border border-admin-border">Expiring Soon</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">Happy Birthday! Enjoy a complimentary pastry of your choice with any drink purchase.</p>
+</div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-auto">
+<div>
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Code</div>
+<div class="font-ui-heading text-ui-heading text-ink tracking-widest bg-foam px-3 py-1 rounded border border-mist">BDAYTREAT</div>
+</div>
+<div class="text-right">
+<div class="text-xs text-outline uppercase tracking-wider mb-1">Expires</div>
+<div class="font-ui-body text-ui-body text-error font-medium">Oct 31, 2024</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-stone-100 dark:bg-stone-950 text-[#5C3317] dark:text-[#D7CCC8] font-noto-serif text-xs uppercase tracking-widest full-width mt-20 border-t border-stone-200 dark:border-stone-800 flat none">
+<div class="w-full py-12 px-6 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="font-serif text-lg font-bold">TraPhe</div>
+<div class="flex gap-6 flex-wrap justify-center">
+<a class="text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Sustainability</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Careers</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Privacy Policy</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Contact Us</a>
+</div>
+<div class="text-center md:text-right">© 2024 TraPhe Coffee &amp; Tea. Inspired by Vietnamese Heritage.</div>
+</div>
+</footer>
+</body></html>

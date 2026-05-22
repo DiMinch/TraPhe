@@ -1,5 +1,6 @@
 package com.example.traphe_backend.entity;
 
+import com.example.traphe_backend.enums.PromotionScope;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -83,6 +84,12 @@ public class Promotion extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;
+
+    /** Phạm vi: PUBLIC = hiển thị cho mọi người, PERSONAL = chỉ user được gán */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scope", nullable = false, length = 20)
+    @Builder.Default
+    private PromotionScope scope = PromotionScope.PUBLIC;
 
     public enum DiscountType {
         PERCENTAGE,

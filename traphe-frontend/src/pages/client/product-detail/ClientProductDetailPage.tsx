@@ -7,9 +7,11 @@ import ExploreMoreSection from "./components/ExploreMoreSection";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useCart } from "@/contexts/CartContext";
 
 export default function ClientProductDetailPage() {
   const { id } = useParams();
+  const { selectedBranchId } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     null,
@@ -21,7 +23,7 @@ export default function ClientProductDetailPage() {
     const fetchProduct = async () => {
       setIsLoading(true);
       try {
-        const res = await productService.getProductById(id);
+        const res = await productService.getProductById(id, selectedBranchId);
         if (res.statusCode === 200 && res.data) {
           const raw = res.data as any;
           // Map backend MenuItemDetailResponse to frontend Product shape
@@ -43,6 +45,9 @@ export default function ClientProductDetailPage() {
             minStockThreshold: 0,
             warrantyPeriod: 0,
             commonSpecs: "",
+            branchAvailable: raw.branchAvailable,
+            effectivePrice: raw.effectivePrice,
+            unavailableReason: raw.unavailableReason,
             // Drink customization options
             optionGroups: raw.optionGroups || [],
             availableToppings: raw.availableToppings || [],
@@ -77,7 +82,7 @@ export default function ClientProductDetailPage() {
       }
     };
     fetchProduct();
-  }, [id]);
+  }, [id, selectedBranchId]);
 
   if (isLoading) {
     return (
@@ -97,7 +102,7 @@ export default function ClientProductDetailPage() {
           selectedVariant={selectedVariant}
           onVariantChange={setSelectedVariant}
         />
-        <ExploreMoreSection />
+        <ExploreMoreSection isDrink={product.isDrink} />
       </div>
       <SubscribeSection />
     </div>

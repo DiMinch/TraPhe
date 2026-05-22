@@ -17,7 +17,7 @@ import {
   Phone,
   Map,
   Mail,
-} from "lucide-react"; // [1] Thêm Mail icon
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { userService } from "@/services/user.service";
 import type { UserAddress, Province, Commune } from "@/types/user.types";
@@ -129,17 +129,26 @@ export default function ShippingAddress({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-black" />
-          <h3 className="font-bold text-lg text-gray-900">Shipping Address</h3>
+    <div className="bg-surface-container-lowest border border-admin-border rounded-xl p-6 shadow-sm font-ui-body">
+      <div className="flex items-center justify-between mb-6 border-b border-mist pb-3">
+        <div className="flex items-center gap-2 text-roast">
+          <MapPin className="w-5 h-5" />
+          <h3 className="font-display-md text-display-md text-smoke">Delivery Information</h3>
         </div>
+        {!isGuest && (
+          <button
+            type="button"
+            onClick={onAddAddress}
+            className="flex items-center gap-1.5 text-xs font-semibold text-roast hover:text-espresso bg-cream hover:bg-cream/80 border border-roast/20 px-3 py-1.5 rounded-full transition-all cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" /> Add Address
+          </button>
+        )}
       </div>
 
       {isLoadingAddresses ? (
         <div className="flex justify-center py-4">
-          <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+          <Loader2 className="animate-spin w-6 h-6 text-roast" />
         </div>
       ) : (
         <div className="space-y-4">
@@ -156,29 +165,29 @@ export default function ShippingAddress({
                   className={cn(
                     "relative flex items-start space-x-4 border rounded-lg p-4 cursor-pointer transition-all",
                     selectedAddressId === addr.id
-                      ? "border-black bg-gray-50 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300",
+                      ? "border-roast bg-surface-container-low shadow-sm ring-1 ring-roast"
+                      : "border-admin-border hover:border-roast/50",
                   )}
                 >
                   <RadioGroupItem
                     value={addr.id}
                     id={addr.id}
-                    className="mt-1"
+                    className="mt-1 text-roast focus:ring-roast"
                   />
                   <div className="flex-1">
                     <Label
                       htmlFor={addr.id}
-                      className="font-semibold text-base cursor-pointer"
+                      className="font-ui-heading font-bold text-sm cursor-pointer text-roast"
                     >
                       {addr.type} - {addr.contactName}
                       {addr.isPrimary && (
-                        <span className="ml-2 text-xs font-normal text-gray-500 bg-white border px-2 py-0.5 rounded-full">
+                        <span className="ml-2 text-xs font-normal text-smoke bg-cream border border-mist px-2 py-0.5 rounded-full">
                           Default
                         </span>
                       )}
                     </Label>
-                    <p className="text-sm text-gray-600">{addr.contactPhone}</p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-xs text-smoke font-ui-body mt-0.5">{addr.contactPhone}</p>
+                    <p className="text-xs text-smoke font-ui-body mt-1">
                       {addr.detailAddress}
                     </p>
                   </div>
@@ -190,64 +199,49 @@ export default function ShippingAddress({
                 className={cn(
                   "relative flex items-center space-x-4 border rounded-lg p-4 cursor-pointer transition-all",
                   selectedAddressId === "new_address"
-                    ? "border-black bg-gray-50 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 border-dashed",
+                    ? "border-roast bg-surface-container-low shadow-sm ring-1 ring-roast"
+                    : "border-admin-border hover:border-roast/50 border-dashed",
                 )}
               >
-                <RadioGroupItem value="new_address" id="new_address" />
+                <RadioGroupItem value="new_address" id="new_address" className="text-roast focus:ring-roast" />
                 <Label
                   htmlFor="new_address"
-                  className="cursor-pointer font-medium flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddAddress();
-                  }}
+                  className="cursor-pointer font-ui-heading font-medium text-sm text-roast flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" /> Ship to a different address
                 </Label>
               </div>
-
-              {/* <Button
-                variant="ghost"
-                onClick={onAddAddress}
-                className="w-full text-sm text-gray-500 hover:text-black hover:bg-gray-100 mt-2 cursor-pointer justify-center"
-              >
-                <Plus className="w-3 h-3 mr-2" /> Add permanent address to profile
-              </Button> */}
             </RadioGroup>
           )}
 
-          {isGuest && (
+          {isUsingNewAddress && (
             <div className="pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              {!isGuest && (
-                <div className="border-t border-gray-100 my-4"></div>
-              )}
-              <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wide">
-                {isGuest ? "Guest Information" : "Recipient Details"}
+              <h4 className="font-ui-heading text-sm font-bold text-roast mb-4 uppercase tracking-wider">
+                Recipient Details
               </h4>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">Full Name *</Label>
+                  <Label className="text-xs font-bold text-smoke uppercase tracking-wider">Full Name *</Label>
                   <div className="relative">
-                    <UserIcon className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <UserIcon className="absolute left-3 top-2.5 w-4 h-4 text-dust" />
                     <Input
                       placeholder="Nguyen Van A"
-                      className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      className="pl-9 bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200"
                       value={guestInfo.name}
                       onChange={(e) => handleInfoChange("name", e.target.value)}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">
+                  <Label className="text-xs font-bold text-smoke uppercase tracking-wider">
                     Phone Number *
                   </Label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <Phone className="absolute left-3 top-2.5 w-4 h-4 text-dust" />
                     <Input
                       placeholder="0909 xxx xxx"
-                      className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                      className="pl-9 bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200"
                       value={guestInfo.phone}
                       onChange={(e) =>
                         handleInfoChange("phone", e.target.value)
@@ -258,13 +252,13 @@ export default function ShippingAddress({
               </div>
 
               <div className="space-y-2 mb-4">
-                <Label className="text-xs text-gray-500">Email Address *</Label>
+                <Label className="text-xs font-bold text-smoke uppercase tracking-wider">Email Address *</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-2.5 w-4 h-4 text-dust" />
                   <Input
                     type="email"
                     placeholder="example@domain.com"
-                    className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                    className="pl-9 bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200"
                     value={guestInfo.email}
                     onChange={(e) => handleInfoChange("email", e.target.value)}
                   />
@@ -273,7 +267,7 @@ export default function ShippingAddress({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">
+                  <Label className="text-xs font-bold text-smoke uppercase tracking-wider">
                     Province / City *
                   </Label>
                   <Select
@@ -283,7 +277,7 @@ export default function ShippingAddress({
                       setCommuneCode("");
                     }}
                   >
-                    <SelectTrigger className="bg-gray-50 border-gray-200 focus:bg-white cursor-pointer">
+                    <SelectTrigger className="bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200 cursor-pointer">
                       <SelectValue placeholder="Select Province" />
                     </SelectTrigger>
                     <SelectContent className="max-h-[200px]">
@@ -291,7 +285,7 @@ export default function ShippingAddress({
                         <SelectItem
                           className="cursor-pointer"
                           key={p.code}
-                          value={p.code}
+                          value={String(p.code)}
                         >
                           {p.name}
                         </SelectItem>
@@ -301,7 +295,7 @@ export default function ShippingAddress({
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">
+                  <Label className="text-xs font-bold text-smoke uppercase tracking-wider">
                     District / Commune *
                   </Label>
                   <Select
@@ -309,9 +303,9 @@ export default function ShippingAddress({
                     onValueChange={setCommuneCode}
                     disabled={!provinceCode || isLoadingCommunes}
                   >
-                    <SelectTrigger className="bg-gray-50 border-gray-200 focus:bg-white cursor-pointer">
+                    <SelectTrigger className="bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200 cursor-pointer">
                       {isLoadingCommunes ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin text-roast" />
                       ) : (
                         <SelectValue placeholder="Select Commune" />
                       )}
@@ -321,7 +315,7 @@ export default function ShippingAddress({
                         <SelectItem
                           className="cursor-pointer"
                           key={c.code}
-                          value={c.code}
+                          value={String(c.code)}
                         >
                           {c.name}
                         </SelectItem>
@@ -332,14 +326,14 @@ export default function ShippingAddress({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-gray-500">
+                <Label className="text-xs font-bold text-smoke uppercase tracking-wider">
                   Street Address *
                 </Label>
                 <div className="relative">
-                  <Map className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Map className="absolute left-3 top-3 w-4 h-4 text-dust" />
                   <Input
                     placeholder="House number, Street name"
-                    className="pl-9 bg-gray-50 border-gray-200 focus:bg-white transition-all"
+                    className="pl-9 bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body py-3 px-4 transition-all duration-200"
                     value={detailAddress}
                     onChange={(e) => setDetailAddress(e.target.value)}
                   />
@@ -347,7 +341,7 @@ export default function ShippingAddress({
               </div>
 
               {guestInfo.address && (
-                <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 italic">
+                <div className="mt-4 text-xs text-smoke bg-foam p-3 rounded-lg border border-mist/30 italic">
                   Preview: {guestInfo.address}
                 </div>
               )}
@@ -358,3 +352,4 @@ export default function ShippingAddress({
     </div>
   );
 }
+

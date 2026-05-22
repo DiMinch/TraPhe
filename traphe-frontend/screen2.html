@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Checkout - TraPhe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;600&amp;family=Viaoda+Libre&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#00454a",
+                      "roast": "#5C3317",
+                      "smoke": "#4A3F35",
+                      "inverse-surface": "#352f2c",
+                      "ink": "#1A1410",
+                      "parchment": "#EFE5D3",
+                      "surface-container-lowest": "#ffffff",
+                      "admin-border": "#E2DDD7",
+                      "error": "#ba1a1a",
+                      "primary": "#421e04",
+                      "latte": "#C89A6E",
+                      "surface-variant": "#ebe0db",
+                      "foam": "#FBF5EC",
+                      "mist": "#D4C9BC",
+                      "tertiary": "#002d31",
+                      "surface-container-highest": "#ebe0db",
+                      "surface-container-high": "#f1e6e1",
+                      "on-secondary-container": "#775d4e",
+                      "secondary-fixed-dim": "#e1c0ad",
+                      "on-secondary-fixed-variant": "#594234",
+                      "surface-tint": "#835334",
+                      "on-tertiary-fixed": "#002022",
+                      "on-surface": "#201b18",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#ffdbc8",
+                      "on-primary-container": "#d69b77",
+                      "dust": "#8C7B6E",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#51443d",
+                      "admin-surface": "#FFFFFF",
+                      "secondary": "#72594a",
+                      "outline-variant": "#d6c3b9",
+                      "surface-dim": "#e3d8d3",
+                      "surface": "#fff8f5",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#321300",
+                      "secondary-container": "#fbd9c5",
+                      "background": "#fff8f5",
+                      "surface-container-low": "#fdf1ec",
+                      "on-secondary-fixed": "#29170c",
+                      "inverse-primary": "#f8b993",
+                      "admin-bg": "#F7F5F2",
+                      "tertiary-fixed": "#b5ecf2",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#fff8f5",
+                      "espresso": "#2C1A0E",
+                      "cloud": "#F0EBE3",
+                      "surface-container": "#f7ece7",
+                      "secondary-fixed": "#fedcc8",
+                      "inverse-on-surface": "#faeeea",
+                      "on-tertiary-fixed-variant": "#114e53",
+                      "on-secondary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "cream": "#F5EAD8",
+                      "primary-container": "#5c3317",
+                      "caramel": "#A0622A",
+                      "tertiary-fixed-dim": "#99d0d6",
+                      "on-background": "#201b18",
+                      "primary-fixed-dim": "#f8b993",
+                      "on-tertiary-container": "#7cb2b7",
+                      "on-primary-fixed-variant": "#673c1f",
+                      "outline": "#84746c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-12": "48px",
+                      "space-3": "12px",
+                      "space-20": "80px",
+                      "space-6": "24px",
+                      "space-4": "16px",
+                      "space-2": "8px",
+                      "space-8": "32px",
+                      "space-1": "4px"
+              },
+              "fontFamily": {
+                      "ui-body": [
+                              "Google Sans"
+                      ],
+                      "heading-lg": [
+                              "Source Serif 4"
+                      ],
+                      "pos-total": [
+                              "Google Sans"
+                      ],
+                      "display-xl": [
+                              "Viaoda Libre"
+                      ],
+                      "display-lg": [
+                              "Viaoda Libre"
+                      ],
+                      "ui-heading": [
+                              "Google Sans"
+                      ],
+                      "display-md": [
+                              "Viaoda Libre"
+                      ],
+                      "body-md": [
+                              "Source Serif 4"
+                      ]
+              },
+              "fontSize": {
+                      "ui-body": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "heading-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.35",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "pos-total": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-xl": [
+                              "64px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.15",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "ui-heading": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "display-md": [
+                              "36px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.65",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #D4C9BC;
+            border-radius: 4px;
+        }
+      </style>
+</head>
+<body class="bg-background text-on-surface font-ui-body text-ui-body antialiased selection:bg-roast selection:text-white">
+<!-- Minimal Transactional Header (Suppressed Main Nav) -->
+<header class="w-full bg-surface-container-lowest border-b border-admin-border sticky top-0 z-50">
+<div class="max-w-[1280px] mx-auto px-space-6 h-20 flex items-center justify-between">
+<a class="flex items-center gap-2 text-smoke hover:text-roast transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
+<span class="font-ui-body text-ui-body font-medium">Back to Cart</span>
+</a>
+<div class="font-display-md text-display-md text-roast tracking-tight">TraPhe</div>
+<div class="flex items-center gap-2 text-roast">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-ui-body text-ui-body hidden sm:inline">Secure Checkout</span>
+</div>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto px-space-6 py-space-12 flex flex-col lg:flex-row gap-space-8 items-start">
+<!-- Left Column: Checkout Steps -->
+<div class="w-full lg:w-7/12 xl:w-2/3 flex flex-col gap-space-8">
+<!-- Section 1: Fulfillment Method -->
+<section class="bg-surface-container-lowest rounded-xl p-space-6 shadow-sm border border-admin-border">
+<h2 class="font-heading-lg text-heading-lg text-roast mb-space-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-latte">local_shipping</span>
+                    Fulfillment Method
+                </h2>
+<div class="flex p-1 bg-surface-container rounded-lg max-w-md">
+<button class="flex-1 py-3 px-4 rounded-md bg-surface-container-lowest shadow-sm border border-admin-border font-ui-body text-ui-body font-bold text-roast flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">pedal_bike</span>
+                        Delivery
+                    </button>
+<button class="flex-1 py-3 px-4 rounded-md text-smoke hover:text-roast font-ui-body text-ui-body flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+                        Pick-up
+                    </button>
+</div>
+</section>
+<!-- Section 2: Address Selection -->
+<section class="bg-surface-container-lowest rounded-xl p-space-6 shadow-sm border border-admin-border">
+<div class="flex justify-between items-center mb-space-6">
+<h2 class="font-heading-lg text-heading-lg text-roast flex items-center gap-3">
+<span class="material-symbols-outlined text-latte">location_on</span>
+                        Delivery Address
+                    </h2>
+<button class="text-roast font-ui-body text-ui-body hover:underline font-medium">Add New</button>
+</div>
+<!-- Selected Address Card -->
+<div class="relative p-space-4 rounded-lg border-2 border-roast bg-surface-container-low cursor-pointer overflow-hidden group">
+<div class="absolute top-space-4 right-space-4">
+<span class="material-symbols-outlined text-roast" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-start gap-4">
+<div class="p-2 bg-white rounded-full text-roast shrink-0">
+<span class="material-symbols-outlined">home</span>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="font-ui-heading text-ui-heading text-roast">Minh Pham</span>
+<span class="bg-roast text-white text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold">Default</span>
+</div>
+<p class="font-ui-body text-ui-body text-smoke mb-1">+84 90 123 4567</p>
+<p class="font-ui-body text-ui-body text-smoke">Apt 12B, Landmark 81, Vinhomes Central Park<br/>Binh Thanh District, Ho Chi Minh City</p>
+</div>
+</div>
+</div>
+<!-- Secondary Address (Unselected) -->
+<div class="mt-space-4 p-space-4 rounded-lg border border-admin-border hover:border-roast hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-surface-container rounded-full text-smoke group-hover:text-roast shrink-0 transition-colors">
+<span class="material-symbols-outlined">work</span>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<span class="font-ui-heading text-ui-heading text-smoke group-hover:text-roast transition-colors">Office</span>
+</div>
+<p class="font-ui-body text-ui-body text-smoke mb-1">+84 90 123 4567</p>
+<p class="font-ui-body text-ui-body text-smoke">Floor 15, Bitexco Financial Tower<br/>District 1, Ho Chi Minh City</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Loyalty & Vouchers -->
+<section class="bg-surface-container-lowest rounded-xl p-space-6 shadow-sm border border-admin-border">
+<h2 class="font-heading-lg text-heading-lg text-roast mb-space-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-latte">loyalty</span>
+                    Offers &amp; Loyalty
+                </h2>
+<div class="flex flex-col gap-space-6">
+<!-- Voucher Input -->
+<div>
+<label class="block font-ui-body text-ui-body text-smoke mb-2">Promo Code</label>
+<div class="flex gap-3">
+<input class="flex-1 rounded-lg border-[1.5px] border-mist focus:border-roast focus:ring-0 bg-transparent px-4 font-ui-body text-ui-body text-on-surface placeholder:text-mist h-[52px]" placeholder="Enter code" type="text"/>
+<button class="h-[52px] px-6 rounded-lg bg-surface-container text-roast font-ui-body text-ui-body font-bold border border-admin-border hover:bg-mist transition-colors">Apply</button>
+</div>
+</div>
+<div class="h-px w-full bg-admin-border"></div>
+<!-- Points Slider/Toggle -->
+<div class="flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-roast" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-ui-heading text-ui-heading text-roast">Use TraPhe Points</span>
+</div>
+<p class="font-ui-body text-ui-body text-smoke">You have <strong>1,250</strong> points available (Value: 12,500đ)</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-mist peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-admin-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-roast"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Section 4: Payment Method -->
+<section class="bg-surface-container-lowest rounded-xl p-space-6 shadow-sm border border-admin-border">
+<h2 class="font-heading-lg text-heading-lg text-roast mb-space-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-latte">payments</span>
+                    Payment Method
+                </h2>
+<div class="flex flex-col gap-space-3">
+<!-- Option 1: VNPay -->
+<label class="flex items-center justify-between p-space-4 border-[1.5px] border-roast bg-surface-container-low rounded-lg cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-full border-2 border-roast flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-roast"></div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded flex items-center justify-center border border-admin-border">
+<span class="material-symbols-outlined text-blue-600">qr_code_scanner</span>
+</div>
+<span class="font-ui-body text-ui-body font-bold text-roast">VNPay QR</span>
+</div>
+</div>
+</label>
+<!-- Option 2: MoMo -->
+<label class="flex items-center justify-between p-space-4 border border-admin-border rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-full border-2 border-mist flex items-center justify-center"></div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-[#A50064] rounded flex items-center justify-center text-white font-bold text-xs">MoMo</div>
+<span class="font-ui-body text-ui-body text-smoke">MoMo E-Wallet</span>
+</div>
+</div>
+</label>
+<!-- Option 3: Credit Card -->
+<label class="flex items-center justify-between p-space-4 border border-admin-border rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-full border-2 border-mist flex items-center justify-center"></div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded flex items-center justify-center border border-admin-border">
+<span class="material-symbols-outlined text-smoke">credit_card</span>
+</div>
+<span class="font-ui-body text-ui-body text-smoke">Credit / Debit Card</span>
+</div>
+</div>
+</label>
+<!-- Option 4: COD -->
+<label class="flex items-center justify-between p-space-4 border border-admin-border rounded-lg cursor-pointer hover:bg-surface-container transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-5 h-5 rounded-full border-2 border-mist flex items-center justify-center"></div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded flex items-center justify-center border border-admin-border">
+<span class="material-symbols-outlined text-smoke">money</span>
+</div>
+<span class="font-ui-body text-ui-body text-smoke">Cash on Delivery (COD)</span>
+</div>
+</div>
+</label>
+</div>
+</section>
+</div>
+<!-- Right Column: Order Breakdown (Sticky) -->
+<aside class="w-full lg:w-5/12 xl:w-1/3">
+<div class="sticky top-[100px] bg-parchment rounded-xl p-space-6 shadow-md border border-mist flex flex-col gap-space-6">
+<h2 class="font-heading-lg text-heading-lg text-roast border-b border-admin-border pb-space-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-roast">receipt_long</span>
+                    Order Summary
+                </h2>
+<!-- Items List -->
+<div class="flex flex-col gap-space-4 max-h-[300px] overflow-y-auto pr-2">
+<!-- Item 1 -->
+<div class="flex gap-4">
+<div class="w-16 h-16 rounded-md overflow-hidden shrink-0 border border-admin-border bg-white">
+<img alt="Iced Coffee" class="w-full h-full object-cover" data-alt="A tall glass of traditional Vietnamese iced coffee with condensed milk, resting on a dark wooden table. The lighting is warm and cinematic, casting soft shadows, highlighting the rich amber color of the coffee and the creamy white layer at the bottom. The background is a slightly blurred, upscale cafe interior with earthy tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDERF2LN_Q28xu_SoouORi9s_tojca7Q2vGm74CBTp4lZvjFEbacYUHVnmL8eqi1oo6CTFnqglCps5iyTXDXCyURAfeILAG6SD5qbP28Al7_qc-KH9k_uz11bm7K6t57T7pmDotKctLvxbQa2nTxYLp5wnt2IczmZGAt9luIHDHMs3Z2ILXAXIISjC8M4HlU2NC8lyXczxEBBlcDHb8B09efYq3__JiJvgSVYzAPHtTZoqHQJ4LrFPORMhc7MtAwezWwfWTnhCrCOc"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start gap-2">
+<span class="font-ui-heading text-[16px] text-roast leading-tight">Phin Sữa Đá</span>
+<span class="font-ui-body text-ui-body font-bold text-roast shrink-0">45,000đ</span>
+</div>
+<div class="text-[12px] text-smoke">
+                                Size L, Less Ice, Standard Sweet
+                            </div>
+<div class="font-ui-body text-[12px] text-roast mt-1 font-medium">Qty: 1</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4">
+<div class="w-16 h-16 rounded-md overflow-hidden shrink-0 border border-admin-border bg-white">
+<img alt="Banh Mi" class="w-full h-full object-cover" data-alt="A fresh, crispy Vietnamese Banh Mi sandwich filled with savory meats, pate, and vibrant pickled vegetables, presented on a minimalist ceramic plate. The setting is a bright, modern cafe table bathed in natural sunlight. The overall aesthetic is clean, appetizing, and highly detailed, emphasizing the textures of the crusty bread." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-bAl5RI4xjqdFD4NaGnAujAWZL4vJcG53pO7vGiHuRGqOuCgmSAi2xzLq1FEzaGVyrnbQ-qJgRZrGQYEijceQrqxYYki8g_jIownfu6Gf8bTVSdPM9RUfrQoQFqcZrEQC3CGew5ldrFd-9wdWz69DnRCNjdkmDadNWzc7kU3kisMB7km5QGij7iV-RjgoIWJfWmi0NW0AGQbsLjvdHs1Y0_nXPIvLFWGshgzXN-T4cP28n1783N-T_34X2EpaWDHYKdHmRjpNlMY"/>
+</div>
+<div class="flex-1 flex flex-col justify-between">
+<div class="flex justify-between items-start gap-2">
+<span class="font-ui-heading text-[16px] text-roast leading-tight">Bánh Mì Thịt Nướng</span>
+<span class="font-ui-body text-ui-body font-bold text-roast shrink-0">55,000đ</span>
+</div>
+<div class="text-[12px] text-smoke">
+                                No Chili
+                            </div>
+<div class="font-ui-body text-[12px] text-roast mt-1 font-medium">Qty: 2</div>
+</div>
+</div>
+</div>
+<div class="h-px w-full bg-admin-border"></div>
+<!-- Calculations -->
+<div class="flex flex-col gap-2 font-ui-body text-ui-body text-smoke">
+<div class="flex justify-between">
+<span>Subtotal (3 items)</span>
+<span class="text-roast font-medium">155,000đ</span>
+</div>
+<div class="flex justify-between">
+<span>Delivery Fee</span>
+<span class="text-roast font-medium">15,000đ</span>
+</div>
+<div class="flex justify-between text-latte">
+<span>Promo Discount</span>
+<span>-0đ</span>
+</div>
+</div>
+<div class="h-px w-full bg-admin-border"></div>
+<!-- Total -->
+<div class="flex justify-between items-end">
+<span class="font-ui-heading text-ui-heading text-smoke">Total</span>
+<div class="flex flex-col items-end">
+<span class="text-[12px] text-smoke mb-1">VAT included</span>
+<span class="font-pos-total text-pos-total text-roast">170,000đ</span>
+</div>
+</div>
+<!-- Primary Action -->
+<button class="w-full mt-space-2 bg-roast text-on-primary font-ui-body text-[15px] font-bold py-[14px] rounded-full hover:bg-espresso transition-colors shadow-sm flex items-center justify-center gap-2 group">
+                    Place Order
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+<p class="text-center text-[11px] text-smoke mt-2 leading-relaxed">
+                    By placing your order, you agree to TraPhe's <a class="underline hover:text-roast" href="#">Terms of Service</a> and <a class="underline hover:text-roast" href="#">Privacy Policy</a>.
+                </p>
+</div>
+</aside>
+</main>
+<!-- Footer Component Execution (from JSON) -->
+<footer class="w-full py-12 px-6 max-w-[1280px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6 bg-stone-100 dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 mt-20 full-width">
+<div class="flex flex-col items-center md:items-start gap-4">
+<span class="font-serif text-lg font-bold text-[#5C3317] dark:text-[#D7CCC8]">TraPhe</span>
+<p class="font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500">© 2024 TraPhe Coffee &amp; Tea. Inspired by Vietnamese Heritage.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Sustainability</a>
+<a class="font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Careers</a>
+<a class="font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Privacy Policy</a>
+<a class="font-noto-serif text-xs uppercase tracking-widest text-stone-500 dark:text-stone-500 hover:text-[#5C3317] hover:opacity-80 transition-opacity" href="#">Contact Us</a>
+</nav>
+</footer>
+</body></html>

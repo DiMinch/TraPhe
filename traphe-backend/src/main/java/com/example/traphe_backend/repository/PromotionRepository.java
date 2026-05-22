@@ -1,6 +1,7 @@
 package com.example.traphe_backend.repository;
 
 import com.example.traphe_backend.entity.Promotion;
+import com.example.traphe_backend.enums.PromotionScope;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,4 +19,9 @@ public interface PromotionRepository extends JpaRepository<Promotion, UUID> {
 
     List<Promotion> findByIsActiveTrueAndIsDeletedFalseAndStartDateBeforeAndEndDateAfterOrderByCreatedAtDesc(
             LocalDateTime now1, LocalDateTime now2);
+
+    /** Chỉ trả về khuyến mãi PUBLIC (dùng cho storefront public endpoint) */
+    List<Promotion> findByIsActiveTrueAndIsDeletedFalseAndScopeAndStartDateBeforeAndEndDateAfterOrderByCreatedAtDesc(
+            PromotionScope scope, LocalDateTime now1, LocalDateTime now2);
 }
+

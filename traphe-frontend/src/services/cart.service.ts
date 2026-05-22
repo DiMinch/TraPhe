@@ -27,6 +27,13 @@ export const cartService = {
     );
   },
 
+  updateCustomization: async (cartItemId: string, data: AddToCartRequest) => {
+    return axiosClient.put<any, ApiResponse<Cart>>(
+      `/cart/update-customization/${cartItemId}`,
+      data,
+    );
+  },
+
   clearCart: async () => {
     return axiosClient.delete<any, ApiResponse<void>>("/cart/clear");
   },

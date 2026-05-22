@@ -121,7 +121,7 @@ export default function OrderDetailPage() {
 
     setIsProcessing(true);
     try {
-      const response = await orderService.cancelOrder(order.orderId, cancelReason);
+      const response = await orderService.cancelOrder(order.orderId);
       setOrder(response.data);
       toast.success("Order cancelled successfully");
       setIsCancelOpen(false);

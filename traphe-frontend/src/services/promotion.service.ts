@@ -85,10 +85,10 @@ export const promotionService = {
     );
   },
 
-  /** Lấy khuyến mãi đang hoạt động */
+  /** Lấy khuyến mãi đang hoạt động (Public) */
   getActivePromotions: async () => {
     return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
-      "/admin/promotions/active",
+      "/promotions/active",
     );
   },
 
@@ -157,65 +157,93 @@ export const promotionService = {
     } as any;
   },
 
-  /** Tính toán giảm giá giỏ hàng (Client side fallback) */
   calculateCartDiscount: async (payload: {
     items: Array<{ productId?: string; productVariantId?: string; quantity: number; unitPrice: number }>;
     code: string;
     appliedCodes?: string[];
     customerId?: string;
   }) => {
-    // 1. Fetch active promotions
-    const activeRes = await promotionService.getActivePromotions();
-    const promotions = activeRes.data || [];
-    const promo = promotions.find(
-      (p) => p.code.toUpperCase() === payload.code.toUpperCase()
-    );
+    try {
+      const response = await axiosClient.post<any, ApiResponse<{ discountAmount: number; finalAmount: number; promotionId?: string }>>(
+        "/promotions/calculate",
+        payload
+      );
 
-    if (!promo) {
-      throw new Error("Mã khuyến mãi không tồn tại hoặc đã hết hạn");
-    }
-
-    // 2. Calculate cart subtotal
-    const subtotal = payload.items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0
-    );
-
-    // 3. Check min order value
-    if (promo.minOrderValue && subtotal < promo.minOrderValue) {
-      throw new Error(`Đơn hàng tối thiểu ${promo.minOrderValue.toLocaleString()}₫ để áp dụng`);
-    }
-
-    // 4. Calculate discount
-    let totalDiscount = 0;
-    const discountVal = promo.discountValue ?? (promo as any).value ?? 0;
-    const discType = promo.discountType ?? (promo as any).type ?? "PERCENTAGE";
-
-    if (discType === "PERCENTAGE") {
-      totalDiscount = (subtotal * discountVal) / 100;
-      if (promo.maxDiscountAmount && totalDiscount > promo.maxDiscountAmount) {
-        totalDiscount = promo.maxDiscountAmount;
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Không thể tính giảm giá");
       }
-    } else {
-      totalDiscount = discountVal;
-    }
 
-    // Ensure discount doesn't exceed subtotal
-    totalDiscount = Math.min(totalDiscount, subtotal);
+      const { discountAmount, finalAmount, promotionId } = response.data;
 
-    const finalAmount = subtotal - totalDiscount;
-
-    return {
-      data: {
-        totalDiscount,
-        finalAmount,
-        orderPromotion: {
-          promotionId: promo.id,
-          code: promo.code,
-          discountAmount: totalDiscount,
+      return {
+        data: {
+          totalDiscount: discountAmount,
+          finalAmount: finalAmount,
+          orderPromotion: {
+            promotionId: promotionId || "",
+            code: payload.code,
+            discountAmount: discountAmount,
+          },
+          productPromotions: [] as Array<{ promotionId: string }>,
         },
-        productPromotions: [] as Array<{ promotionId: string }>,
-      },
-    };
-  }
+      };
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.message || "Mã khuyến mãi không tồn tại hoặc đã hết hạn";
+      throw new Error(errMsg);
+    }
+  },
+
+  // ======================== Customer Voucher APIs ========================
+
+  /** Lấy danh sách voucher cá nhân của user (My Vouchers) */
+  getMyVouchers: async (status?: string) => {
+    const params = status ? { status } : {};
+    return axiosClient.get<any, ApiResponse<MyVoucherResponse[]>>(
+      "/vouchers/me",
+      { params },
+    );
+  },
+
+  /** Đổi điểm tích lũy lấy phần thưởng (tạo voucher cá nhân) */
+  redeemReward: async (data: {
+    rewardId: string;
+    rewardName: string;
+    pointsCost: number;
+    rewardDescription?: string;
+    discountValue?: number;
+    discountType?: string;
+  }) => {
+    return axiosClient.post<any, ApiResponse<RedeemRewardResponse>>(
+      "/loyalty/redeem",
+      data,
+    );
+  },
 };
+
+// ======================== Customer Voucher Types ========================
+
+export interface MyVoucherResponse {
+  id: string;
+  promotionId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue: number | null;
+  maxDiscountAmount: number | null;
+  startDate: string;
+  endDate: string;
+  status: "AVAILABLE" | "USED" | "EXPIRED";
+  source: string | null;  // LOYALTY_REDEEM, ADMIN_BATCH, EVENT
+  assignedAt: string;
+  usedAt: string | null;
+}
+
+export interface RedeemRewardResponse {
+  voucherCode: string;
+  rewardName: string;
+  pointsDeducted: number;
+  remainingPoints: number;
+}
+

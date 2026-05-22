@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Order Failed - TraPhe</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;family=Viaoda+Libre&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-container": "#00454a",
+                    "roast": "#5C3317",
+                    "smoke": "#4A3F35",
+                    "inverse-surface": "#352f2c",
+                    "ink": "#1A1410",
+                    "parchment": "#EFE5D3",
+                    "surface-container-lowest": "#ffffff",
+                    "admin-border": "#E2DDD7",
+                    "error": "#ba1a1a",
+                    "primary": "#421e04",
+                    "latte": "#C89A6E",
+                    "surface-variant": "#ebe0db",
+                    "foam": "#FBF5EC",
+                    "mist": "#D4C9BC",
+                    "tertiary": "#002d31",
+                    "surface-container-highest": "#ebe0db",
+                    "surface-container-high": "#f1e6e1",
+                    "on-secondary-container": "#775d4e",
+                    "secondary-fixed-dim": "#e1c0ad",
+                    "on-secondary-fixed-variant": "#594234",
+                    "surface-tint": "#835334",
+                    "on-tertiary-fixed": "#002022",
+                    "on-surface": "#201b18",
+                    "on-error": "#ffffff",
+                    "primary-fixed": "#ffdbc8",
+                    "on-primary-container": "#d69b77",
+                    "dust": "#8C7B6E",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#51443d",
+                    "admin-surface": "#FFFFFF",
+                    "secondary": "#72594a",
+                    "outline-variant": "#d6c3b9",
+                    "surface-dim": "#e3d8d3",
+                    "surface": "#fff8f5",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#321300",
+                    "secondary-container": "#fbd9c5",
+                    "background": "#fff8f5",
+                    "surface-container-low": "#fdf1ec",
+                    "on-secondary-fixed": "#29170c",
+                    "inverse-primary": "#f8b993",
+                    "admin-bg": "#F7F5F2",
+                    "tertiary-fixed": "#b5ecf2",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#fff8f5",
+                    "espresso": "#2C1A0E",
+                    "cloud": "#F0EBE3",
+                    "surface-container": "#f7ece7",
+                    "secondary-fixed": "#fedcc8",
+                    "inverse-on-surface": "#faeeea",
+                    "on-tertiary-fixed-variant": "#114e53",
+                    "on-secondary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "cream": "#F5EAD8",
+                    "primary-container": "#5c3317",
+                    "caramel": "#A0622A",
+                    "tertiary-fixed-dim": "#99d0d6",
+                    "on-background": "#201b18",
+                    "primary-fixed-dim": "#f8b993",
+                    "on-tertiary-container": "#7cb2b7",
+                    "on-primary-fixed-variant": "#673c1f",
+                    "outline": "#84746c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-12": "48px",
+                    "space-3": "12px",
+                    "space-20": "80px",
+                    "space-6": "24px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "space-8": "32px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "ui-body": [
+                            "Google Sans"
+                    ],
+                    "heading-lg": [
+                            "Source Serif 4"
+                    ],
+                    "pos-total": [
+                            "Google Sans"
+                    ],
+                    "display-xl": [
+                            "Viaoda Libre"
+                    ],
+                    "display-lg": [
+                            "Viaoda Libre"
+                    ],
+                    "ui-heading": [
+                            "Google Sans"
+                    ],
+                    "display-md": [
+                            "Viaoda Libre"
+                    ],
+                    "body-md": [
+                            "Source Serif 4"
+                    ]
+            },
+            "fontSize": {
+                    "ui-body": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "heading-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.35",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "pos-total": [
+                            "28px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-xl": [
+                            "64px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.15",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "ui-heading": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-md": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.65",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-foam min-h-screen flex flex-col items-center justify-center p-space-6 antialiased">
+<!-- 
+      Note: TopAppBar and SideNavBar are explicitly suppressed here as this is a 
+      linear/transactional "terminal" screen (Order Failed), keeping the user focused 
+      on the canvas and next immediate actions.
+    -->
+<!-- Minimal Brand Anchor -->
+<div class="absolute top-space-8 left-0 w-full flex justify-center">
+<span class="font-display-md text-display-md text-roast tracking-tight">TraPhe</span>
+</div>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-lg mx-auto">
+<!-- Error Card -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm relative z-10 flex flex-col">
+<!-- Atmospheric Imagery to soften the error state -->
+<div class="h-48 w-full bg-cover bg-center border-b border-mist" data-alt="A warm, high-key photograph of an empty ceramic coffee cup sitting on a polished wooden table in a brightly lit, modern cafe. Soft morning sunlight filters through the windows, creating a calming, serene atmosphere. The color palette emphasizes warm earth tones, soft whites, and light roasted browns, maintaining a sophisticated and comforting aesthetic despite the emptiness." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD8_Zbgq8XqrYlFfeUtq9JVgEk_edct3KUFbN6ERTFLu7ToTuKNHYCcGAQ0L78G_GeLwzAC3TBYhSZuFACz-Cu4YnEFf3vw1ydKFpVloaMLTKfFFtxzLz5xtAKhC-p461zqj9Ph46lfK-m9S5v_Tvmx39PX8m2eEQwP8F-qpe0r3A_0iLuHBGG9-ELFla9d_PktUdDAkAO2MDTey2-7HvBfuGQW28P6cAeGDLaSlz2rPzvWD-0EvPbI2FVnM8pH0swl2T3QeFSHO58');">
+<!-- Overlay gradient for smooth transition -->
+<div class="w-full h-full bg-gradient-to-b from-transparent to-surface-container-lowest/90"></div>
+</div>
+<!-- Content Area -->
+<div class="px-space-8 pb-space-8 pt-space-4 flex flex-col items-center text-center -mt-space-12 relative z-20">
+<!-- Icon Badge -->
+<div class="w-20 h-20 rounded-full bg-parchment flex items-center justify-center border-4 border-surface-container-lowest shadow-sm mb-space-6">
+<span class="material-symbols-outlined text-[40px] text-roast" style="font-variation-settings: 'FILL' 0;">
+                        credit_card_off
+                    </span>
+</div>
+<!-- Messaging -->
+<h1 class="font-display-md text-display-md text-ink mb-space-3">
+                    Payment Unsuccessful
+                </h1>
+<p class="font-body-md text-body-md text-smoke max-w-sm mb-space-8">
+                    We couldn't process your payment because the session timed out. Don't worry, your items are still safe in your cart.
+                </p>
+<!-- Actions -->
+<div class="flex flex-col sm:flex-row gap-space-4 w-full">
+<!-- Secondary Action -->
+<button class="flex-1 flex items-center justify-center gap-space-2 py-[14px] px-space-6 rounded-full border-[1.5px] border-roast bg-transparent text-roast hover:bg-cream transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-roast focus:ring-offset-2 focus:ring-offset-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 0;">
+                            shopping_cart
+                        </span>
+<span class="font-body-md text-body-md whitespace-nowrap">Back to Cart</span>
+</button>
+<!-- Primary Action -->
+<button class="flex-1 flex items-center justify-center gap-space-2 py-[14px] px-space-6 rounded-full bg-roast text-surface-container-lowest hover:opacity-90 hover:-translate-y-[2px] transition-all duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-roast focus:ring-offset-2 focus:ring-offset-surface-container-lowest">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">
+                            refresh
+                        </span>
+<span class="font-body-md text-body-md whitespace-nowrap">Retry Payment</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Support Link -->
+<div class="mt-space-8 text-center">
+<a class="font-ui-body text-ui-body text-dust hover:text-roast transition-colors flex items-center justify-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]">help</span>
+                Need help with your order?
+            </a>
+</div>
+</main>
+</body></html>

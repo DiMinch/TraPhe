@@ -75,8 +75,11 @@ public class CartServiceImpl implements CartService {
         List<CartItem.ToppingSelection> toppingSelections = new ArrayList<>();
         if (request.getSelectedToppings() != null) {
             for (AddToCartRequest.ToppingSelectionRequest ts : request.getSelectedToppings()) {
-                toppingRepository.findById(ts.getToppingId())
+                Topping topping = toppingRepository.findById(ts.getToppingId())
                         .orElseThrow(() -> new ResourceNotFoundException("Topping not found: " + ts.getToppingId()));
+                if (!topping.isAvailable()) {
+                    throw new IllegalArgumentException("Topping '" + topping.getName() + "' is currently not available");
+                }
                 toppingSelections.add(CartItem.ToppingSelection.builder()
                         .toppingId(ts.getToppingId())
                         .quantity(ts.getQuantity())
@@ -131,6 +134,74 @@ public class CartServiceImpl implements CartService {
             item.setQuantity(quantity);
         }
         cartItemRepository.save(item);
+        return getCart(userId);
+    }
+
+    @Override
+    public CartResponse updateItemCustomization(UUID userId, UUID cartItemId, AddToCartRequest request) {
+        CartItem item = cartItemRepository.findByIdAndUserIdAndIsDeletedFalse(cartItemId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+
+        MenuItem menuItem = item.getMenuItem();
+
+        // Validate size for drinks
+        MenuItemSize size = null;
+        if (request.getMenuItemSizeId() != null) {
+            size = menuItemSizeRepository.findById(request.getMenuItemSizeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + request.getMenuItemSizeId()));
+            if (!size.getMenuItem().getId().equals(menuItem.getId())) {
+                throw new IllegalArgumentException("Size does not belong to this menu item");
+            }
+        }
+
+        // Validate toppings
+        List<CartItem.ToppingSelection> toppingSelections = new ArrayList<>();
+        if (request.getSelectedToppings() != null) {
+            for (AddToCartRequest.ToppingSelectionRequest ts : request.getSelectedToppings()) {
+                Topping topping = toppingRepository.findById(ts.getToppingId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Topping not found: " + ts.getToppingId()));
+                if (!topping.isAvailable()) {
+                    throw new IllegalArgumentException("Topping '" + topping.getName() + "' is currently not available");
+                }
+                toppingSelections.add(CartItem.ToppingSelection.builder()
+                        .toppingId(ts.getToppingId())
+                        .quantity(ts.getQuantity())
+                        .build());
+            }
+        }
+
+        // Compute config hash for deduplication
+        String configHash = computeConfigHash(
+                request.getMenuItemSizeId(),
+                request.getSelectedOptions(),
+                toppingSelections);
+
+        // Check if same item+config already exists in cart -> merge quantity
+        var existingOpt = cartItemRepository
+                .findByUserIdAndMenuItemIdAndSelectedOptionsHashAndIsDeletedFalse(
+                        userId, menuItem.getId(), configHash);
+
+        if (existingOpt.isPresent() && !existingOpt.get().getId().equals(cartItemId)) {
+            CartItem existing = existingOpt.get();
+            existing.setQuantity(existing.getQuantity() + request.getQuantity());
+            if (request.getNote() != null) {
+                existing.setNote(request.getNote());
+            }
+            cartItemRepository.save(existing);
+
+            // Delete current item since it merged into the other one
+            item.setDeleted(true);
+            cartItemRepository.save(item);
+        } else {
+            item.setMenuItemSize(size);
+            item.setQuantity(request.getQuantity());
+            item.setNote(request.getNote());
+            item.setSelectedOptions(request.getSelectedOptions());
+            item.setSelectedToppings(toppingSelections);
+            item.setSelectedOptionsHash(configHash);
+            cartItemRepository.save(item);
+        }
+
         return getCart(userId);
     }
 
@@ -210,7 +281,7 @@ public class CartServiceImpl implements CartService {
                     .menuItemId(mi.getId())
                     .menuItemName(mi.getName())
                     .menuItemImageUrl(mi.getImageUrl())
-                    .isDrink(ci.isDrink())
+                    .isDrink(mi.isDrink())
                     .status(mi.getStatus() != null ? mi.getStatus().name() : "ACTIVE")
                     .menuItemSizeId(size != null ? size.getId() : null)
                     .sizeName(size != null ? size.getSizeName() : null)
