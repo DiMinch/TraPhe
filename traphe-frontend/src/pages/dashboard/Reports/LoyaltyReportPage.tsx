@@ -51,18 +51,18 @@ export default function LoyaltyReportPage() {
   };
 
   const handleExportReport = () => {
-    toast.success("Đang chuẩn bị báo cáo phân tích loyalty dạng PDF...");
+    toast.success("Äang chuáº©n bá»‹ bÃ¡o cÃ¡o phÃ¢n tÃ­ch loyalty dáº¡ng PDF...");
     setTimeout(() => {
-      toast.success("Tải xuống báo cáo hoàn tất!");
+      toast.success("Táº£i xuá»‘ng bÃ¡o cÃ¡o hoÃ n táº¥t!");
     }, 1200);
   };
 
   // Mock data for graphs
   const chartData = [
-    { label: "Tuần 1", issued: 1200, redeemed: 450 },
-    { label: "Tuần 2", issued: 1800, redeemed: 900 },
-    { label: "Tuần 3", issued: 1500, redeemed: 600 },
-    { label: "Tuần 4", issued: 2400, redeemed: 1500 },
+    { label: "Tuáº§n 1", issued: 1200, redeemed: 450 },
+    { label: "Tuáº§n 2", issued: 1800, redeemed: 900 },
+    { label: "Tuáº§n 3", issued: 1500, redeemed: 600 },
+    { label: "Tuáº§n 4", issued: 2400, redeemed: 1500 },
   ];
 
   const maxVal = 3000;
@@ -70,8 +70,8 @@ export default function LoyaltyReportPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Báo cáo & Phân tích Loyalty"
-        subtitle="Theo dõi hiệu quả chương trình khách hàng thân thiết, số lượng điểm tích lũy và đổi quà"
+        title="BÃ¡o cÃ¡o & PhÃ¢n tÃ­ch Loyalty"
+        subtitle="Theo dÃµi hiá»‡u quáº£ chÆ°Æ¡ng trÃ¬nh khÃ¡ch hÃ ng thÃ¢n thiáº¿t, sá»‘ lÆ°á»£ng Ä‘iá»ƒm tÃ­ch lÅ©y vÃ  Ä‘á»•i quÃ "
         onRefresh={fetchTopLoyalists}
       />
 
@@ -81,13 +81,13 @@ export default function LoyaltyReportPage() {
           <Calendar className="w-5 h-5 text-slate-400" />
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder="Chọn khoảng thời gian" />
+              <SelectValue placeholder="Chá»n khoáº£ng thá»i gian" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">7 ngày qua</SelectItem>
-              <SelectItem value="30">30 ngày qua</SelectItem>
-              <SelectItem value="90">90 ngày qua</SelectItem>
-              <SelectItem value="365">Năm nay</SelectItem>
+              <SelectItem value="7">7 ngÃ y qua</SelectItem>
+              <SelectItem value="30">30 ngÃ y qua</SelectItem>
+              <SelectItem value="90">90 ngÃ y qua</SelectItem>
+              <SelectItem value="365">NÄƒm nay</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -95,10 +95,10 @@ export default function LoyaltyReportPage() {
         <Button
           onClick={handleExportReport}
           variant="outline"
-          className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+          className="border-roast/20 text-roast hover:bg-roast/10"
         >
           <Download className="w-4 h-4 mr-2" />
-          Xuất báo cáo chi tiết
+          Xuáº¥t bÃ¡o cÃ¡o chi tiáº¿t
         </Button>
       </div>
 
@@ -108,50 +108,50 @@ export default function LoyaltyReportPage() {
           <Card className="shadow-md border border-slate-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-slate-500">Tỷ lệ đổi điểm</span>
+                <span className="text-sm font-medium text-slate-500">Tá»· lá»‡ Ä‘á»•i Ä‘iá»ƒm</span>
                 <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-0">
                   +3.2%
                 </Badge>
               </div>
               <div className="text-2xl font-bold text-slate-950">62.5%</div>
-              <p className="text-xs text-slate-400 mt-2">Tổng điểm quy đổi quà / điểm phát hành</p>
+              <p className="text-xs text-slate-400 mt-2">Tá»•ng Ä‘iá»ƒm quy Ä‘á»•i quÃ  / Ä‘iá»ƒm phÃ¡t hÃ nh</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md border border-slate-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-slate-500">Giá trị quy đổi trung bình</span>
-                <span className="text-slate-400 text-xs">30 ngày qua</span>
+                <span className="text-sm font-medium text-slate-500">GiÃ¡ trá»‹ quy Ä‘á»•i trung bÃ¬nh</span>
+                <span className="text-slate-400 text-xs">30 ngÃ y qua</span>
               </div>
-              <div className="text-2xl font-bold text-slate-950">34,500đ</div>
-              <p className="text-xs text-slate-400 mt-2">Quy đổi lợi ích trên mỗi giao dịch đổi quà</p>
+              <div className="text-2xl font-bold text-slate-950">34,500Ä‘</div>
+              <p className="text-xs text-slate-400 mt-2">Quy Ä‘á»•i lá»£i Ã­ch trÃªn má»—i giao dá»‹ch Ä‘á»•i quÃ </p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md border border-slate-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-slate-500">Tần suất tích điểm</span>
-                <Badge className="bg-indigo-50 text-indigo-700 hover:bg-indigo-50 border-0">
+                <span className="text-sm font-medium text-slate-500">Táº§n suáº¥t tÃ­ch Ä‘iá»ƒm</span>
+                <Badge className="bg-roast/10 text-roast/90 hover:bg-roast/10 border-0">
                   Cao
                 </Badge>
               </div>
-              <div className="text-2xl font-bold text-slate-950">4.2 hóa đơn</div>
-              <p className="text-xs text-slate-400 mt-2">Số đơn trung bình mỗi tháng của KH VIP</p>
+              <div className="text-2xl font-bold text-slate-950">4.2 hÃ³a Ä‘Æ¡n</div>
+              <p className="text-xs text-slate-400 mt-2">Sá»‘ Ä‘Æ¡n trung bÃ¬nh má»—i thÃ¡ng cá»§a KH VIP</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md border border-slate-200">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-medium text-slate-500">Doanh thu từ Member</span>
+                <span className="text-sm font-medium text-slate-500">Doanh thu tá»« Member</span>
                 <div className="p-1 bg-amber-50 rounded text-amber-700">
                   <ArrowUpRight className="w-3.5 h-3.5" />
                 </div>
               </div>
               <div className="text-2xl font-bold text-slate-950">42%</div>
-              <p className="text-xs text-slate-400 mt-2">Đóng góp doanh thu của khách hàng thành viên</p>
+              <p className="text-xs text-slate-400 mt-2">ÄÃ³ng gÃ³p doanh thu cá»§a khÃ¡ch hÃ ng thÃ nh viÃªn</p>
             </CardContent>
           </Card>
         </div>
@@ -160,8 +160,8 @@ export default function LoyaltyReportPage() {
         <div className="lg:col-span-2">
           <Card className="shadow-md border border-slate-200 h-full flex flex-col">
             <CardHeader>
-              <CardTitle className="text-lg">Tích lũy vs Quy đổi điểm</CardTitle>
-              <CardDescription>So sánh lượng điểm phát hành và lượng điểm đổi quà</CardDescription>
+              <CardTitle className="text-lg">TÃ­ch lÅ©y vs Quy Ä‘á»•i Ä‘iá»ƒm</CardTitle>
+              <CardDescription>So sÃ¡nh lÆ°á»£ng Ä‘iá»ƒm phÃ¡t hÃ nh vÃ  lÆ°á»£ng Ä‘iá»ƒm Ä‘á»•i quÃ </CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col justify-end min-h-[300px]">
               <div className="grid grid-cols-4 gap-6 items-end flex-1 pb-4">
@@ -175,14 +175,14 @@ export default function LoyaltyReportPage() {
                         {/* Issued Bar */}
                         <div
                           style={{ height: `${issuedPct}%` }}
-                          className="w-4 bg-indigo-500 hover:bg-indigo-600 rounded-t transition-all"
-                          title={`Tích lũy: ${data.issued} điểm`}
+                          className="w-4 bg-roast/100 hover:bg-roast rounded-t transition-all"
+                          title={`TÃ­ch lÅ©y: ${data.issued} Ä‘iá»ƒm`}
                         />
                         {/* Redeemed Bar */}
                         <div
                           style={{ height: `${redeemedPct}%` }}
                           className="w-4 bg-rose-500 hover:bg-rose-600 rounded-t transition-all"
-                          title={`Quy đổi: ${data.redeemed} điểm`}
+                          title={`Quy Ä‘á»•i: ${data.redeemed} Ä‘iá»ƒm`}
                         />
                       </div>
                       <span className="text-xs font-semibold text-slate-600">{data.label}</span>
@@ -193,12 +193,12 @@ export default function LoyaltyReportPage() {
 
               <div className="flex justify-center gap-6 pt-4 border-t border-slate-100 text-xs font-medium">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 bg-indigo-500 rounded" />
-                  <span className="text-slate-600">Điểm phát hành (Tích lũy)</span>
+                  <div className="w-3 h-3 bg-roast/100 rounded" />
+                  <span className="text-slate-600">Äiá»ƒm phÃ¡t hÃ nh (TÃ­ch lÅ©y)</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 bg-rose-500 rounded" />
-                  <span className="text-slate-600">Điểm quy đổi quà</span>
+                  <span className="text-slate-600">Äiá»ƒm quy Ä‘á»•i quÃ </span>
                 </div>
               </div>
             </CardContent>
@@ -209,8 +209,8 @@ export default function LoyaltyReportPage() {
         <div className="lg:col-span-1 space-y-6">
           <Card className="shadow-md border border-slate-200">
             <CardHeader>
-              <CardTitle className="text-lg">Top khách hàng thân thiết</CardTitle>
-              <CardDescription>Thành viên sở hữu điểm tích lũy khả dụng cao nhất</CardDescription>
+              <CardTitle className="text-lg">Top khÃ¡ch hÃ ng thÃ¢n thiáº¿t</CardTitle>
+              <CardDescription>ThÃ nh viÃªn sá»Ÿ há»¯u Ä‘iá»ƒm tÃ­ch lÅ©y kháº£ dá»¥ng cao nháº¥t</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
@@ -218,13 +218,13 @@ export default function LoyaltyReportPage() {
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                 </div>
               ) : customers.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-sm">Chưa có dữ liệu thành viên</div>
+                <div className="text-center py-8 text-slate-400 text-sm">ChÆ°a cÃ³ dá»¯ liá»‡u thÃ nh viÃªn</div>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {customers.map((c, idx) => (
                     <div key={c.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center font-bold text-indigo-700 text-sm">
+                        <div className="w-8 h-8 rounded-full bg-roast/10 flex items-center justify-center font-bold text-roast/90 text-sm">
                           {idx + 1}
                         </div>
                         <div>
@@ -244,29 +244,29 @@ export default function LoyaltyReportPage() {
 
           <Card className="shadow-md border border-slate-200">
             <CardHeader>
-              <CardTitle className="text-lg">Quà được đổi nhiều nhất</CardTitle>
+              <CardTitle className="text-lg">QuÃ  Ä‘Æ°á»£c Ä‘á»•i nhiá»u nháº¥t</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-indigo-600" />
-                  <span className="font-medium text-slate-700">Trà Đào Cam Sả (M)</span>
+                  <Gift className="w-4 h-4 text-roast" />
+                  <span className="font-medium text-slate-700">TrÃ  ÄÃ o Cam Sáº£ (M)</span>
                 </div>
-                <span className="font-bold text-slate-800">142 lượt</span>
+                <span className="font-bold text-slate-800">142 lÆ°á»£t</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-indigo-600" />
-                  <span className="font-medium text-slate-700">Voucher giảm giá 20k</span>
+                  <Gift className="w-4 h-4 text-roast" />
+                  <span className="font-medium text-slate-700">Voucher giáº£m giÃ¡ 20k</span>
                 </div>
-                <span className="font-bold text-slate-800">89 lượt</span>
+                <span className="font-bold text-slate-800">89 lÆ°á»£t</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-indigo-600" />
-                  <span className="font-medium text-slate-700">Bình giữ nhiệt TraPhe</span>
+                  <Gift className="w-4 h-4 text-roast" />
+                  <span className="font-medium text-slate-700">BÃ¬nh giá»¯ nhiá»‡t TraPhe</span>
                 </div>
-                <span className="font-bold text-slate-800">24 lượt</span>
+                <span className="font-bold text-slate-800">24 lÆ°á»£t</span>
               </div>
             </CardContent>
           </Card>

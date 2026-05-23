@@ -860,6 +860,18 @@ public class OrderServiceImpl implements OrderService {
         String paymentMethod = (String) payload.get("paymentMethod");
         drinkReq.setPaymentMethod(paymentMethod != null ? paymentMethod : "CASH");
 
+        if (payload.containsKey("voucherCode") && payload.get("voucherCode") != null) {
+            drinkReq.setVoucherCode(payload.get("voucherCode").toString());
+        } else if (payload.containsKey("promotionCode") && payload.get("promotionCode") != null) {
+            drinkReq.setVoucherCode(payload.get("promotionCode").toString());
+        }
+
+        if (payload.containsKey("loyaltyPointsUsed") && payload.get("loyaltyPointsUsed") != null) {
+            drinkReq.setLoyaltyPointsUsed(((Number) payload.get("loyaltyPointsUsed")).intValue());
+        } else if (payload.containsKey("loyaltyPointsToUse") && payload.get("loyaltyPointsToUse") != null) {
+            drinkReq.setLoyaltyPointsUsed(((Number) payload.get("loyaltyPointsToUse")).intValue());
+        }
+
         // Create drink order
         OrderResponse drinkOrderResponse = createDrinkOrder(drinkReq, userEmail);
 

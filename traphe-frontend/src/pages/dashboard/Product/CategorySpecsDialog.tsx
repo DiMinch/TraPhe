@@ -191,9 +191,9 @@ export default function CategorySpecsDialog({
         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {/* Add/Edit Form */}
           {(isAdding || editingId) && (
-            <div className="border-2 border-indigo-200 rounded-lg p-4 bg-white shadow-sm space-y-4">
+            <div className="border-2 border-roast/20 rounded-lg p-4 bg-white shadow-sm space-y-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-indigo-700">
+                <h3 className="font-semibold text-roast/90">
                   {editingId ? "Edit Specification" : "New Specification"}
                 </h3>
                 <Button
@@ -287,7 +287,7 @@ export default function CategorySpecsDialog({
                 <Button
                   onClick={handleSave}
                   disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-roast hover:bg-roast/90"
                 >
                   {loading ? "Saving..." : editingId ? "Update" : "Add"}
                 </Button>
@@ -303,7 +303,7 @@ export default function CategorySpecsDialog({
                 <Button
                   onClick={handleAdd}
                   size="sm"
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-roast hover:bg-roast/90"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Spec

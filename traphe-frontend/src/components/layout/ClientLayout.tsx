@@ -10,13 +10,20 @@ function ClientLayoutContent() {
   const location = useLocation();
 
   useEffect(() => {
+    document.body.setAttribute("data-context", "customer");
+    return () => {
+      document.body.removeAttribute("data-context");
+    };
+  }, []);
+
+  useEffect(() => {
     if (location.pathname === "/menu" && !isBranchConfirmed) {
       setIsBranchModalOpen(true);
     }
   }, [location.pathname, isBranchConfirmed, setIsBranchModalOpen]);
 
   return (
-    <div className="min-h-screen flex flex-col font-geist">
+    <div className="min-h-screen flex flex-col font-body-md">
       <Header />
       <main className="flex-1">
         <Outlet />

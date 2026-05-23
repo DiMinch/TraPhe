@@ -20,6 +20,7 @@ public class BranchResponse {
     private BigDecimal lat;
     private BigDecimal lng;
     private String phone;
+    private String openingHours;
     private boolean isActive;
     private List<BranchHourResponse> hours;
 }

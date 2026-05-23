@@ -38,8 +38,23 @@ export default function ProtectedRoute({
   const hasPermission = allowedRoles.some((role) => userRoles.includes(role));
 
   if (!hasPermission) {
-    // Redirect to specified page or dashboard with error message
-    const redirect = redirectTo || "/admin";
+    // Redirect to specified page or dashboard based on role
+    let defaultRedirect = "/admin";
+    if (userRoles.includes(UserRole.CASHIER)) {
+      defaultRedirect = "/admin/orders/pos";
+    } else if (userRoles.includes(UserRole.BARISTA)) {
+      defaultRedirect = "/admin/orders/queue";
+    } else if (userRoles.includes(UserRole.BRANCH_MANAGER)) {
+      defaultRedirect = "/admin/stock/all";
+    } else if (
+      !userRoles.includes(UserRole.ADMIN) &&
+      !userRoles.includes(UserRole.EMPLOYEE) &&
+      !userRoles.includes(UserRole.ACCOUNTANT)
+    ) {
+      defaultRedirect = "/";
+    }
+
+    const redirect = redirectTo || defaultRedirect;
     return (
       <Navigate
         to={redirect}

@@ -277,7 +277,7 @@ export default function PurchaseOrdersPage() {
       {/* Action Button */}
       <div className="flex justify-end gap-3 mb-6">
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-roast hover:bg-roast/90 text-white shadow-md transition-all duration-200"
           onClick={() => setIsCreateDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -453,7 +453,7 @@ export default function PurchaseOrdersPage() {
                         onClick={() =>
                           navigate(`/admin/suppliers/purchase-orders/${po.id}`)
                         }
-                        className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                        className="font-medium text-roast hover:text-caramel hover:underline cursor-pointer"
                       >
                         {po.poNumber}
                       </button>
@@ -527,7 +527,7 @@ export default function PurchaseOrdersPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-3 border-blue-300 text-blue-700 hover:bg-blue-50"
+                            className="h-8 px-3 border-roast/30 text-roast hover:bg-foam"
                             onClick={() => handleCloseOrder(po.id)}
                             title="Close Order"
                           >

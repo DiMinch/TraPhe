@@ -27,7 +27,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/suppliers")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
 @Tag(name = "Admin Suppliers", description = "CRUD nhà cung cấp (Chỉ Admin)")
 public class AdminSupplierController {
 

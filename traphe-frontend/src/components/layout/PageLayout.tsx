@@ -1,9 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { RefreshCw, Bell } from "lucide-react";
-import { authService } from "@/services/auth.service";
-import NotificationDropdown from "@/components/common/NotificationDropDown";
 
 interface PageHeaderProps {
   title: string;
@@ -20,19 +17,6 @@ export function PageHeader({
   onRefresh,
   isLoading,
 }: PageHeaderProps) {
-  const currentUser = authService.getCurrentUser();
-  const userName = currentUser?.fullName || currentUser?.username || "User";
-  const userRole = currentUser?.roles?.[0]?.replace("ROLE_", "") || "User";
-  const userAvatar = currentUser?.avatar;
-
-  // Get initials for avatar fallback
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
       <div className="space-y-1">
@@ -43,35 +27,23 @@ export function PageHeader({
           <p className="text-sm text-slate-500 font-medium">{subtitle}</p>
         )}
       </div>
-      <div className="flex items-center gap-3">
-        {children}
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/60 hover:shadow-md transition-all duration-200">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-sm text-slate-600 font-medium">
-            {userRole} • {userName}
-          </span>
-          <Avatar className="w-9 h-9 ring-2 ring-white shadow-sm">
-            <AvatarImage src={userAvatar} alt={userName} />
-            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+      {(children || onRefresh) && (
+        <div className="flex items-center gap-3">
+          {onRefresh && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefresh}
+              disabled={isLoading}
+              className="h-9 w-9 border-slate-200 bg-white hover:bg-slate-50 rounded-lg shadow-sm"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 text-slate-500 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+          )}
+          {children}
         </div>
-        <NotificationDropdown />
-        {onRefresh && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="bg-white/80 backdrop-blur-sm hover:bg-white hover:shadow-md rounded-xl shadow-sm border border-slate-200/60 w-11 h-11 transition-all duration-200"
-          >
-            <RefreshCw
-              className={`w-5 h-5 text-slate-600 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

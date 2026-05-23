@@ -12,6 +12,8 @@ export interface UserInfo {
   phone?: string;
   avatar?: string;
   status?: UserStatus;
+  branchId?: string;
+  branchName?: string;
   hasEmailProvider?: boolean;
   shouldPromptLinking?: boolean;
   linkingStatus?: LinkingStatus;

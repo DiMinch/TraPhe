@@ -9,13 +9,14 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin": [
     UserRole.ADMIN,
     UserRole.EMPLOYEE,
-    UserRole.CASHIER,
     UserRole.ACCOUNTANT,
+    UserRole.BRANCH_MANAGER,
   ],
 
   // Menu & Product Management
   "/admin/menu": [UserRole.ADMIN, UserRole.EMPLOYEE],
-  "/admin/menu/branch": [UserRole.ADMIN],
+  "/admin/menu/toppings": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/menu/branch": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
   "/admin/category": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
   // Branches
@@ -25,10 +26,10 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin/ingredients": [UserRole.ADMIN, UserRole.EMPLOYEE],
 
   // Inventory / Stock
-  "/admin/stock": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/stock": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
 
   // Suppliers / Procurement
-  "/admin/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
 
   // Orders / Sales
   "/admin/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
@@ -37,7 +38,7 @@ export const routePermissions: Record<string, UserRole[]> = {
 
   // Loyalty & Customers
   "/admin/loyalty": [UserRole.ADMIN],
-  "/admin/loyalty/customers": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/loyalty/customers": [UserRole.ADMIN, UserRole.EMPLOYEE],
   "/admin/loyalty/tiers": [UserRole.ADMIN],
   "/admin/loyalty/rewards": [UserRole.ADMIN],
 
@@ -46,10 +47,10 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin/vouchers": [UserRole.ADMIN],
 
   // Reports
-  "/admin/reports": [UserRole.ADMIN, UserRole.ACCOUNTANT],
+  "/admin/reports": [UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER],
 
   // Staff / Users & Roles
-  "/admin/staff": [UserRole.ADMIN],
+  "/admin/staff": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
 
   // Settings & System
   "/admin/settings": [UserRole.ADMIN],

@@ -3,137 +3,108 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Search,
-  Plus,
-  Trash2,
-  AlertTriangle,
-  ArrowUpDown,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
-import { inventoryService, type InventoryResponse } from "@/services/inventory.service";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Trash2, Save, Loader2, ArrowLeft } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
+import { branchStockService, type IngredientStockResponse } from "@/services/branch-stock.service";
+import axiosClient from "@/lib/axios-client";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
+import { useNavigate } from "react-router";
 
 interface AdjustmentRow {
-  inventoryId: string;
-  productVariantId: string;
+  ingredientId: string;
   name: string;
-  sku: string;
+  unit: string;
   currentStock: number;
   newStock: number;
   difference: number;
   reason: string;
-  type: "PRODUCT" | "COMPONENT";
 }
 
 export default function StockAdjustPage() {
-  const [loading, setLoading] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [stocks, setStocks] = useState<IngredientStockResponse[]>([]);
+  
   const [submitting, setSubmitting] = useState(false);
-  const [allItems, setAllItems] = useState<InventoryResponse[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedItemId, setSelectedItemId] = useState<string>("");
+  
+  const [selectedIngredientId, setSelectedIngredientId] = useState<string>("");
   const [adjustmentItems, setAdjustmentItems] = useState<AdjustmentRow[]>([]);
   const [generalReason, setGeneralReason] = useState("Kiểm kê định kỳ");
-  const [notes, setNotes] = useState("");
+
+  const navigate = useNavigate();
+
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
 
   useEffect(() => {
-    fetchInventoryItems();
+    fetchBranches();
   }, []);
 
-  const fetchInventoryItems = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (selectedBranchId) {
+      fetchStock();
+      setAdjustmentItems([]); // Clear adjustments when branch changes
+    }
+  }, [selectedBranchId]);
+
+  const fetchBranches = async () => {
     try {
-      const response = await inventoryService.getAllInventory();
-      const rawData = Array.isArray(response.data)
-        ? response.data
-        : (response.data as any)?.content || [];
-      setAllItems(rawData);
-    } catch (err: any) {
-      console.error("Error fetching inventory for adjustment:", err);
-      toast.error("Không thể tải danh sách tồn kho.");
-    } finally {
-      setLoading(false);
+      // Branch Manager: skip API call, use assigned branch directly
+      if (isBranchManager && currentUser?.branchId) {
+        setBranches([{ id: currentUser.branchId, name: "Chi nhánh của tôi" }]);
+        setSelectedBranchId(currentUser.branchId);
+        return;
+      }
+
+      let branchData = [];
+      const branchRes = await axiosClient.get("/branches");
+      const allBranches = Array.isArray(branchRes.data) ? branchRes.data : branchRes.data?.content || [];
+      branchData = allBranches;
+      setBranches(branchData);
+      if (branchData.length > 0) setSelectedBranchId(branchData[0].id);
+    } catch (err) {
+      toast.error("Không thể tải danh sách chi nhánh");
     }
   };
 
-  const getDisplayName = (item: InventoryResponse) => {
-    if (item.type === "PRODUCT" && item.productVariant) {
-      const pv = item.productVariant;
-      return pv.variantName
-        ? `${pv.productName} (${pv.variantName})`
-        : pv.productName;
-    } else if (item.type === "COMPONENT" && item.partComponent) {
-      return `[NL] ${item.partComponent.name}`;
+  const fetchStock = async () => {
+    try {
+      const res = await branchStockService.getStock(selectedBranchId);
+      setStocks(res.data || []);
+    } catch (err) {
+      toast.error("Không thể tải tồn kho hiện tại");
     }
-    return "Mặt hàng không xác định";
-  };
-
-  const getDisplaySku = (item: InventoryResponse) => {
-    if (item.type === "PRODUCT" && item.productVariant) {
-      return item.productVariant.sku || "N/A";
-    } else if (item.type === "COMPONENT" && item.partComponent) {
-      return item.partComponent.id.substring(0, 8).toUpperCase();
-    }
-    return "N/A";
   };
 
   const handleAddItem = () => {
-    if (!selectedItemId) {
-      toast.error("Vui lòng chọn một mặt hàng");
-      return;
+    if (!selectedIngredientId) {
+      return toast.error("Vui lòng chọn một nguyên liệu");
+    }
+    if (adjustmentItems.some((row) => row.ingredientId === selectedIngredientId)) {
+      return toast.error("Nguyên liệu này đã có trong danh sách điều chỉnh");
     }
 
-    // Check if already in list
-    if (adjustmentItems.some((row) => row.inventoryId === selectedItemId)) {
-      toast.error("Mặt hàng này đã có trong danh sách điều chỉnh");
-      return;
-    }
-
-    const item = allItems.find((i) => i.id === selectedItemId);
+    const item = stocks.find((i) => i.ingredientId === selectedIngredientId);
     if (!item) return;
-
-    const currentStock = item.quantityPhysical || 0;
-    const name = getDisplayName(item);
-    const sku = getDisplaySku(item);
-    const productVariantId =
-      item.type === "PRODUCT"
-        ? item.productVariant?.id || ""
-        : item.partComponent?.id || "";
 
     setAdjustmentItems((prev) => [
       ...prev,
       {
-        inventoryId: item.id,
-        productVariantId,
-        name,
-        sku,
-        currentStock,
-        newStock: currentStock,
+        ingredientId: item.ingredientId,
+        name: item.ingredientName,
+        unit: item.unit,
+        currentStock: item.quantityAvailable,
+        newStock: item.quantityAvailable,
         difference: 0,
         reason: generalReason,
-        type: item.type === "PRODUCT" ? "PRODUCT" : "COMPONENT",
       },
     ]);
-
-    setSelectedItemId("");
+    setSelectedIngredientId("");
   };
 
   const handleRemoveRow = (index: number) => {
@@ -160,318 +131,184 @@ export default function StockAdjustPage() {
     );
   };
 
-  const handleSubmitAdjustment = async () => {
-    if (adjustmentItems.length === 0) {
-      toast.error("Vui lòng thêm ít nhất một mặt hàng để điều chỉnh");
-      return;
-    }
+  const applyGeneralReason = () => {
+    if (!generalReason) return;
+    setAdjustmentItems((prev) => prev.map((item) => ({ ...item, reason: generalReason })));
+  };
 
-    // Verify all rows have a non-zero difference
-    const hasZeroDiff = adjustmentItems.some((item) => item.difference === 0);
-    if (hasZeroDiff) {
-      toast.error("Vui lòng điều chỉnh số lượng khác với tồn kho hiện tại");
-      return;
+  const handleSubmit = async () => {
+    if (!selectedBranchId) return toast.error("Vui lòng chọn chi nhánh");
+    const validItems = adjustmentItems.filter(i => i.difference !== 0);
+    if (validItems.length === 0) {
+      return toast.error("Không có thay đổi số lượng nào cần lưu");
+    }
+    
+    const missingReason = validItems.find(i => !i.reason.trim());
+    if (missingReason) {
+      return toast.error(`Vui lòng nhập lý do điều chỉnh cho ${missingReason.name}`);
     }
 
     setSubmitting(true);
     try {
-      // The API format for createStockAdjustment expects:
-      // {
-      //   reason: string,
-      //   items: Array<{ productVariantId: string, type: 'STOCK_IN' | 'STOCK_OUT', quantity: number, reason: string }>
-      // }
-      const itemsPayload = adjustmentItems.map((item) => {
-        const transType = item.difference > 0 ? "STOCK_IN" : "STOCK_OUT";
-        return {
-          productVariantId: item.productVariantId,
-          type: transType,
-          quantity: Math.abs(item.difference),
-          reason: item.reason,
-        };
-      });
-
-      const payload = {
-        reason: notes || generalReason,
-        items: itemsPayload,
-      };
-
-      // Step 1: Create the adjustment
-      const createResponse = await inventoryService.createStockAdjustment(payload);
-
-      // Step 2: Auto-approve the adjustment to apply changes
-      if (createResponse.data?.id) {
-        await inventoryService.approveStockAdjustment(createResponse.data.id);
-      }
-
-      toast.success("Điều chỉnh kho thành công!");
-      setAdjustmentItems([]);
-      setNotes("");
-      fetchInventoryItems();
+      // Execute all adjustments concurrently
+      await Promise.all(validItems.map(item => 
+        branchStockService.adjustStock(selectedBranchId, {
+          ingredientId: item.ingredientId,
+          quantity: item.difference, // positive or negative
+          reason: item.reason
+        })
+      ));
+      
+      toast.success("Điều chỉnh kho thành công");
+      navigate("/admin/stock/all");
     } catch (err: any) {
-      console.error("Error creating stock adjustment:", err);
-      toast.error(err.response?.data?.message || "Không thể thực hiện điều chỉnh kho.");
+      toast.error(err.response?.data?.message || "Lỗi khi điều chỉnh kho");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Filter out items already added to the list or matching search
-  const availableItems = allItems.filter((item) => {
-    const isAdded = adjustmentItems.some((row) => row.inventoryId === item.id);
-    if (isAdded) return false;
-
-    const name = getDisplayName(item).toLowerCase();
-    const sku = getDisplaySku(item).toLowerCase();
-    return (
-      name.includes(searchTerm.toLowerCase()) ||
-      sku.includes(searchTerm.toLowerCase())
-    );
-  });
-
   return (
     <PageContainer>
-      <PageHeader
-        title="Điều chỉnh kho thủ công"
-        subtitle="Cập nhật số lượng vật lý của sản phẩm và nguyên liệu trực tiếp"
-        onRefresh={fetchInventoryItems}
-      />
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="p-2"><ArrowLeft className="w-5 h-5" /></Button>
+        <PageHeader title="Điều chỉnh tồn kho" subtitle="Cập nhật số lượng kho thực tế (Kiểm kê, hao hụt, hư hỏng)" />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        {/* Left Column: Form Configuration & Item Selector */}
-        <div className="space-y-6 lg:col-span-1">
-          <Card className="shadow-md border border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Thông tin điều chỉnh</CardTitle>
-              <CardDescription>Cấu hình lý do chung và ghi chú cho đợt điều chỉnh này</CardDescription>
-            </CardHeader>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+          <Card>
+            <CardHeader><CardTitle>Thông tin phiếu</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="general-reason">Lý do chính</Label>
-                <Select value={generalReason} onValueChange={setGeneralReason}>
-                  <SelectTrigger id="general-reason" className="bg-white">
-                    <SelectValue placeholder="Chọn lý do" />
-                  </SelectTrigger>
+                <Label>Chi nhánh</Label>
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} disabled={isBranchManager}>
+                  <SelectTrigger><SelectValue placeholder="Chọn chi nhánh" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Kiểm kê định kỳ">Kiểm kê định kỳ</SelectItem>
-                    <SelectItem value="Hao hụt / Thất thoát">Hao hụt / Thất thoát</SelectItem>
-                    <SelectItem value="Hàng hỏng / Hết hạn">Hàng hỏng / Hết hạn</SelectItem>
-                    <SelectItem value="Nhập bổ sung lẻ">Nhập bổ sung lẻ</SelectItem>
-                    <SelectItem value="Sai lệch dữ liệu">Sai lệch dữ liệu hệ thống</SelectItem>
+                    {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Ghi chú chi tiết</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Nhập ghi chú hoặc lý do chi tiết..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[100px] bg-white"
-                />
+                <Label>Lý do chung (Áp dụng nhanh)</Label>
+                <Select value={generalReason} onValueChange={setGeneralReason}>
+                  <SelectTrigger><SelectValue placeholder="Chọn lý do chung" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Kiểm kê định kỳ">Kiểm kê định kỳ</SelectItem>
+                    <SelectItem value="Hao hụt/Hư hỏng">Hao hụt/Hư hỏng</SelectItem>
+                    <SelectItem value="Hết hạn sử dụng">Hết hạn sử dụng</SelectItem>
+                    <SelectItem value="Nhập liệu sai">Nhập liệu sai</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" className="w-full mt-2" size="sm" onClick={applyGeneralReason} disabled={adjustmentItems.length === 0}>
+                  Áp dụng cho tất cả dòng
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md border border-slate-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Thêm mặt hàng</CardTitle>
-              <CardDescription>Tìm kiếm và thêm sản phẩm/nguyên liệu vào danh sách</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <Input
-                  placeholder="Tìm theo tên hoặc SKU..."
-                  className="pl-9 bg-white"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Chọn mặt hàng ({availableItems.length})</Label>
-                {loading ? (
-                  <div className="flex items-center space-x-2 py-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
-                    <span className="text-sm text-slate-500">Đang tải mặt hàng...</span>
-                  </div>
-                ) : (
-                  <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Chọn mặt hàng để điều chỉnh" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {availableItems.length === 0 ? (
-                        <div className="p-2 text-sm text-center text-slate-500">Không tìm thấy mặt hàng phù hợp</div>
-                      ) : (
-                        availableItems.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            <div className="flex justify-between w-full">
-                              <span className="truncate">{getDisplayName(item)}</span>
-                              <span className="text-xs text-slate-400 ml-2">SKU: {getDisplaySku(item)}</span>
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <Button
-                onClick={handleAddItem}
-                disabled={!selectedItemId}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm vào danh sách
-              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Adjustment Items List */}
-        <div className="lg:col-span-2">
-          <Card className="shadow-md border border-slate-200 h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between">
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div>
-                <CardTitle className="text-lg">Danh sách điều chỉnh ({adjustmentItems.length})</CardTitle>
-                <CardDescription>Điều chỉnh trực tiếp số lượng tồn kho vật lý</CardDescription>
+                <CardTitle>Chi tiết điều chỉnh</CardTitle>
+                <CardDescription>Thêm nguyên liệu để thay đổi số lượng tồn</CardDescription>
               </div>
-              {adjustmentItems.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAdjustmentItems([])}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                >
-                  Xóa tất cả
-                </Button>
-              )}
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between">
-              {adjustmentItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center flex-1">
-                  <ArrowUpDown className="w-12 h-12 text-slate-300 mb-3" />
-                  <p className="text-slate-500 font-medium">Chưa có mặt hàng nào được thêm</p>
-                  <p className="text-slate-400 text-sm mt-1 max-w-xs">
-                    Hãy tìm kiếm và thêm sản phẩm hoặc nguyên liệu ở cột bên trái để bắt đầu điều chỉnh tồn kho.
-                  </p>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2 mb-4">
+                <div className="flex-1 max-w-sm">
+                  <Select value={selectedIngredientId} onValueChange={setSelectedIngredientId}>
+                    <SelectTrigger><SelectValue placeholder="Tìm và chọn nguyên liệu..." /></SelectTrigger>
+                    <SelectContent>
+                      {stocks.map((item) => (
+                        <SelectItem key={item.ingredientId} value={item.ingredientId}>
+                          {item.ingredientName} (Tồn: {item.quantityAvailable} {item.unit})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-slate-50">
-                        <TableRow>
-                          <TableHead>Mặt hàng</TableHead>
-                          <TableHead className="w-[100px] text-center">Hiện tại</TableHead>
-                          <TableHead className="w-[120px] text-center">Thực tế mới</TableHead>
-                          <TableHead className="w-[100px] text-center">Chênh lệch</TableHead>
-                          <TableHead className="w-[150px]">Lý do</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {adjustmentItems.map((row, index) => (
-                          <TableRow key={row.inventoryId} className="hover:bg-slate-50/50">
-                            <TableCell>
-                              <div className="font-medium text-slate-800 text-sm">{row.name}</div>
-                              <div className="text-xs text-slate-400">SKU: {row.sku}</div>
-                            </TableCell>
-                            <TableCell className="text-center font-medium text-slate-600">
-                              {row.currentStock}
-                            </TableCell>
-                            <TableCell>
+                <Button variant="secondary" onClick={handleAddItem} disabled={!selectedIngredientId}>
+                  <Plus className="w-4 h-4 mr-2" /> Thêm vào danh sách
+                </Button>
+              </div>
+
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead>Tên nguyên liệu</TableHead>
+                      <TableHead className="w-24 text-center">Tồn hệ thống</TableHead>
+                      <TableHead className="w-32">Tồn thực tế</TableHead>
+                      <TableHead className="w-24 text-center">Chênh lệch</TableHead>
+                      <TableHead className="w-48">Lý do điều chỉnh</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {adjustmentItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center h-24 text-slate-500">
+                          Chưa có nguyên liệu nào được chọn để điều chỉnh.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      adjustmentItems.map((item, index) => (
+                        <TableRow key={item.ingredientId}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="text-center bg-slate-50">{item.currentStock}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
                               <Input
                                 type="number"
                                 min="0"
-                                className="h-9 w-24 mx-auto text-center bg-white"
-                                value={row.newStock}
-                                onChange={(e) =>
-                                  handleQuantityChange(index, Math.max(0, parseInt(e.target.value) || 0))
-                                }
+                                step="0.1"
+                                className="w-20"
+                                value={item.newStock === 0 ? "0" : item.newStock || ""}
+                                onChange={(e) => handleQuantityChange(index, parseFloat(e.target.value) || 0)}
                               />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {row.difference === 0 ? (
-                                <span className="text-slate-400 font-medium">0</span>
-                              ) : row.difference > 0 ? (
-                                <span className="text-emerald-600 font-semibold">+{row.difference}</span>
-                              ) : (
-                                <span className="text-red-600 font-semibold">{row.difference}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={row.reason}
-                                onValueChange={(val) => handleReasonChange(index, val)}
-                              >
-                                <SelectTrigger className="h-9 bg-white">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Kiểm kê định kỳ">Kiểm kê định kỳ</SelectItem>
-                                  <SelectItem value="Hao hụt / Thất thoát">Hao hụt</SelectItem>
-                                  <SelectItem value="Hàng hỏng / Hết hạn">Hỏng / Hết hạn</SelectItem>
-                                  <SelectItem value="Nhập bổ sung lẻ">Nhập bổ sung</SelectItem>
-                                  <SelectItem value="Sai lệch dữ liệu">Sai lệch dữ liệu</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-                                onClick={() => handleRemoveRow(index)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                              <span className="text-sm text-slate-500">{item.unit}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-medium">
+                            {item.difference > 0 ? (
+                              <span className="text-emerald-600">+{item.difference}</span>
+                            ) : item.difference < 0 ? (
+                              <span className="text-red-600">{item.difference}</span>
+                            ) : (
+                              <span className="text-slate-400">0</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              placeholder="Lý do..."
+                              value={item.reason}
+                              onChange={(e) => handleReasonChange(index, e.target.value)}
+                              className={!item.reason && item.difference !== 0 ? "border-red-300" : ""}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" className="text-red-500 h-8 w-8 p-0" onClick={() => handleRemoveRow(index)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
 
-                  <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4 flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                    <div className="text-sm text-yellow-800">
-                      <span className="font-semibold">Lưu ý:</span> Việc xác nhận điều chỉnh kho sẽ ghi nhận và thay đổi trực tiếp tồn kho thực tế của chi nhánh. Hành động này sẽ được ghi nhật ký hoạt động hệ thống.
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => setAdjustmentItems([])}
-                      disabled={submitting}
-                    >
-                      Hủy bỏ
-                    </Button>
-                    <Button
-                      onClick={handleSubmitAdjustment}
-                      disabled={submitting}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium min-w-[120px]"
-                    >
-                      {submitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Đang lưu...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Hoàn tất điều chỉnh
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <div className="pt-6 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => navigate(-1)}>Hủy bỏ</Button>
+                <Button className="bg-roast hover:bg-roast/90 w-40" onClick={handleSubmit} disabled={submitting || adjustmentItems.length === 0}>
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Lưu điều chỉnh
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -190,7 +190,7 @@ export default function ProductListPage() {
       {/* Search, Filter & Actions */}
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden mb-6">
         <CardContent className="p-0">
-          <div className="p-4 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="p-4 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               {/* Search Input */}
               <div className="relative flex-1 min-w-0 max-w-md">
@@ -199,7 +199,7 @@ export default function ProductListPage() {
                   placeholder="Search products by name, category, supplier..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                  className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20 bg-white"
                 />
               </div>
 
@@ -211,7 +211,7 @@ export default function ProductListPage() {
                     value={selectedCategory}
                     onValueChange={setSelectedCategory}
                   >
-                    <SelectTrigger className="w-[180px] h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white">
+                    <SelectTrigger className="w-[180px] h-10 rounded-lg border-slate-200 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20 bg-white">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +227,7 @@ export default function ProductListPage() {
 
                 {/* New Product Button */}
                 <Button
-                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+                  className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
                   onClick={() => setIsNewProductOpen(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -243,10 +243,10 @@ export default function ProductListPage() {
                 {searchQuery && (
                   <Badge
                     variant="secondary"
-                    className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer"
+                    className="bg-roast/20 text-roast/90 hover:bg-mist cursor-pointer"
                     onClick={() => setSearchQuery("")}
                   >
-                    Search: "{searchQuery}" ×
+                    Search: "{searchQuery}" Ã—
                   </Badge>
                 )}
                 {selectedCategory !== "all" && (
@@ -255,7 +255,7 @@ export default function ProductListPage() {
                     className="bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer"
                     onClick={() => setSelectedCategory("all")}
                   >
-                    Category: {selectedCategory} ×
+                    Category: {selectedCategory} Ã—
                   </Badge>
                 )}
                 <Button
@@ -281,8 +281,8 @@ export default function ProductListPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 animate-pulse"></div>
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 animate-pulse"></div>
+                <Loader2 className="w-8 h-8 animate-spin text-roast absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
               <span className="mt-4 text-slate-500 font-medium">
                 Loading products...
@@ -333,7 +333,7 @@ export default function ProductListPage() {
                     {currentProducts.map((product) => (
                       <TableRow
                         key={product.id}
-                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                         onClick={() =>
                           navigate(`/product/detail/${product.id}`)
                         }
@@ -458,7 +458,7 @@ export default function ProductListPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className={`cursor-pointer rounded-lg ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 border-0" : "text-slate-600 hover:bg-slate-100"}`}
+                            className={`cursor-pointer rounded-lg ${currentPage === page ? "bg-roast text-white hover:bg-roast/90 border-0" : "text-slate-600 hover:bg-slate-100"}`}
                           >
                             {page}
                           </PaginationLink>

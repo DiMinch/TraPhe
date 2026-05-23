@@ -75,6 +75,7 @@ public class BranchServiceImpl implements BranchService {
                 .lat(request.getLat())
                 .lng(request.getLng())
                 .phone(request.getPhone())
+                .openingHours(request.getOpeningHours())
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .build();
         return mapToResponseBasic(branchRepository.save(branch));
@@ -92,6 +93,7 @@ public class BranchServiceImpl implements BranchService {
         branch.setLat(request.getLat());
         branch.setLng(request.getLng());
         branch.setPhone(request.getPhone());
+        branch.setOpeningHours(request.getOpeningHours());
         if (request.getIsActive() != null) {
             branch.setActive(request.getIsActive());
         }
@@ -283,6 +285,7 @@ public class BranchServiceImpl implements BranchService {
                 .lat(branch.getLat())
                 .lng(branch.getLng())
                 .phone(branch.getPhone())
+                .openingHours(branch.getOpeningHours())
                 .isActive(branch.isActive())
                 .build();
     }

@@ -22,7 +22,7 @@ import { userService } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import type { Province, Commune, UserAddress } from "@/types/user.types";
 
-interface SearchableSelectProps<T> {
+export interface SearchableSelectProps<T> {
   value: string;
   onChange: (value: string) => void;
   options: T[];
@@ -32,7 +32,7 @@ interface SearchableSelectProps<T> {
   disabled?: boolean;
 }
 
-function SearchableSelect<T>({
+export function SearchableSelect<T>({
   value,
   onChange,
   options,

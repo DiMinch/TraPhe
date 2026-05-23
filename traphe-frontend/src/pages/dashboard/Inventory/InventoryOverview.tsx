@@ -204,7 +204,7 @@ export default function InventoryOverviewPage() {
           <CardContent>
             {loading ? (
               <div className="h-[200px] flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+                <Loader2 className="w-6 h-6 animate-spin text-roast" />
               </div>
             ) : overviewData?.stockValueChartData &&
               overviewData.stockValueChartData.length > 0 ? (
@@ -275,7 +275,7 @@ export default function InventoryOverviewPage() {
           <CardContent>
             {loading ? (
               <div className="h-[200px] flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+                <Loader2 className="w-6 h-6 animate-spin text-roast" />
               </div>
             ) : overviewData?.onHandQuantityChartData &&
               overviewData.onHandQuantityChartData.length > 0 ? (
@@ -356,7 +356,7 @@ export default function InventoryOverviewPage() {
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-roast" />
                       </TableCell>
                     </TableRow>
                   ) : paginatedProducts.length === 0 ? (
@@ -474,7 +474,7 @@ export default function InventoryOverviewPage() {
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600" />
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-roast" />
                       </TableCell>
                     </TableRow>
                   ) : paginatedComponents.length === 0 ? (

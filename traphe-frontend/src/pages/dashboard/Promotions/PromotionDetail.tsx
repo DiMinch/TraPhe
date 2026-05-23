@@ -348,7 +348,7 @@ export default function PromotionDetailPage() {
       <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
         <button
           onClick={() => navigate("/admin/promotions")}
-          className="hover:text-indigo-900 flex items-center gap-1"
+          className="hover:text-roast flex items-center gap-1"
         >
           <ArrowLeft className="w-4 h-4" />
           Promotion List

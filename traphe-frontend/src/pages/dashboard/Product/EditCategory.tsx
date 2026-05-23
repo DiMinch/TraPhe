@@ -275,7 +275,7 @@ export default function EditCategoryDialog({
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/80 text-white"
               onClick={handleUpdate}
               disabled={submitting}
             >

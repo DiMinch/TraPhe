@@ -31,7 +31,6 @@ export const navItems: NavItem[] = [
     allowedRoles: [
       UserRole.ADMIN,
       UserRole.EMPLOYEE,
-      UserRole.CASHIER,
       UserRole.ACCOUNTANT,
     ],
   },
@@ -39,11 +38,12 @@ export const navItems: NavItem[] = [
     title: "Menu",
     path: "/admin/menu",
     icon: Package,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
     subItems: [
-      { title: "Sản phẩm", path: "/admin/menu/items" },
-      { title: "Danh mục", path: "/admin/menu/categories" },
-      { title: "Menu chi nhánh", path: "/admin/menu/branch", allowedRoles: [UserRole.ADMIN] },
+      { title: "Sản phẩm", path: "/admin/menu/items", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE] },
+      { title: "Topping", path: "/admin/menu/toppings", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE] },
+      { title: "Danh mục", path: "/admin/menu/categories", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE] },
+      { title: "Menu chi nhánh", path: "/admin/menu/branch", allowedRoles: [UserRole.ADMIN, UserRole.BRANCH_MANAGER] },
     ],
   },
   {
@@ -69,9 +69,9 @@ export const navItems: NavItem[] = [
     title: "Kho hàng",
     path: "/admin/stock",
     icon: ShoppingCart,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
     subItems: [
-      { title: "Tổng quan", path: "/admin/stock" },
+      { title: "Tổng quan", path: "/admin/stock", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE] },
       { title: "Tồn kho", path: "/admin/stock/all" },
       { title: "Điều chỉnh", path: "/admin/stock/adjust" },
       { title: "Lịch sử", path: "/admin/stock/history" },
@@ -81,7 +81,7 @@ export const navItems: NavItem[] = [
     title: "Nhà cung cấp",
     path: "/admin/suppliers",
     icon: Clipboard,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
     subItems: [
       { title: "Danh sách NCC", path: "/admin/suppliers" },
       { title: "Đơn mua hàng", path: "/admin/suppliers/purchase-orders" },
@@ -91,17 +91,18 @@ export const navItems: NavItem[] = [
     title: "Đơn hàng",
     path: "/admin/orders",
     icon: ChartBar,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA],
     subItems: [
-      { title: "POS", path: "/admin/orders/pos" },
-      { title: "Tất cả đơn", path: "/admin/orders" },
+      { title: "POS", path: "/admin/orders/pos", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER] },
+      { title: "Hàng đợi pha chế", path: "/admin/orders/queue", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BARISTA] },
+      { title: "Tất cả đơn", path: "/admin/orders", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER] },
     ],
   },
   {
     title: "Khách hàng",
     path: "/admin/loyalty/customers",
     icon: Users,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
     subItems: [
       { title: "Danh sách KH", path: "/admin/loyalty/customers" },
       {
@@ -135,23 +136,23 @@ export const navItems: NavItem[] = [
     title: "Báo cáo",
     path: "/admin/reports",
     icon: BarChart3,
-    allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT],
+    allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER],
     subItems: [
       { title: "Doanh thu", path: "/admin/reports/revenue" },
-      { title: "Lợi nhuận", path: "/admin/reports/profit" },
+      { title: "Lợi nhuận", path: "/admin/reports/profit", allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT] },
       { title: "Món bán chạy", path: "/admin/reports/products" },
       { title: "Tồn kho", path: "/admin/reports/inventory" },
-      { title: "Loyalty", path: "/admin/reports/loyalty" },
+      { title: "Loyalty", path: "/admin/reports/loyalty", allowedRoles: [UserRole.ADMIN] },
     ],
   },
   {
     title: "Nhân sự",
     path: "/admin/staff",
     icon: UserCog,
-    allowedRoles: [UserRole.ADMIN],
+    allowedRoles: [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
     subItems: [
       { title: "Tài khoản NV", path: "/admin/staff" },
-      { title: "Vai trò & Quyền", path: "/admin/staff/roles" },
+      { title: "Vai trò & Quyền", path: "/admin/staff/roles", allowedRoles: [UserRole.ADMIN] },
     ],
   },
   {

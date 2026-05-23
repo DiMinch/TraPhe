@@ -160,7 +160,7 @@ export default function ProfitReport() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-roast" />
         </div>
       ) : report ? (
         <>
@@ -175,7 +175,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {report.totalRevenue?.toLocaleString() || 0}đ
+                  {report.totalRevenue?.toLocaleString() || 0}Ä‘
                 </div>
               </CardContent>
             </Card>
@@ -189,7 +189,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {report.totalCost?.toLocaleString() || 0}đ
+                  {report.totalCost?.toLocaleString() || 0}Ä‘
                 </div>
               </CardContent>
             </Card>
@@ -203,7 +203,7 @@ export default function ProfitReport() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {report.grossProfit?.toLocaleString() || 0}đ
+                  {report.grossProfit?.toLocaleString() || 0}Ä‘
                 </div>
               </CardContent>
             </Card>
@@ -285,10 +285,10 @@ export default function ProfitReport() {
                             {product.quantitySold}
                           </TableCell>
                           <TableCell className="text-right">
-                            {product.revenue?.toLocaleString() || 0}đ
+                            {product.revenue?.toLocaleString() || 0}Ä‘
                           </TableCell>
                           <TableCell className="text-right text-red-600">
-                            {product.cost?.toLocaleString() || 0}đ
+                            {product.cost?.toLocaleString() || 0}Ä‘
                           </TableCell>
                           <TableCell className="text-right font-semibold">
                             <span
@@ -298,7 +298,7 @@ export default function ProfitReport() {
                                   : "text-red-600"
                               }
                             >
-                              {product.grossProfit?.toLocaleString() || 0}đ
+                              {product.grossProfit?.toLocaleString() || 0}Ä‘
                             </span>
                           </TableCell>
                           <TableCell className="text-right">

@@ -23,16 +23,27 @@ public interface StockTransactionRepository extends JpaRepository<StockTransacti
     Page<StockTransaction> findByBranchIdAndTypeOrderByCreatedAtDesc(
             UUID branchId, StockTransactionType type, Pageable pageable);
 
-    @Query("SELECT st FROM StockTransaction st WHERE st.branch.id = :branchId " +
-           "AND (:ingredientId IS NULL OR st.ingredient.id = :ingredientId) " +
-           "AND (:type IS NULL OR st.type = :type) " +
-           "AND (:startDate IS NULL OR st.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR st.createdAt <= :endDate) " +
-           "ORDER BY st.createdAt DESC")
+    @Query(value = "SELECT st.* FROM ingredient_stock_transactions st WHERE " +
+           "(CAST(:branchId AS uuid) IS NULL OR st.branch_id = :branchId) " +
+           "AND (CAST(:ingredientId AS uuid) IS NULL OR st.ingredient_id = :ingredientId) " +
+           "AND (CAST(:type AS varchar) IS NULL OR st.type = :type) " +
+           "AND (CAST(:referenceId AS uuid) IS NULL OR st.reference_id = :referenceId) " +
+           "AND (CAST(:startDate AS timestamp) IS NULL OR st.created_at >= :startDate) " +
+           "AND (CAST(:endDate AS timestamp) IS NULL OR st.created_at <= :endDate) " +
+           "ORDER BY st.created_at DESC",
+           countQuery = "SELECT count(*) FROM ingredient_stock_transactions st WHERE " +
+           "(CAST(:branchId AS uuid) IS NULL OR st.branch_id = :branchId) " +
+           "AND (CAST(:ingredientId AS uuid) IS NULL OR st.ingredient_id = :ingredientId) " +
+           "AND (CAST(:type AS varchar) IS NULL OR st.type = :type) " +
+           "AND (CAST(:referenceId AS uuid) IS NULL OR st.reference_id = :referenceId) " +
+           "AND (CAST(:startDate AS timestamp) IS NULL OR st.created_at >= :startDate) " +
+           "AND (CAST(:endDate AS timestamp) IS NULL OR st.created_at <= :endDate)",
+           nativeQuery = true)
     Page<StockTransaction> findByFilters(
             @Param("branchId") UUID branchId,
             @Param("ingredientId") UUID ingredientId,
-            @Param("type") StockTransactionType type,
+            @Param("type") String type,
+            @Param("referenceId") UUID referenceId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable);

@@ -181,12 +181,12 @@ export default function AuditLogsPage() {
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="flex flex-wrap items-center gap-3 p-6 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search by Resource ID, Actor or Module"
-                className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
+                className="pl-10 bg-white border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -195,7 +195,7 @@ export default function AuditLogsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 border-slate-200 hover:bg-white hover:border-indigo-500 rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
+              className="shrink-0 border-slate-200 hover:bg-white hover:border-roast rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
             >
               <Filter className="w-4 h-4" />
             </Button>
@@ -204,7 +204,7 @@ export default function AuditLogsPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="shrink-0 h-10 border-slate-200 hover:bg-white hover:border-indigo-500 rounded-lg shadow-sm transition-all duration-200"
+                  className="shrink-0 h-10 border-slate-200 hover:bg-white hover:border-roast rounded-lg shadow-sm transition-all duration-200"
                 >
                   <Calendar className="w-4 h-4 mr-2" />
                   {dateRange.from ? (
@@ -238,7 +238,7 @@ export default function AuditLogsPage() {
             </Popover>
 
             <Select value={selectedActor} onValueChange={setSelectedActor}>
-              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                 <SelectValue placeholder="All actor" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -252,7 +252,7 @@ export default function AuditLogsPage() {
             </Select>
 
             <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                 <SelectValue placeholder="All action" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -272,7 +272,7 @@ export default function AuditLogsPage() {
             </Select>
 
             <Select value={selectedModule} onValueChange={setSelectedModule}>
-              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+              <SelectTrigger className="w-36 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                 <SelectValue placeholder="All module" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -296,8 +296,8 @@ export default function AuditLogsPage() {
             {/* Loading State */}
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-roast" />
                 </div>
                 <span className="ml-3 text-slate-600 mt-4">
                   Loading audit logs...
@@ -402,7 +402,7 @@ export default function AuditLogsPage() {
                     {filteredLogs.map((log) => (
                       <TableRow
                         key={log.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                       >
                         <TableCell className="text-slate-600">
                           {new Date(log.createdAt).toLocaleString()}
@@ -424,7 +424,7 @@ export default function AuditLogsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm text-indigo-600 font-mono">
+                          <div className="text-sm text-roast font-mono">
                             {log.resourceId || "-"}
                           </div>
                         </TableCell>
@@ -470,7 +470,7 @@ export default function AuditLogsPage() {
                       <PaginationLink
                         href="#"
                         isActive
-                        className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                        className="rounded-lg bg-roast text-white hover:bg-roast/90"
                       >
                         1
                       </PaginationLink>

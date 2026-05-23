@@ -24,22 +24,27 @@ export default function SignInPage() {
       const response = await authService.login({ email, password });
 
       if (response.statusCode === 200 && response.data) {
-        const { accessToken, refreshToken, ...userInfo } = response.data;
+        const { accessToken, refreshToken, user } = response.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
-        localStorage.setItem("user", JSON.stringify(userInfo));
+        localStorage.setItem("user", JSON.stringify(user));
 
         toast.success("Login Successful", {
           id: toastId,
-          description: `Welcome back, ${userInfo.username || "User"}!`,
+          description: `Welcome back, ${user.fullName || user.username || "User"}!`,
         });
 
-        const roles = userInfo.roles || [];
+        const roles = user.roles || [];
         const userRoles = roles as string[];
-        if (
+        if (userRoles.includes(UserRole.CASHIER)) {
+          navigate("/admin/orders/pos");
+        } else if (userRoles.includes(UserRole.BARISTA)) {
+          navigate("/admin/orders/queue");
+        } else if (userRoles.includes(UserRole.BRANCH_MANAGER)) {
+          navigate("/admin/stock/all");
+        } else if (
           userRoles.includes(UserRole.ADMIN) ||
           userRoles.includes(UserRole.EMPLOYEE) ||
-          userRoles.includes(UserRole.CASHIER) ||
           userRoles.includes(UserRole.ACCOUNTANT)
         ) {
           navigate("/admin");

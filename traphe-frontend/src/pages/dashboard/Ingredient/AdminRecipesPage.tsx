@@ -89,7 +89,7 @@ export default function AdminRecipesPage() {
       }
     } catch (err: any) {
       console.error("Error fetching recipe initial data:", err);
-      toast.error("Không thể tải thông tin sản phẩm hoặc nguyên liệu.");
+      toast.error("KhÃ´ng thá»ƒ táº£i thÃ´ng tin sáº£n pháº©m hoáº·c nguyÃªn liá»‡u.");
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ export default function AdminRecipesPage() {
         return {
           id: r.id || "rec-" + Math.random().toString(36).substring(2, 9),
           ingredientId: r.ingredientId,
-          ingredientName: ing ? ing.name : "Nguyên liệu không xác định",
+          ingredientName: ing ? ing.name : "NguyÃªn liá»‡u khÃ´ng xÃ¡c Ä‘á»‹nh",
           amount: r.amount || r.quantity || 0,
           unit: ing ? ing.unit : "g",
         };
@@ -155,13 +155,13 @@ export default function AdminRecipesPage() {
 
   const handleAddIngredient = () => {
     if (!tempIngredientId) {
-      toast.warning("Vui lòng chọn nguyên liệu");
+      toast.warning("Vui lÃ²ng chá»n nguyÃªn liá»‡u");
       return;
     }
 
     const exists = recipeItems.some((item) => item.ingredientId === tempIngredientId);
     if (exists) {
-      toast.warning("Nguyên liệu này đã có trong công thức.");
+      toast.warning("NguyÃªn liá»‡u nÃ y Ä‘Ã£ cÃ³ trong cÃ´ng thá»©c.");
       return;
     }
 
@@ -179,7 +179,7 @@ export default function AdminRecipesPage() {
     setRecipeItems([...recipeItems, newItem]);
     setTempIngredientId("");
     setTempAmount(10);
-    toast.success(`Đã thêm ${ing.name} vào công thức tạm thời.`);
+    toast.success(`ÄÃ£ thÃªm ${ing.name} vÃ o cÃ´ng thá»©c táº¡m thá»i.`);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -204,11 +204,11 @@ export default function AdminRecipesPage() {
 
       // PUT /admin/recipes/menu-item/:menuItemId
       await axiosClient.put(`/admin/recipes/menu-item/${selectedProductId}`, payload);
-      toast.success("Cập nhật công thức pha chế thành công!");
+      toast.success("Cáº­p nháº­t cÃ´ng thá»©c pha cháº¿ thÃ nh cÃ´ng!");
     } catch (err: any) {
       console.error("Error saving recipe:", err);
       // Fallback simulating success if BE endpoint isn't fully set up yet
-      toast.success("Cập nhật công thức pha chế thành công! (Simulated)");
+      toast.success("Cáº­p nháº­t cÃ´ng thá»©c pha cháº¿ thÃ nh cÃ´ng! (Simulated)");
     } finally {
       setSaving(false);
     }
@@ -224,15 +224,15 @@ export default function AdminRecipesPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Công thức pha chế (Recipes)"
-        subtitle="Quản lý định mức nguyên liệu tiêu hao của từng món phục vụ trừ kho tự động khi bán hàng"
+        title="CÃ´ng thá»©c pha cháº¿ (Recipes)"
+        subtitle="Quáº£n lÃ½ Ä‘á»‹nh má»©c nguyÃªn liá»‡u tiÃªu hao cá»§a tá»«ng mÃ³n phá»¥c vá»¥ trá»« kho tá»± Ä‘á»™ng khi bÃ¡n hÃ ng"
         onRefresh={fetchInitialData}
       />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mb-4" />
-          <span className="text-slate-600 font-medium">Đang tải danh sách công thức...</span>
+          <Loader2 className="w-10 h-10 animate-spin text-roast mb-4" />
+          <span className="text-slate-600 font-medium">Äang táº£i danh sÃ¡ch cÃ´ng thá»©c...</span>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
@@ -240,15 +240,15 @@ export default function AdminRecipesPage() {
           <div className="lg:col-span-1 space-y-4">
             <Card className="shadow-md border border-slate-200">
               <CardHeader>
-                <CardTitle className="text-lg">Danh sách món ăn</CardTitle>
-                <CardDescription>Chọn món để cấu hình định lượng nguyên liệu</CardDescription>
+                <CardTitle className="text-lg">Danh sÃ¡ch mÃ³n Äƒn</CardTitle>
+                <CardDescription>Chá»n mÃ³n Ä‘á»ƒ cáº¥u hÃ¬nh Ä‘á»‹nh lÆ°á»£ng nguyÃªn liá»‡u</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-0">
                 <div className="p-4 border-b border-slate-100">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <Input
-                      placeholder="Tìm món nước..."
+                      placeholder="TÃ¬m mÃ³n nÆ°á»›c..."
                       className="pl-9 bg-white"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -263,21 +263,21 @@ export default function AdminRecipesPage() {
                       onClick={() => handleProductSelect(p.id)}
                       className={`w-full flex items-center justify-between p-3 rounded-xl transition-all text-left ${
                         selectedProductId === p.id
-                          ? "bg-indigo-50 text-indigo-950 font-semibold border-l-4 border-indigo-600"
+                          ? "bg-roast/10 text-roast font-semibold border-l-4 border-roast"
                           : "hover:bg-slate-50 text-slate-700"
                       }`}
                     >
                       <div>
                         <div className="text-sm">{p.name}</div>
-                        <div className="text-xs text-slate-400">{p.categoryName || "Đồ uống"}</div>
+                        <div className="text-xs text-slate-400">{p.categoryName || "Äá»“ uá»‘ng"}</div>
                       </div>
                       <Badge variant="outline" className="text-[10px] bg-white border-slate-200">
-                        {p.basePrice?.toLocaleString()}đ
+                        {p.basePrice?.toLocaleString()}Ä‘
                       </Badge>
                     </button>
                   ))}
                   {filteredProducts.length === 0 && (
-                    <div className="text-center py-8 text-slate-400 text-sm">Không tìm thấy món nước nào.</div>
+                    <div className="text-center py-8 text-slate-400 text-sm">KhÃ´ng tÃ¬m tháº¥y mÃ³n nÆ°á»›c nÃ o.</div>
                   )}
                 </div>
               </CardContent>
@@ -292,23 +292,23 @@ export default function AdminRecipesPage() {
                   <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-4 border-b border-slate-100 pb-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <Utensils className="w-5 h-5 text-indigo-600" />
-                        <CardTitle className="text-lg">Công thức pha chế: {selectedProduct.name}</CardTitle>
+                        <Utensils className="w-5 h-5 text-roast" />
+                        <CardTitle className="text-lg">CÃ´ng thá»©c pha cháº¿: {selectedProduct.name}</CardTitle>
                       </div>
-                      <CardDescription>Định lượng nguyên liệu tiêu hao cho 1 đơn vị món</CardDescription>
+                      <CardDescription>Äá»‹nh lÆ°á»£ng nguyÃªn liá»‡u tiÃªu hao cho 1 Ä‘Æ¡n vá»‹ mÃ³n</CardDescription>
                     </div>
 
                     <Button
                       onClick={handleSaveRecipe}
                       disabled={saving}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                      className="bg-roast hover:bg-roast/90 text-white font-medium"
                     >
                       {saving ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
-                      Lưu công thức
+                      LÆ°u cÃ´ng thá»©c
                     </Button>
                   </CardHeader>
 
@@ -316,15 +316,15 @@ export default function AdminRecipesPage() {
                     {/* Add Ingredient Form Row */}
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-4">
                       <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                        <Plus className="w-4 h-4 text-indigo-600" />
-                        Thêm nguyên liệu vào công thức
+                        <Plus className="w-4 h-4 text-roast" />
+                        ThÃªm nguyÃªn liá»‡u vÃ o cÃ´ng thá»©c
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div className="space-y-1">
-                          <Label>Chọn nguyên liệu</Label>
+                          <Label>Chá»n nguyÃªn liá»‡u</Label>
                           <Select value={tempIngredientId} onValueChange={setTempIngredientId}>
                             <SelectTrigger className="bg-white">
-                              <SelectValue placeholder="Chọn nguyên liệu" />
+                              <SelectValue placeholder="Chá»n nguyÃªn liá»‡u" />
                             </SelectTrigger>
                             <SelectContent>
                               {ingredients.map((ing) => (
@@ -337,7 +337,7 @@ export default function AdminRecipesPage() {
                         </div>
 
                         <div className="space-y-1">
-                          <Label>Định lượng tiêu hao</Label>
+                          <Label>Äá»‹nh lÆ°á»£ng tiÃªu hao</Label>
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
@@ -354,16 +354,16 @@ export default function AdminRecipesPage() {
 
                         <Button
                           onClick={handleAddIngredient}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                          className="bg-roast hover:bg-roast/90 text-white font-medium"
                         >
-                          Thêm nguyên liệu
+                          ThÃªm nguyÃªn liá»‡u
                         </Button>
                       </div>
                     </div>
 
                     {/* Table list of ingredients in recipe */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-slate-800">Chi tiết công thức pha chế</h4>
+                      <h4 className="text-sm font-semibold text-slate-800">Chi tiáº¿t cÃ´ng thá»©c pha cháº¿</h4>
                       {loadingRecipe ? (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -371,17 +371,17 @@ export default function AdminRecipesPage() {
                       ) : recipeItems.length === 0 ? (
                         <div className="text-center py-12 border border-dashed rounded-xl bg-slate-50/50">
                           <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500 font-medium">Chưa có nguyên liệu nào được thiết lập.</p>
-                          <p className="text-xs text-slate-400 mt-1">Hãy chọn nguyên liệu ở trên để bắt đầu thêm công thức.</p>
+                          <p className="text-sm text-slate-500 font-medium">ChÆ°a cÃ³ nguyÃªn liá»‡u nÃ o Ä‘Æ°á»£c thiáº¿t láº­p.</p>
+                          <p className="text-xs text-slate-400 mt-1">HÃ£y chá»n nguyÃªn liá»‡u á»Ÿ trÃªn Ä‘á»ƒ báº¯t Ä‘áº§u thÃªm cÃ´ng thá»©c.</p>
                         </div>
                       ) : (
                         <div className="rounded-xl border border-slate-200 overflow-hidden">
                           <Table>
                             <TableHeader className="bg-slate-50">
                               <TableRow>
-                                <TableHead>Nguyên liệu</TableHead>
-                                <TableHead className="w-[180px] text-center">Định lượng tiêu hao</TableHead>
-                                <TableHead className="w-[100px] text-center">Đơn vị</TableHead>
+                                <TableHead>NguyÃªn liá»‡u</TableHead>
+                                <TableHead className="w-[180px] text-center">Äá»‹nh lÆ°á»£ng tiÃªu hao</TableHead>
+                                <TableHead className="w-[100px] text-center">ÄÆ¡n vá»‹</TableHead>
                                 <TableHead className="w-[80px] text-right"></TableHead>
                               </TableRow>
                             </TableHeader>
@@ -430,16 +430,16 @@ export default function AdminRecipesPage() {
                 <div className="p-5 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 flex gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
-                    Hệ thống sẽ tự động trừ trừ kho nguyên liệu tương ứng ngay khi đơn hàng chứa sản phẩm này được thanh toán thành công tại POS hoặc Online.
+                    Há»‡ thá»‘ng sáº½ tá»± Ä‘á»™ng trá»« trá»« kho nguyÃªn liá»‡u tÆ°Æ¡ng á»©ng ngay khi Ä‘Æ¡n hÃ ng chá»©a sáº£n pháº©m nÃ y Ä‘Æ°á»£c thanh toÃ¡n thÃ nh cÃ´ng táº¡i POS hoáº·c Online.
                   </span>
                 </div>
               </Card>
             ) : (
               <div className="flex flex-col items-center justify-center py-32 text-center bg-white border border-slate-200 rounded-2xl shadow-sm">
                 <BookOpen className="w-12 h-12 text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">Chưa chọn món nước nào</p>
+                <p className="text-slate-500 font-medium">ChÆ°a chá»n mÃ³n nÆ°á»›c nÃ o</p>
                 <p className="text-slate-400 text-sm mt-1">
-                  Chọn một món nước ở danh sách bên trái để thiết lập công thức pha chế.
+                  Chá»n má»™t mÃ³n nÆ°á»›c á»Ÿ danh sÃ¡ch bÃªn trÃ¡i Ä‘á»ƒ thiáº¿t láº­p cÃ´ng thá»©c pha cháº¿.
                 </p>
               </div>
             )}

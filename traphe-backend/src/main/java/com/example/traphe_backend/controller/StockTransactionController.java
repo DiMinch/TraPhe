@@ -34,18 +34,21 @@ public class StockTransactionController {
     @Operation(summary = "Danh sách giao dịch kho",
             description = "Lấy lịch sử giao dịch kho theo chi nhánh, hỗ trợ lọc theo nguyên liệu, loại giao dịch, và khoảng thời gian. Phân trang.")
     public ResponseEntity<ApiResponse<Page<StockTransactionResponse>>> getTransactions(
-            @RequestParam UUID branchId,
+            @RequestParam(required = false) UUID branchId,
             @RequestParam(required = false) UUID ingredientId,
             @RequestParam(required = false) String type,
+            @RequestParam(required = false) UUID referenceId,
             @RequestParam(required = false) LocalDateTime startDate,
             @RequestParam(required = false) LocalDateTime endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         StockTransactionType txType = null;
+        String txTypeName = null;
         if (type != null && !type.isBlank()) {
             try {
                 txType = StockTransactionType.valueOf(type.toUpperCase());
+                txTypeName = txType.name();
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Loại giao dịch không hợp lệ: " + type);
             }
@@ -53,7 +56,7 @@ public class StockTransactionController {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<StockTransaction> transactions = stockTransactionRepository.findByFilters(
-                branchId, ingredientId, txType, startDate, endDate, pageable);
+                branchId, ingredientId, txTypeName, referenceId, startDate, endDate, pageable);
 
         Page<StockTransactionResponse> responsePage = transactions.map(this::mapToResponse);
 

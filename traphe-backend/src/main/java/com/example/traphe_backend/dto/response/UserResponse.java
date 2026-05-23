@@ -20,6 +20,8 @@ public class UserResponse {
     private String avatarUrl;
     private boolean isEmailVerified;
     private List<String> roles;
+    private UUID branchId;
+    private String branchName;
     private TierInfo tier;
     private LoyaltyPointInfo loyaltyPoint;
 

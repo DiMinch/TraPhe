@@ -203,7 +203,7 @@ export default function CategoriesPage() {
           </Select>
 
           <Button
-            className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+            className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
             onClick={() => setIsNewCategoryOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -285,7 +285,7 @@ export default function CategoriesPage() {
                                   )}`,
                                 )
                               }
-                              className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                              className="font-medium text-roast hover:underline cursor-pointer"
                             >
                               {category.name}
                             </button>

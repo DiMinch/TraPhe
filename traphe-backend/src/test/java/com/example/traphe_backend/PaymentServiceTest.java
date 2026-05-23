@@ -7,6 +7,7 @@ import com.example.traphe_backend.enums.PaymentStatus;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.PaymentTransactionRepository;
 import com.example.traphe_backend.service.PaymentService;
+import com.example.traphe_backend.service.impl.PaymentServiceImpl;
 import com.example.traphe_backend.util.MoMoUtil;
 import com.example.traphe_backend.util.VnPayUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PaymentServiceTest {
 
     @InjectMocks
-    private PaymentService paymentService;
+    private PaymentServiceImpl paymentService;
 
     @Mock
     private PaymentTransactionRepository paymentTransactionRepository;

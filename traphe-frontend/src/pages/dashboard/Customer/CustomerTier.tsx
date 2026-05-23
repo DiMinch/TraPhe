@@ -192,7 +192,7 @@ export default function CustomerTierPage() {
           Recalculate All
         </Button>
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
           onClick={handleCreateClick}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -246,7 +246,7 @@ export default function CustomerTierPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="hover:text-indigo-600 cursor-pointer"
+                            className="hover:text-roast cursor-pointer"
                             onClick={() => handleEditClick(tier)}
                           >
                             <Edit className="w-4 h-4 text-gray-500" />
@@ -382,7 +382,7 @@ export default function CustomerTierPage() {
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
             >
               {isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

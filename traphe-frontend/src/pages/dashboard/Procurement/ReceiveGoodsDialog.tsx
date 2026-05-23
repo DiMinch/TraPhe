@@ -385,7 +385,7 @@ export default function ReceiveGoodsDialog({
                             variant="outline"
                             className={
                               item.itemType === "PRODUCT"
-                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                ? "bg-foam text-primary border-roast/20"
                                 : "bg-amber-50 text-amber-700 border-amber-200"
                             }
                           >
@@ -484,7 +484,7 @@ export default function ReceiveGoodsDialog({
                             variant="outline"
                             className={
                               item.itemType === "PRODUCT"
-                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                ? "bg-foam text-primary border-roast/20"
                                 : "bg-amber-50 text-amber-700 border-amber-200"
                             }
                           >
@@ -578,7 +578,7 @@ export default function ReceiveGoodsDialog({
 
             {/* Serial Number Input Section - Expanded View */}
             {expandedItemId && (
-              <div className="border-2 border-blue-300 rounded-xl p-4 bg-blue-50 space-y-4 animate-in slide-in-from-top-2">
+              <div className="border-2 border-roast/30 rounded-xl p-4 bg-foam space-y-4 animate-in slide-in-from-top-2">
                 {(() => {
                   const item = items.find((i) => i.id === expandedItemId);
                   if (!item || item.itemType !== "PRODUCT") return null;
@@ -622,7 +622,7 @@ export default function ReceiveGoodsDialog({
                         />
                         <Button
                           onClick={() => handleAddSerial(item.id)}
-                          className="h-12 px-4 bg-gradient-to-r from-blue-600 to-blue-700"
+                          className="h-12 px-4 bg-roast hover:bg-roast/90 text-white"
                         >
                           <Plus className="w-5 h-5" />
                         </Button>

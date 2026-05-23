@@ -12,17 +12,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { productService } from "@/services/product.service";
 import { categoryService } from "@/services/category.service";
-import {
-  supplierService,
-  type SupplierResponse,
-} from "@/services/supplier.service";
-import type { Product } from "@/types/product.types";
-import type { Category, CategorySpec } from "@/types/category.types";
+import type { Product, ToppingOption } from "@/types/product.types";
+import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, Plus } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageLayout";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+
+interface SizeFormData {
+  sizeName: string;
+  sellingPrice: number | "";
+  displayOrder: number;
+}
 
 export default function ProductEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,162 +42,37 @@ export default function ProductEditPage() {
   const [loading, setLoading] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
-  const [categorySpecs, setCategorySpecs] = useState<CategorySpec[]>([]);
-  const [specValues, setSpecValues] = useState<Record<string, string>>({});
+  
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
-    supplierId: "",
     description: "",
-    minStockThreshold: "",
-    warrantyPeriod: "",
-    commonSpecs: "",
+    basePrice: "" as number | "",
+    preparationTime: "" as number | "",
+    isDrink: true,
+    allowToppings: true,
   });
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [customSpecs, setCustomSpecs] = useState<
-    { key: string; name: string }[]
-  >([]); // Custom added specs
-  const [newSpecKey, setNewSpecKey] = useState("");
-  const [newSpecName, setNewSpecName] = useState("");
+  
+  // F&B specific
+  const [sizes, setSizes] = useState<SizeFormData[]>([]);
+  const [availableToppings, setAvailableToppings] = useState<ToppingOption[]>([]);
+  const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
 
   useEffect(() => {
     if (id) {
       fetchCategories();
-      fetchSuppliers();
+      fetchToppings();
       fetchProduct();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Load category specs when categoryId and categories are available
-  useEffect(() => {
-    if (formData.categoryId && categories.length > 0) {
-      const selectedCategory = categories.find(
-        (c) => c.id === formData.categoryId,
-      );
-      if (
-        selectedCategory &&
-        selectedCategory.specs &&
-        selectedCategory.specs.length > 0
-      ) {
-        setCategorySpecs(selectedCategory.specs);
-      } else {
-        // Try to fetch specs directly from API if not in category object
-        fetchCategorySpecs(formData.categoryId);
-      }
-    } else {
-      setCategorySpecs([]);
-    }
-  }, [formData.categoryId, categories]);
-
-  // Parse existing commonSpecs when product data is loaded
-  useEffect(() => {
-    if (formData.commonSpecs) {
-      try {
-        const parsed = JSON.parse(formData.commonSpecs);
-        setSpecValues(parsed);
-        // Store the keys from existing specs
-        const keys = Object.keys(parsed);
-
-        // Identify specs that are NOT in category specs (custom specs)
-        const categorySpecKeys = categorySpecs.map((s) => s.specKey);
-        const customKeys = keys.filter(
-          (key) => !categorySpecKeys.includes(key),
-        );
-        setCustomSpecs(
-          customKeys.map((key) => ({
-            key,
-            name: key.replace(/([A-Z])/g, " $1").trim(), // Convert camelCase to readable name
-          })),
-        );
-      } catch {
-        setSpecValues({});
-        setCustomSpecs([]);
-      }
-    }
-  }, [formData.commonSpecs, categorySpecs]);
-
-  const fetchCategorySpecs = async (categoryId: string) => {
-    try {
-      const response = await categoryService.getSpecs(categoryId);
-      if (response.data) {
-        setCategorySpecs(response.data);
-      }
-    } catch (error) {
-      console.error("Failed to load category specs:", error);
-    }
-  };
-
-  // Update commonSpecs JSON when spec values change
-  const handleSpecValueChange = (specKey: string, value: string) => {
-    const newValues = { ...specValues, [specKey]: value };
-    setSpecValues(newValues);
-    // Filter out empty values and convert to JSON
-    const filteredValues = Object.fromEntries(
-      Object.entries(newValues).filter(([, v]) => v && v.trim() !== ""),
-    );
-    setFormData((prev) => ({
-      ...prev,
-      commonSpecs:
-        Object.keys(filteredValues).length > 0
-          ? JSON.stringify(filteredValues)
-          : "",
-    }));
-  };
-
-  // Add a new custom spec
-  const handleAddCustomSpec = () => {
-    if (!newSpecKey.trim()) {
-      toast.error("Spec key is required");
-      return;
-    }
-
-    // Check if key already exists
-    const allKeys = [
-      ...categorySpecs.map((s) => s.specKey),
-      ...customSpecs.map((s) => s.key),
-    ];
-    if (allKeys.includes(newSpecKey)) {
-      toast.error("This spec key already exists");
-      return;
-    }
-
-    const specName =
-      newSpecName.trim() || newSpecKey.replace(/([A-Z])/g, " $1").trim();
-    setCustomSpecs((prev) => [...prev, { key: newSpecKey, name: specName }]);
-    setNewSpecKey("");
-    setNewSpecName("");
-  };
-
-  // Delete a custom spec
-  const handleDeleteSpec = (specKey: string) => {
-    // Remove from custom specs
-    setCustomSpecs((prev) => prev.filter((s) => s.key !== specKey));
-
-    // Remove the value and update formData
-    const newValues = { ...specValues };
-    delete newValues[specKey];
-    setSpecValues(newValues);
-
-    // Update formData.commonSpecs
-    const filteredValues = Object.fromEntries(
-      Object.entries(newValues).filter(([, v]) => v && v.trim() !== ""),
-    );
-    setFormData((prev) => ({
-      ...prev,
-      commonSpecs:
-        Object.keys(filteredValues).length > 0
-          ? JSON.stringify(filteredValues)
-          : "",
-    }));
-  };
-
   const fetchCategories = async () => {
     try {
       const response = await categoryService.getAllCategories();
       if (response.data) {
-        // Handle both direct array and paginated response
         const categoriesData = Array.isArray(response.data)
           ? response.data
           : (response.data as any)?.content || [];
@@ -196,18 +83,17 @@ export default function ProductEditPage() {
     }
   };
 
-  const fetchSuppliers = async () => {
+  const fetchToppings = async () => {
     try {
-      const response = await supplierService.getAllSuppliers();
+      const response = await productService.getToppings();
       if (response.data) {
-        // Handle both direct array and paginated response
-        const suppliersData = Array.isArray(response.data)
+        const toppingsData = Array.isArray(response.data)
           ? response.data
           : (response.data as any)?.content || [];
-        setSuppliers(suppliersData);
+        setAvailableToppings(toppingsData);
       }
     } catch (error: unknown) {
-      console.error("Failed to load suppliers:", error);
+      console.error("Failed to load toppings:", error);
     }
   };
 
@@ -216,32 +102,37 @@ export default function ProductEditPage() {
       setLoading(true);
       const response = await productService.getProductById(id!);
       if (response.data) {
-        setProduct(response.data);
-        // Fetch suppliers first to find the matching supplierId by name
-        const suppliersResponse = await supplierService.getAllSuppliers();
-        let matchedSupplierId = "";
-        if (suppliersResponse.data) {
-          const suppliersData = Array.isArray(suppliersResponse.data)
-            ? suppliersResponse.data
-            : (suppliersResponse.data as any)?.content || [];
-          setSuppliers(suppliersData);
-          // Find supplier by name
-          const matchedSupplier = suppliersData.find(
-            (s: SupplierResponse) => s.name === response.data.supplierName,
-          );
-          if (matchedSupplier) {
-            matchedSupplierId = matchedSupplier.id;
+        const prod = response.data;
+        setProduct(prod);
+        setFormData({
+          name: prod.name || "",
+          categoryId: prod.categoryId || "",
+          description: prod.description || "",
+          basePrice: prod.basePrice ?? "",
+          preparationTime: prod.preparationTime ?? "",
+          isDrink: prod.isDrink ?? true,
+          allowToppings: prod.allowToppings ?? true,
+        });
+
+        // Parse sizes (which are provided in prod.variants usually due to the proxy in product.service.ts)
+        if (prod.variants && prod.variants.length > 0) {
+          // If variants are mapped as BASE-... skip
+          if (prod.variants.length === 1 && prod.variants[0].sku?.startsWith('BASE-')) {
+            setSizes([]);
+          } else {
+             const mappedSizes = prod.variants.map((v: any, index: number) => ({
+                sizeName: v.variantName,
+                sellingPrice: v.sellingPrice,
+                displayOrder: index + 1
+             }));
+             setSizes(mappedSizes);
           }
         }
-        setFormData({
-          name: response.data.name || "",
-          categoryId: response.data.categoryId || "",
-          supplierId: matchedSupplierId,
-          description: response.data.description || "",
-          minStockThreshold: response.data.minStockThreshold?.toString() || "",
-          warrantyPeriod: response.data.warrantyPeriod?.toString() || "",
-          commonSpecs: response.data.commonSpecs || "",
-        });
+
+        // Selected toppings might need fetching from another endpoint if product detail returns it
+        if ((prod as any).toppingIds) {
+           setSelectedToppings((prod as any).toppingIds);
+        }
       }
     } catch (error: unknown) {
       const errorMsg =
@@ -253,8 +144,15 @@ export default function ProductEditPage() {
   };
 
   const handleUpdate = async () => {
-    if (!formData.name) {
-      toast.error("Product name is required");
+    if (!formData.name || !formData.categoryId || formData.basePrice === "") {
+      toast.error("Please fill in required fields (Name, Category, Base Price)");
+      return;
+    }
+
+    // Validate sizes
+    const invalidSize = sizes.find(s => !s.sizeName || s.sellingPrice === "");
+    if (invalidSize) {
+      toast.error("Please ensure all sizes have a name and a selling price.");
       return;
     }
 
@@ -264,16 +162,18 @@ export default function ProductEditPage() {
         id!,
         {
           name: formData.name,
-          categoryId: formData.categoryId || undefined,
-          supplierId: formData.supplierId || undefined,
+          categoryId: formData.categoryId,
           description: formData.description || undefined,
-          minStockThreshold: formData.minStockThreshold
-            ? Number(formData.minStockThreshold)
-            : undefined,
-          warrantyPeriod: formData.warrantyPeriod
-            ? Number(formData.warrantyPeriod)
-            : undefined,
-          commonSpecs: formData.commonSpecs || undefined,
+          basePrice: Number(formData.basePrice),
+          preparationTime: formData.preparationTime ? Number(formData.preparationTime) : undefined,
+          isDrink: formData.isDrink,
+          allowToppings: formData.allowToppings,
+          sizes: sizes.map((s, index) => ({
+            sizeName: s.sizeName,
+            sellingPrice: Number(s.sellingPrice),
+            displayOrder: s.displayOrder || index + 1
+          })),
+          toppingIds: selectedToppings.length > 0 ? selectedToppings : undefined,
         },
         imageFile || undefined,
       );
@@ -289,6 +189,26 @@ export default function ProductEditPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleTopping = (toppingId: string) => {
+    setSelectedToppings(prev => 
+      prev.includes(toppingId) ? prev.filter(t => t !== toppingId) : [...prev, toppingId]
+    );
+  };
+
+  const addSize = () => {
+    setSizes([...sizes, { sizeName: "", sellingPrice: "", displayOrder: sizes.length + 1 }]);
+  };
+
+  const removeSize = (index: number) => {
+    setSizes(sizes.filter((_, i) => i !== index));
+  };
+
+  const updateSize = (index: number, field: keyof SizeFormData, value: any) => {
+    const newSizes = [...sizes];
+    newSizes[index] = { ...newSizes[index], [field]: value };
+    setSizes(newSizes);
   };
 
   if (loading && !product) {
@@ -309,33 +229,29 @@ export default function ProductEditPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-2xl font-semibold">Edit Product</h1>
+        <h1 className="text-2xl font-semibold">Edit Menu Item</h1>
       </div>
 
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
         <CardHeader>
-          <CardTitle>Product Information</CardTitle>
+          <CardTitle>Basic Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Product name"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categoryId">Category</Label>
+              <Label htmlFor="categoryId">Category <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.categoryId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, categoryId: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -349,53 +265,26 @@ export default function ProductEditPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="supplierId">Supplier</Label>
-              <Select
-                value={formData.supplierId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, supplierId: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="warranty">Warranty (months)</Label>
+              <Label htmlFor="basePrice">Base Price (Ä‘) <span className="text-red-500">*</span></Label>
               <Input
-                id="warranty"
+                id="basePrice"
                 type="number"
-                value={formData.warrantyPeriod}
-                onChange={(e) =>
-                  setFormData({ ...formData, warrantyPeriod: e.target.value })
-                }
-                placeholder="12"
+                value={formData.basePrice}
+                onChange={(e) => setFormData({ ...formData, basePrice: e.target.value === "" ? "" : Number(e.target.value) })}
+                placeholder="29000"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="threshold">Min Stock Threshold</Label>
+              <Label htmlFor="prepTime">Preparation Time (minutes)</Label>
               <Input
-                id="threshold"
+                id="prepTime"
                 type="number"
-                value={formData.minStockThreshold}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    minStockThreshold: e.target.value,
-                  })
-                }
+                value={formData.preparationTime}
+                onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value === "" ? "" : Number(e.target.value) })}
                 placeholder="5"
               />
             </div>
@@ -406,194 +295,189 @@ export default function ProductEditPage() {
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Product description..."
               rows={4}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="image">Image</Label>
-              {product?.imageUrl && (
+          <div className="space-y-2">
+            <Label>Image</Label>
+            <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                 onClick={() => document.getElementById("image")?.click()}>
+              {product?.imageUrl && !imageFile && (
                 <img
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-32 h-32 object-cover rounded mb-2"
+                  className="w-32 h-32 object-cover rounded mb-4"
                 />
               )}
               <Input
                 id="image"
                 type="file"
                 accept="image/*"
+                className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) setImageFile(file);
                 }}
               />
-              {imageFile && (
-                <p className="text-sm text-gray-500">New: {imageFile.name}</p>
+              {imageFile ? (
+                <div className="text-center">
+                  <p className="text-sm font-medium text-slate-700">{imageFile.name}</p>
+                  <p className="text-xs text-slate-500 mt-1">Click to change</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  {!product?.imageUrl && <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />}
+                  <p className="text-sm font-medium text-slate-700">{product?.imageUrl ? "Click to change image" : "Click to upload image"}</p>
+                  <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
+                </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>Common Specs</Label>
-              <div className="space-y-4 p-4 border rounded-lg bg-slate-50">
-                {/* Category Specs (from category definition) */}
-                {categorySpecs.length > 0 && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Category Specs
-                    </p>
-                    {categorySpecs.map((spec) => (
-                      <div key={spec.id} className="space-y-1">
-                        <Label className="text-sm font-medium text-slate-700">
-                          {spec.specName}
-                          {spec.isRequired && (
-                            <span className="text-red-500 ml-1">*</span>
-                          )}
-                        </Label>
-                        {spec.options && spec.options.length > 0 ? (
-                          <Select
-                            value={specValues[spec.specKey] || ""}
-                            onValueChange={(value) =>
-                              handleSpecValueChange(spec.specKey, value)
-                            }
-                          >
-                            <SelectTrigger className="bg-white">
-                              <SelectValue
-                                placeholder={`Select ${spec.specName}`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {spec.options.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            value={specValues[spec.specKey] || ""}
-                            onChange={(e) =>
-                              handleSpecValueChange(
-                                spec.specKey,
-                                e.target.value,
-                              )
-                            }
-                            placeholder={`Enter ${spec.specName}`}
-                            type={
-                              spec.dataType === "NUMBER" ? "number" : "text"
-                            }
-                            className="bg-white"
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Custom/Existing Specs (not in category definition) */}
-                {customSpecs.length > 0 && (
-                  <div className="space-y-3">
-                    {categorySpecs.length > 0 && (
-                      <hr className="border-slate-200" />
-                    )}
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                      Custom Specs
-                    </p>
-                    {customSpecs.map((spec) => (
-                      <div key={spec.key} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium text-slate-700 capitalize">
-                            {spec.name}
-                          </Label>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => handleDeleteSpec(spec.key)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <Input
-                          value={specValues[spec.key] || ""}
-                          onChange={(e) =>
-                            handleSpecValueChange(spec.key, e.target.value)
-                          }
-                          placeholder={`Enter ${spec.name}`}
-                          className="bg-white"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add New Custom Spec */}
-                <div className="space-y-3 pt-3 border-t border-slate-200">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Add New Spec
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      value={newSpecKey}
-                      onChange={(e) => setNewSpecKey(e.target.value)}
-                      placeholder="Spec key (e.g., color)"
-                      className="bg-white"
-                    />
-                    <Input
-                      value={newSpecName}
-                      onChange={(e) => setNewSpecName(e.target.value)}
-                      placeholder="Display name (optional)"
-                      className="bg-white"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleAddCustomSpec}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Spec
-                  </Button>
-                </div>
-
-                {/* Show message if no specs at all */}
-                {categorySpecs.length === 0 && customSpecs.length === 0 && (
-                  <p className="text-slate-500 text-sm text-center py-2">
-                    {formData.categoryId
-                      ? "No specs defined. Add custom specs below."
-                      : "Select a category or add custom specs below."}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/admin/menu/items")}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
-              onClick={handleUpdate}
-              disabled={loading}
-            >
-              {loading ? "Updating..." : "Update Product"}
-            </Button>
           </div>
         </CardContent>
       </Card>
+
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
+        <CardHeader>
+          <CardTitle>Properties</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Is Drink?</Label>
+                <p className="text-xs text-slate-500">Determines if ice/sugar options apply.</p>
+              </div>
+              <Switch 
+                checked={formData.isDrink} 
+                onCheckedChange={(c) => setFormData({ ...formData, isDrink: c })} 
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Allow Toppings?</Label>
+                <p className="text-xs text-slate-500">Can customers add extra toppings?</p>
+              </div>
+              <Switch 
+                checked={formData.allowToppings} 
+                onCheckedChange={(c) => setFormData({ ...formData, allowToppings: c })} 
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Sizes (Optional)</CardTitle>
+          <Button variant="outline" size="sm" onClick={addSize} className="h-8">
+            <Plus className="w-4 h-4 mr-1" /> Add Size
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {sizes.length > 0 ? (
+            <div className="border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50">
+                  <TableRow>
+                    <TableHead>Size Name</TableHead>
+                    <TableHead>Price (Ä‘)</TableHead>
+                    <TableHead className="w-[100px]">Order</TableHead>
+                    <TableHead className="w-[60px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sizes.map((size, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Input 
+                          placeholder="e.g. Size M" 
+                          value={size.sizeName}
+                          onChange={(e) => updateSize(index, 'sizeName', e.target.value)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number"
+                          placeholder="35000" 
+                          value={size.sellingPrice}
+                          onChange={(e) => updateSize(index, 'sellingPrice', e.target.value === "" ? "" : Number(e.target.value))}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number"
+                          value={size.displayOrder}
+                          onChange={(e) => updateSize(index, 'displayOrder', Number(e.target.value))}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => removeSize(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-slate-50 border border-dashed rounded-lg text-slate-500 text-sm">
+              No sizes added. The item will only use the base price.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {formData.allowToppings && availableToppings.length > 0 && (
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mb-6">
+          <CardHeader>
+            <CardTitle>Available Toppings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              {availableToppings.map(topping => (
+                <div 
+                  key={topping.id} 
+                  className={`flex items-center space-x-3 border p-3 rounded-md cursor-pointer transition-colors ${selectedToppings.includes(topping.id) ? 'bg-roast/10 border-roast/20' : 'hover:bg-slate-50'}`}
+                  onClick={() => toggleTopping(topping.id)}
+                >
+                  <Checkbox 
+                    id={`topping-${topping.id}`} 
+                    checked={selectedToppings.includes(topping.id)}
+                    onCheckedChange={() => toggleTopping(topping.id)}
+                  />
+                  <div className="flex flex-col">
+                    <Label htmlFor={`topping-${topping.id}`} className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      {topping.name}
+                    </Label>
+                    <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}Ä‘</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex justify-end gap-3 mb-10">
+        <Button
+          variant="outline"
+          onClick={() => navigate("/admin/menu/items")}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          className="bg-roast hover:bg-roast/90 text-white shadow-md"
+          onClick={handleUpdate}
+          disabled={loading}
+        >
+          {loading ? "Updating..." : "Update Product"}
+        </Button>
+      </div>
     </PageContainer>
   );
 }

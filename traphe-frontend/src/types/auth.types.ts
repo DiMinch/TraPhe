@@ -14,10 +14,11 @@ export interface LoginRequest {
   password?: string;
 }
 
-export interface AuthResponseData extends UserInfo {
+export interface AuthResponseData {
   accessToken: string;
-  type: string;
+  tokenType: string;
   refreshToken: string;
+  user: UserInfo;
 }
 
 export interface RegisterRequest {

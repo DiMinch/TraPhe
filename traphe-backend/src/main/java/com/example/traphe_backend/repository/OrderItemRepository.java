@@ -25,4 +25,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
            "GROUP BY m.id, m.name, c.name " +
            "ORDER BY SUM(oi.quantity) DESC")
     List<TopProductResponse> findTopProducts(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate, @Param("branchId") UUID branchId, Pageable pageable);
+    @Query("SELECT COUNT(oi) FROM OrderItem oi JOIN oi.order o WHERE oi.menuItem.id = :menuItemId AND o.status IN :statuses")
+    long countByMenuItemIdAndOrderStatusIn(@Param("menuItemId") UUID menuItemId, @Param("statuses") List<com.example.traphe_backend.enums.OrderStatus> statuses);
 }

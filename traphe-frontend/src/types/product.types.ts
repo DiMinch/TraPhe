@@ -92,6 +92,10 @@ export interface CreateProductRequest {
   preparationTime?: number;
   isDrink?: boolean;
   allowToppings?: boolean;
+  sizes?: { sizeName: string; sellingPrice: number; displayOrder: number }[];
+  toppingIds?: string[];
+  optionGroupIds?: string[];
+  ingredientId?: string;
 
   // Legacy PC-Shop compatibility fields
   supplierId?: string;
@@ -108,6 +112,11 @@ export interface UpdateProductRequest {
   preparationTime?: number;
   isDrink?: boolean;
   allowToppings?: boolean;
+  status?: string;
+  sizes?: { sizeName: string; sellingPrice: number; displayOrder: number }[];
+  toppingIds?: string[];
+  optionGroupIds?: string[];
+  ingredientId?: string;
 
   // Legacy PC-Shop compatibility fields
   supplierId?: string;

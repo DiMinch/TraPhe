@@ -244,7 +244,7 @@ export default function ProductDetailPage() {
     return (
       <PageContainer>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-roast" />
         </div>
       </PageContainer>
     );
@@ -284,7 +284,7 @@ export default function ProductDetailPage() {
         </Button>
         <Button
           onClick={() => navigate(`/admin/menu/items/${product.id}/edit`)}
-          className="bg-indigo-600 hover:bg-indigo-700"
+          className="bg-roast hover:bg-roast/90"
         >
           <Edit className="w-4 h-4 mr-2" />
           Edit Product
@@ -388,7 +388,7 @@ export default function ProductDetailPage() {
               <Button
                 onClick={handleAddVariantClick}
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-roast hover:bg-roast/90"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Variant
@@ -400,7 +400,7 @@ export default function ProductDetailPage() {
                 {product.variants.map((variant) => (
                   <div
                     key={variant.id}
-                    className="p-5 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"
+                    className="p-5 bg-slate-50 rounded-lg border border-slate-200 hover:border-roast/30 hover:shadow-md transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -434,7 +434,7 @@ export default function ProductDetailPage() {
                           Selling Price
                         </p>
                         <p className="text-2xl font-bold text-green-600 mb-3">
-                          {variant.sellingPrice.toLocaleString()}đ
+                          {variant.sellingPrice.toLocaleString()}Ä‘
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -772,7 +772,7 @@ export default function ProductDetailPage() {
             <Button
               onClick={handleSaveVariant}
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-roast hover:bg-roast/90"
             >
               {saving ? "Adding..." : "Add Variant"}
             </Button>

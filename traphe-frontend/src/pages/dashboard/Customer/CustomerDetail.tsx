@@ -112,7 +112,7 @@ export default function CustomerDetailPage() {
                 Loyalty Points
               </Label>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl font-bold text-indigo-900">
+                <span className="text-2xl font-bold text-roast">
                   {customer.loyaltyPoint?.pointsAvailable || 0}
                 </span>
                 <span className="text-xs text-gray-500">points available</span>
@@ -121,12 +121,12 @@ export default function CustomerDetailPage() {
               <div className="text-xs text-gray-600 mb-1 flex justify-between">
                 <span>Current Spending</span>
                 <span className="font-semibold">
-                  {customer.totalPurchase?.toLocaleString()}₫
+                  {customer.totalPurchase?.toLocaleString()}â‚«
                 </span>
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-indigo-900 rounded-full"
+                  className="h-full bg-roast rounded-full"
                   style={{ width: "40%" }}
                 ></div>
               </div>

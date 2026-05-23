@@ -254,7 +254,7 @@ export default function CustomerPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-end gap-3 mb-6">
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
           onClick={() => setIsNewCustomerOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -266,12 +266,12 @@ export default function CustomerPage() {
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           {/* Search */}
-          <div className="flex items-center gap-3 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="flex items-center gap-3 p-6 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search by Name, Phone or Email"
-                className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
+                className="pl-10 bg-white border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 shadow-sm"
               />
             </div>
           </div>
@@ -279,8 +279,8 @@ export default function CustomerPage() {
           <div className="p-6">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-roast" />
                 </div>
                 <span className="mt-4 text-slate-600 font-medium">
                   Loading customers...
@@ -321,12 +321,12 @@ export default function CustomerPage() {
                     {currentCustomers.map((customer) => (
                       <TableRow
                         key={customer.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                       >
                         <TableCell>
                           <button
                             onClick={() => navigate(`/admin/loyalty/customers/${customer.id}`)}
-                            className="text-left hover:text-indigo-600 cursor-pointer transition-colors"
+                            className="text-left hover:text-roast cursor-pointer transition-colors"
                           >
                             <div className="font-medium text-slate-800">
                               {customer.fullName}
@@ -340,12 +340,12 @@ export default function CustomerPage() {
                           </button>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-0 rounded-full px-3">
+                          <Badge className="bg-roast/20 text-roast/90 hover:bg-roast/20 border-0 rounded-full px-3">
                             {customer.tier?.name || "N/A"}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-semibold text-slate-800">
-                          {customer.totalPurchase?.toLocaleString("vi-VN")}đ
+                          {customer.totalPurchase?.toLocaleString("vi-VN")}Ä‘
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -365,7 +365,7 @@ export default function CustomerPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-roast hover:bg-roast/10 transition-colors"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -501,7 +501,7 @@ export default function CustomerPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/80 text-white"
               onClick={handleAddCustomer}
               disabled={isSubmitting}
             >

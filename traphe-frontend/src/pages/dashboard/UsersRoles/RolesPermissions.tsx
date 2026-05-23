@@ -81,6 +81,7 @@ const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = [
     allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
     subPages: [
       { title: "Sản phẩm", path: "/admin/menu/items" },
+      { title: "Topping", path: "/admin/menu/toppings" },
       { title: "Danh mục", path: "/admin/menu/categories" },
       { title: "Menu chi nhánh", path: "/admin/menu/branch" },
     ],
@@ -93,76 +94,76 @@ const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = [
     subPages: [
       { title: "Tổng quan", path: "/admin/stock" },
       { title: "Tồn kho", path: "/admin/stock/all" },
-      { title: "Lịch sử", path: "/admin/stock/history" },
+      { title: "Lịch sử­", path: "/admin/stock/history" },
     ],
   },
   {
-    title: "Nhà cung cấp",
+    title: "NhÃ  cung cáº¥p",
     path: "/admin/suppliers",
     icon: Clipboard,
     allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
     subPages: [
-      { title: "Danh sách NCC", path: "/admin/suppliers" },
-      { title: "Đơn mua hàng", path: "/admin/suppliers/purchase-orders" },
+      { title: "Danh sÃ¡ch NCC", path: "/admin/suppliers" },
+      { title: "ÄÆ¡n mua hÃ ng", path: "/admin/suppliers/purchase-orders" },
     ],
   },
   {
-    title: "Đơn hàng",
+    title: "ÄÆ¡n hÃ ng",
     path: "/admin/orders",
     icon: ChartBar,
     allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
     subPages: [
       { title: "POS", path: "/admin/orders/pos" },
-      { title: "Tất cả đơn", path: "/admin/orders" },
+      { title: "Táº¥t cáº£ Ä‘Æ¡n", path: "/admin/orders" },
     ],
   },
   {
-    title: "Khách hàng",
+    title: "KhÃ¡ch hÃ ng",
     path: "/admin/loyalty/customers",
     icon: Users,
     allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
     subPages: [
-      { title: "Danh sách KH", path: "/admin/loyalty/customers" },
-      { title: "Hạng thành viên", path: "/admin/loyalty/tiers" },
+      { title: "Danh sÃ¡ch KH", path: "/admin/loyalty/customers" },
+      { title: "Háº¡ng thÃ nh viÃªn", path: "/admin/loyalty/tiers" },
     ],
   },
   {
-    title: "Khuyến mãi",
+    title: "Khuyáº¿n mÃ£i",
     path: "/admin/promotions",
     icon: Tag,
     allowedRoles: [UserRole.ADMIN],
   },
   {
-    title: "Báo cáo",
+    title: "BÃ¡o cÃ¡o",
     path: "/admin/reports",
     icon: BarChart3,
     allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT],
     subPages: [
       { title: "Doanh thu", path: "/admin/reports/revenue" },
-      { title: "Lợi nhuận", path: "/admin/reports/profit" },
-      { title: "Món bán chạy", path: "/admin/reports/products" },
-      { title: "Tồn kho", path: "/admin/reports/inventory" },
+      { title: "Lá»£i nhuáº­n", path: "/admin/reports/profit" },
+      { title: "MÃ³n bÃ¡n cháº¡y", path: "/admin/reports/products" },
+      { title: "Tá»“n kho", path: "/admin/reports/inventory" },
     ],
   },
   {
-    title: "Cài đặt",
+    title: "CÃ i Ä‘áº·t",
     path: "/admin/settings",
     icon: Settings,
     allowedRoles: [UserRole.ADMIN],
-    subPages: [{ title: "Cấu hình", path: "/admin/settings" }],
+    subPages: [{ title: "Cáº¥u hÃ¬nh", path: "/admin/settings" }],
   },
   {
-    title: "Nhân sự",
+    title: "NhÃ¢n sá»±",
     path: "/admin/staff",
     icon: UserCog,
     allowedRoles: [UserRole.ADMIN],
     subPages: [
-      { title: "Tài khoản NV", path: "/admin/staff" },
-      { title: "Vai trò & Quyền", path: "/admin/staff/roles" },
+      { title: "TÃ i khoáº£n NV", path: "/admin/staff" },
+      { title: "Vai trÃ² & Quyá»n", path: "/admin/staff/roles" },
     ],
   },
   {
-    title: "Nhật ký",
+    title: "Nháº­t kÃ½",
     path: "/admin/settings/audit-log",
     icon: ClipboardList,
     allowedRoles: [UserRole.ADMIN],
@@ -390,7 +391,7 @@ export default function RolesPermissionsPage() {
             </CardTitle>
             <Button
               onClick={() => setIsNewRoleDialogOpen(true)}
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white h-8"
             >
               <Plus className="mr-1 w-4 h-4" />
               New Role
@@ -438,7 +439,7 @@ export default function RolesPermissionsPage() {
                     <TableRow
                       key={role.id}
                       className={`cursor-pointer transition-colors hover:bg-slate-50 ${
-                        selectedRole === role.id ? "bg-indigo-50" : ""
+                        selectedRole === role.id ? "bg-roast/10" : ""
                       }`}
                       onClick={() => setSelectedRole(role.id)}
                     >
@@ -530,8 +531,8 @@ export default function RolesPermissionsPage() {
                       className="bg-slate-50/80 rounded-lg p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 rounded-lg">
-                          <IconComponent className="w-4 h-4 text-indigo-600" />
+                        <div className="p-2 bg-roast/20 rounded-lg">
+                          <IconComponent className="w-4 h-4 text-roast" />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-slate-800 text-sm">

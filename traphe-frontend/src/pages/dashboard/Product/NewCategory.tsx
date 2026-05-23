@@ -375,7 +375,7 @@ export default function NewCategoryDialog({
                   onClick={handleAddSpec}
                   size="sm"
                   variant="outline"
-                  className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                  className="text-roast border-roast/30 hover:bg-roast/10"
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Add Spec
@@ -385,9 +385,9 @@ export default function NewCategoryDialog({
 
             {/* Spec Add/Edit Form */}
             {(isAddingSpec || editingSpecIndex !== null) && (
-              <div className="border-2 border-indigo-200 rounded-lg p-3 bg-white shadow-sm space-y-3">
+              <div className="border-2 border-roast/20 rounded-lg p-3 bg-white shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-indigo-700">
+                  <h4 className="text-sm font-semibold text-roast/90">
                     {editingSpecIndex !== null
                       ? "Edit Specification"
                       : "New Specification"}
@@ -494,7 +494,7 @@ export default function NewCategoryDialog({
                   <Button
                     size="sm"
                     onClick={handleSaveSpec}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-roast hover:bg-roast/90"
                   >
                     {editingSpecIndex !== null ? "Update" : "Add"}
                   </Button>
@@ -588,7 +588,7 @@ export default function NewCategoryDialog({
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/80 text-white"
               onClick={handleAdd}
               disabled={submitting}
             >

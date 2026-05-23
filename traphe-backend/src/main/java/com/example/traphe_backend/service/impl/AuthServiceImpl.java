@@ -325,7 +325,9 @@ public class AuthServiceImpl implements AuthService {
                 .phoneNumber(user.getPhoneNumber())
                 .avatarUrl(user.getAvatarUrl())
                 .isEmailVerified(user.isEmailVerified())
-                .roles(roles);
+                .roles(roles)
+                .branchId(user.getBranch() != null ? user.getBranch().getId() : null)
+                .branchName(user.getBranch() != null ? user.getBranch().getName() : null);
 
         // Fetch Loyalty details if user has ROLE_CUSTOMER
         if (roles.contains("ROLE_CUSTOMER")) {

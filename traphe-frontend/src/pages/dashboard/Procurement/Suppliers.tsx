@@ -56,6 +56,136 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+import { userService } from "@/services/user.service";
+import type { Province, Commune } from "@/types/user.types";
+import { toast } from "sonner";
+
+interface SearchableSelectProps<T> {
+  value: string;
+  onChange: (value: string) => void;
+  options: T[];
+  getOptionValue: (option: T) => string;
+  getOptionLabel: (option: T) => string;
+  placeholder: string;
+  disabled?: boolean;
+}
+
+function SearchableSelect<T>({
+  value,
+  onChange,
+  options,
+  getOptionValue,
+  getOptionLabel,
+  placeholder,
+  disabled = false,
+}: SearchableSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedOption = options.find((opt) => getOptionValue(opt) === value);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm(selectedOption ? getOptionLabel(selectedOption) : "");
+    }
+  }, [isOpen, selectedOption, options]);
+
+  const cleanVietnameseName = (name: string): string => {
+    if (!name) return "";
+    let cleaned = name.trim();
+    const prefixes = [
+      /^(tỉnh|thành phố|thành\s*phố)\s+/i,
+      /^(phường|xã|thị trấn|thị\s*trấn)\s+/i
+    ];
+    for (const regex of prefixes) {
+      cleaned = cleaned.replace(regex, "");
+    }
+    return cleaned
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+  };
+
+  const filteredOptions = options.filter((option) => {
+    if (!searchTerm) return true;
+    const cleanedLabel = cleanVietnameseName(getOptionLabel(option));
+    const cleanedSearch = cleanVietnameseName(searchTerm);
+    return cleanedLabel.includes(cleanedSearch);
+  });
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          className="w-full flex h-10 w-full rounded-md border border-[#E2DDD7] bg-white px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5C3317] disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          disabled={disabled}
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+            onClick={() => {
+              setSearchTerm("");
+              onChange("");
+              setIsOpen(true);
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {isOpen && !disabled && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          ></div>
+          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-[#E2DDD7] bg-white text-stone-900 shadow-lg outline-none">
+            <div className="p-1">
+              {filteredOptions.length === 0 ? (
+                <div className="relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm text-gray-400">
+                  No options found
+                </div>
+              ) : (
+                filteredOptions.map((option) => {
+                  const val = getOptionValue(option);
+                  const label = getOptionLabel(option);
+                  const isSelected = val === value;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        onChange(val);
+                        setSearchTerm(label);
+                        setIsOpen(false);
+                      }}
+                      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none transition-colors hover:bg-[#F5EAD8] hover:text-[#5C3317] ${
+                        isSelected ? "bg-[#EFE5D3] text-[#5C3317] font-semibold" : ""
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface Supplier {
   id: string;
@@ -173,8 +303,9 @@ export default function SuppliersPage() {
     email: "",
     status: "Active" as "Active" | "Inactive",
     province: "",
-    district: "",
+    provinceCode: "",
     commune: "",
+    communeCode: "",
     street: "",
   });
 
@@ -185,12 +316,140 @@ export default function SuppliersPage() {
     email: "",
     status: "Active" as "Active" | "Inactive",
     province: "",
-    district: "",
+    provinceCode: "",
     commune: "",
+    communeCode: "",
     street: "",
   });
 
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [newCommunes, setNewCommunes] = useState<Commune[]>([]);
+  const [editCommunes, setEditCommunes] = useState<Commune[]>([]);
+  const [isLoadingNewCommunes, setIsLoadingNewCommunes] = useState(false);
+  const [isLoadingEditCommunes, setIsLoadingEditCommunes] = useState(false);
+
+  // Load provinces on mount
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      try {
+        const res = await userService.getProvinces();
+        if (res.statusCode === 200 && res.data) {
+          const provincesData = Array.isArray(res.data)
+            ? res.data
+            : (res.data as any)?.content || [];
+          setProvinces(provincesData);
+        }
+      } catch (error) {
+        console.error("Failed to load provinces", error);
+      }
+    };
+    fetchProvinces();
+  }, []);
+
+  // Fetch communes when newSupplier.provinceCode changes
+  useEffect(() => {
+    if (newSupplier.provinceCode) {
+      const fetchCommunes = async () => {
+        setIsLoadingNewCommunes(true);
+        try {
+          const res = await userService.getCommunes(newSupplier.provinceCode);
+          if (res.statusCode === 200 && res.data) {
+            const communesData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setNewCommunes(communesData);
+          }
+        } catch (error) {
+          console.error("Failed to load communes", error);
+        } finally {
+          setIsLoadingNewCommunes(false);
+        }
+      };
+      fetchCommunes();
+    } else {
+      setNewCommunes([]);
+    }
+  }, [newSupplier.provinceCode]);
+
+  // Fetch communes when editSupplier.provinceCode changes
+  useEffect(() => {
+    if (editSupplier.provinceCode) {
+      const fetchCommunes = async () => {
+        setIsLoadingEditCommunes(true);
+        try {
+          const res = await userService.getCommunes(editSupplier.provinceCode);
+          if (res.statusCode === 200 && res.data) {
+            const communesData = Array.isArray(res.data)
+              ? res.data
+              : (res.data as any)?.content || [];
+            setEditCommunes(communesData);
+          }
+        } catch (error) {
+          console.error("Failed to load communes", error);
+        } finally {
+          setIsLoadingEditCommunes(false);
+        }
+      };
+      fetchCommunes();
+    } else {
+      setEditCommunes([]);
+    }
+  }, [editSupplier.provinceCode]);
+
+  const handleNewProvinceChange = (code: string) => {
+    const selected = provinces.find((p) => String(p.code) === code);
+    setNewSupplier((prev) => ({
+      ...prev,
+      provinceCode: code,
+      province: selected ? selected.name : "",
+      communeCode: "",
+      commune: "",
+    }));
+  };
+
+  const handleNewCommuneChange = (code: string) => {
+    const selected = newCommunes.find((c) => String(c.code) === code);
+    setNewSupplier((prev) => ({
+      ...prev,
+      communeCode: code,
+      commune: selected ? selected.name : "",
+    }));
+  };
+
+  const handleEditProvinceChange = (code: string) => {
+    const selected = provinces.find((p) => String(p.code) === code);
+    setEditSupplier((prev) => ({
+      ...prev,
+      provinceCode: code,
+      province: selected ? selected.name : "",
+      communeCode: "",
+      commune: "",
+    }));
+  };
+
+  const handleEditCommuneChange = (code: string) => {
+    const selected = editCommunes.find((c) => String(c.code) === code);
+    setEditSupplier((prev) => ({
+      ...prev,
+      communeCode: code,
+      commune: selected ? selected.name : "",
+    }));
+  };
+
   const handleAddSupplier = async () => {
+    if (
+      !newSupplier.name ||
+      !newSupplier.contactName ||
+      !newSupplier.phone ||
+      !newSupplier.email ||
+      !newSupplier.street ||
+      !newSupplier.provinceCode ||
+      !newSupplier.communeCode
+    ) {
+      toast.warning("Please fill in all required fields (*)");
+      return;
+    }
+
     try {
       const request: SupplierRequest = {
         name: newSupplier.name,
@@ -200,7 +459,6 @@ export default function SuppliersPage() {
         address: [
           newSupplier.street,
           newSupplier.commune,
-          newSupplier.district,
           newSupplier.province,
         ]
           .filter(Boolean)
@@ -216,38 +474,94 @@ export default function SuppliersPage() {
         email: "",
         status: "Active",
         province: "",
-        district: "",
+        provinceCode: "",
         commune: "",
+        communeCode: "",
         street: "",
       });
-      // Refresh the list
+      toast.success("Supplier created successfully");
       fetchSuppliers();
     } catch (err: any) {
       console.error("Error creating supplier:", err);
-      alert(err.response?.data?.message || "Failed to create supplier");
+      toast.error(err.response?.data?.message || "Failed to create supplier");
     }
   };
 
-  const handleEditClick = (supplier: Supplier) => {
+  const handleEditClick = async (supplier: Supplier) => {
     setSupplierToEdit(supplier);
     // Parse address back to components (simple split by comma)
     const addressParts = supplier.address.split(", ").reverse();
+    const isOldFormat = addressParts.length >= 4;
+    const provName = addressParts[0] || "";
+    const commName = isOldFormat ? (addressParts[2] || "") : (addressParts[1] || "");
+    const streetName = isOldFormat ? (addressParts[3] || "") : (addressParts[2] || "");
+
+    // Find province by name (case-insensitive, trimmed comparison)
+    const matchedProvince = provinces.find(
+      (p) => p.name.trim().toLowerCase() === provName.trim().toLowerCase()
+    );
+
+    let provCode = "";
+    let commCode = "";
+    let matchedCommunes: Commune[] = [];
+
+    if (matchedProvince) {
+      provCode = String(matchedProvince.code);
+      // Fetch communes synchronously here so we can match the commune name
+      try {
+        setIsLoadingEditCommunes(true);
+        const res = await userService.getCommunes(provCode);
+        if (res.statusCode === 200 && res.data) {
+          matchedCommunes = Array.isArray(res.data)
+            ? res.data
+            : (res.data as any)?.content || [];
+          setEditCommunes(matchedCommunes);
+
+          // Find commune by name
+          const matchedCommune = matchedCommunes.find(
+            (c) => c.name.trim().toLowerCase() === commName.trim().toLowerCase()
+          );
+          if (matchedCommune) {
+            commCode = String(matchedCommune.code);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load communes for editing supplier", error);
+      } finally {
+        setIsLoadingEditCommunes(false);
+      }
+    }
+
     setEditSupplier({
       name: supplier.name,
       contactName: supplier.contactName,
       phone: supplier.phone,
       email: supplier.email,
       status: supplier.status,
-      province: addressParts[0] || "",
-      district: addressParts[1] || "",
-      commune: addressParts[2] || "",
-      street: addressParts[3] || "",
+      province: provName,
+      provinceCode: provCode,
+      commune: commName,
+      communeCode: commCode,
+      street: streetName,
     });
     setIsEditSupplierOpen(true);
   };
 
   const handleUpdateSupplier = async () => {
     if (!supplierToEdit) return;
+
+    if (
+      !editSupplier.name ||
+      !editSupplier.contactName ||
+      !editSupplier.phone ||
+      !editSupplier.email ||
+      !editSupplier.street ||
+      !editSupplier.province ||
+      !editSupplier.commune
+    ) {
+      toast.warning("Please fill in all required fields (*)");
+      return;
+    }
 
     try {
       const request: SupplierRequest = {
@@ -258,7 +572,6 @@ export default function SuppliersPage() {
         address: [
           editSupplier.street,
           editSupplier.commune,
-          editSupplier.district,
           editSupplier.province,
         ]
           .filter(Boolean)
@@ -268,11 +581,11 @@ export default function SuppliersPage() {
       await supplierService.updateSupplier(supplierToEdit.id, request);
       setIsEditSupplierOpen(false);
       setSupplierToEdit(null);
-      // Refresh the list
+      toast.success("Supplier updated successfully");
       fetchSuppliers();
     } catch (err: any) {
       console.error("Error updating supplier:", err);
-      alert(err.response?.data?.message || "Failed to update supplier");
+      toast.error(err.response?.data?.message || "Failed to update supplier");
     }
   };
 
@@ -307,7 +620,7 @@ export default function SuppliersPage() {
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 mb-6 justify-end">
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-roast hover:bg-roast/90 text-white shadow-md transition-all duration-200"
           onClick={() => setIsNewSupplierOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -398,7 +711,7 @@ export default function SuppliersPage() {
                             onClick={() =>
                               navigate(`/admin/suppliers/${supplier.id}`)
                             }
-                            className="font-medium text-indigo-900 hover:underline cursor-pointer"
+                            className="font-medium text-roast hover:text-caramel hover:underline cursor-pointer"
                           >
                             {supplier.name}
                           </button>
@@ -594,32 +907,34 @@ export default function SuppliersPage() {
               />
             </div>
 
-            <div>
-              <Label className="mb-2 block">Address</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  placeholder="Province"
-                  value={newSupplier.province}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, province: e.target.value })
-                  }
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Province / City *</Label>
+                <SearchableSelect<Province>
+                  value={newSupplier.provinceCode}
+                  onChange={handleNewProvinceChange}
+                  options={provinces}
+                  getOptionValue={(p) => String(p.code)}
+                  getOptionLabel={(p) => p.name}
+                  placeholder="Search Province / City"
                 />
-                <Input
-                  placeholder="District"
-                  value={newSupplier.district}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, district: e.target.value })
-                  }
+              </div>
+              <div className="space-y-2">
+                <Label>Commune / Ward *</Label>
+                <SearchableSelect<Commune>
+                  value={newSupplier.communeCode}
+                  onChange={handleNewCommuneChange}
+                  options={newCommunes}
+                  getOptionValue={(c) => String(c.code)}
+                  getOptionLabel={(c) => c.name}
+                  placeholder={isLoadingNewCommunes ? "Loading..." : "Search Commune / Ward"}
+                  disabled={!newSupplier.provinceCode || isLoadingNewCommunes}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Street Address *</Label>
                 <Input
-                  placeholder="Commune"
-                  value={newSupplier.commune}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, commune: e.target.value })
-                  }
-                />
-                <Input
-                  placeholder="Street"
+                  placeholder="Số nhà, Tên đường"
                   value={newSupplier.street}
                   onChange={(e) =>
                     setNewSupplier({ ...newSupplier, street: e.target.value })
@@ -637,7 +952,7 @@ export default function SuppliersPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/90 text-white transition-all duration-200"
               onClick={handleAddSupplier}
             >
               Add Supplier
@@ -727,41 +1042,34 @@ export default function SuppliersPage() {
               />
             </div>
 
-            <div>
-              <Label className="mb-2 block">Address</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  placeholder="Province"
-                  value={editSupplier.province}
-                  onChange={(e) =>
-                    setEditSupplier({
-                      ...editSupplier,
-                      province: e.target.value,
-                    })
-                  }
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Province / City *</Label>
+                <SearchableSelect<Province>
+                  value={editSupplier.provinceCode}
+                  onChange={handleEditProvinceChange}
+                  options={provinces}
+                  getOptionValue={(p) => String(p.code)}
+                  getOptionLabel={(p) => p.name}
+                  placeholder="Search Province / City"
                 />
-                <Input
-                  placeholder="District"
-                  value={editSupplier.district}
-                  onChange={(e) =>
-                    setEditSupplier({
-                      ...editSupplier,
-                      district: e.target.value,
-                    })
-                  }
+              </div>
+              <div className="space-y-2">
+                <Label>Commune / Ward *</Label>
+                <SearchableSelect<Commune>
+                  value={editSupplier.communeCode}
+                  onChange={handleEditCommuneChange}
+                  options={editCommunes}
+                  getOptionValue={(c) => String(c.code)}
+                  getOptionLabel={(c) => c.name}
+                  placeholder={isLoadingEditCommunes ? "Loading..." : "Search Commune / Ward"}
+                  disabled={!editSupplier.provinceCode || isLoadingEditCommunes}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Street Address *</Label>
                 <Input
-                  placeholder="Commune"
-                  value={editSupplier.commune}
-                  onChange={(e) =>
-                    setEditSupplier({
-                      ...editSupplier,
-                      commune: e.target.value,
-                    })
-                  }
-                />
-                <Input
-                  placeholder="Street"
+                  placeholder="Số nhà, Tên đường"
                   value={editSupplier.street}
                   onChange={(e) =>
                     setEditSupplier({ ...editSupplier, street: e.target.value })
@@ -782,7 +1090,7 @@ export default function SuppliersPage() {
               Cancel
             </Button>
             <Button
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/90 text-white transition-all duration-200"
               onClick={handleUpdateSupplier}
             >
               Save Changes

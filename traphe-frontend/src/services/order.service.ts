@@ -59,7 +59,7 @@ export interface CreateOrderRequest {
   customerId?: string;
   employeeId?: string;
   orderType: "OFFLINE" | "ONLINE_COD" | "ONLINE_TRANSFER";
-  paymentMethod: "CASH" | "TRANSFER" | "COD";
+  paymentMethod: "CASH" | "VNPAY" | "MOMO" | "QR";
   items: OrderItemRequest[];
   promotionIds?: string[];
   loyaltyPointsToUse?: number;
@@ -160,5 +160,25 @@ export const orderService = {
         },
       },
     );
+  },
+
+  // Update brewing status
+  updateBrewingStatus: async (
+    id: string,
+    status: "WAITING" | "BREWING" | "COMPLETED"
+  ) => {
+    return axiosClient.put<any, ApiResponse<void>>(
+      `/pos/orders/${id}/brewing-status`,
+      { status }
+    );
+  },
+
+  // Process POS payment
+  processPayment: async (orderId: string, paymentMethod: string) => {
+    return axiosClient.post<any, ApiResponse<void>>(`/pos/payment`, {
+      paymentMethod,
+    }, {
+      params: { orderId }
+    });
   },
 };

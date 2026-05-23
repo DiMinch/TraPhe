@@ -114,7 +114,7 @@ export default function ConfigurationsPage() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+        <Button className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-lg">
           <Plus className="mr-2 w-4 h-4" />
           New Key
         </Button>
@@ -139,7 +139,7 @@ export default function ConfigurationsPage() {
           {/* Table */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-roast" />
               <span className="ml-3 text-slate-600">
                 Loading configurations...
               </span>

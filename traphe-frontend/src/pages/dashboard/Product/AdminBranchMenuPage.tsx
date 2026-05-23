@@ -32,6 +32,8 @@ import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 import { toast } from "sonner";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
 
 interface Branch {
   id: string;
@@ -46,6 +48,8 @@ interface BranchProductConfig {
   productId: string;
   isAvailable: boolean;
   branchPrice: number; // Override price
+  unavailableReason?: string;
+  isDirty?: boolean;
 }
 
 export default function AdminBranchMenuPage() {
@@ -63,43 +67,85 @@ export default function AdminBranchMenuPage() {
     fetchInitialData();
   }, []);
 
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+
   const fetchInitialData = async () => {
     setLoading(true);
     try {
       // 1. Fetch Branches
-      const branchRes = await axiosClient.get<any, any>("/admin/branches");
-      const branchData = Array.isArray(branchRes.data)
-        ? branchRes.data
-        : branchRes.data?.content || [];
+      let branchData: Branch[] = [];
+      if (isBranchManager && currentUser?.branchId) {
+        branchData = [{ id: currentUser.branchId, name: "Chi nhánh của tôi", address: "", isActive: true }];
+      } else {
+        const branchRes = await axiosClient.get<any, any>("/branches");
+        const allBranches = Array.isArray(branchRes.data)
+          ? branchRes.data
+          : branchRes.data?.content || [];
+        branchData = allBranches;
+      }
       setBranches(branchData);
+
+      // 2. Fetch Products
+      const productRes = await productService.getAllProducts({ size: 500 });
+      const productData = productRes.data?.content || [];
+      setProducts(productData);
 
       if (branchData.length > 0) {
         setSelectedBranchId(branchData[0].id);
       }
-
-      // 2. Fetch Products
-      const productRes = await productService.getAllProducts({ size: 100 });
-      const productData = productRes.data?.content || [];
-      setProducts(productData);
-
-      // Initialize configs with base prices & active status
-      const initialConfigs: Record<string, BranchProductConfig> = {};
-      branchData.forEach((b: Branch) => {
-        productData.forEach((p: Product) => {
-          const key = `${b.id}_${p.id}`;
-          initialConfigs[key] = {
-            productId: p.id,
-            isAvailable: p.status !== "HIDDEN",
-            branchPrice: p.basePrice || 0,
-          };
-        });
-      });
-      setBranchConfigs(initialConfigs);
     } catch (err: any) {
       console.error("Error fetching branch menu data:", err);
       toast.error("Không thể tải thông tin chi nhánh hoặc thực đơn.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedBranchId && products.length > 0) {
+      fetchBranchConfigs(selectedBranchId, products);
+    }
+  }, [selectedBranchId, products]);
+
+  const fetchBranchConfigs = async (bId: string, currentProducts: Product[]) => {
+    try {
+      const res = await axiosClient.get<any, any>(`/branches/${bId}/menu?size=500`);
+      const menuItems = res.data?.data?.content || [];
+      
+      const configMap = new Map();
+      menuItems.forEach((item: any) => {
+        configMap.set(item.menuItem.id, item);
+      });
+
+      setBranchConfigs((prev) => {
+        const newConfigs = { ...prev };
+        currentProducts.forEach((p) => {
+          const key = `${bId}_${p.id}`;
+          const existing = configMap.get(p.id);
+          
+          if (existing) {
+            newConfigs[key] = {
+              productId: p.id,
+              isAvailable: existing.isAvailable,
+              branchPrice: existing.customPrice ?? (p.basePrice || 0),
+              unavailableReason: existing.unavailableReason || "",
+              isDirty: false,
+            };
+          } else {
+            newConfigs[key] = {
+              productId: p.id,
+              isAvailable: p.status !== "HIDDEN",
+              branchPrice: p.basePrice || 0,
+              unavailableReason: "",
+              isDirty: false,
+            };
+          }
+        });
+        return newConfigs;
+      });
+    } catch (error) {
+      console.error("Error fetching branch configs", error);
     }
   };
 
@@ -111,6 +157,7 @@ export default function AdminBranchMenuPage() {
       [key]: {
         ...prev[key],
         isAvailable: val,
+        isDirty: true,
       },
     }));
   };
@@ -123,6 +170,20 @@ export default function AdminBranchMenuPage() {
       [key]: {
         ...prev[key],
         branchPrice: Math.max(0, price),
+        isDirty: true,
+      },
+    }));
+  };
+
+  const handleReasonChange = (productId: string, reason: string) => {
+    if (!selectedBranchId) return;
+    const key = `${selectedBranchId}_${productId}`;
+    setBranchConfigs((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key],
+        unavailableReason: reason,
+        isDirty: true,
       },
     }));
   };
@@ -136,6 +197,7 @@ export default function AdminBranchMenuPage() {
       [key]: {
         ...prev[key],
         branchPrice: product.basePrice || 0,
+        isDirty: true,
       },
     }));
     toast.info(`Đã đặt lại giá món ${product.name} về giá gốc.`);
@@ -147,12 +209,42 @@ export default function AdminBranchMenuPage() {
       return;
     }
 
+    const dirtyKeys = Object.keys(branchConfigs).filter(
+      (k) => k.startsWith(`${selectedBranchId}_`) && branchConfigs[k].isDirty
+    );
+
+    if (dirtyKeys.length === 0) {
+      toast.info("Không có thay đổi nào để lưu.");
+      return;
+    }
+
     setSaving(true);
-    // Simulate API request to save branch menu override configs
-    setTimeout(() => {
+    let successCount = 0;
+    
+    try {
+      for (const key of dirtyKeys) {
+        const config = branchConfigs[key];
+        await axiosClient.put(`/branches/${selectedBranchId}/menu`, {
+          menuItemId: config.productId,
+          isAvailable: config.isAvailable,
+          customPrice: config.branchPrice,
+          unavailableReason: config.unavailableReason || null,
+        });
+        successCount++;
+        
+        // Mark as clean
+        setBranchConfigs((prev) => ({
+          ...prev,
+          [key]: { ...prev[key], isDirty: false }
+        }));
+      }
+      toast.success(`Đã cập nhật ${successCount} món thành công!`);
+    } catch (err: any) {
+      console.error("Error saving branch menu:", err);
+      toast.error("Đã xảy ra lỗi khi lưu cấu hình. Vui lòng thử lại.");
+    } finally {
       setSaving(false);
-      toast.success("Đã cập nhật thực đơn & giá bán riêng cho chi nhánh thành công!");
-    }, 1000);
+    }
   };
 
   const filteredProducts = products.filter((p) =>
@@ -170,7 +262,7 @@ export default function AdminBranchMenuPage() {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mb-4" />
+          <Loader2 className="w-10 h-10 animate-spin text-roast mb-4" />
           <span className="text-slate-600 font-medium">Đang tải cấu hình thực đơn chi nhánh...</span>
         </div>
       ) : (
@@ -186,7 +278,11 @@ export default function AdminBranchMenuPage() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="branch-select">Chi nhánh</Label>
-                    <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                    <Select 
+                      value={selectedBranchId} 
+                      onValueChange={setSelectedBranchId}
+                      disabled={isBranchManager}
+                    >
                       <SelectTrigger id="branch-select" className="bg-white">
                         <SelectValue placeholder="Chọn chi nhánh" />
                       </SelectTrigger>
@@ -203,7 +299,7 @@ export default function AdminBranchMenuPage() {
                   {selectedBranchId && (
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 text-sm text-slate-600">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                        <Store className="w-4 h-4 text-indigo-600" />
+                        <Store className="w-4 h-4 text-roast" />
                         <span>
                           {branches.find((b) => b.id === selectedBranchId)?.name}
                         </span>
@@ -220,7 +316,7 @@ export default function AdminBranchMenuPage() {
               </Card>
 
               <Card className="shadow-md border border-slate-200 p-4">
-                <div className="flex gap-2 text-indigo-800">
+                <div className="flex gap-2 text-roast">
                   <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                   <p className="text-xs">
                     Món ăn/đồ uống bị tắt tại chi nhánh sẽ không thể đặt hàng thông qua POS chi nhánh đó hoặc trên ứng dụng khách hàng tại chi nhánh này.
@@ -240,7 +336,7 @@ export default function AdminBranchMenuPage() {
                   <Button
                     onClick={handleSaveConfigs}
                     disabled={saving || !selectedBranchId}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                    className="bg-roast hover:bg-roast/90 text-white font-medium"
                   >
                     {saving ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -288,7 +384,12 @@ export default function AdminBranchMenuPage() {
                                 branchPrice: p.basePrice || 0,
                               };
 
-                              const isPriceOverridden = config.branchPrice !== p.basePrice;
+                              const hasSizes = p.sizes && p.sizes.length > 0;
+                              const isPriceOverridden = !hasSizes && config.branchPrice !== (p.basePrice || 0);
+
+                              // Helper to format price
+                              const fmtPrice = (v: number | null | undefined) =>
+                                v != null && v > 0 ? `${v.toLocaleString("vi-VN")}đ` : "—";
 
                               return (
                                 <TableRow key={p.id} className="hover:bg-slate-50/50">
@@ -297,51 +398,81 @@ export default function AdminBranchMenuPage() {
                                     <div className="text-xs text-slate-400">
                                       Danh mục: {p.categoryName || "N/A"}
                                     </div>
+                                    {hasSizes && (
+                                      <Badge variant="secondary" className="mt-1 bg-foam text-primary border border-roast/10 text-[10px]">
+                                        Có {p.sizes!.length} size
+                                      </Badge>
+                                    )}
                                   </TableCell>
                                   <TableCell>
-                                    <div className="flex items-center justify-center gap-2">
-                                      <Switch
-                                        checked={config.isAvailable}
-                                        onCheckedChange={(val) => handleToggleAvailable(p.id, val)}
-                                      />
-                                      <Badge
-                                        variant="secondary"
-                                        className={
-                                          config.isAvailable
-                                            ? "bg-emerald-50 text-emerald-700"
-                                            : "bg-red-50 text-red-700"
-                                        }
-                                      >
-                                        {config.isAvailable ? "Đang bán" : "Tạm ngưng"}
-                                      </Badge>
+                                    <div className="flex flex-col gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          checked={config.isAvailable}
+                                          onCheckedChange={(val) => handleToggleAvailable(p.id, val)}
+                                        />
+                                        <Badge
+                                          variant="secondary"
+                                          className={
+                                            config.isAvailable
+                                              ? "bg-emerald-50 text-emerald-700"
+                                              : "bg-red-50 text-red-700"
+                                          }
+                                        >
+                                          {config.isAvailable ? "Đang bán" : "Tạm ngưng"}
+                                        </Badge>
+                                      </div>
+                                      {!config.isAvailable && (
+                                        <Input
+                                          placeholder="Lý do (VD: Hết nguyên liệu)"
+                                          className="h-8 text-xs w-full bg-white"
+                                          value={config.unavailableReason || ""}
+                                          onChange={(e) => handleReasonChange(p.id, e.target.value)}
+                                        />
+                                      )}
                                     </div>
                                   </TableCell>
                                   <TableCell className="font-medium text-slate-600">
-                                    {p.basePrice?.toLocaleString("vi-VN")}đ
+                                    {hasSizes ? (
+                                      <div className="space-y-0.5">
+                                        {p.sizes!.map((s) => (
+                                          <div key={s.id} className="text-xs">
+                                            <span className="text-slate-500 font-normal">{s.sizeName}:</span>{" "}
+                                            <span className="font-medium">{fmtPrice(s.sellingPrice)}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <>{fmtPrice(p.basePrice)}</>
+                                    )}
                                   </TableCell>
                                   <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Input
-                                        type="number"
-                                        className="h-9 w-32 bg-white"
-                                        value={config.branchPrice}
-                                        onChange={(e) =>
-                                          handlePriceChange(p.id, parseInt(e.target.value) || 0)
-                                        }
-                                        disabled={!config.isAvailable}
-                                      />
-                                      {isPriceOverridden && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleResetToBasePrice(p.id)}
-                                          className="text-xs text-indigo-600 hover:text-indigo-700 h-8 p-1"
-                                          title="Đặt về giá gốc"
-                                        >
-                                          Reset
-                                        </Button>
-                                      )}
-                                    </div>
+                                    {hasSizes ? (
+                                      <span className="text-xs text-slate-400 italic">Giá theo size (quản lý tại Sản phẩm)</span>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <Input
+                                          type="number"
+                                          className="h-9 w-32 bg-white"
+                                          value={config.branchPrice}
+                                          onChange={(e) =>
+                                            handlePriceChange(p.id, parseInt(e.target.value) || 0)
+                                          }
+                                          disabled={!config.isAvailable}
+                                        />
+                                        {isPriceOverridden && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleResetToBasePrice(p.id)}
+                                            className="text-xs text-roast hover:text-roast/90 h-8 p-1"
+                                            title="Đặt về giá gốc"
+                                          >
+                                            Reset
+                                          </Button>
+                                        )}
+                                      </div>
+                                    )}
                                   </TableCell>
                                 </TableRow>
                               );

@@ -704,20 +704,20 @@ export default function PromotionListPage() {
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           {/* Filters and Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative min-w-[240px] max-w-md">
                 <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   placeholder="Search by Name or Code"
-                  className="pl-10 bg-white border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 shadow-sm"
+                  className="pl-10 bg-white border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 shadow-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                   <SelectValue placeholder="All status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -730,7 +730,7 @@ export default function PromotionListPage() {
               </Select>
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+                <SelectTrigger className="w-40 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                   <SelectValue placeholder="All type" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -743,7 +743,7 @@ export default function PromotionListPage() {
             </div>
 
             <Button
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg h-10 px-5"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-lg h-10 px-5"
               onClick={() => setIsCreateDialogOpen(true)}
             >
               <Plus className="mr-2 w-4 h-4" />
@@ -756,8 +756,8 @@ export default function PromotionListPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 animate-pulse"></div>
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 animate-pulse"></div>
+                  <Loader2 className="w-8 h-8 animate-spin text-roast absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                 </div>
                 <span className="mt-4 text-slate-500 font-medium">
                   Loading promotions...
@@ -804,7 +804,7 @@ export default function PromotionListPage() {
                     {currentPromotions.map((promo) => (
                       <TableRow
                         key={promo.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                       >
                         <TableCell className="py-4">
                           <Badge
@@ -819,7 +819,7 @@ export default function PromotionListPage() {
                             onClick={() =>
                               navigate(`/admin/promotions/${promo.id}`)
                             }
-                            className="font-semibold text-slate-800 hover:text-indigo-600 hover:underline cursor-pointer"
+                            className="font-semibold text-slate-800 hover:text-roast hover:underline cursor-pointer"
                           >
                             {promo.name}
                           </button>
@@ -841,12 +841,12 @@ export default function PromotionListPage() {
                           <span className="font-bold text-emerald-600">
                             {(promo.type || "PERCENTAGE") === "PERCENTAGE"
                               ? `${promo.value || 0}%`
-                              : `${(promo.value || 0).toLocaleString()}₫`}
+                              : `${(promo.value || 0).toLocaleString()}â‚«`}
                           </span>
                           {promo.maxDiscountAmount &&
                             promo.maxDiscountAmount > 0 && (
                               <div className="text-xs text-slate-500">
-                                Max: {promo.maxDiscountAmount.toLocaleString()}₫
+                                Max: {promo.maxDiscountAmount.toLocaleString()}â‚«
                               </div>
                             )}
                         </TableCell>
@@ -856,7 +856,7 @@ export default function PromotionListPage() {
                               {formatDate(promo.startDate)}
                             </div>
                             <div className="text-slate-500">
-                              → {formatDate(promo.endDate)}
+                              â†’ {formatDate(promo.endDate)}
                             </div>
                           </div>
                         </TableCell>
@@ -882,7 +882,7 @@ export default function PromotionListPage() {
                               </div>
                             ) : (
                               <span className="text-slate-400 text-xs">
-                                ∞ Unlimited
+                                âˆž Unlimited
                               </span>
                             )}
                           </div>
@@ -956,7 +956,7 @@ export default function PromotionListPage() {
                         <PaginationLink
                           onClick={() => setCurrentPage(page)}
                           isActive={currentPage === page}
-                          className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
+                          className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-roast text-white hover:bg-roast/90 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
                         >
                           {page}
                         </PaginationLink>
@@ -1079,7 +1079,7 @@ export default function PromotionListPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="value">
-                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "(đ)"}
+                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "(Ä‘)"}
                 </Label>
                 <Input
                   id="value"
@@ -1288,7 +1288,7 @@ export default function PromotionListPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="minOrderValue">Min Order Value (đ)</Label>
+                  <Label htmlFor="minOrderValue">Min Order Value (Ä‘)</Label>
                   <Input
                     id="minOrderValue"
                     type="number"
@@ -1304,7 +1304,7 @@ export default function PromotionListPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="maxDiscountAmount">Max Discount (đ)</Label>
+                  <Label htmlFor="maxDiscountAmount">Max Discount (Ä‘)</Label>
                   <Input
                     id="maxDiscountAmount"
                     type="number"
@@ -1427,7 +1427,7 @@ export default function PromotionListPage() {
             <Button
               onClick={handleCreatePromotion}
               disabled={creating}
-              className="bg-indigo-900 text-white hover:bg-indigo-800"
+              className="bg-roast text-white hover:bg-roast/80"
             >
               {creating ? "Creating..." : "Create Promotion"}
             </Button>
@@ -1832,7 +1832,7 @@ export default function PromotionListPage() {
             <Button
               onClick={handleUpdatePromotion}
               disabled={editing}
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white"
             >
               {editing ? "Updating..." : "Update Promotion"}
             </Button>

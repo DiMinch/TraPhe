@@ -63,6 +63,12 @@
   --color-latte: #C89A6E;
   --color-foam: #FBF5EC;
   --color-background: #fff8f5;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1410;
+  --color-accent: #f1e6e1;
+  --color-accent-foreground: #201b18;
+  --color-border: #e2ddd7;
+
 
   --spacing-space-1: 4px;
   --spacing-space-2: 8px;
@@ -73,14 +79,14 @@
   --spacing-space-12: 48px;
   --spacing-space-20: 80px;
 
-  --font-ui-heading: "Signika", "Roboto", "sans-serif";
-  --font-heading-lg: "Cormorant Garamond", "Cormorant", "serif";
-  --font-display-md: "Cormorant Garamond", "Cormorant", "serif";
-  --font-display-lg: "Cormorant Garamond", "Cormorant", "serif";
-  --font-ui-body: "Signika", "Roboto", "sans-serif";
-  --font-display-xl: "Cormorant Garamond", "Cormorant", "serif";
-  --font-body-md: "Cormorant Garamond", "Cormorant", "serif";
-  --font-pos-total: "Signika", "Roboto", "sans-serif";
+  --font-ui-heading: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
+  --font-heading-lg: "Source Serif 4", "Noto Serif", Georgia, serif;
+  --font-display-md: "Viaoda Libre", Georgia, serif;
+  --font-display-lg: "Viaoda Libre", Georgia, serif;
+  --font-ui-body: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
+  --font-display-xl: "Viaoda Libre", Georgia, serif;
+  --font-body-md: "Source Serif 4", "Newsreader", Georgia, serif;
+  --font-pos-total: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
 }
 
 @layer base {
@@ -89,8 +95,23 @@
   }
 
   body {
-    font-family: "Signika", "Roboto", sans-serif;
+    font-family: var(--font-ui-body);
     color: var(--color-ink);
+    background-color: var(--color-admin-bg);
+  }
+
+  body[data-context="customer"] {
+    font-family: var(--font-body-md);
     background-color: var(--color-foam);
+  }
+
+  body[data-context="admin"] {
+    font-family: var(--font-ui-body);
+    background-color: var(--color-admin-bg);
+  }
+
+  body[data-context="pos"] {
+    font-family: var(--font-ui-body);
+    background-color: var(--color-espresso);
   }
 }

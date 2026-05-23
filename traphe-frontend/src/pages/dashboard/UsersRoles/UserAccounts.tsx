@@ -59,16 +59,55 @@ import { useState, useEffect } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
 import {
   adminService,
-  type UserAccount,
+  type StaffMember,
+  type BranchOption,
   type Role,
 } from "@/services/admin.service";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
 import { roleService } from "@/services/role.service";
+import axiosClient from "@/lib/axios-client";
 import { toast } from "sonner";
 import {
   PageContainer,
   PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
+
+// Adapt StaffMember → the shape the table already expects
+interface UserAccount {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  avatar: string;
+  status: string;
+  roles: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  branchId?: string | null;
+  branchName?: string | null;
+}
+
+function staffToUserAccount(s: StaffMember): UserAccount {
+  return {
+    id: String(s.id),
+    username: s.email,
+    email: s.email,
+    fullName: s.fullName || "",
+    phone: s.phoneNumber || "",
+    avatar: s.avatarUrl || "",
+    status: (s.isActive ?? s.active) ? "ACTIVE" : "INACTIVE",
+    roles: s.roles ? Array.from(s.roles) : [],
+    isActive: s.isActive ?? (s as any).active ?? true,
+    createdAt: "",
+    updatedAt: "",
+    branchId: s.branchId,
+    branchName: s.branchName,
+  };
+}
 
 export default function UserAccountsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -105,11 +144,18 @@ export default function UserAccountsPage() {
     fullName: "",
     phone: "",
     roleName: "",
+    branchId: "",
   });
+
+  // Branch data
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
 
   useEffect(() => {
     fetchUsers();
     fetchRoles();
+    fetchBranches();
   }, []);
 
   useEffect(() => {
@@ -120,29 +166,43 @@ export default function UserAccountsPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await adminService.getAllUsers();
-      if (response.data) {
-        // Handle both direct array and paginated response
-        const usersData = Array.isArray(response.data)
-          ? response.data
-          : (response.data as any)?.content || [];
+      const response = await adminService.getAllStaff();
+      // The backend returns a raw List<StaffResponse> (not ApiResponse-wrapped).
+      // The axios interceptor returns response.data, so `response` is already
+      // the array or an ApiResponse object depending on the controller.
+      const rawData = (response as any)?.data ?? response;
+      const staffList = Array.isArray(rawData)
+        ? rawData
+        : (rawData as any)?.content || [];
 
-        // Sort by createdAt descending (newest first)
-        usersData.sort((a: UserAccount, b: UserAccount) => {
-          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-          return dateB.getTime() - dateA.getTime();
-        });
+      const usersData = staffList.map(staffToUserAccount);
+      // Sort: active first, then by name
+      usersData.sort((a: UserAccount, b: UserAccount) => a.fullName.localeCompare(b.fullName));
 
-        setUserAccounts(usersData);
-        setFilteredUsers(usersData);
-      }
+      setUserAccounts(usersData);
+      setFilteredUsers(usersData);
     } catch (error: unknown) {
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to load users";
+        error instanceof Error ? error.message : "Failed to load staff";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      if (isBranchManager && currentUser?.branchId) {
+        setBranches([{ id: currentUser.branchId, name: "Chi nhánh của tôi" }]);
+        return;
+      }
+      const res = await axiosClient.get<unknown, any>("/branches");
+      const list = Array.isArray(res.data)
+        ? res.data
+        : res.data?.content || [];
+      setBranches(list);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
     }
   };
 
@@ -156,7 +216,15 @@ export default function UserAccountsPage() {
         setAvailableRoles(rolesData);
       }
     } catch (error) {
-      console.error("Error fetching roles:", error);
+      console.error("Error fetching roles, using fallback:", error);
+      // Fallback: provide hardcoded role list so the UI still works
+      setAvailableRoles([
+        { id: "ROLE_ADMIN", name: "ROLE_ADMIN", description: "Administrator", createdAt: "", updatedAt: "" },
+        { id: "ROLE_BRANCH_MANAGER", name: "ROLE_BRANCH_MANAGER", description: "Branch Manager", createdAt: "", updatedAt: "" },
+        { id: "ROLE_CASHIER", name: "ROLE_CASHIER", description: "Cashier", createdAt: "", updatedAt: "" },
+        { id: "ROLE_BARISTA", name: "ROLE_BARISTA", description: "Barista", createdAt: "", updatedAt: "" },
+        { id: "ROLE_EMPLOYEE", name: "ROLE_EMPLOYEE", description: "Employee", createdAt: "", updatedAt: "" },
+      ]);
     }
   };
 
@@ -296,7 +364,7 @@ export default function UserAccountsPage() {
     try {
       const response = await adminService.getUserById(userId);
       if (response.data) {
-        setUserDetails(response.data);
+        setUserDetails(staffToUserAccount(response.data as any));
         setIsUserDetailsOpen(true);
       }
     } catch (error: any) {
@@ -332,7 +400,6 @@ export default function UserAccountsPage() {
   const handleCreateEmployee = async () => {
     // Validate form
     if (
-      !newEmployee.username.trim() ||
       !newEmployee.email.trim() ||
       !newEmployee.password.trim() ||
       !newEmployee.fullName.trim() ||
@@ -357,15 +424,15 @@ export default function UserAccountsPage() {
 
     try {
       setSubmitting(true);
-      await adminService.createEmployee({
-        username: newEmployee.username.trim(),
+      await adminService.createStaff({
         email: newEmployee.email.trim(),
         password: newEmployee.password,
         fullName: newEmployee.fullName.trim(),
-        phone: newEmployee.phone.trim() || undefined,
-        roleName: newEmployee.roleName,
+        phoneNumber: newEmployee.phone.trim() || undefined,
+        roles: [newEmployee.roleName],
+        branchId: isBranchManager ? undefined : (newEmployee.branchId || undefined),
       });
-      toast.success("Employee created successfully");
+      toast.success("Tạo nhân viên thành công!");
       setIsCreateDialogOpen(false);
       // Reset form
       setNewEmployee({
@@ -375,6 +442,7 @@ export default function UserAccountsPage() {
         fullName: "",
         phone: "",
         roleName: "",
+        branchId: "",
       });
       await fetchUsers();
     } catch (error: any) {
@@ -396,7 +464,7 @@ export default function UserAccountsPage() {
       <div className="flex flex-wrap justify-end gap-3 mb-6">
         <Button
           onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-roast hover:bg-roast/90 text-white shadow-md transition-all duration-200"
         >
           <Plus className="mr-2 w-4 h-4" />
           New User
@@ -407,12 +475,12 @@ export default function UserAccountsPage() {
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="flex flex-wrap items-center gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-foam border-b border-slate-200/60">
             <div className="relative flex-1 min-w-[240px]">
               <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
               <Input
                 placeholder="Search by name, email, or phone..."
-                className="pl-10 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 bg-white shadow-sm"
+                className="pl-10 border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 bg-white shadow-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -421,13 +489,13 @@ export default function UserAccountsPage() {
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 border-slate-200 hover:bg-white hover:border-indigo-500 rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
+              className="shrink-0 border-slate-200 hover:bg-white hover:border-roast rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
             >
               <Filter className="w-4 h-4" />
             </Button>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
@@ -440,14 +508,15 @@ export default function UserAccountsPage() {
             </Select>
 
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20">
+              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
                 <SelectValue placeholder="All role" />
               </SelectTrigger>
               <SelectContent className="rounded-xl border-slate-200 shadow-lg">
                 <SelectItem value="all-role">All role</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="employee">Employee</SelectItem>
-                <SelectItem value="customer">Customer</SelectItem>
+                <SelectItem value="branch_manager">Branch Manager</SelectItem>
+                <SelectItem value="cashier">Cashier</SelectItem>
+                <SelectItem value="barista">Barista</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -456,8 +525,8 @@ export default function UserAccountsPage() {
             {/* Table */}
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-mist flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-roast" />
                 </div>
                 <span className="mt-4 text-slate-600 font-medium">
                   Loading users...
@@ -489,6 +558,9 @@ export default function UserAccountsPage() {
                       <TableHead className="font-semibold text-slate-700">
                         Status
                       </TableHead>
+                      <TableHead className="font-semibold text-slate-700">
+                        Chi nhánh
+                      </TableHead>
                       <TableHead className="text-center font-semibold text-slate-700">
                         Actions
                       </TableHead>
@@ -498,7 +570,7 @@ export default function UserAccountsPage() {
                     {currentUsers.map((user) => (
                       <TableRow
                         key={user.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                       >
                         <TableCell>
                           <div>
@@ -521,7 +593,7 @@ export default function UserAccountsPage() {
                             {user.roles?.map((role, index) => (
                               <Badge
                                 key={index}
-                                className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-0 rounded-full px-3"
+                                className="bg-foam text-primary hover:bg-foam border-0 rounded-full px-3"
                               >
                                 {role.replace("ROLE_", "")}
                               </Badge>
@@ -534,6 +606,9 @@ export default function UserAccountsPage() {
                           >
                             {user.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-600 text-sm">
+                          {user.branchName || <span className="text-slate-400">—</span>}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-center gap-1">
@@ -651,7 +726,7 @@ export default function UserAccountsPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
+                            className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-roast text-white hover:bg-roast/90 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
                           >
                             {page}
                           </PaginationLink>
@@ -776,6 +851,33 @@ export default function UserAccountsPage() {
                 </SelectContent>
               </Select>
             </div>
+            {!isBranchManager && (
+              <div className="space-y-2">
+                <Label htmlFor="branchId">Chi nhánh</Label>
+                <Select
+                  value={newEmployee.branchId}
+                  onValueChange={(value) =>
+                    setNewEmployee({ ...newEmployee, branchId: value })
+                  }
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Chọn chi nhánh" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {isBranchManager && (
+              <p className="text-xs text-slate-500 italic">
+                Nhân viên sẽ tự động được gán vào chi nhánh của bạn.
+              </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="password">
                 Password <span className="text-red-500">*</span>
@@ -803,7 +905,7 @@ export default function UserAccountsPage() {
             <Button
               onClick={handleCreateEmployee}
               disabled={submitting}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-roast hover:bg-roast/90 text-white"
             >
               {submitting && <Loader2 className="mr-2 w-4 h-4 animate-spin" />}
               Create Employee

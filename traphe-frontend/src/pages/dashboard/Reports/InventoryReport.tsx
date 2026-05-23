@@ -26,20 +26,49 @@ import {
   Loader2,
   TrendingDown,
   Calendar,
+  LineChart,
 } from "lucide-react";
 import {
   reportService,
   type InventoryReportResponse,
+  type StockForecastResponse,
 } from "@/services/report.service";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageLayout";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
+import axiosClient from "@/lib/axios-client";
+import { Label } from "@/components/ui/label";
 
 export default function InventoryReportPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [report, setReport] = useState<InventoryReportResponse | null>(null);
+  const [forecast, setForecast] = useState<StockForecastResponse[]>([]);
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [fastMovingOnly, setFastMovingOnly] = useState(false);
+
+  // Branch scoping for BRANCH_MANAGER
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        if (isBranchManager && currentUser?.branchId) {
+          setBranches([{ id: currentUser.branchId, name: "Chi nhánh của tôi" }]);
+          setSelectedBranchId(currentUser.branchId);
+          return;
+        }
+        const branchRes = await axiosClient.get("/branches");
+        const allBranches = Array.isArray(branchRes.data) ? branchRes.data : branchRes.data?.content || [];
+        setBranches(allBranches);
+      } catch { /* ignore */ }
+    };
+    fetchBranches();
+  }, []);
 
   const fetchReport = async () => {
     try {
@@ -47,10 +76,17 @@ export default function InventoryReportPage() {
       const response = await reportService.getInventoryReport({
         lowStockOnly: lowStockOnly || undefined,
         fastMovingOnly: fastMovingOnly || undefined,
+        branchId: selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined,
       });
       // axios interceptor returns response.data, so use response directly or response.data if wrapped
       const reportData = (response as any).data ?? response;
       setReport(reportData as InventoryReportResponse);
+
+      const forecastResponse = await reportService.getStockForecast({
+        branchId: selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined,
+      });
+      const forecastData = (forecastResponse as any).data ?? forecastResponse;
+      setForecast(forecastData as StockForecastResponse[]);
     } catch (error) {
       console.error("Inventory report error:", error);
       const errorMessage =
@@ -128,7 +164,19 @@ export default function InventoryReportPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {branches.length > 0 && (
+              <div className="space-y-2">
+                <Label>Chi nhánh</Label>
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} disabled={isBranchManager}>
+                  <SelectTrigger><SelectValue placeholder="Tất cả chi nhánh" /></SelectTrigger>
+                  <SelectContent>
+                    {!isBranchManager && <SelectItem value="all">Tất cả chi nhánh</SelectItem>}
+                    {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium">Low Stock Only</label>
               <Select
@@ -175,7 +223,7 @@ export default function InventoryReportPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-roast" />
         </div>
       ) : report ? (
         <>
@@ -288,6 +336,38 @@ export default function InventoryReportPage() {
                         </div>
                       </div>
                     ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stock Forecast Section */}
+          {forecast && forecast.length > 0 && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LineChart className="h-5 w-5 text-roast" />
+                  Stock Forecast (Next 7 Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {forecast.map((item) => (
+                    <div
+                      key={item.menuItemId}
+                      className="p-4 border rounded-lg bg-gray-50/50"
+                    >
+                      <div className="font-medium mb-1 truncate" title={item.productName}>{item.productName}</div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Avg. Daily Sales:</span>
+                        <span className="font-semibold">{item.averageDailySales}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm mt-1">
+                        <span className="text-muted-foreground">Projected 7-Day Demand:</span>
+                        <span className="font-bold text-roast">{item.projected7DayDemand}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

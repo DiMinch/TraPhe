@@ -165,8 +165,8 @@ export default function OrderDetailPage() {
   };
 
   const formatCurrency = (amount: number | null | undefined) => {
-    if (amount === null || amount === undefined) return "0đ";
-    return `${amount.toLocaleString()}đ`;
+    if (amount === null || amount === undefined) return "0Ä‘";
+    return `${amount.toLocaleString()}Ä‘`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -206,7 +206,7 @@ export default function OrderDetailPage() {
         return (
           <Badge
             variant="outline"
-            className="border-indigo-300 text-indigo-700"
+            className="border-roast/30 text-roast/90"
           >
             In-Store
           </Badge>
@@ -380,7 +380,7 @@ export default function OrderDetailPage() {
         <Card className="shadow-md lg:col-span-2">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-indigo-600" />
+              <ShoppingBag className="w-5 h-5 text-roast" />
               Order Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -436,7 +436,7 @@ export default function OrderDetailPage() {
         <Card className="shadow-md">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <User className="w-5 h-5 text-indigo-600" />
+              <User className="w-5 h-5 text-roast" />
               Customer
             </h2>
             {order.customerId || order.customerName ? (
@@ -470,7 +470,7 @@ export default function OrderDetailPage() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Package className="w-5 h-5 text-indigo-600" />
+              <Package className="w-5 h-5 text-roast" />
               Order Items ({order.items.length})
             </h2>
           </div>
@@ -601,7 +601,7 @@ export default function OrderDetailPage() {
           </AlertDialogHeader>
           <div className="py-4">
             <textarea
-              className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-roast"
               rows={3}
               placeholder="Enter cancellation reason..."
               value={cancelReason}

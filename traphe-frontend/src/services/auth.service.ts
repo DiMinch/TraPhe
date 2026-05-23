@@ -69,7 +69,8 @@ export const authService = {
 
   logout: async () => {
     try {
-      await axiosClient.post("/auth/logout");
+      const refreshToken = localStorage.getItem("refreshToken");
+      await axiosClient.post("/auth/logout", { refreshToken });
     } catch (error) {
       console.error("Logout API failed:", error);
     } finally {

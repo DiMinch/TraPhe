@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -25,18 +24,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit, Trash2, Plus, X, Check } from "lucide-react";
+import { Plus, X, Image as ImageIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { productService } from "@/services/product.service";
 import { categoryService } from "@/services/category.service";
-import {
-  supplierService,
-  type SupplierResponse,
-} from "@/services/supplier.service";
-import type { Product } from "@/types/product.types";
-import type { Category, CategorySpec } from "@/types/category.types";
+import type { Product, ToppingOption } from "@/types/product.types";
+import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 
 interface NewProductDialogProps {
   open: boolean;
@@ -44,17 +41,10 @@ interface NewProductDialogProps {
   onAdd: (product: Product) => void;
 }
 
-interface VariantFormData {
-  id?: string; // Temporary ID for UI, or real ID after save
-  sku: string;
-  barcode: string;
-  variantName: string;
-  variantSpecs: string;
-  purchasePriceAvg: string;
-  sellingPrice: string;
+interface SizeFormData {
+  sizeName: string;
+  sellingPrice: number | "";
   displayOrder: number;
-  isEditing?: boolean;
-  isSaved?: boolean; // Track if variant is saved to backend
 }
 
 export default function NewProductDialog({
@@ -62,77 +52,45 @@ export default function NewProductDialog({
   onOpenChange,
   onAdd,
 }: NewProductDialogProps) {
-  const [step, setStep] = useState<1 | 2>(1); // Step 1: Product, Step 2: Variants
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
-    supplierId: "",
     description: "",
-    minStockThreshold: "",
-    warrantyPeriod: "",
-    commonSpecs: "",
+    basePrice: "" as number | "",
+    preparationTime: "" as number | "",
+    isDrink: true,
+    allowToppings: true,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [suppliers, setSuppliers] = useState<SupplierResponse[]>([]);
-  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
-  const [categorySpecs, setCategorySpecs] = useState<CategorySpec[]>([]);
-  const [specsValues, setSpecsValues] = useState<Record<string, string>>({});
-
-  // Variant management
-  const [variants, setVariants] = useState<VariantFormData[]>([]);
-  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(
-    null,
-  );
-  const [newVariant, setNewVariant] = useState<VariantFormData>({
-    sku: "",
-    barcode: "",
-    variantName: "",
-    variantSpecs: "",
-    purchasePriceAvg: "",
-    sellingPrice: "",
-    displayOrder: 1,
-    isEditing: true,
-  });
-  const [isAddingVariant, setIsAddingVariant] = useState(false);
+  
+  // F&B specific
+  const [sizes, setSizes] = useState<SizeFormData[]>([]);
+  const [availableToppings, setAvailableToppings] = useState<ToppingOption[]>([]);
+  const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
       fetchCategories();
-      fetchSuppliers();
+      fetchToppings();
       resetForm();
     }
   }, [open]);
 
-  // Load specs when category changes
-  useEffect(() => {
-    if (formData.categoryId) {
-      fetchCategorySpecs(formData.categoryId);
-    } else {
-      setCategorySpecs([]);
-      setSpecsValues({});
-    }
-  }, [formData.categoryId]);
-
   const resetForm = () => {
-    setStep(1);
     setFormData({
       name: "",
       categoryId: "",
-      supplierId: "",
       description: "",
-      minStockThreshold: "",
-      warrantyPeriod: "",
-      commonSpecs: "",
+      basePrice: "",
+      preparationTime: "",
+      isDrink: true,
+      allowToppings: true,
     });
     setImageFile(null);
-    setVariants([]);
-    setCreatedProductId(null);
-    setIsAddingVariant(false);
-    setEditingVariantIndex(null);
-    setCategorySpecs([]);
-    setSpecsValues({});
+    setSizes([]);
+    setSelectedToppings([]);
   };
 
   const fetchCategories = async () => {
@@ -149,64 +107,31 @@ export default function NewProductDialog({
     }
   };
 
-  const fetchSuppliers = async () => {
+  const fetchToppings = async () => {
     try {
-      const response = await supplierService.getAllSuppliers();
+      const response = await productService.getToppings();
       if (response.data) {
-        const suppliersData = Array.isArray(response.data)
+        const toppingsData = Array.isArray(response.data)
           ? response.data
           : (response.data as any)?.content || [];
-        setSuppliers(suppliersData);
+        setAvailableToppings(toppingsData);
       }
     } catch (error: unknown) {
-      console.error("Failed to load suppliers:", error);
+      console.error("Failed to load toppings:", error);
     }
   };
 
-  const fetchCategorySpecs = async (categoryId: string) => {
-    try {
-      const response = await categoryService.getSpecs(categoryId);
-      if (response.data) {
-        setCategorySpecs(response.data);
-        // Initialize specs values with empty strings
-        const initialValues: Record<string, string> = {};
-        response.data.forEach((spec) => {
-          initialValues[spec.specKey] = "";
-        });
-        setSpecsValues(initialValues);
-      }
-    } catch (error) {
-      console.error("Failed to load category specs:", error);
-      setCategorySpecs([]);
-      setSpecsValues({});
-    }
-  };
-
-  // Step 1: Create Product
   const handleCreateProduct = async () => {
-    if (!formData.name || !formData.categoryId || !formData.supplierId) {
-      toast.error("Please fill in required fields (Name, Category, Supplier)");
+    if (!formData.name || !formData.categoryId || formData.basePrice === "") {
+      toast.error("Please fill in required fields (Name, Category, Base Price)");
       return;
     }
 
-    // Validate required specs
-    if (categorySpecs.length > 0) {
-      const missingRequiredSpecs = categorySpecs
-        .filter((spec) => spec.isRequired && !specsValues[spec.specKey])
-        .map((spec) => spec.specName);
-
-      if (missingRequiredSpecs.length > 0) {
-        toast.error(
-          `Please fill required specs: ${missingRequiredSpecs.join(", ")}`,
-        );
-        return;
-      }
-    }
-
-    // Convert specsValues to JSON string if categorySpecs exist
-    let commonSpecsJson = formData.commonSpecs;
-    if (categorySpecs.length > 0 && Object.keys(specsValues).length > 0) {
-      commonSpecsJson = JSON.stringify(specsValues);
+    // Validate sizes
+    const invalidSize = sizes.find(s => !s.sizeName || s.sellingPrice === "");
+    if (invalidSize) {
+      toast.error("Please ensure all sizes have a name and a selling price.");
+      return;
     }
 
     try {
@@ -215,23 +140,25 @@ export default function NewProductDialog({
         {
           name: formData.name,
           categoryId: formData.categoryId,
-          supplierId: formData.supplierId,
           description: formData.description || undefined,
-          minStockThreshold: formData.minStockThreshold
-            ? Number(formData.minStockThreshold)
-            : undefined,
-          warrantyPeriod: formData.warrantyPeriod
-            ? Number(formData.warrantyPeriod)
-            : undefined,
-          commonSpecs: commonSpecsJson || undefined,
+          basePrice: Number(formData.basePrice),
+          preparationTime: formData.preparationTime ? Number(formData.preparationTime) : undefined,
+          isDrink: formData.isDrink,
+          allowToppings: formData.allowToppings,
+          sizes: sizes.map(s => ({
+            sizeName: s.sizeName,
+            sellingPrice: Number(s.sellingPrice),
+            displayOrder: s.displayOrder
+          })),
+          toppingIds: selectedToppings.length > 0 ? selectedToppings : undefined,
         },
         imageFile || undefined,
       );
 
       if (response.data) {
-        setCreatedProductId(response.data.id);
-        toast.success("Product created! Now add variants.");
-        setStep(2);
+        toast.success("Product created successfully!");
+        onAdd(response.data);
+        onOpenChange(false);
       }
     } catch (error: unknown) {
       const errorMsg =
@@ -242,201 +169,55 @@ export default function NewProductDialog({
     }
   };
 
-  // Variant CRUD
-  const handleAddVariantRow = () => {
-    setNewVariant({
-      sku: "",
-      barcode: "",
-      variantName: "",
-      variantSpecs: "",
-      purchasePriceAvg: "",
-      sellingPrice: "",
-      displayOrder: variants.length + 1,
-      isEditing: true,
-    });
-    setIsAddingVariant(true);
+  const toggleTopping = (id: string) => {
+    setSelectedToppings(prev => 
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    );
   };
 
-  const handleSaveNewVariant = async () => {
-    if (
-      !newVariant.sku ||
-      !newVariant.variantName ||
-      !newVariant.sellingPrice
-    ) {
-      toast.error("Please fill in SKU, Variant Name, and Selling Price");
-      return;
-    }
-
-    if (!createdProductId) {
-      toast.error("Product ID not found");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await productService.createVariant({
-        productId: createdProductId,
-        sku: newVariant.sku,
-        barcode: newVariant.barcode || undefined,
-        variantName: newVariant.variantName,
-        variantSpecs: newVariant.variantSpecs || "",
-        purchasePriceAvg: newVariant.purchasePriceAvg
-          ? Number(newVariant.purchasePriceAvg)
-          : undefined,
-        sellingPrice: Number(newVariant.sellingPrice),
-      });
-
-      if (response.data) {
-        setVariants([
-          ...variants,
-          {
-            ...newVariant,
-            id: response.data.id,
-            isSaved: true,
-            isEditing: false,
-          },
-        ]);
-        setIsAddingVariant(false);
-        toast.success("Variant added successfully");
-      }
-    } catch (error: unknown) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Failed to add variant";
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
+  const addSize = () => {
+    setSizes([...sizes, { sizeName: "", sellingPrice: "", displayOrder: sizes.length + 1 }]);
   };
 
-  const handleCancelNewVariant = () => {
-    setIsAddingVariant(false);
-    setNewVariant({
-      sku: "",
-      barcode: "",
-      variantName: "",
-      variantSpecs: "",
-      purchasePriceAvg: "",
-      sellingPrice: "",
-      displayOrder: variants.length + 1,
-      isEditing: true,
-    });
+  const removeSize = (index: number) => {
+    setSizes(sizes.filter((_, i) => i !== index));
   };
 
-  const handleEditVariant = (index: number) => {
-    setEditingVariantIndex(index);
-  };
-
-  const handleUpdateVariant = async (index: number) => {
-    const variant = variants[index];
-    if (!variant.id || !variant.isSaved) {
-      toast.error("Cannot update unsaved variant");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await productService.updateVariant(variant.id, {
-        sku: variant.sku,
-        barcode: variant.barcode || undefined,
-        variantName: variant.variantName,
-        variantSpecs: variant.variantSpecs || undefined,
-        purchasePriceAvg: variant.purchasePriceAvg
-          ? Number(variant.purchasePriceAvg)
-          : undefined,
-        sellingPrice: Number(variant.sellingPrice),
-      });
-
-      if (response.data) {
-        setEditingVariantIndex(null);
-        toast.success("Variant updated successfully");
-      }
-    } catch (error: unknown) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Failed to update variant";
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteVariant = async (index: number) => {
-    const variant = variants[index];
-    if (!variant.id || !variant.isSaved) {
-      // Not saved yet, just remove from UI
-      setVariants(variants.filter((_, i) => i !== index));
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await productService.deleteVariant(variant.id);
-      setVariants(variants.filter((_, i) => i !== index));
-      toast.success("Variant deleted successfully");
-    } catch (error: unknown) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Failed to delete variant";
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFinish = async () => {
-    if (variants.length === 0) {
-      toast.error("Please add at least one variant before finishing");
-      return;
-    }
-
-    // Fetch the complete product with variants
-    if (createdProductId) {
-      try {
-        const response = await productService.getProductById(createdProductId);
-        if (response.data) {
-          onAdd(response.data);
-          toast.success("Product and variants created successfully!");
-          onOpenChange(false);
-        }
-      } catch (error) {
-        toast.error("Failed to fetch product details");
-      }
-    }
+  const updateSize = (index: number, field: keyof SizeFormData, value: any) => {
+    const newSizes = [...sizes];
+    newSizes[index] = { ...newSizes[index], [field]: value };
+    setSizes(newSizes);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="min-w-[75vw] max-h-[90vh] flex flex-col bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            New Product {step === 2 && "- Add Variants"}
-          </DialogTitle>
+      <DialogContent className="min-w-[800px] max-h-[90vh] flex flex-col bg-white overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="text-xl font-semibold">New Menu Item</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          {step === 1 ? (
-            <div className="space-y-6 py-4">
-              {/* Product Information */}
-              <div className="grid grid-cols-3 gap-4">
+        <ScrollArea className="flex-1 px-6 py-4">
+          <div className="space-y-8">
+            {/* Basic Info */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
-                    placeholder="MacBook Pro M1 2020"
-                    className="bg-white"
+                    placeholder="e.g. CÃ  phÃª sá»¯a Ä‘Ã¡"
                     value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
                   <Select
                     value={formData.categoryId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, categoryId: value })
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
                   >
-                    <SelectTrigger className="bg-white">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -448,59 +229,27 @@ export default function NewProductDialog({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warranty">Warranty (months)</Label>
-                  <Input
-                    id="warranty"
-                    type="number"
-                    placeholder="12"
-                    className="bg-white"
-                    value={formData.warrantyPeriod}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        warrantyPeriod: e.target.value,
-                      })
-                    }
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="supplier">Supplier *</Label>
-                  <Select
-                    value={formData.supplierId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, supplierId: value })
-                    }
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select supplier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="basePrice">Base Price (Ä‘) <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="basePrice"
+                    type="number"
+                    placeholder="29000"
+                    value={formData.basePrice}
+                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value === "" ? "" : Number(e.target.value) })}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="threshold">Min Stock Threshold</Label>
+                  <Label htmlFor="prepTime">Preparation Time (minutes)</Label>
                   <Input
-                    id="threshold"
+                    id="prepTime"
                     type="number"
-                    placeholder="5"
-                    className="bg-white"
-                    value={formData.minStockThreshold}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        minStockThreshold: e.target.value,
-                      })
-                    }
+                    placeholder="e.g. 5"
+                    value={formData.preparationTime}
+                    onChange={(e) => setFormData({ ...formData, preparationTime: e.target.value === "" ? "" : Number(e.target.value) })}
                   />
                 </div>
               </div>
@@ -509,482 +258,173 @@ export default function NewProductDialog({
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  className="bg-white"
-                  placeholder="Product description..."
+                  placeholder="Describe the menu item..."
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="resize-none"
+                  rows={3}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="image">Image</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center bg-white h-[132px] flex items-center justify-center">
-                    <div>
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) setImageFile(file);
-                        }}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={() =>
-                          document.getElementById("image")?.click()
-                        }
-                      >
-                        Choose File
-                      </Button>
-                      <span className="text-sm text-gray-500 ml-2">
-                        {imageFile ? imageFile.name : "No file chosen"}
-                      </span>
+              <div className="space-y-2">
+                <Label>Image</Label>
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+                     onClick={() => document.getElementById("image")?.click()}>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setImageFile(file);
+                    }}
+                  />
+                  {imageFile ? (
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-slate-700">{imageFile.name}</p>
+                      <p className="text-xs text-slate-500 mt-1">Click to change</p>
                     </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spec">Common Specs</Label>
-                  {categorySpecs.length === 0 ? (
-                    <Textarea
-                      id="spec"
-                      className="h-[132px] bg-white font-mono text-sm resize-none"
-                      placeholder={`{
-  "Screen_Size": "1920x1080",
-  "Battery": "60Wh"
-}`}
-                      value={formData.commonSpecs}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          commonSpecs: e.target.value,
-                        })
-                      }
-                    />
                   ) : (
-                    <div className="h-[132px] overflow-y-auto border rounded-md p-3 bg-white space-y-3">
-                      {categorySpecs.map((spec) => (
-                        <div key={spec.id} className="space-y-1">
-                          <Label className="text-xs">
-                            {spec.specName}
-                            {spec.isRequired && (
-                              <span className="text-red-500 ml-1">*</span>
-                            )}
-                          </Label>
-                          {spec.dataType === "SELECT" && spec.options ? (
-                            <select
-                              value={specsValues[spec.specKey] || ""}
-                              onChange={(e) =>
-                                setSpecsValues({
-                                  ...specsValues,
-                                  [spec.specKey]: e.target.value,
-                                })
-                              }
-                              className="w-full px-2 py-1 text-sm border rounded-md"
-                              required={spec.isRequired}
-                            >
-                              <option value="">Select {spec.specName}</option>
-                              {spec.options.map((opt) => (
-                                <option key={opt} value={opt}>
-                                  {opt}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <Input
-                              type={
-                                spec.dataType === "NUMBER" ? "number" : "text"
-                              }
-                              value={specsValues[spec.specKey] || ""}
-                              onChange={(e) =>
-                                setSpecsValues({
-                                  ...specsValues,
-                                  [spec.specKey]: e.target.value,
-                                })
-                              }
-                              className="h-8 text-sm"
-                              placeholder={`Enter ${spec.specName}`}
-                              required={spec.isRequired}
-                            />
-                          )}
-                        </div>
-                      ))}
+                    <div className="text-center">
+                      <ImageIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-slate-700">Click to upload image</p>
+                      <p className="text-xs text-slate-500 mt-1">PNG, JPG up to 5MB</p>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              {/* Variant List */}
-              <Card className="bg-white">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">Variant List</h3>
-                    <Button
-                      onClick={handleAddVariantRow}
-                      size="sm"
-                      disabled={isAddingVariant}
-                      className="bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Variant
-                    </Button>
-                  </div>
+            </section>
 
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[100px]">Order</TableHead>
-                          <TableHead className="min-w-[150px]">SKU *</TableHead>
-                          <TableHead className="min-w-[120px]">
-                            Barcode
-                          </TableHead>
-                          <TableHead className="min-w-[200px]">
-                            Variant Name *
-                          </TableHead>
-                          <TableHead className="min-w-[180px]">
-                            Spec (JSON)
-                          </TableHead>
-                          <TableHead className="min-w-[120px]">
-                            Purchase Price
-                          </TableHead>
-                          <TableHead className="min-w-[120px]">
-                            Selling Price *
-                          </TableHead>
-                          <TableHead className="w-[120px]">Actions</TableHead>
+            {/* Properties */}
+            <section className="space-y-4">
+              <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Properties</h3>
+              <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Is Drink?</Label>
+                    <p className="text-xs text-slate-500">Determines if ice/sugar options apply.</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isDrink} 
+                    onCheckedChange={(c) => setFormData({ ...formData, isDrink: c })} 
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Allow Toppings?</Label>
+                    <p className="text-xs text-slate-500">Can customers add extra toppings?</p>
+                  </div>
+                  <Switch 
+                    checked={formData.allowToppings} 
+                    onCheckedChange={(c) => setFormData({ ...formData, allowToppings: c })} 
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Sizes */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Sizes (Optional)</h3>
+                <Button variant="outline" size="sm" onClick={addSize} className="h-8">
+                  <Plus className="w-4 h-4 mr-1" /> Add Size
+                </Button>
+              </div>
+              
+              {sizes.length > 0 ? (
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-slate-50">
+                      <TableRow>
+                        <TableHead>Size Name</TableHead>
+                        <TableHead>Price (Ä‘)</TableHead>
+                        <TableHead className="w-[100px]">Order</TableHead>
+                        <TableHead className="w-[60px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sizes.map((size, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Input 
+                              placeholder="e.g. Size M" 
+                              value={size.sizeName}
+                              onChange={(e) => updateSize(index, 'sizeName', e.target.value)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number"
+                              placeholder="35000" 
+                              value={size.sellingPrice}
+                              onChange={(e) => updateSize(index, 'sellingPrice', e.target.value === "" ? "" : Number(e.target.value))}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number"
+                              value={size.displayOrder}
+                              onChange={(e) => updateSize(index, 'displayOrder', Number(e.target.value))}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" onClick={() => removeSize(index)} className="text-red-500 hover:text-red-600 hover:bg-red-50">
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {variants.map((variant, index) => (
-                          <TableRow key={variant.id || index}>
-                            <TableCell>{variant.displayOrder}</TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Input
-                                  value={variant.sku}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].sku = e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                variant.sku
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Input
-                                  value={variant.barcode}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].barcode = e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                variant.barcode || "-"
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Input
-                                  value={variant.variantName}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].variantName =
-                                      e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                variant.variantName
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Textarea
-                                  value={variant.variantSpecs}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].variantSpecs =
-                                      e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-20 font-mono text-xs"
-                                />
-                              ) : (
-                                <pre className="text-xs font-mono max-w-[150px] overflow-x-auto">
-                                  {variant.variantSpecs || "{}"}
-                                </pre>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Input
-                                  type="number"
-                                  value={variant.purchasePriceAvg}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].purchasePriceAvg =
-                                      e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                `${variant.purchasePriceAvg || "0"}đ`
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingVariantIndex === index ? (
-                                <Input
-                                  type="number"
-                                  value={variant.sellingPrice}
-                                  onChange={(e) => {
-                                    const newVariants = [...variants];
-                                    newVariants[index].sellingPrice =
-                                      e.target.value;
-                                    setVariants(newVariants);
-                                  }}
-                                  className="h-8"
-                                />
-                              ) : (
-                                `${variant.sellingPrice}đ`
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                {editingVariantIndex === index ? (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                      onClick={() => handleUpdateVariant(index)}
-                                      disabled={loading}
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                                      onClick={() =>
-                                        setEditingVariantIndex(null)
-                                      }
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 hover:bg-amber-50 text-slate-600 hover:text-amber-600"
-                                      onClick={() => handleEditVariant(index)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 hover:bg-red-50 text-slate-600 hover:text-red-600"
-                                      onClick={() => handleDeleteVariant(index)}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-slate-50 border border-dashed rounded-lg text-slate-500 text-sm">
+                  No sizes added. The item will only use the base price.
+                </div>
+              )}
+            </section>
 
-                        {/* New Variant Row */}
-                        {isAddingVariant && (
-                          <TableRow className="bg-blue-50/50">
-                            <TableCell>{variants.length + 1}</TableCell>
-                            <TableCell>
-                              <Input
-                                value={newVariant.sku}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    sku: e.target.value,
-                                  })
-                                }
-                                placeholder="MB-M1-256"
-                                className="h-8"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={newVariant.barcode}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    barcode: e.target.value,
-                                  })
-                                }
-                                placeholder="123456789"
-                                className="h-8"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                value={newVariant.variantName}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    variantName: e.target.value,
-                                  })
-                                }
-                                placeholder="Gray - 8GB RAM"
-                                className="h-8"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Textarea
-                                value={newVariant.variantSpecs}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    variantSpecs: e.target.value,
-                                  })
-                                }
-                                placeholder='{"RAM":"8GB"}'
-                                className="h-20 font-mono text-xs"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={newVariant.purchasePriceAvg}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    purchasePriceAvg: e.target.value,
-                                  })
-                                }
-                                placeholder="1000"
-                                className="h-8"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={newVariant.sellingPrice}
-                                onChange={(e) =>
-                                  setNewVariant({
-                                    ...newVariant,
-                                    sellingPrice: e.target.value,
-                                  })
-                                }
-                                placeholder="3000"
-                                className="h-8"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                  onClick={handleSaveNewVariant}
-                                  disabled={loading}
-                                >
-                                  <Check className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                                  onClick={handleCancelNewVariant}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {variants.length === 0 && !isAddingVariant && (
-                    <div className="text-center py-8 text-slate-500">
-                      No variants added yet. Click "Add Variant" to start.
+            {/* Toppings */}
+            {formData.allowToppings && availableToppings.length > 0 && (
+              <section className="space-y-4">
+                <h3 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Available Toppings</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {availableToppings.map(topping => (
+                    <div 
+                      key={topping.id} 
+                      className={`flex items-center space-x-3 border p-3 rounded-md cursor-pointer transition-colors ${selectedToppings.includes(topping.id) ? 'bg-roast/10 border-roast/20' : 'hover:bg-slate-50'}`}
+                      onClick={() => toggleTopping(topping.id)}
+                    >
+                      <Checkbox 
+                        id={`topping-${topping.id}`} 
+                        checked={selectedToppings.includes(topping.id)}
+                        onCheckedChange={() => toggleTopping(topping.id)}
+                      />
+                      <div className="flex flex-col">
+                        <Label htmlFor={`topping-${topping.id}`} className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          {topping.name}
+                        </Label>
+                        <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}Ä‘</span>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                  ))}
+                </div>
+              </section>
+            )}
+            
+          </div>
         </ScrollArea>
 
-        <DialogFooter className="border-t pt-4">
-          {step === 1 ? (
-            <div className="flex justify-end gap-3 w-full">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="px-6"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateProduct}
-                disabled={loading}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8"
-              >
-                {loading ? "Creating..." : "Next: Add Variants"}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex justify-between w-full">
-              <Button
-                variant="outline"
-                onClick={() => setStep(1)}
-                className="px-6"
-              >
-                Back to Product Info
-              </Button>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (variants.length === 0) {
-                      toast.warning("No variants added. Closing dialog.");
-                    }
-                    onOpenChange(false);
-                  }}
-                  className="px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleFinish}
-                  disabled={loading || variants.length === 0}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8"
-                >
-                  Finish & Close
-                </Button>
-              </div>
-            </div>
-          )}
+        <DialogFooter className="px-6 py-4 border-t bg-slate-50 mt-auto">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button 
+            onClick={handleCreateProduct} 
+            disabled={loading}
+            className="bg-roast hover:bg-roast/90 text-white"
+          >
+            {loading ? "Creating..." : "Create Menu Item"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -17,8 +17,12 @@ import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.RoleRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StaffServiceImpl implements StaffService {
 
     private final UserRepository userRepository;
@@ -35,16 +40,73 @@ public class StaffServiceImpl implements StaffService {
     private final BranchRepository branchRepository;
     private final PasswordEncoder passwordEncoder;
 
+    // ---- Helper: resolve the currently authenticated user ----
+
+    private User getCurrentAuthUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) return null;
+        return userRepository.findByEmail(auth.getName()).orElse(null);
+    }
+
+    private boolean isCurrentUserAdmin() {
+        User current = getCurrentAuthUser();
+        if (current == null) return false;
+        return current.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ROLE_ADMIN);
+    }
+
+    private boolean isCurrentUserBranchManager() {
+        User current = getCurrentAuthUser();
+        if (current == null) return false;
+        return current.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ROLE_BRANCH_MANAGER);
+    }
+
+    /**
+     * For a Branch Manager, returns their own branch.
+     * Returns null if the BM has no branch assigned.
+     */
+    private Branch resolveBranchForManager() {
+        User current = getCurrentAuthUser();
+        if (current == null || current.getBranch() == null) {
+            return null;
+        }
+        return current.getBranch();
+    }
+
+    /**
+     * Validates that the target staff belongs to the current BM's branch.
+     */
+    private void assertBranchOwnership(User targetStaff) {
+        if (isCurrentUserAdmin()) return; // Admin can manage anyone
+        if (isCurrentUserBranchManager()) {
+            Branch myBranch = resolveBranchForManager();
+            if (myBranch == null || targetStaff.getBranch() == null || !targetStaff.getBranch().getId().equals(myBranch.getId())) {
+                throw new AccessDeniedException("Bạn chỉ có thể quản lý nhân viên trong chi nhánh của mình.");
+            }
+        }
+    }
+
     public List<StaffResponse> getAllStaff() {
-        // Find all users who are not just CUSTOMER
-        return userRepository.findAll().stream()
-                .filter(user -> user.getRoles().stream().anyMatch(r -> r.getName() != RoleName.ROLE_CUSTOMER))
-                .map(this::mapToResponse)
+        List<User> allStaff = userRepository.findAll().stream()
+                .filter(user -> user.getRoles().stream().noneMatch(r -> r.getName() == RoleName.ROLE_CUSTOMER))
                 .collect(Collectors.toList());
+
+        // Branch Manager only sees staff in their own branch
+        if (isCurrentUserBranchManager() && !isCurrentUserAdmin()) {
+            Branch myBranch = resolveBranchForManager();
+            if (myBranch == null) {
+                return java.util.Collections.emptyList();
+            }
+            allStaff = allStaff.stream()
+                    .filter(u -> u.getBranch() != null && u.getBranch().getId().equals(myBranch.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        return allStaff.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     public StaffResponse getStaffById(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        assertBranchOwnership(user);
         return mapToResponse(user);
     }
 
@@ -68,7 +130,13 @@ public class StaffServiceImpl implements StaffService {
         }
 
         Branch branch = null;
-        if (request.getBranchId() != null) {
+        if (isCurrentUserBranchManager() && !isCurrentUserAdmin()) {
+            // BM: always force their own branch, ignore request.branchId
+            branch = resolveBranchForManager();
+            if (branch == null) {
+                throw new AccessDeniedException("Branch Manager chưa được gán chi nhánh, không thể tạo nhân viên.");
+            }
+        } else if (request.getBranchId() != null) {
             branch = branchRepository.findById(request.getBranchId())
                     .orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
         }
@@ -89,6 +157,7 @@ public class StaffServiceImpl implements StaffService {
     @AuditLogging(action = "UPDATE", entityName = "Staff")
     public StaffResponse updateStaff(UUID id, UpdateStaffRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        assertBranchOwnership(user);
 
         user.setFullName(request.getFullName());
         user.setPhoneNumber(request.getPhoneNumber());
@@ -103,6 +172,7 @@ public class StaffServiceImpl implements StaffService {
     @AuditLogging(action = "UPDATE", entityName = "StaffRole")
     public StaffResponse updateStaffRole(UUID id, UpdateStaffRoleRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        assertBranchOwnership(user);
 
         Set<Role> roles = new HashSet<>();
         for (RoleName roleName : request.getRoles()) {
@@ -118,6 +188,18 @@ public class StaffServiceImpl implements StaffService {
     @AuditLogging(action = "UPDATE", entityName = "StaffBranch")
     public StaffResponse updateStaffBranch(UUID id, UpdateStaffBranchRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        assertBranchOwnership(user);
+
+        // BM cannot transfer staff to a different branch
+        if (isCurrentUserBranchManager() && !isCurrentUserAdmin()) {
+            Branch myBranch = resolveBranchForManager();
+            if (myBranch == null) {
+                throw new AccessDeniedException("Branch Manager chưa được gán chi nhánh.");
+            }
+            if (request.getBranchId() != null && !request.getBranchId().equals(myBranch.getId())) {
+                throw new AccessDeniedException("Bạn chỉ có thể gán nhân viên vào chi nhánh của mình.");
+            }
+        }
 
         Branch branch = null;
         if (request.getBranchId() != null) {
@@ -132,6 +214,7 @@ public class StaffServiceImpl implements StaffService {
     @AuditLogging(action = "DELETE", entityName = "Staff")
     public void deleteStaff(UUID id) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
+        assertBranchOwnership(user);
         user.setActive(false); // soft delete or disable
         userRepository.save(user);
     }
