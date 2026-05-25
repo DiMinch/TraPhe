@@ -165,8 +165,8 @@ export default function OrderDetailPage() {
   };
 
   const formatCurrency = (amount: number | null | undefined) => {
-    if (amount === null || amount === undefined) return "0Ä‘";
-    return `${amount.toLocaleString()}Ä‘`;
+    if (amount === null || amount === undefined) return "0đ";
+    return `${amount.toLocaleString()}đ`;
   };
 
   const getStatusBadge = (status: string) => {

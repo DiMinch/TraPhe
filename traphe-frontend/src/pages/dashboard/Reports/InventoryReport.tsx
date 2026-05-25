@@ -297,7 +297,7 @@ export default function InventoryReportPage() {
                     .filter((item) => item.isLowStock || item.isOutOfStock)
                     .map((item) => (
                       <div
-                        key={item.productVariantId}
+                        key={`${item.productVariantId}-${item.variantName}`}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
                         <div className="flex-1">
@@ -352,9 +352,9 @@ export default function InventoryReportPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {forecast.map((item) => (
+                  {forecast.map((item, idx) => (
                     <div
-                      key={item.menuItemId}
+                      key={`${item.menuItemId}-${idx}`}
                       className="p-4 border rounded-lg bg-gray-50/50"
                     >
                       <div className="font-medium mb-1 truncate" title={item.productName}>{item.productName}</div>
@@ -425,7 +425,7 @@ export default function InventoryReportPage() {
                       </TableRow>
                     ) : (
                       report.items.map((item) => (
-                        <TableRow key={item.productVariantId}>
+                        <TableRow key={`${item.productVariantId}-${item.variantName}`}>
                           <TableCell className="font-mono text-sm">
                             {item.sku}
                           </TableCell>

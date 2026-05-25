@@ -15,4 +15,6 @@ public interface OrderService {
     public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable);
     public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
     public OrderResponse createCompatibleOrder(Map<String, Object> payload, String userEmail);
+    Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable);
+
 }

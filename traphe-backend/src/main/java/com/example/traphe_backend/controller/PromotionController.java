@@ -87,6 +87,7 @@ public class PromotionController {
         }
 
         BigDecimal subtotal = BigDecimal.ZERO;
+        java.util.List<PromotionService.ItemInfo> itemInfos = new java.util.ArrayList<>();
         if (req.containsKey("items") && req.get("items") instanceof List) {
             List<?> items = (List<?>) req.get("items");
             for (Object itemObj : items) {
@@ -94,10 +95,22 @@ public class PromotionController {
                     Map<?, ?> item = (Map<?, ?>) itemObj;
                     Object qtyObj = item.get("quantity");
                     Object priceObj = item.get("unitPrice");
+                    Object productObj = item.get("productId");
+                    Object categoryObj = item.get("categoryId");
                     if (qtyObj != null && priceObj != null) {
                         BigDecimal quantity = new BigDecimal(qtyObj.toString());
                         BigDecimal unitPrice = new BigDecimal(priceObj.toString());
                         subtotal = subtotal.add(quantity.multiply(unitPrice));
+                        
+                        UUID productId = null;
+                        if (productObj != null) {
+                            try { productId = UUID.fromString(productObj.toString()); } catch(Exception ignore) {}
+                        }
+                        UUID categoryId = null;
+                        if (categoryObj != null) {
+                            try { categoryId = UUID.fromString(categoryObj.toString()); } catch(Exception ignore) {}
+                        }
+                        itemInfos.add(new PromotionService.ItemInfo(productId, categoryId, quantity, unitPrice));
                     }
                 }
             }
@@ -121,7 +134,7 @@ public class PromotionController {
         Promotion promotion = promotionRepository.findByCodeAndIsDeletedFalse(code)
                 .orElseThrow(() -> new com.example.traphe_backend.exception.ResourceNotFoundException("Mã khuyến mãi '" + code + "' không tồn tại"));
 
-        BigDecimal discount = promotionService.calculateDiscount(code, subtotal, user);
+        BigDecimal discount = promotionService.calculateDiscount(code, subtotal, user, itemInfos);
 
         Map<String, Object> data = Map.of(
             "discountAmount", discount,

@@ -1,4 +1,8 @@
+debug: true
 spring:
+  threads:
+    virtual:
+      enabled: true
   main:
     allow-bean-definition-overriding: true
   datasource:
@@ -8,7 +12,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:

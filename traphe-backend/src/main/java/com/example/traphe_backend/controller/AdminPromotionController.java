@@ -2,6 +2,7 @@ package com.example.traphe_backend.controller;
 
 import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.entity.Promotion;
+import com.example.traphe_backend.enums.PromotionScope;
 import com.example.traphe_backend.exception.ResourceNotFoundException;
 import com.example.traphe_backend.repository.PromotionRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,6 +61,12 @@ public class AdminPromotionController {
         private int perUserLimit;
         @NotNull private LocalDateTime startDate;
         @NotNull private LocalDateTime endDate;
+        
+        private PromotionScope scope;
+        private LocalTime dailyStartTime;
+        private LocalTime dailyEndTime;
+        private Set<UUID> applicableCategoryIds;
+        private Set<UUID> applicableProductIds;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -77,6 +86,12 @@ public class AdminPromotionController {
         private LocalDateTime endDate;
         private boolean isActive;
         private LocalDateTime createdAt;
+        
+        private PromotionScope scope;
+        private LocalTime dailyStartTime;
+        private LocalTime dailyEndTime;
+        private Set<UUID> applicableCategoryIds;
+        private Set<UUID> applicableProductIds;
     }
 
     // ======================== ENDPOINTS ========================
@@ -122,6 +137,11 @@ public class AdminPromotionController {
                 .perUserLimit(req.getPerUserLimit() > 0 ? req.getPerUserLimit() : 1)
                 .startDate(req.getStartDate())
                 .endDate(req.getEndDate())
+                .scope(req.getScope() != null ? req.getScope() : PromotionScope.PUBLIC)
+                .dailyStartTime(req.getDailyStartTime())
+                .dailyEndTime(req.getDailyEndTime())
+                .applicableCategoryIds(req.getApplicableCategoryIds())
+                .applicableProductIds(req.getApplicableProductIds())
                 .build();
         Promotion saved = promotionRepository.save(p);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -145,6 +165,11 @@ public class AdminPromotionController {
         p.setPerUserLimit(req.getPerUserLimit() > 0 ? req.getPerUserLimit() : 1);
         p.setStartDate(req.getStartDate());
         p.setEndDate(req.getEndDate());
+        if (req.getScope() != null) p.setScope(req.getScope());
+        p.setDailyStartTime(req.getDailyStartTime());
+        p.setDailyEndTime(req.getDailyEndTime());
+        p.setApplicableCategoryIds(req.getApplicableCategoryIds());
+        p.setApplicableProductIds(req.getApplicableProductIds());
         Promotion saved = promotionRepository.save(p);
         return ResponseEntity.ok(ApiResponse.success(toResponse(saved), "Cập nhật khuyến mãi thành công"));
     }
@@ -189,6 +214,11 @@ public class AdminPromotionController {
                 .endDate(p.getEndDate())
                 .isActive(p.isActive())
                 .createdAt(p.getCreatedAt())
+                .scope(p.getScope())
+                .dailyStartTime(p.getDailyStartTime())
+                .dailyEndTime(p.getDailyEndTime())
+                .applicableCategoryIds(p.getApplicableCategoryIds())
+                .applicableProductIds(p.getApplicableProductIds())
                 .build();
     }
 }

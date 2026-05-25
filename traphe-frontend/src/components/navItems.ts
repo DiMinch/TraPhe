@@ -73,6 +73,7 @@ export const navItems: NavItem[] = [
     subItems: [
       { title: "Tổng quan", path: "/admin/stock", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE] },
       { title: "Tồn kho", path: "/admin/stock/all" },
+      { title: "Nhập kho", path: "/admin/stock/import" },
       { title: "Điều chỉnh", path: "/admin/stock/adjust" },
       { title: "Lịch sử", path: "/admin/stock/history" },
     ],
@@ -84,18 +85,18 @@ export const navItems: NavItem[] = [
     allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
     subItems: [
       { title: "Danh sách NCC", path: "/admin/suppliers" },
-      { title: "Đơn mua hàng", path: "/admin/suppliers/purchase-orders" },
+      { title: "Nhập kho NL", path: "/admin/suppliers/import" },
     ],
   },
   {
     title: "Đơn hàng",
     path: "/admin/orders",
     icon: ChartBar,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA],
+    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA, UserRole.BRANCH_MANAGER],
     subItems: [
-      { title: "POS", path: "/admin/orders/pos", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER] },
-      { title: "Hàng đợi pha chế", path: "/admin/orders/queue", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BARISTA] },
-      { title: "Tất cả đơn", path: "/admin/orders", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER] },
+      { title: "POS", path: "/admin/orders/pos", allowedRoles: [UserRole.EMPLOYEE, UserRole.CASHIER] },
+      { title: "Hàng đợi pha chế", path: "/admin/orders/queue", allowedRoles: [UserRole.EMPLOYEE, UserRole.BARISTA] },
+      { title: "Tất cả đơn", path: "/admin/orders", allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BRANCH_MANAGER] },
     ],
   },
   {

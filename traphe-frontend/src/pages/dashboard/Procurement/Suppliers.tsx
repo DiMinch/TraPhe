@@ -50,7 +50,6 @@ import {
   type SupplierResponse,
   type SupplierRequest,
 } from "@/services/supplier.service";
-import { purchaseOrderService } from "@/services/purchase-order.service";
 import {
   PageContainer,
   PageHeader,
@@ -194,7 +193,6 @@ interface Supplier {
   phone: string;
   email: string;
   address: string;
-  totalPOs: number;
   status: "Active" | "Inactive";
 }
 
@@ -218,7 +216,6 @@ export default function SuppliersPage() {
   // Transform backend response to frontend format
   const transformSupplier = (
     s: SupplierResponse,
-    poCountMap: Map<string, number>,
   ): Supplier => ({
     id: s.id,
     name: s.name || "",
@@ -226,7 +223,6 @@ export default function SuppliersPage() {
     phone: s.phone || "",
     email: s.email || "",
     address: s.address || "",
-    totalPOs: poCountMap.get(s.id) || 0,
     status: s.isDeleted ? "Inactive" : "Active",
   });
 
@@ -235,31 +231,12 @@ export default function SuppliersPage() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch suppliers and purchase orders in parallel
-      const [suppliersResponse, purchaseOrdersResponse] = await Promise.all([
-        supplierService.getAllSuppliers(),
-        purchaseOrderService.getAllPurchaseOrders(),
-      ]);
-
-      // Count purchase orders per supplier
-      const poCountMap = new Map<string, number>();
-      const purchaseOrdersData = purchaseOrdersResponse.data;
-      const purchaseOrders = Array.isArray(purchaseOrdersData)
-        ? purchaseOrdersData
-        : (purchaseOrdersData as any)?.content || [];
-      purchaseOrders.forEach((po: any) => {
-        if (po.supplier?.id) {
-          const currentCount = poCountMap.get(po.supplier.id) || 0;
-          poCountMap.set(po.supplier.id, currentCount + 1);
-        }
-      });
-
-      // Handle both direct array and paginated response
+      const suppliersResponse = await supplierService.getAllSuppliers();
       const suppliersData = Array.isArray(suppliersResponse.data)
         ? suppliersResponse.data
         : (suppliersResponse.data as any)?.content || [];
       const transformedData = suppliersData.map((s: SupplierResponse) =>
-        transformSupplier(s, poCountMap),
+        transformSupplier(s),
       );
       setSuppliers(transformedData);
     } catch (err: any) {
@@ -671,25 +648,22 @@ export default function SuppliersPage() {
                 <TableHeader>
                   <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
                     <TableHead className="w-[200px] font-semibold text-slate-600">
-                      Name
+                      Tên NCC
                     </TableHead>
                     <TableHead className="w-[200px] font-semibold text-slate-600">
-                      Contact Name
+                      Người liên hệ
                     </TableHead>
                     <TableHead className="w-[150px] font-semibold text-slate-600">
-                      Phone
+                      Số điện thoại
                     </TableHead>
                     <TableHead className="w-[200px] font-semibold text-slate-600">
                       Email
                     </TableHead>
                     <TableHead className="w-[120px] font-semibold text-slate-600">
-                      Total POs
-                    </TableHead>
-                    <TableHead className="w-[120px] font-semibold text-slate-600">
-                      Status
+                      Trạng thái
                     </TableHead>
                     <TableHead className="w-[120px] text-center font-semibold text-slate-600">
-                      Actions
+                      Thác tác
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -725,9 +699,6 @@ export default function SuppliersPage() {
                         <TableCell className="text-gray-700">
                           {supplier.email}
                         </TableCell>
-                        <TableCell className="text-center text-gray-700">
-                          {supplier.totalPOs}
-                        </TableCell>
                         <TableCell>
                           <Badge
                             className={
@@ -736,7 +707,7 @@ export default function SuppliersPage() {
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-100"
                             }
                           >
-                            {supplier.status}
+                            {supplier.status === "Active" ? "Hoạt động" : "Ngưng hợp tác"}
                           </Badge>
                         </TableCell>
                         <TableCell>

@@ -19,5 +19,7 @@ public interface MenuItemToppingRepository extends JpaRepository<MenuItemTopping
 
     List<MenuItemTopping> findByMenuItemIdIn(java.util.Set<UUID> menuItemIds);
 
-    void deleteAllByMenuItemId(UUID menuItemId);
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM MenuItemTopping mit WHERE mit.menuItem.id = :menuItemId")
+    void deleteAllByMenuItemId(@org.springframework.data.repository.query.Param("menuItemId") UUID menuItemId);
 }

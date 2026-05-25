@@ -13,6 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -63,6 +71,12 @@ export default function AdminBranchMenuPage() {
   // Key is: `${branchId}_${productId}`
   const [branchConfigs, setBranchConfigs] = useState<Record<string, BranchProductConfig>>({});
 
+  // Modal states for unavailable reason
+  const [isReasonModalOpen, setIsReasonModalOpen] = useState(false);
+  const [togglingProductId, setTogglingProductId] = useState<string | null>(null);
+  const [tempReason, setTempReason] = useState("");
+  const [isUpdatingReason, setIsUpdatingReason] = useState(false);
+
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -111,11 +125,11 @@ export default function AdminBranchMenuPage() {
   const fetchBranchConfigs = async (bId: string, currentProducts: Product[]) => {
     try {
       const res = await axiosClient.get<any, any>(`/branches/${bId}/menu?size=500`);
-      const menuItems = res.data?.data?.content || [];
+      const menuItems = Array.isArray(res.data) ? res.data : res.data?.content || [];
       
       const configMap = new Map();
       menuItems.forEach((item: any) => {
-        configMap.set(item.menuItem.id, item);
+        configMap.set(item.menuItemId, item);
       });
 
       setBranchConfigs((prev) => {
@@ -127,7 +141,7 @@ export default function AdminBranchMenuPage() {
           if (existing) {
             newConfigs[key] = {
               productId: p.id,
-              isAvailable: existing.isAvailable,
+              isAvailable: existing.available,
               branchPrice: existing.customPrice ?? (p.basePrice || 0),
               unavailableReason: existing.unavailableReason || "",
               isDirty: false,
@@ -149,17 +163,98 @@ export default function AdminBranchMenuPage() {
     }
   };
 
-  const handleToggleAvailable = (productId: string, val: boolean) => {
+  const handleToggleAvailable = async (productId: string, val: boolean) => {
     if (!selectedBranchId) return;
+    
+    if (!val) {
+      // User toggled to OFF (Tạm ngưng), show reason modal
+      setTogglingProductId(productId);
+      setTempReason("");
+      setIsReasonModalOpen(true);
+      return;
+    }
+
+    // User toggled to ON (Đang bán), update immediately
     const key = `${selectedBranchId}_${productId}`;
+    
+    // Optimistic update
     setBranchConfigs((prev) => ({
       ...prev,
       [key]: {
         ...prev[key],
-        isAvailable: val,
-        isDirty: true,
+        isAvailable: true,
+        unavailableReason: "",
       },
     }));
+
+    try {
+      const config = branchConfigs[key] || {
+        productId,
+        isAvailable: false,
+        branchPrice: products.find(p => p.id === productId)?.basePrice || 0,
+        unavailableReason: ""
+      };
+
+      await axiosClient.put(`/branches/${selectedBranchId}/menu`, {
+        menuItemId: productId,
+        isAvailable: true,
+        customPrice: config.branchPrice,
+        unavailableReason: null,
+      });
+
+      toast.success("Đã bật bán món ăn này.");
+    } catch (err) {
+      // Revert on error
+      setBranchConfigs((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          isAvailable: false,
+        },
+      }));
+      toast.error("Không thể cập nhật trạng thái món");
+    }
+  };
+
+  const handleConfirmUnavailable = async () => {
+    if (!selectedBranchId || !togglingProductId) return;
+    
+    setIsUpdatingReason(true);
+    const key = `${selectedBranchId}_${togglingProductId}`;
+    const reasonToSave = tempReason.trim();
+    
+    try {
+      const config = branchConfigs[key] || {
+        productId: togglingProductId,
+        isAvailable: true, // It was ON
+        branchPrice: products.find(p => p.id === togglingProductId)?.basePrice || 0,
+        unavailableReason: ""
+      };
+
+      await axiosClient.put(`/branches/${selectedBranchId}/menu`, {
+        menuItemId: togglingProductId,
+        isAvailable: false,
+        customPrice: config.branchPrice,
+        unavailableReason: reasonToSave || null,
+      });
+
+      // Update state after success
+      setBranchConfigs((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          isAvailable: false,
+          unavailableReason: reasonToSave,
+        },
+      }));
+      
+      toast.success("Đã tạm ngưng bán món ăn này.");
+      setIsReasonModalOpen(false);
+    } catch (err) {
+      toast.error("Không thể cập nhật trạng thái món");
+    } finally {
+      setIsUpdatingReason(false);
+    }
   };
 
   const handlePriceChange = (productId: string, price: number) => {
@@ -175,18 +270,6 @@ export default function AdminBranchMenuPage() {
     }));
   };
 
-  const handleReasonChange = (productId: string, reason: string) => {
-    if (!selectedBranchId) return;
-    const key = `${selectedBranchId}_${productId}`;
-    setBranchConfigs((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        unavailableReason: reason,
-        isDirty: true,
-      },
-    }));
-  };
 
   const handleResetToBasePrice = (productId: string) => {
     const product = products.find((p) => p.id === productId);
@@ -422,13 +505,10 @@ export default function AdminBranchMenuPage() {
                                           {config.isAvailable ? "Đang bán" : "Tạm ngưng"}
                                         </Badge>
                                       </div>
-                                      {!config.isAvailable && (
-                                        <Input
-                                          placeholder="Lý do (VD: Hết nguyên liệu)"
-                                          className="h-8 text-xs w-full bg-white"
-                                          value={config.unavailableReason || ""}
-                                          onChange={(e) => handleReasonChange(p.id, e.target.value)}
-                                        />
+                                      {!config.isAvailable && config.unavailableReason && (
+                                        <p className="text-xs text-slate-500 italic mt-1 line-clamp-2">
+                                          Lý do: {config.unavailableReason}
+                                        </p>
                                       )}
                                     </div>
                                   </TableCell>
@@ -488,6 +568,51 @@ export default function AdminBranchMenuPage() {
           </div>
         </div>
       )}
+
+      <Dialog open={isReasonModalOpen} onOpenChange={setIsReasonModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Lý do tạm ngưng bán</DialogTitle>
+            <DialogDescription>
+              Vui lòng nhập lý do tạm ngưng món này (VD: Hết nguyên liệu, đang bảo trì máy móc,...)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Lý do</Label>
+              <Input
+                id="reason"
+                placeholder="Nhập lý do..."
+                value={tempReason}
+                onChange={(e) => setTempReason(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleConfirmUnavailable();
+                }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsReasonModalOpen(false)}
+              disabled={isUpdatingReason}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmUnavailable}
+              disabled={isUpdatingReason}
+              className="bg-roast hover:bg-roast/90 text-white"
+            >
+              {isUpdatingReason && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Xác nhận tạm ngưng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

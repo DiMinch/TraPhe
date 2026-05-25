@@ -326,19 +326,21 @@ export default function ProductDetailPage() {
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Supplier</p>
-                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0">
-                      {product.supplierName}
-                    </Badge>
+                    <p className="text-sm text-slate-500 mb-1">Base Price</p>
+                    <p className="text-base font-semibold text-slate-800">
+                      {product.basePrice !== null && product.basePrice !== undefined
+                        ? `${product.basePrice.toLocaleString()}đ`
+                        : "-"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500 mb-1">
-                      Warranty Period
+                      Preparation Time
                     </p>
                     <p className="text-base font-medium text-slate-700">
-                      {product.warrantyPeriod
-                        ? `${product.warrantyPeriod} months`
-                        : "No warranty"}
+                      {product.preparationTime
+                        ? `${product.preparationTime} minutes`
+                        : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -434,7 +436,7 @@ export default function ProductDetailPage() {
                           Selling Price
                         </p>
                         <p className="text-2xl font-bold text-green-600 mb-3">
-                          {variant.sellingPrice.toLocaleString()}Ä‘
+                          {variant.sellingPrice.toLocaleString()}đ
                         </p>
                         <div className="flex gap-2">
                           <Button
@@ -473,6 +475,39 @@ export default function ProductDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Toppings Card */}
+        {product.allowToppings && (
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">
+                Available Toppings
+              </h3>
+              {product.availableToppings && product.availableToppings.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {product.availableToppings.map((topping) => (
+                    <div
+                      key={topping.id}
+                      className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-slate-800">{topping.name}</p>
+                        <p className="text-sm text-green-600 mt-1">
+                          +{topping.extraPrice.toLocaleString()}đ
+                        </p>
+                      </div>
+                      <Badge className={topping.available ? "bg-green-100 text-green-700 border-0" : "bg-red-100 text-red-700 border-0"}>
+                        {topping.available ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-sm italic">No toppings assigned to this product.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Edit Variant Dialog */}

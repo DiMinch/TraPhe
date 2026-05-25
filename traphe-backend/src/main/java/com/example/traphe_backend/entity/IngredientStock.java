@@ -57,5 +57,6 @@ public class IngredientStock {
     private LocalDateTime lastUpdated;
 
     @Version
-    private Long version;
+    @Builder.Default
+    private Long version = 0L;
 }

@@ -23,7 +23,7 @@ export interface PromotionResponse {
   perUserLimit: number;
   startDate: string;
   endDate: string;
-  isActive: boolean;
+  active: boolean;
   createdAt: string;
 
   // Frontend compatibility fields
@@ -39,6 +39,8 @@ export interface PromotionResponse {
   conflictingPromotionIds?: string[];
   hasQuota?: boolean;
   remainingQuota?: number;
+  dailyStartTime?: string | null;
+  dailyEndTime?: string | null;
 }
 
 export interface PromotionRequest {
@@ -64,6 +66,27 @@ export interface PromotionRequest {
   applicableProductIds?: string[];
   applicableCustomerTiers?: string[];
   conflictingPromotionIds?: string[];
+  dailyStartTime?: string | null;
+  dailyEndTime?: string | null;
+}
+
+export interface VoucherBatchRequest {
+  batchName: string;
+  prefix: string;
+  quantity: number;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface VoucherBatchResponse {
+  batchName: string;
+  prefix: string;
+  quantity: number;
+  codes: string[];
 }
 
 export interface PromotionUsageReportResponse {
@@ -191,6 +214,14 @@ export const promotionService = {
       const errMsg = error.response?.data?.message || error.message || "Mã khuyến mãi không tồn tại hoặc đã hết hạn";
       throw new Error(errMsg);
     }
+  },
+
+  // === Admin Voucher Batch ===
+  generateVoucherBatch: async (data: VoucherBatchRequest) => {
+    return axiosClient.post<any, ApiResponse<VoucherBatchResponse>>(
+      "/admin/vouchers/batch",
+      data,
+    );
   },
 
   // ======================== Customer Voucher APIs ========================

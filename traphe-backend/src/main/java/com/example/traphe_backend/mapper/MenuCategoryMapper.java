@@ -14,10 +14,13 @@ public class MenuCategoryMapper {
         return MenuCategoryResponse.builder()
                 .id(category.getId())
                 .name(category.getName())
+                .description(category.getDescription())
                 .parentId(category.getParent() != null ? category.getParent().getId() : null)
+                .parentName(category.getParent() != null ? category.getParent().getName() : null)
                 .displayOrder(category.getDisplayOrder())
                 .imageUrl(category.getImageUrl())
                 .isDrinkCategory(category.isDrinkCategory())
+                .productCount(category.getProductCount())
                 .build();
     }
 }

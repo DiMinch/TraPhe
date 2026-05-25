@@ -54,7 +54,7 @@ const enrichPromotion = (data: PromotionResponse): PromotionResponse => {
   const perUserLimit = data.perUserLimit || 1;
 
   let status: PromotionStatus = "INACTIVE";
-  if (data.isActive) {
+  if (data.active) {
     const now = new Date();
     const start = new Date(data.startDate);
     const end = new Date(data.endDate);
@@ -252,7 +252,7 @@ export default function PromotionDetailPage() {
       if (updated) {
         setPromotion(enrichPromotion(updated));
         toast.success(
-          `Promotion ${updated.isActive ? "activated" : "deactivated"} successfully`,
+          `Promotion ${updated.active ? "activated" : "deactivated"} successfully`,
         );
       }
     } catch (err: any) {
@@ -364,7 +364,7 @@ export default function PromotionDetailPage() {
           Usage Report
         </Button>
         <Button variant="outline" onClick={handleToggleStatus}>
-          {promotion.isActive ? (
+          {promotion.active ? (
             <>
               <ToggleRight className="mr-2 w-4 h-4" />
               Deactivate

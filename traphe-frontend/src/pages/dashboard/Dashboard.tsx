@@ -48,6 +48,7 @@ import { orderService, type OrderResponse } from "@/services/order.service";
 import { customerService } from "@/services/customer.service";
 import { auditLogService } from "@/services/audit-log.service";
 import { authService } from "@/services/auth.service";
+import { branchStockService, type IngredientStockResponse } from "@/services/branch-stock.service";
 import type { Customer } from "@/types/customer.types";
 
 const chartConfig = {
@@ -88,9 +89,8 @@ interface TopProduct {
 
 interface LowStockItem {
   id: string;
-  productName: string;
-  variantName: string;
-  sku: string;
+  ingredientName: string;
+  unit: string;
   quantityAvailable: number;
   minThreshold: number;
   isOutOfStock: boolean;
@@ -213,7 +213,7 @@ export default function DashboardPage() {
           limit: 5,
           sortBy: "REVENUE",
         }),
-        reportService.getInventoryReport({}), // Get all inventory, not just low stock
+        branchStockService.getStock("", "", false), // Get all inventory to find low stock ingredients
         orderService.getAllOrders({ page: 0, size: 100 }),
         customerService.getCustomers(),
         auditLogService.getAllAuditLogs({ size: 5 }),
@@ -456,41 +456,39 @@ export default function DashboardPage() {
         // If API returns empty, the calculated products from orders will be used (set earlier)
       }
 
-      // Process inventory (low stock items first, then all items if none are low)
+      // Process inventory (low stock ingredients first, then all items if none are low)
       if (
         inventoryResponse.status === "fulfilled" &&
         inventoryResponse.value.data
       ) {
-        const inventoryData = inventoryResponse.value.data;
-        const allItems = inventoryData.items || [];
+        const inventoryData = inventoryResponse.value.data as any;
+        const allItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.content || []);
 
         // First try to get low stock items
         let lowStock = allItems
-          .filter((item) => item.isLowStock || item.isOutOfStock)
+          .filter((item: IngredientStockResponse) => item.isLowStock || item.quantityAvailable <= 0)
           .slice(0, 5)
-          .map((item) => ({
-            id: item.productVariantId,
-            productName: item.productName,
-            variantName: item.variantName,
-            sku: item.sku,
+          .map((item: IngredientStockResponse) => ({
+            id: item.id,
+            ingredientName: item.ingredientName,
+            unit: item.unit,
             quantityAvailable: item.quantityAvailable,
-            minThreshold: item.minThreshold,
-            isOutOfStock: item.isOutOfStock,
+            minThreshold: item.minStockAlert,
+            isOutOfStock: item.quantityAvailable <= 0,
           }));
 
         // If no low stock items, show items with lowest stock
         if (lowStock.length === 0 && allItems.length > 0) {
           lowStock = allItems
-            .sort((a, b) => a.quantityAvailable - b.quantityAvailable)
+            .sort((a: IngredientStockResponse, b: IngredientStockResponse) => a.quantityAvailable - b.quantityAvailable)
             .slice(0, 5)
-            .map((item) => ({
-              id: item.productVariantId,
-              productName: item.productName,
-              variantName: item.variantName,
-              sku: item.sku,
+            .map((item: IngredientStockResponse) => ({
+              id: item.id,
+              ingredientName: item.ingredientName,
+              unit: item.unit,
               quantityAvailable: item.quantityAvailable,
-              minThreshold: item.minThreshold,
-              isOutOfStock: item.quantityAvailable === 0,
+              minThreshold: item.minStockAlert,
+              isOutOfStock: item.quantityAvailable <= 0,
             }));
         }
 
@@ -636,8 +634,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-6 mb-space-8">
         {/* Revenue Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel flex-shrink-0">
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -661,8 +659,8 @@ export default function DashboardPage() {
 
         {/* Gross Profit Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast flex-shrink-0">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -679,8 +677,8 @@ export default function DashboardPage() {
 
         {/* Orders Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast flex-shrink-0">
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -697,8 +695,8 @@ export default function DashboardPage() {
 
         {/* Customers Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel flex-shrink-0">
               <Users className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -903,21 +901,21 @@ export default function DashboardPage() {
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-space-6 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
-                    <TableHead className="py-3 text-xs font-semibold text-dust w-12">
+                    <TableHead className="py-4 text-xs font-semibold text-dust w-12">
                       #
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
                       Product
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Sold
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Revenue
                     </TableHead>
                   </TableRow>
@@ -928,7 +926,7 @@ export default function DashboardPage() {
                       key={product.sku}
                       className="border-admin-border/60 hover:bg-surface-container-low transition-colors"
                     >
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <Badge
                           variant={product.rank === 1 ? "default" : "outline"}
                           className={`font-bold ${product.rank === 1 ? "bg-roast text-white border-0" : product.rank === 2 ? "bg-cream text-roast border-0" : product.rank === 3 ? "bg-parchment text-roast border-0" : ""}`}
@@ -936,7 +934,7 @@ export default function DashboardPage() {
                           {product.rank}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <div>
                           <p className="font-semibold text-ink text-sm line-clamp-1">
                             {product.productName}
@@ -946,10 +944,10 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-ink">
+                      <TableCell className="py-4 text-right font-bold text-ink">
                         {product.quantitySold.toLocaleString()}
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-roast">
+                      <TableCell className="py-4 text-right font-bold text-roast">
                         {formatCurrency(product.totalRevenue)}
                       </TableCell>
                     </TableRow>
@@ -999,18 +997,18 @@ export default function DashboardPage() {
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-space-6 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
-                      Product
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
+                      Ingredient
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
-                      SKU
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
+                      Unit
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Stock
                     </TableHead>
                   </TableRow>
@@ -1021,25 +1019,20 @@ export default function DashboardPage() {
                       key={item.id}
                       className="border-admin-border/60 hover:bg-error-container/40 transition-colors"
                     >
-                      <TableCell className="py-3">
-                        <div>
-                          <p className="font-semibold text-ink text-sm line-clamp-1">
-                            {item.productName}
-                          </p>
-                          <p className="text-xs text-dust">
-                            {item.variantName}
-                          </p>
-                        </div>
+                      <TableCell className="py-4">
+                        <p className="font-semibold text-ink text-sm line-clamp-1">
+                          {item.ingredientName}
+                        </p>
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <Badge
                           variant="outline"
                           className="font-mono text-xs bg-surface-container-low"
                         >
-                          {item.sku}
+                          {item.unit}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-4 text-right">
                         <Badge
                           variant={
                             item.isOutOfStock ? "destructive" : "secondary"
@@ -1085,7 +1078,7 @@ export default function DashboardPage() {
               Pending Orders
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="space-y-space-3">
               {pendingOrders.map((order) => (
                 <div
@@ -1135,7 +1128,7 @@ export default function DashboardPage() {
               Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="space-y-space-3">
               {auditLogs.map((log) => (
                 <div

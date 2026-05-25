@@ -64,6 +64,22 @@ public class OrderController {
     }
 
     /**
+     * GET /api/orders/customer/{customerId} — Lịch sử đơn hàng của 1 khách hàng cụ thể (Admin, Cashier).
+     */
+    @GetMapping("/customer/{customerId}")
+    @Operation(summary = "Lịch sử đơn hàng của khách hàng (Admin/Cashier)",
+            description = "Lấy danh sách đơn hàng của một khách hàng cụ thể. Phân trang, sắp xếp mới nhất.")
+    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getCustomerOrders(
+            @org.springframework.web.bind.annotation.PathVariable UUID customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<OrderResponse> orders = orderService.getCustomerOrders(customerId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(orders, "Lịch sử đơn hàng của khách hàng"));
+    }
+
+    /**
      * GET /api/orders/user — Lịch sử đơn hàng của user đang đăng nhập.
      */
     @GetMapping("/user")

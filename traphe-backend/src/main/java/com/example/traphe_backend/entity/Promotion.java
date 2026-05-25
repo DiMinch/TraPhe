@@ -14,6 +14,12 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Set;
+import java.util.UUID;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.JoinColumn;
 
 /**
  * Chương trình khuyến mãi / Voucher.
@@ -90,6 +96,26 @@ public class Promotion extends BaseEntity {
     @Column(name = "scope", nullable = false, length = 20)
     @Builder.Default
     private PromotionScope scope = PromotionScope.PUBLIC;
+
+    /** Khung giờ bắt đầu happy hour (hàng ngày) */
+    @Column(name = "daily_start_time")
+    private LocalTime dailyStartTime;
+
+    /** Khung giờ kết thúc happy hour (hàng ngày) */
+    @Column(name = "daily_end_time")
+    private LocalTime dailyEndTime;
+
+    /** Danh sách category được áp dụng (nếu scope = CATEGORY) */
+    @ElementCollection
+    @CollectionTable(name = "promotion_categories", joinColumns = @JoinColumn(name = "promotion_id"))
+    @Column(name = "category_id")
+    private Set<UUID> applicableCategoryIds;
+
+    /** Danh sách product được áp dụng (nếu scope = PRODUCT) */
+    @ElementCollection
+    @CollectionTable(name = "promotion_products", joinColumns = @JoinColumn(name = "promotion_id"))
+    @Column(name = "product_id")
+    private Set<UUID> applicableProductIds;
 
     public enum DiscountType {
         PERCENTAGE,

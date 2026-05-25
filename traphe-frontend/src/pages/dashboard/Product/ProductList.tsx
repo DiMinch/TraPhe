@@ -83,10 +83,17 @@ export default function ProductListPage() {
     fetchCategories();
   }, []);
 
+  // Sync URL category filter to state
+  useEffect(() => {
+    if (categoryFilter) {
+      setSelectedCategory(categoryFilter);
+    }
+  }, [categoryFilter]);
+
   // Fetch products from API
   useEffect(() => {
     fetchProducts();
-  }, [categoryFilter]);
+  }, []);
 
   // Filter products based on search and category
   useEffect(() => {
@@ -98,8 +105,7 @@ export default function ProductListPage() {
       filtered = filtered.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
-          product.categoryName?.toLowerCase().includes(query) ||
-          product.supplierName?.toLowerCase().includes(query),
+          product.categoryName?.toLowerCase().includes(query),
       );
     }
 
@@ -122,17 +128,6 @@ export default function ProductListPage() {
       const productList = response.data?.content || [];
 
       setAllProducts(productList);
-
-      // Filter products by category if category filter is provided
-      if (categoryFilter) {
-        const filtered = productList.filter((product) => {
-          // Match products where category name matches
-          return product.categoryName === categoryFilter;
-        });
-        setProducts(filtered);
-      } else {
-        setProducts(productList);
-      }
     } catch (error: unknown) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load products";
@@ -196,7 +191,7 @@ export default function ProductListPage() {
               <div className="relative flex-1 min-w-0 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Search products by name, category, supplier..."
+                  placeholder="Search products by name or category..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20 bg-white"
@@ -246,7 +241,7 @@ export default function ProductListPage() {
                     className="bg-roast/20 text-roast/90 hover:bg-mist cursor-pointer"
                     onClick={() => setSearchQuery("")}
                   >
-                    Search: "{searchQuery}" Ã—
+                    Search: "{searchQuery}" ×
                   </Badge>
                 )}
                 {selectedCategory !== "all" && (
@@ -255,7 +250,7 @@ export default function ProductListPage() {
                     className="bg-purple-100 text-purple-700 hover:bg-purple-200 cursor-pointer"
                     onClick={() => setSelectedCategory("all")}
                   >
-                    Category: {selectedCategory} Ã—
+                    Category: {selectedCategory} ×
                   </Badge>
                 )}
                 <Button
@@ -316,7 +311,7 @@ export default function ProductListPage() {
                         Category
                       </TableHead>
                       <TableHead className="font-semibold text-slate-700">
-                        Supplier
+                        Base Price
                       </TableHead>
                       <TableHead className="font-semibold text-slate-700">
                         Variants
@@ -352,15 +347,8 @@ export default function ProductListPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-semibold text-slate-800">
-                              {product.name}
-                            </div>
-                            <div className="text-sm text-slate-500">
-                              {product.warrantyPeriod
-                                ? `${product.warrantyPeriod} months warranty`
-                                : "No warranty"}
-                            </div>
+                          <div className="font-semibold text-slate-800">
+                            {product.name}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -368,10 +356,10 @@ export default function ProductListPage() {
                             {product.categoryName || "N/A"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 font-medium">
-                            {product.supplierName || "N/A"}
-                          </Badge>
+                        <TableCell className="font-medium text-slate-700">
+                          {product.basePrice !== null && product.basePrice !== undefined
+                            ? `${product.basePrice.toLocaleString()}đ`
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <span className="text-slate-600 font-medium">

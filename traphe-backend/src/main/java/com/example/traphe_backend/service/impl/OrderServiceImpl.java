@@ -517,11 +517,16 @@ public class OrderServiceImpl implements OrderService {
         // 1. Find order
         Order order = findActiveOrder(orderId);
 
-        // 2. Verify ownership — only the customer who placed the order can cancel
+        // 2. Verify ownership — only the customer who placed the order can cancel (unless they are admin/manager/cashier)
         User customer = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (order.getCustomer() != null && !order.getCustomer().getId().equals(customer.getId())) {
+        boolean isStaff = customer.getRoles().stream()
+                .anyMatch(r -> r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_ADMIN 
+                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_BRANCH_MANAGER 
+                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_CASHIER);
+
+        if (!isStaff && order.getCustomer() != null && !order.getCustomer().getId().equals(customer.getId())) {
             throw new IllegalArgumentException("Bạn không có quyền huỷ đơn hàng này.");
         }
 
@@ -623,6 +628,19 @@ public class OrderServiceImpl implements OrderService {
     public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return orderRepository
+                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
+                .map(this::mapToOrderResponse);
+    }
+
+    // ==========================================
+    // GET /api/orders/customer/{id} — Lịch sử đơn hàng của khách hàng (Admin)
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
+        User user = userRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         return orderRepository
                 .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
                 .map(this::mapToOrderResponse);

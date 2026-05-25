@@ -11,8 +11,10 @@ import com.example.traphe_backend.enums.LoyaltyTransactionType;
 import com.example.traphe_backend.repository.LoyaltyPointRepository;
 import com.example.traphe_backend.repository.LoyaltyPointTransactionRepository;
 import com.example.traphe_backend.repository.MembershipTierRepository;
+import com.example.traphe_backend.event.TierUpgradeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         private final LoyaltyPointRepository loyaltyPointRepository;
         private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
         private final MembershipTierRepository membershipTierRepository;
+        private final ApplicationEventPublisher eventPublisher;
 
         private static final BigDecimal POINT_UNIT = new BigDecimal("1000"); // 1 point per 1,000 VND (base rate)
 
@@ -44,7 +47,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 if (order.getFinalAmount().compareTo(BigDecimal.ZERO) <= 0)
                         return;
 
-                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPoint(customer);
+                // Use PESSIMISTIC_WRITE lock to prevent race conditions
+                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPointForUpdate(customer);
 
                 // Determine earning rate from membership tier
                 BigDecimal earningRate = BigDecimal.ONE; // Default base rate
@@ -101,12 +105,13 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 if (pointsToRedeem <= 0)
                         return BigDecimal.ZERO;
 
-                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPoint(customer);
+                // Use PESSIMISTIC_WRITE lock to prevent race conditions (e.g. double spend)
+                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPointForUpdate(customer);
 
                 if (loyaltyPoint.getPointsAvailable() < pointsToRedeem) {
                         throw new IllegalArgumentException(
                                         "Không đủ điểm. Hiện có: " + loyaltyPoint.getPointsAvailable()
-                                                        + ", yêu cầu: " + pointsToRedeem);
+                                                         + ", yêu cầu: " + pointsToRedeem);
                 }
 
                 // Deduct points
@@ -139,7 +144,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 if (pointsToRefund <= 0)
                         return;
 
-                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPoint(user);
+                // Use PESSIMISTIC_WRITE lock to prevent race conditions
+                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPointForUpdate(user);
 
                 // Update points
                 loyaltyPoint.setPointsAvailable(loyaltyPoint.getPointsAvailable() + pointsToRefund);
@@ -171,15 +177,16 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                                 .findFirstByIsActiveTrueAndIsDeletedFalseAndMinSpendingLessThanEqualOrderByTierLevelDesc(
                                                 loyaltyPoint.getTotalSpending())
                                 .ifPresent(eligibleTier -> {
-                                        if (currentTier == null
-                                                        || eligibleTier.getTierLevel() > currentTier.getTierLevel()) {
-                                                loyaltyPoint.setMembershipTier(eligibleTier);
-                                                loyaltyPointRepository.save(loyaltyPoint);
+                                         if (currentTier == null
+                                                         || eligibleTier.getTierLevel() > currentTier.getTierLevel()) {
+                                                 loyaltyPoint.setMembershipTier(eligibleTier);
+                                                 loyaltyPointRepository.save(loyaltyPoint);
 
-                                                log.info("🎉 User {} upgraded to tier '{}' (total spending: {} VND)",
-                                                                customer.getEmail(), eligibleTier.getName(),
-                                                                loyaltyPoint.getTotalSpending());
-                                        }
+                                                 log.info("🎉 User {} upgraded to tier '{}' (total spending: {} VND)",
+                                                                 customer.getEmail(), eligibleTier.getName(),
+                                                                 loyaltyPoint.getTotalSpending());
+                                                 eventPublisher.publishEvent(new TierUpgradeEvent(this, customer, eligibleTier));
+                                         }
                                 });
         }
 
@@ -198,6 +205,25 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                                         .membershipTier(defaultTier)
                                         .build();
                         return loyaltyPointRepository.save(newRecord);
+                }
+
+                if (lp.getMembershipTier() == null) {
+                        MembershipTier defaultTier = membershipTierRepository
+                                        .findByIsActiveTrueAndIsDeletedFalseOrderByTierLevelAsc()
+                                        .stream().findFirst().orElse(null);
+                        if (defaultTier != null) {
+                                lp.setMembershipTier(defaultTier);
+                                lp = loyaltyPointRepository.save(lp);
+                        }
+                }
+                return lp;
+        }
+
+        private LoyaltyPoint getOrCreateLoyaltyPointForUpdate(User user) {
+                LoyaltyPoint lp = loyaltyPointRepository.findByUserIdForUpdate(user.getId()).orElse(null);
+                if (lp == null) {
+                        // Fallback to standard creation (which saves it under transaction)
+                        return getOrCreateLoyaltyPoint(user);
                 }
 
                 if (lp.getMembershipTier() == null) {

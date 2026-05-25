@@ -304,7 +304,7 @@ export default function StockAdjustPage() {
 
               <div className="pt-6 flex justify-end gap-3">
                 <Button variant="outline" onClick={() => navigate(-1)}>Hủy bỏ</Button>
-                <Button className="bg-roast hover:bg-roast/90 w-40" onClick={handleSubmit} disabled={submitting || adjustmentItems.length === 0}>
+                <Button className="bg-roast hover:bg-roast/90 px-6 py-2 h-10 w-auto" onClick={handleSubmit} disabled={submitting || adjustmentItems.length === 0}>
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   Lưu điều chỉnh
                 </Button>

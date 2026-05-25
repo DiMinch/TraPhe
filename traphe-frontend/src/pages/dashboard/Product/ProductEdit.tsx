@@ -25,7 +25,7 @@ import { categoryService } from "@/services/category.service";
 import type { Product, ToppingOption } from "@/types/product.types";
 import type { Category } from "@/types/category.types";
 import { toast } from "sonner";
-import { ArrowLeft, Image as ImageIcon, X, Plus } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, Plus, Loader2 } from "lucide-react";
 import { PageContainer } from "@/components/layout/PageLayout";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -39,7 +39,7 @@ interface SizeFormData {
 export default function ProductEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   
@@ -129,14 +129,14 @@ export default function ProductEditPage() {
           }
         }
 
-        // Selected toppings might need fetching from another endpoint if product detail returns it
-        if ((prod as any).toppingIds) {
-           setSelectedToppings((prod as any).toppingIds);
+        // Initialize selected toppings from the product's assigned toppings
+        if (prod.availableToppings && prod.availableToppings.length > 0) {
+          setSelectedToppings(prod.availableToppings.map((t: ToppingOption) => t.id));
         }
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to load product";
+        error.response?.data?.message || error.message || "Failed to load product";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -144,8 +144,15 @@ export default function ProductEditPage() {
   };
 
   const handleUpdate = async () => {
-    if (!formData.name || !formData.categoryId || formData.basePrice === "") {
-      toast.error("Please fill in required fields (Name, Category, Base Price)");
+    const missing: string[] = [];
+    if (!formData.name?.trim()) missing.push("Name");
+    if (!formData.categoryId) missing.push("Category");
+    if (sizes.length === 0 && (formData.basePrice === "" || formData.basePrice === null || formData.basePrice === undefined)) {
+      missing.push("Base Price");
+    }
+    
+    if (missing.length > 0) {
+      toast.error(`Vui lòng điền: ${missing.join(", ")}`);
       return;
     }
 
@@ -164,7 +171,7 @@ export default function ProductEditPage() {
           name: formData.name,
           categoryId: formData.categoryId,
           description: formData.description || undefined,
-          basePrice: Number(formData.basePrice),
+          basePrice: formData.basePrice !== "" && formData.basePrice !== null && formData.basePrice !== undefined ? Number(formData.basePrice) : undefined,
           preparationTime: formData.preparationTime ? Number(formData.preparationTime) : undefined,
           isDrink: formData.isDrink,
           allowToppings: formData.allowToppings,
@@ -182,9 +189,9 @@ export default function ProductEditPage() {
         toast.success("Product updated successfully");
         navigate("/admin/menu/items");
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to update product";
+        error.response?.data?.message || error.message || "Failed to update product";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -211,11 +218,26 @@ export default function ProductEditPage() {
     setSizes(newSizes);
   };
 
-  if (loading && !product) {
+  if (loading) {
     return (
-      <div className="p-6">
-        <div className="text-center py-10">Loading product...</div>
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-roast" />
+        <span className="mt-4 text-slate-500 font-medium">Loading product...</span>
       </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <PageContainer>
+        <div className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-100 p-6">
+          <h2 className="text-xl font-semibold text-slate-800">Product not found</h2>
+          <p className="text-slate-500 mt-2">The product could not be loaded or does not exist.</p>
+          <Button onClick={() => navigate("/admin/menu/items")} className="mt-4 bg-roast text-white">
+            Back to Products
+          </Button>
+        </div>
+      </PageContainer>
     );
   }
 
@@ -269,7 +291,7 @@ export default function ProductEditPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="basePrice">Base Price (Ä‘) <span className="text-red-500">*</span></Label>
+              <Label htmlFor="basePrice">Base Price (đ) <span className="text-red-500">*</span></Label>
               <Input
                 id="basePrice"
                 type="number"
@@ -383,7 +405,7 @@ export default function ProductEditPage() {
                 <TableHeader className="bg-slate-50">
                   <TableRow>
                     <TableHead>Size Name</TableHead>
-                    <TableHead>Price (Ä‘)</TableHead>
+                    <TableHead>Price (đ)</TableHead>
                     <TableHead className="w-[100px]">Order</TableHead>
                     <TableHead className="w-[60px]"></TableHead>
                   </TableRow>
@@ -453,7 +475,7 @@ export default function ProductEditPage() {
                     <Label htmlFor={`topping-${topping.id}`} className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                       {topping.name}
                     </Label>
-                    <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}Ä‘</span>
+                    <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}đ</span>
                   </div>
                 </div>
               ))}

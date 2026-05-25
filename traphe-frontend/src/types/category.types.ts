@@ -1,12 +1,3 @@
-export interface CategorySpec {
-  id: string;
-  specKey: string;
-  specName: string;
-  isRequired: boolean;
-  dataType: string;
-  options: string[];
-}
-
 export interface Category {
   id: string;
   name: string;
@@ -14,7 +5,6 @@ export interface Category {
   parentId?: string;
   parentName?: string;
   imageUrl?: string;
-  specs: CategorySpec[];
   relatedCategoryIds: string[];
 }
 
@@ -36,13 +26,4 @@ export interface UpdateCategoryRequest {
   description?: string;
   parentId?: string;
   relatedCategoryIds?: string[];
-}
-
-export interface CreateCategorySpecRequest {
-  categoryId: string;
-  specKey: string;
-  specName: string;
-  isRequired: boolean;
-  dataType: string;
-  options?: string[];
 }

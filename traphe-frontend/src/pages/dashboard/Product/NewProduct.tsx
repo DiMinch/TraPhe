@@ -122,8 +122,15 @@ export default function NewProductDialog({
   };
 
   const handleCreateProduct = async () => {
-    if (!formData.name || !formData.categoryId || formData.basePrice === "") {
-      toast.error("Please fill in required fields (Name, Category, Base Price)");
+    const missing: string[] = [];
+    if (!formData.name?.trim()) missing.push("Name");
+    if (!formData.categoryId) missing.push("Category");
+    if (sizes.length === 0 && (formData.basePrice === "" || formData.basePrice === null || formData.basePrice === undefined)) {
+      missing.push("Base Price");
+    }
+    
+    if (missing.length > 0) {
+      toast.error(`Vui lòng điền: ${missing.join(", ")}`);
       return;
     }
 
@@ -141,7 +148,7 @@ export default function NewProductDialog({
           name: formData.name,
           categoryId: formData.categoryId,
           description: formData.description || undefined,
-          basePrice: Number(formData.basePrice),
+          basePrice: formData.basePrice !== "" && formData.basePrice !== null && formData.basePrice !== undefined ? Number(formData.basePrice) : undefined,
           preparationTime: formData.preparationTime ? Number(formData.preparationTime) : undefined,
           isDrink: formData.isDrink,
           allowToppings: formData.allowToppings,
@@ -160,9 +167,9 @@ export default function NewProductDialog({
         onAdd(response.data);
         onOpenChange(false);
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       const errorMsg =
-        error instanceof Error ? error.message : "Failed to create product";
+        error.response?.data?.message || error.message || "Failed to create product";
       toast.error(errorMsg);
     } finally {
       setLoading(false);
@@ -206,7 +213,7 @@ export default function NewProductDialog({
                   <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
-                    placeholder="e.g. CÃ  phÃª sá»¯a Ä‘Ã¡"
+                    placeholder="e.g. Cà phê sữa đá"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -233,7 +240,7 @@ export default function NewProductDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="basePrice">Base Price (Ä‘) <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="basePrice">Base Price (đ) <span className="text-red-500">*</span></Label>
                   <Input
                     id="basePrice"
                     type="number"
@@ -338,7 +345,7 @@ export default function NewProductDialog({
                     <TableHeader className="bg-slate-50">
                       <TableRow>
                         <TableHead>Size Name</TableHead>
-                        <TableHead>Price (Ä‘)</TableHead>
+                        <TableHead>Price (đ)</TableHead>
                         <TableHead className="w-[100px]">Order</TableHead>
                         <TableHead className="w-[60px]"></TableHead>
                       </TableRow>
@@ -405,7 +412,7 @@ export default function NewProductDialog({
                         <Label htmlFor={`topping-${topping.id}`} className="cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                           {topping.name}
                         </Label>
-                        <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}Ä‘</span>
+                        <span className="text-xs text-slate-500 mt-1">+{topping.extraPrice?.toLocaleString()}đ</span>
                       </div>
                     </div>
                   ))}

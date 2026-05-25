@@ -5,10 +5,7 @@ export interface SystemConfigResponse {
   id: string;
   configKey: string;
   configValue: string;
-  dataType: string;
   description: string | null;
-  isEncrypted: boolean;
-  createdBy: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -16,12 +13,10 @@ export interface SystemConfigResponse {
 export interface SystemConfigRequest {
   configKey: string;
   configValue: string;
-  dataType: string;
   description?: string;
-  isEncrypted?: boolean;
 }
 
-const BASE_URL = "/system-config";
+const BASE_URL = "/admin/system-config";
 
 export const systemConfigService = {
   // Get all system configs
@@ -35,13 +30,6 @@ export const systemConfigService = {
   getConfigById: async (id: string) => {
     return axiosClient.get<unknown, ApiResponse<SystemConfigResponse>>(
       `${BASE_URL}/${id}`,
-    );
-  },
-
-  // Get config by key
-  getConfigByKey: async (key: string) => {
-    return axiosClient.get<unknown, ApiResponse<SystemConfigResponse>>(
-      `${BASE_URL}/key/${key}`,
     );
   },
 

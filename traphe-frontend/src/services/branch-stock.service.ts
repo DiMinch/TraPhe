@@ -4,6 +4,7 @@ import type { ApiResponse, PageResponse } from "@/types/api.types";
 export interface IngredientStockResponse {
   id: string;
   branchId: string;
+  branchName: string;
   ingredientId: string;
   ingredientName: string;
   unit: string;
@@ -43,7 +44,7 @@ export interface StockTransactionResponse {
 }
 
 export const branchStockService = {
-  getStock: async (branchId: string, searchName?: string, lowStockOnly?: boolean) => {
+  getStock: async (branchId?: string, searchName?: string, lowStockOnly?: boolean) => {
     return axiosClient.get<any, ApiResponse<IngredientStockResponse[]>>("/branch/stock", {
       params: { branchId, searchName, lowStockOnly }
     });

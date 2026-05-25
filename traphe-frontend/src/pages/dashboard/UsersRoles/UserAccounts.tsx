@@ -1,22 +1,12 @@
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -43,17 +33,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Search,
-  Plus,
-  Trash2,
-  Filter,
   Loader2,
   Users,
-  MoreHorizontal,
-  UserCheck,
-  UserX,
-  Ban,
-  Shield,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
@@ -70,7 +51,6 @@ import axiosClient from "@/lib/axios-client";
 import { toast } from "sonner";
 import {
   PageContainer,
-  PageHeader,
   EmptyState,
 } from "@/components/layout/PageLayout";
 
@@ -122,6 +102,7 @@ export default function UserAccountsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [roleFilter, setRoleFilter] = useState("all-role");
+  const [branchFilter, setBranchFilter] = useState("all-branch");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -161,7 +142,7 @@ export default function UserAccountsPage() {
   useEffect(() => {
     filterUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, statusFilter, roleFilter, userAccounts]);
+  }, [searchTerm, statusFilter, roleFilter, branchFilter, userAccounts]);
 
   const fetchUsers = async () => {
     try {
@@ -257,8 +238,113 @@ export default function UserAccountsPage() {
       );
     }
 
+    // Branch filter
+    if (branchFilter !== "all-branch") {
+      filtered = filtered.filter(
+        (user) => user.branchId === branchFilter,
+      );
+    }
+
     setFilteredUsers(filtered);
     setCurrentPage(1);
+  };
+
+  const handleExportCSV = () => {
+    const headers = ["ID", "Full Name", "Username", "Email", "Phone", "Roles", "Status", "Branch"];
+    const rows = filteredUsers.map(u => [
+      u.id,
+      u.fullName,
+      u.username,
+      u.email,
+      u.phone,
+      u.roles.join("; "),
+      u.status,
+      u.branchName || ""
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `staff_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getRoleBadge = (roles: string[]) => {
+    if (!roles || roles.length === 0) return <span className="text-slate-400">—</span>;
+    const roleName = roles[0];
+    const cleanRole = roleName.replace("ROLE_", "");
+    let icon = "person";
+    let bg = "bg-stone-50 text-stone-700 border-stone-100";
+    
+    if (cleanRole === "ADMIN") {
+      icon = "shield";
+      bg = "bg-red-50 text-red-700 border-red-100";
+    } else if (cleanRole === "BRANCH_MANAGER" || cleanRole === "MANAGER") {
+      icon = "storefront";
+      bg = "bg-purple-50 text-purple-700 border-purple-100";
+    } else if (cleanRole === "BARISTA") {
+      icon = "local_cafe";
+      bg = "bg-blue-50 text-blue-700 border-blue-100";
+    } else if (cleanRole === "CASHIER") {
+      icon = "point_of_sale";
+      bg = "bg-orange-50 text-orange-700 border-orange-100";
+    }
+
+    const displayName = cleanRole === "BRANCH_MANAGER" ? "Branch Manager" : cleanRole.charAt(0) + cleanRole.slice(1).toLowerCase();
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${bg}`}>
+        <span className="material-symbols-outlined text-[14px]">{icon}</span>
+        {displayName}
+      </span>
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusUpper = status?.toUpperCase();
+    switch (statusUpper) {
+      case "ACTIVE":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs font-medium border border-green-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+            Active
+          </span>
+        );
+      case "INACTIVE":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 text-slate-700 text-xs font-medium border border-slate-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            Inactive
+          </span>
+        );
+      case "SUSPENDED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-medium border border-red-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            Suspended
+          </span>
+        );
+      case "TERMINATED":
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-medium border border-red-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+            Terminated
+          </span>
+        );
+      case "PENDING":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-800 text-xs font-medium border border-yellow-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+            On Leave
+          </span>
+        );
+    }
   };
 
   // Calculate pagination
@@ -363,8 +449,9 @@ export default function UserAccountsPage() {
   const handleViewUser = async (userId: string) => {
     try {
       const response = await adminService.getUserById(userId);
-      if (response.data) {
-        setUserDetails(staffToUserAccount(response.data as any));
+      const rawData = (response as any)?.data ?? response;
+      if (rawData) {
+        setUserDetails(staffToUserAccount(rawData as any));
         setIsUserDetailsOpen(true);
       }
     } catch (error: any) {
@@ -454,306 +541,286 @@ export default function UserAccountsPage() {
 
   return (
     <PageContainer>
-      <PageHeader
-        title="User Accounts"
-        subtitle="Manage system users and their roles"
-        onRefresh={fetchUsers}
-      />
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap justify-end gap-3 mb-6">
-        <Button
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="bg-roast hover:bg-roast/90 text-white shadow-md transition-all duration-200"
-        >
-          <Plus className="mr-2 w-4 h-4" />
-          New User
-        </Button>
+      {/* Header Section */}
+      <div className="flex justify-between items-end mb-6">
+        <div>
+          <h1 className="font-ui-heading text-xl font-bold text-espresso">Staff Management</h1>
+          <p className="text-smoke mt-1 text-sm">Manage employee profiles, roles, and branch assignments.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-4 py-2 border border-admin-border rounded-lg text-espresso bg-white hover:bg-cream transition-colors text-sm font-medium shadow-none h-10"
+            variant="outline"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export
+          </Button>
+          <Button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-roast text-white rounded-lg hover:bg-caramel transition-colors text-sm font-medium border-0 h-10"
+          >
+            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            Add New Staff
+          </Button>
+        </div>
       </div>
 
-      {/* Main Card */}
-      <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
-        <CardContent className="p-0">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-4 p-6 bg-gradient-to-r from-slate-50/80 to-foam border-b border-slate-200/60">
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                placeholder="Search by name, email, or phone..."
-                className="pl-10 border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 bg-white shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 border-slate-200 hover:bg-white hover:border-roast rounded-lg h-10 w-10 shadow-sm transition-all duration-200"
-            >
-              <Filter className="w-4 h-4" />
-            </Button>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
-                <SelectValue placeholder="All status" />
+      {/* Filters & Search Bar */}
+      <div className="bg-admin-surface border border-admin-border rounded-lg p-4 mb-6 flex flex-wrap gap-4 items-center justify-between shadow-sm">
+        <div className="flex flex-wrap gap-4 flex-1">
+          <div className="relative w-full max-w-md">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-[20px]">search</span>
+            <Input
+              className="w-full pl-10 pr-4 py-2.5 bg-admin-bg border border-admin-border rounded-lg text-sm focus:outline-none focus-visible:ring-0 focus:border-roast focus:ring-1 focus:ring-roast transition-colors h-10 shadow-none"
+              placeholder="Search by name, email, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-3">
+            <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <SelectTrigger className="py-2.5 pl-4 pr-8 bg-admin-bg border border-admin-border rounded-lg text-sm focus:outline-none focus:border-roast focus:ring-1 focus:ring-roast text-espresso appearance-none font-medium h-10 w-48 shadow-none">
+                <SelectValue placeholder="All Branches" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 shadow-lg">
-                <SelectItem value="all-status">All status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
+              <SelectContent className="bg-white border border-admin-border rounded-lg">
+                <SelectItem value="all-branch">All Branches</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-44 border-slate-200 bg-white rounded-lg h-10 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20">
-                <SelectValue placeholder="All role" />
+              <SelectTrigger className="py-2.5 pl-4 pr-8 bg-admin-bg border border-admin-border rounded-lg text-sm focus:outline-none focus:border-roast focus:ring-1 focus:ring-roast text-espresso appearance-none font-medium h-10 w-48 shadow-none">
+                <SelectValue placeholder="All Roles" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 shadow-lg">
-                <SelectItem value="all-role">All role</SelectItem>
+              <SelectContent className="bg-white border border-admin-border rounded-lg">
+                <SelectItem value="all-role">All Roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="branch_manager">Branch Manager</SelectItem>
                 <SelectItem value="cashier">Cashier</SelectItem>
                 <SelectItem value="barista">Barista</SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="p-6">
-            {/* Table */}
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-mist flex items-center justify-center animate-pulse">
-                  <Loader2 className="w-8 h-8 animate-spin text-roast" />
-                </div>
-                <span className="mt-4 text-slate-600 font-medium">
-                  Loading users...
-                </span>
-              </div>
-            ) : currentUsers.length === 0 ? (
-              <EmptyState
-                icon={<Users className="w-8 h-8 text-slate-400" />}
-                title="No users found"
-                description="Try adjusting your search or filter criteria"
-              />
-            ) : (
-              <div className="rounded-xl border border-slate-200/60 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100/50">
-                      <TableHead className="font-semibold text-slate-700">
-                        Name/Username
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Phone
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Email
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Role
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Status
-                      </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Chi nhánh
-                      </TableHead>
-                      <TableHead className="text-center font-semibold text-slate-700">
-                        Actions
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentUsers.map((user) => (
-                      <TableRow
-                        key={user.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
-                      >
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-slate-800">
-                              {user.fullName || "N/A"}
-                            </div>
-                            <div className="text-sm text-slate-500">
-                              {user.username}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-slate-600">
-                          {user.phone || "N/A"}
-                        </TableCell>
-                        <TableCell className="text-slate-600">
-                          {user.email}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {user.roles?.map((role, index) => (
-                              <Badge
-                                key={index}
-                                className="bg-foam text-primary hover:bg-foam border-0 rounded-full px-3"
-                              >
-                                {role.replace("ROLE_", "")}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`rounded-full px-3 ${getStatusColor(user.status)}`}
-                          >
-                            {user.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-slate-600 text-sm">
-                          {user.branchName || <span className="text-slate-400">—</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-9 w-9 rounded-lg hover:bg-slate-100 transition-colors"
-                                  disabled={submitting}
-                                >
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="rounded-xl border-slate-200 shadow-lg"
-                              >
-                                <DropdownMenuItem
-                                  onClick={() => handleViewUser(user.id)}
-                                >
-                                  <Users className="w-4 h-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleEditRoles(user)}
-                                >
-                                  <Shield className="w-4 h-4 mr-2" />
-                                  Manage Roles
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {user.status?.toUpperCase() !== "ACTIVE" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleActivateUser(user.id)}
-                                    className="text-green-600"
-                                  >
-                                    <UserCheck className="w-4 h-4 mr-2" />
-                                    Activate
-                                  </DropdownMenuItem>
-                                )}
-                                {user.status?.toUpperCase() !== "SUSPENDED" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleSuspendUser(user.id)}
-                                    className="text-yellow-600"
-                                  >
-                                    <UserX className="w-4 h-4 mr-2" />
-                                    Suspend
-                                  </DropdownMenuItem>
-                                )}
-                                {user.status?.toUpperCase() !==
-                                  "TERMINATED" && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleTerminateUser(user.id)}
-                                    className="text-red-600"
-                                  >
-                                    <Ban className="w-4 h-4 mr-2" />
-                                    Terminate
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleDeleteClick({
-                                      id: user.id,
-                                      name: user.fullName || user.username,
-                                    })
-                                  }
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-
-            {/* Pagination */}
-            {filteredUsers.length > 0 && (
-              <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-200/60">
-                <p className="text-sm text-slate-500">
-                  Showing{" "}
-                  <span className="font-medium text-slate-700">
-                    {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium text-slate-700">
-                    {filteredUsers.length}
-                  </span>{" "}
-                  users
-                </p>
-                <Pagination>
-                  <PaginationContent className="gap-1">
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(1, prev - 1))
-                        }
-                        className={`rounded-lg transition-colors ${
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer hover:bg-slate-100"
-                        }`}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setCurrentPage(page)}
-                            isActive={currentPage === page}
-                            className={`cursor-pointer rounded-lg transition-all duration-200 ${currentPage === page ? "bg-roast text-white hover:bg-roast/90 shadow-md" : "text-slate-700 hover:bg-slate-100"}`}
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ),
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(totalPages, prev + 1),
-                          )
-                        }
-                        className={`rounded-lg transition-colors ${
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer hover:bg-slate-100"
-                        }`}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="py-2.5 pl-4 pr-8 bg-admin-bg border border-admin-border rounded-lg text-sm focus:outline-none focus:border-roast focus:ring-1 focus:ring-roast text-espresso appearance-none font-medium h-10 w-48 shadow-none">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-admin-border rounded-lg">
+                <SelectItem value="all-status">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-smoke">
+          <span className="material-symbols-outlined text-[18px]">filter_list</span>
+          <span>{filteredUsers.length} Total Staff</span>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-admin-surface border border-admin-border rounded-lg shadow-sm overflow-hidden mb-6">
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-16 h-16 rounded-2xl bg-foam flex items-center justify-center animate-pulse">
+                <Loader2 className="w-8 h-8 animate-spin text-roast" />
+              </div>
+              <span className="mt-4 text-slate-600 font-medium">
+                Loading users...
+              </span>
+            </div>
+          ) : currentUsers.length === 0 ? (
+            <EmptyState
+              icon={<Users className="w-8 h-8 text-slate-400" />}
+              title="No users found"
+              description="Try adjusting your search or filter criteria"
+            />
+          ) : (
+            <Table className="w-full text-left border-collapse">
+              <TableHeader>
+                <TableRow className="bg-admin-bg border-b border-admin-border text-smoke text-xs uppercase tracking-wider font-semibold hover:bg-admin-bg">
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold h-auto">Staff Member</TableHead>
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold h-auto">Role</TableHead>
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold h-auto">Branch</TableHead>
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold h-auto">Contact Info</TableHead>
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold h-auto">Status</TableHead>
+                  <TableHead className="px-6 py-4 font-ui-heading text-smoke font-semibold text-right h-auto">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-admin-border text-sm">
+                {currentUsers.map((user) => (
+                  <TableRow
+                    key={user.id}
+                    className="hover:bg-admin-bg/50 transition-colors border-admin-border"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        {user.avatar ? (
+                          <img
+                            alt={`${user.fullName} Avatar`}
+                            className="w-10 h-10 shrink-0 rounded-full object-cover border border-admin-border"
+                            src={user.avatar}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 shrink-0 rounded-full bg-latte flex items-center justify-center text-white font-bold border border-admin-border text-sm">
+                            {user.fullName
+                              ? user.fullName
+                                  .split(" ")
+                                  .filter(Boolean)
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase()
+                              : "US"}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium text-espresso">{user.fullName || "N/A"}</div>
+                          <div className="text-xs text-smoke">ID: #EMP-{user.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getRoleBadge(user.roles)}
+                    </td>
+                    <td className="px-6 py-4 text-smoke">
+                      {user.branchName || <span className="text-stone-400">—</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-espresso">{user.email}</div>
+                      <div className="text-xs text-smoke">{user.phone || "—"}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(user.status)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-lg hover:bg-slate-100 transition-colors text-smoke hover:text-roast shadow-none"
+                            disabled={submitting}
+                          >
+                            <span className="material-symbols-outlined">more_vert</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="rounded-xl border-slate-200 shadow-lg bg-white"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => handleViewUser(user.id)}
+                            className="cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined mr-2 text-[18px]">person</span>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleEditRoles(user)}
+                            className="cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined mr-2 text-[18px]">shield</span>
+                            Manage Roles
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {user.status?.toUpperCase() !== "ACTIVE" && (
+                            <DropdownMenuItem
+                              onClick={() => handleActivateUser(user.id)}
+                              className="text-green-600 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined mr-2 text-[18px] text-green-600">check_circle</span>
+                              Activate
+                            </DropdownMenuItem>
+                          )}
+                          {user.status?.toUpperCase() !== "SUSPENDED" && (
+                            <DropdownMenuItem
+                              onClick={() => handleSuspendUser(user.id)}
+                              className="text-yellow-600 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined mr-2 text-[18px] text-yellow-600">block</span>
+                              Suspend
+                            </DropdownMenuItem>
+                          )}
+                          {user.status?.toUpperCase() !== "TERMINATED" && (
+                            <DropdownMenuItem
+                              onClick={() => handleTerminateUser(user.id)}
+                              className="text-red-600 cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined mr-2 text-[18px] text-red-600">cancel</span>
+                              Terminate
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleDeleteClick({
+                                id: user.id,
+                                name: user.fullName || user.username,
+                              })
+                            }
+                            className="text-red-600 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined mr-2 text-[18px] text-red-600">delete</span>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {filteredUsers.length > 0 && (
+          <div className="px-6 py-4 border-t border-admin-border bg-white flex items-center justify-between">
+            <div className="text-sm text-smoke">
+              Showing <span className="font-medium text-espresso">{startIndex + 1}</span> to <span className="font-medium text-espresso">{Math.min(endIndex, filteredUsers.length)}</span> of <span className="font-medium text-espresso">{filteredUsers.length}</span> results
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 border border-admin-border rounded text-sm text-smoke hover:bg-admin-bg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1.5 border rounded text-sm font-medium transition-colors ${
+                    currentPage === page
+                      ? "bg-roast border-roast text-white"
+                      : "border-admin-border text-smoke hover:bg-admin-bg"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 border border-admin-border rounded text-sm text-smoke hover:bg-admin-bg disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <DeleteConfirmDialog
         open={isDeleteDialogOpen}

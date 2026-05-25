@@ -15,12 +15,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import {
   Pagination,
   PaginationContent,
@@ -47,13 +48,14 @@ export default function CustomerTierPage() {
     name: string;
   } | null>(null);
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const [formData, setFormData] = useState({
     name: "",
-    minPoint: 0,
+    tierLevel: 0,
+    minSpending: 0,
+    pointEarningRate: 1.0,
     discountRate: 0,
     description: "",
   });
@@ -63,14 +65,13 @@ export default function CustomerTierPage() {
     try {
       const res = await customerTierService.getAllTiers();
       if (res.statusCode === 200 && res.data) {
-        // Handle both direct array and paginated response
         const tiersData = Array.isArray(res.data)
           ? res.data
           : (res.data as any)?.content || [];
         setTiers(tiersData);
       }
     } catch (error) {
-      toast.error("Failed to load tiers");
+      toast.error("Không thể tải danh sách hạng thành viên");
     } finally {
       setIsLoading(false);
     }
@@ -95,8 +96,10 @@ export default function CustomerTierPage() {
     setEditingTier(tier);
     setFormData({
       name: tier.name,
-      minPoint: tier.minPoint,
-      discountRate: tier.discountRate * 100,
+      tierLevel: tier.tierLevel,
+      minSpending: tier.minSpending,
+      pointEarningRate: tier.pointEarningRate,
+      discountRate: tier.discountRate,
       description: tier.description || "",
     });
     setIsModalOpen(true);
@@ -104,18 +107,17 @@ export default function CustomerTierPage() {
 
   const handleCreateClick = () => {
     setEditingTier(null);
-    setFormData({ name: "", minPoint: 0, discountRate: 0, description: "" });
+    setFormData({ name: "", tierLevel: 0, minSpending: 0, pointEarningRate: 1.0, discountRate: 0, description: "" });
     setIsModalOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!formData.name) return toast.warning("Name is required");
+    if (!formData.name) return toast.warning("Vui lòng nhập tên hạng");
 
     setIsSubmitting(true);
     try {
       const payload = {
         ...formData,
-        discountRate: formData.discountRate / 100,
       };
 
       let res;
@@ -126,14 +128,14 @@ export default function CustomerTierPage() {
       }
 
       if (res.statusCode === 200 || res.statusCode === 201) {
-        toast.success(editingTier ? "Tier updated" : "Tier created");
+        toast.success(editingTier ? "Cập nhật hạng thành công" : "Tạo hạng thành công");
         setIsModalOpen(false);
         fetchTiers();
       } else {
         toast.error(res.message);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Operation failed");
+      toast.error(error.response?.data?.message || "Thao tác thất bại");
     } finally {
       setIsSubmitting(false);
     }
@@ -148,97 +150,77 @@ export default function CustomerTierPage() {
     if (!tierToDelete) return;
     try {
       await customerTierService.deleteTier(tierToDelete.id);
-      toast.success("Tier deleted");
+      toast.success("Đã xoá hạng thành viên");
       fetchTiers();
     } catch (error) {
-      toast.error("Failed to delete tier");
+      toast.error("Không thể xoá hạng thành viên");
     }
     setIsDeleteOpen(false);
-  };
-
-  const handleToggleStatus = async (tier: CustomerTier) => {
-    try {
-      await customerTierService.toggleStatus(tier.id);
-      toast.success(
-        `Tier ${tier.status === "ACTIVE" ? "deactivated" : "activated"}`,
-      );
-      fetchTiers();
-    } catch (error) {
-      toast.error("Failed to update status");
-    }
-  };
-
-  const handleRecalculate = async () => {
-    const toastId = toast.loading("Recalculating customer tiers...");
-    try {
-      await customerTierService.recalculateAll();
-      toast.success("Recalculation completed", { id: toastId });
-      fetchTiers();
-    } catch (error) {
-      toast.error("Failed to recalculate", { id: toastId });
-    }
   };
 
   return (
     <PageContainer>
       <PageHeader
-        title="Customer Tiers"
-        subtitle="Manage loyalty tiers and rewards"
+        title="Hạng thành viên"
+        subtitle="Quản lý hạng thành viên và ưu đãi loyalty"
       />
 
       <div className="flex items-center justify-end gap-2 mb-6">
-        <Button variant="outline" onClick={handleRecalculate}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Recalculate All
-        </Button>
         <Button
           className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
           onClick={handleCreateClick}
         >
           <Plus className="w-4 h-4 mr-2" />
-          New Tier
+          Thêm hạng mới
         </Button>
       </div>
 
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="rounded-md border border-slate-200 mb-4">
+          <div className="rounded-md border border-slate-200 mb-4 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                  <TableHead>Tier Name</TableHead>
-                  <TableHead>Min Points</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Customers</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                  <TableHead>Cấp độ</TableHead>
+                  <TableHead>Tên hạng</TableHead>
+                  <TableHead>Chi tiêu tối thiểu</TableHead>
+                  <TableHead>Hệ số tích điểm</TableHead>
+                  <TableHead>Giảm giá</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-center">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10">
+                    <TableCell colSpan={7} className="text-center py-10">
                       <Loader2 className="animate-spin inline" />
+                    </TableCell>
+                  </TableRow>
+                ) : currentTiers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-gray-400">
+                      Chưa có hạng thành viên nào
                     </TableCell>
                   </TableRow>
                 ) : (
                   currentTiers.map((tier) => (
                     <TableRow key={tier.id}>
+                      <TableCell>{tier.tierLevel}</TableCell>
                       <TableCell className="font-medium">{tier.name}</TableCell>
-                      <TableCell>{tier.minPoint.toLocaleString()}</TableCell>
+                      <TableCell>{tier.minSpending?.toLocaleString("vi-VN")}đ</TableCell>
+                      <TableCell>{tier.pointEarningRate}x</TableCell>
                       <TableCell>
-                        {(tier.discountRate * 100).toFixed(0)}%
+                        {tier.discountRate}%
                       </TableCell>
-                      <TableCell>{tier.customerCount || 0}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            tier.status === "ACTIVE" ? "default" : "secondary"
+                            tier.active ? "default" : "secondary"
                           }
-                          className={`cursor-pointer ${tier.status === "ACTIVE" ? "bg-green-600" : "bg-gray-400"}`}
-                          onClick={() => handleToggleStatus(tier)}
+                          className={tier.active ? "bg-green-600" : "bg-gray-400"}
                         >
-                          {tier.status}
+                          {tier.active ? "Hoạt động" : "Tạm ngưng"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -268,10 +250,9 @@ export default function CustomerTierPage() {
             </Table>
           </div>
 
-          {/* Pagination Controls */}
           <div className="items-center justify-between">
             <div className="text-sm text-gray-500">
-              Page {currentPage} of {totalPages || 1}
+              Trang {currentPage} / {totalPages || 1}
             </div>
             <Pagination>
               <PaginationContent>
@@ -316,57 +297,94 @@ export default function CustomerTierPage() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-[500px] bg-white">
+        <DialogContent className="max-w-[600px] bg-white">
           <DialogHeader>
             <DialogTitle>
-              {editingTier ? "Edit Tier" : "Create New Tier"}
+              {editingTier ? "Sửa hạng thành viên" : "Tạo hạng thành viên mới"}
             </DialogTitle>
+            <DialogDescription>
+              {editingTier ? "Cập nhật thông tin hạng thành viên" : "Nhập thông tin hạng thành viên mới"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Tier Name *</Label>
+              <div className="space-y-1.5">
+                <Label>Tên hạng *</Label>
                 <Input
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
+                  placeholder="VD: Gold"
                 />
               </div>
-              <div>
-                <Label>Min Points *</Label>
+              <div className="space-y-1.5">
+                <Label>Cấp độ *</Label>
                 <Input
                   type="number"
-                  value={formData.minPoint}
+                  value={formData.tierLevel}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      minPoint: parseInt(e.target.value) || 0,
+                      tierLevel: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="VD: 1 (cao = tốt hơn)"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Chi tiêu tối thiểu (VND) *</Label>
+                <Input
+                  type="number"
+                  value={formData.minSpending}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      minSpending: parseInt(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="VD: 2000000"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Hệ số tích điểm *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={formData.pointEarningRate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      pointEarningRate: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                  placeholder="VD: 1.5"
+                />
+                <p className="text-xs text-gray-500">
+                  Hệ số nhân cho điểm tích luỹ.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tỉ lệ giảm giá (%) *</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={formData.discountRate}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      discountRate: parseFloat(e.target.value) || 0,
                     })
                   }
                 />
+                <p className="text-xs text-gray-500">
+                  Nhập phần trăm (VD: 5 cho 5%)
+                </p>
               </div>
             </div>
-            <div>
-              <Label>Discount Rate (%) *</Label>
-              <Input
-                type="number"
-                value={formData.discountRate}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    discountRate: parseFloat(e.target.value) || 0,
-                  })
-                }
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter percentage (e.g., 10 for 10%)
-              </p>
-            </div>
-            <div>
-              <Label>Description</Label>
+            <div className="space-y-1.5">
+              <Label>Mô tả</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) =>
@@ -377,7 +395,7 @@ export default function CustomerTierPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              Huỷ
             </Button>
             <Button
               onClick={handleSubmit}
@@ -387,7 +405,7 @@ export default function CustomerTierPage() {
               {isSubmitting && (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-              Save
+              Lưu
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -398,7 +416,7 @@ export default function CustomerTierPage() {
         onOpenChange={setIsDeleteOpen}
         itemName={tierToDelete?.name || ""}
         onConfirm={handleDeleteConfirm}
-        contextMessage="tier"
+        contextMessage="hạng thành viên"
       />
     </PageContainer>
   );

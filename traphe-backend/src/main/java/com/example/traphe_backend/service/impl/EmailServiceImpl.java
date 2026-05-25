@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -26,6 +27,8 @@ public class EmailServiceImpl implements EmailService {
     /**
      * Send email verification OTP.
      */
+    @Override
+    @Async("virtualThreadExecutor")
     public void sendVerificationOtp(String toEmail, String otp) {
         String subject = "[TraPhe] Xác thực email của bạn";
         String body = String.format(
@@ -42,6 +45,8 @@ public class EmailServiceImpl implements EmailService {
     /**
      * Send password reset OTP.
      */
+    @Override
+    @Async("virtualThreadExecutor")
     public void sendPasswordResetOtp(String toEmail, String otp) {
         String subject = "[TraPhe] Đặt lại mật khẩu";
         String body = String.format(

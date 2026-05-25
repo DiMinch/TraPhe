@@ -78,4 +78,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .updatedAt(config.getUpdatedAt())
                 .build();
     }
+
+    @Override
+    public java.util.Optional<String> getValueByKey(String key) {
+        return systemConfigRepository.findByConfigKey(key)
+                .map(SystemConfig::getConfigValue);
+    }
 }

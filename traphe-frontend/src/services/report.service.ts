@@ -8,6 +8,14 @@ export interface RevenueReportResponse {
   breakdown: RevenueByPeriod[];
   byOrderType: RevenueByType[];
   comparison: ComparisonData | null;
+  byBranch?: RevenueByBranch[];
+}
+
+export interface RevenueByBranch {
+  branchId: string;
+  branchName: string;
+  revenue: number;
+  orderCount: number;
 }
 
 export interface RevenueByPeriod {

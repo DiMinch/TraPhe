@@ -79,6 +79,7 @@ export default function RevenueReport() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [report, setReport] = useState<RevenueReportResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "comparison">("overview");
   const [startDate, setStartDate] = useState(
     new Date(new Date().setDate(new Date().getDate() - 30))
       .toISOString()
@@ -280,13 +281,70 @@ export default function RevenueReport() {
         </CardContent>
       </Card>
 
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b mb-6">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+            activeTab === "overview"
+              ? "border-roast text-roast"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          Tổng quan doanh thu
+        </button>
+        <button
+          onClick={() => setActiveTab("comparison")}
+          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+            activeTab === "comparison"
+              ? "border-roast text-roast"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          So sánh chi nhánh
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-roast" />
         </div>
       ) : report ? (
         <>
-          {/* KPI Cards */}
+          {activeTab === "comparison" && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>So sánh doanh thu giữa các chi nhánh</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={report.byBranch || []}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="branchName" />
+                      <YAxis tickFormatter={formatCurrency} />
+                      <Tooltip
+                        formatter={(value: any) => [formatFullCurrency(value) + "đ", "Doanh thu"]}
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" name="Doanh thu" fill="#8b5cf6" radius={[4, 4, 0, 0]}>
+                        {(report.byBranch || []).map((_entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "overview" && (
+            <>
+              {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Revenue */}
             <Card className="bg-linear-to-br from-roast to-espresso text-white">
@@ -732,6 +790,8 @@ export default function RevenueReport() {
                 </div>
               </CardContent>
             </Card>
+          )}
+            </>
           )}
         </>
       ) : (

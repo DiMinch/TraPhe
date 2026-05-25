@@ -16,5 +16,7 @@ public interface MenuItemOptionGroupRepository extends JpaRepository<MenuItemOpt
 
     List<MenuItemOptionGroup> findByMenuItemIdIn(java.util.Set<UUID> menuItemIds);
 
-    void deleteAllByMenuItemId(UUID menuItemId);
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM MenuItemOptionGroup mit WHERE mit.menuItem.id = :menuItemId")
+    void deleteAllByMenuItemId(@org.springframework.data.repository.query.Param("menuItemId") UUID menuItemId);
 }

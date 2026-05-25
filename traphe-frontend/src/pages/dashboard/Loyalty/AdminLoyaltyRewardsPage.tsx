@@ -45,46 +45,46 @@ interface LoyaltyReward {
 const INITIAL_REWARDS: LoyaltyReward[] = [
   {
     id: "r1",
-    name: "TrÃ  ÄÃ o Cam Sáº£ (Size M) Miá»…n PhÃ­",
+    name: "Trà Đào Cam Sả (Size M) Miễn Phí",
     type: "DRINK",
     pointsRequired: 200,
-    description: "Äá»•i 1 ly TrÃ  ÄÃ o Cam Sáº£ thÆ¡m ngon size M táº¡i báº¥t ká»³ chi nhÃ¡nh nÃ o.",
+    description: "Đổi 1 ly Trà Đào Cam Sả thơm ngon size M tại bất kỳ chi nhánh nào.",
     stock: 450,
     isActive: true,
   },
   {
     id: "r2",
-    name: "Voucher giáº£m giÃ¡ 20,000Ä‘",
+    name: "Voucher giảm giá 20,000đ",
     type: "VOUCHER",
     pointsRequired: 150,
-    description: "Ãp dá»¥ng giáº£m trá»±c tiáº¿p 20,000Ä‘ cho Ä‘Æ¡n hÃ ng tá»« 50,000Ä‘ trá»Ÿ lÃªn.",
+    description: "Áp dụng giảm trực tiếp 20,000đ cho đơn hàng từ 50,000đ trở lên.",
     stock: 999,
     isActive: true,
   },
   {
     id: "r3",
-    name: "BÃ¬nh giá»¯ nhiá»‡t TraPhe Premium",
+    name: "Bình giữ nhiệt TraPhe Premium",
     type: "MERCHANDISE",
     pointsRequired: 600,
-    description: "BÃ¬nh giá»¯ nhiá»‡t inox 304 cao cáº¥p dung tÃ­ch 500ml, giá»¯ nhiá»‡t Ä‘áº¿n 12h.",
+    description: "Bình giữ nhiệt inox 304 cao cấp dung tích 500ml, giữ nhiệt đến 12h.",
     stock: 35,
     isActive: true,
   },
   {
     id: "r4",
-    name: "CÃ  PhÃª Muá»‘i Miá»…n PhÃ­",
+    name: "Cà Phê Muối Miễn Phí",
     type: "DRINK",
     pointsRequired: 160,
-    description: "Äá»•i 1 ly CÃ  PhÃª Muá»‘i Ä‘áº­m vá»‹ Huáº¿ táº¡i cá»­a hÃ ng.",
+    description: "Đổi 1 ly Cà Phê Muối đậm vị Huế tại cửa hàng.",
     stock: 120,
     isActive: true,
   },
   {
     id: "r5",
-    name: "TÃºi váº£i Canvas TraPhe Eco-Friendly",
+    name: "Túi vải Canvas TraPhe Eco-Friendly",
     type: "MERCHANDISE",
     pointsRequired: 400,
-    description: "TÃºi váº£i canvas thá»i trang, báº£o vá»‡ mÃ´i trÆ°á»ng.",
+    description: "Túi vải canvas thời trang, bảo vệ môi trường.",
     stock: 0,
     isActive: false,
   },
@@ -134,12 +134,12 @@ export default function AdminLoyaltyRewardsPage() {
 
   const handleDelete = (id: string) => {
     setRewards(rewards.filter((r) => r.id !== id));
-    toast.success("ÄÃ£ xÃ³a quÃ  táº·ng khá»i danh sÃ¡ch!");
+    toast.success("Đã xóa quà tặng khỏi danh sách!");
   };
 
   const handleSave = () => {
     if (!formData.name.trim() || !formData.description.trim()) {
-      toast.warning("Vui lÃ²ng Ä‘iá»n Ä‘áº§y Ä‘á»§ tÃªn vÃ  mÃ´ táº£ quÃ  táº·ng");
+      toast.warning("Vui lòng điền đầy đủ tên và mô tả quà tặng");
       return;
     }
 
@@ -152,7 +152,7 @@ export default function AdminLoyaltyRewardsPage() {
             : r
         )
       );
-      toast.success("Cáº­p nháº­t quÃ  táº·ng thÃ nh cÃ´ng!");
+      toast.success("Cập nhật quà tặng thành công!");
     } else {
       // Add mode
       const newReward: LoyaltyReward = {
@@ -165,7 +165,7 @@ export default function AdminLoyaltyRewardsPage() {
         isActive: formData.isActive,
       };
       setRewards([newReward, ...rewards]);
-      toast.success("ThÃªm quÃ  táº·ng má»›i thÃ nh cÃ´ng!");
+      toast.success("Thêm quà tặng mới thành công!");
     }
     setIsDialogOpen(false);
   };
@@ -186,13 +186,13 @@ export default function AdminLoyaltyRewardsPage() {
   const getTypeText = (type: string) => {
     switch (type) {
       case "DRINK":
-        return "Äá»“ uá»‘ng";
+        return "Đồ uống";
       case "VOUCHER":
-        return "Voucher giáº£m giÃ¡";
+        return "Voucher giảm giá";
       case "MERCHANDISE":
-        return "QuÃ  táº·ng lÆ°u niá»‡m";
+        return "Quà tặng lưu niệm";
       default:
-        return "KhÃ¡c";
+        return "Khác";
     }
   };
 
@@ -207,9 +207,9 @@ export default function AdminLoyaltyRewardsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Catalogue quÃ  Ä‘á»•i Ä‘iá»ƒm"
-        subtitle="Quáº£n lÃ½ cÃ¡c loáº¡i quÃ  táº·ng, Ä‘á»“ uá»‘ng vÃ  mÃ£ giáº£m giÃ¡ mÃ  khÃ¡ch hÃ ng cÃ³ thá»ƒ Ä‘á»•i báº±ng Ä‘iá»ƒm tÃ­ch lÅ©y"
-        onRefresh={() => toast.success("ÄÃ£ Ä‘á»“ng bá»™ catalogue quÃ  táº·ng!")}
+        title="Catalogue quà đổi điểm"
+        subtitle="Quản lý các loại quà tặng, đồ uống và mã giảm giá mà khách hàng có thể đổi bằng điểm tích lũy"
+        onRefresh={() => toast.success("Đã đồng bộ catalogue quà tặng!")}
       />
 
       {/* Filter and Actions */}
@@ -218,7 +218,7 @@ export default function AdminLoyaltyRewardsPage() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="TÃ¬m tÃªn quÃ  táº·ng, Æ°u Ä‘Ã£i..."
+              placeholder="Tìm tên quà tặng, ưu đãi..."
               className="pl-9 bg-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -227,13 +227,13 @@ export default function AdminLoyaltyRewardsPage() {
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[180px] bg-white">
-              <SelectValue placeholder="PhÃ¢n loáº¡i" />
+              <SelectValue placeholder="Phân loại" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Táº¥t cáº£ loáº¡i quÃ </SelectItem>
-              <SelectItem value="DRINK">Äá»“ uá»‘ng miá»…n phÃ­</SelectItem>
-              <SelectItem value="VOUCHER">Voucher giáº£m giÃ¡</SelectItem>
-              <SelectItem value="MERCHANDISE">QuÃ  lÆ°u niá»‡m</SelectItem>
+              <SelectItem value="ALL">Tất cả loại quà</SelectItem>
+              <SelectItem value="DRINK">Đồ uống miễn phí</SelectItem>
+              <SelectItem value="VOUCHER">Voucher giảm giá</SelectItem>
+              <SelectItem value="MERCHANDISE">Quà lưu niệm</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -243,7 +243,7 @@ export default function AdminLoyaltyRewardsPage() {
           className="bg-roast hover:bg-roast/90 text-white font-medium shadow-sm"
         >
           <Plus className="w-4 h-4 mr-2" />
-          ThÃªm quÃ  táº·ng má»›i
+          Thêm quà tặng mới
         </Button>
       </div>
 
@@ -252,7 +252,7 @@ export default function AdminLoyaltyRewardsPage() {
         {filteredRewards.length === 0 ? (
           <div className="col-span-full text-center py-16 bg-white border border-slate-200 rounded-2xl">
             <Gift className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">KhÃ´ng tÃ¬m tháº¥y quÃ  táº·ng nÃ o phÃ¹ há»£p</p>
+            <p className="text-slate-500 font-medium">Không tìm thấy quà tặng nào phù hợp</p>
           </div>
         ) : (
           filteredRewards.map((reward) => (
@@ -278,7 +278,7 @@ export default function AdminLoyaltyRewardsPage() {
                         : "bg-slate-100 text-slate-500 border-slate-200"
                     }`}
                   >
-                    {reward.isActive ? "Äang má»Ÿ" : "ÄÃ£ áº©n"}
+                    {reward.isActive ? "Đang mở" : "Đã ẩn"}
                   </Badge>
                 </div>
 
@@ -291,7 +291,7 @@ export default function AdminLoyaltyRewardsPage() {
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center gap-1 text-amber-600 font-semibold text-md">
                       <Coins className="w-4 h-4" />
-                      <span>{reward.pointsRequired} Äiá»ƒm</span>
+                      <span>{reward.pointsRequired} Điểm</span>
                     </div>
 
                     <div className="text-xs text-slate-400">
@@ -305,7 +305,7 @@ export default function AdminLoyaltyRewardsPage() {
                             : "text-slate-600"
                         }`}
                       >
-                        {reward.stock === 0 ? "Háº¿t quÃ " : reward.stock}
+                        {reward.stock === 0 ? "Hết quà" : reward.stock}
                       </span>
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export default function AdminLoyaltyRewardsPage() {
                   className="text-slate-600 hover:text-roast hover:bg-slate-100"
                 >
                   <Edit className="w-3.5 h-3.5 mr-1" />
-                  Sá»­a
+                  Sửa
                 </Button>
                 <Button
                   variant="ghost"
@@ -329,7 +329,7 @@ export default function AdminLoyaltyRewardsPage() {
                   className="text-slate-600 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-1" />
-                  XÃ³a
+                  Xóa
                 </Button>
               </div>
             </Card>
@@ -342,25 +342,25 @@ export default function AdminLoyaltyRewardsPage() {
         <DialogContent className="max-w-[500px] bg-white">
           <DialogHeader>
             <DialogTitle>
-              {editingReward ? "Cáº­p nháº­t quÃ  táº·ng" : "ThÃªm quÃ  táº·ng loyalty má»›i"}
+              {editingReward ? "Cập nhật quà tặng" : "Thêm quà tặng loyalty mới"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-1">
-              <Label htmlFor="reward-name">TÃªn quÃ  táº·ng *</Label>
+              <Label htmlFor="reward-name">Tên quà tặng *</Label>
               <Input
                 id="reward-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="VÃ­ dá»¥: Voucher giáº£m 30k"
+                placeholder="Ví dụ: Voucher giảm 30k"
                 className="bg-white"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label htmlFor="reward-type">PhÃ¢n loáº¡i</Label>
+                <Label htmlFor="reward-type">Phân loại</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(val: any) => setFormData({ ...formData, type: val })}
@@ -369,15 +369,15 @@ export default function AdminLoyaltyRewardsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DRINK">Äá»“ uá»‘ng miá»…n phÃ­</SelectItem>
-                    <SelectItem value="VOUCHER">Voucher giáº£m giÃ¡</SelectItem>
-                    <SelectItem value="MERCHANDISE">QuÃ  lÆ°u niá»‡m</SelectItem>
+                    <SelectItem value="DRINK">Đồ uống miễn phí</SelectItem>
+                    <SelectItem value="VOUCHER">Voucher giảm giá</SelectItem>
+                    <SelectItem value="MERCHANDISE">Quà lưu niệm</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="reward-points">Sá»‘ Ä‘iá»ƒm yÃªu cáº§u *</Label>
+                <Label htmlFor="reward-points">Số điểm yêu cầu *</Label>
                 <Input
                   id="reward-points"
                   type="number"
@@ -391,7 +391,7 @@ export default function AdminLoyaltyRewardsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label htmlFor="reward-stock">Sá»‘ lÆ°á»£ng trong kho</Label>
+                <Label htmlFor="reward-stock">Số lượng trong kho</Label>
                 <Input
                   id="reward-stock"
                   type="number"
@@ -403,7 +403,7 @@ export default function AdminLoyaltyRewardsPage() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="reward-status">Tráº¡ng thÃ¡i Ã¡p dá»¥ng</Label>
+                <Label htmlFor="reward-status">Trạng thái áp dụng</Label>
                 <Select
                   value={formData.isActive ? "ACTIVE" : "HIDDEN"}
                   onValueChange={(val) => setFormData({ ...formData, isActive: val === "ACTIVE" })}
@@ -412,20 +412,20 @@ export default function AdminLoyaltyRewardsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">Má»Ÿ Ä‘á»•i quÃ </SelectItem>
-                    <SelectItem value="HIDDEN">áº¨n quÃ  táº·ng</SelectItem>
+                    <SelectItem value="ACTIVE">Mở đổi quà</SelectItem>
+                    <SelectItem value="HIDDEN">Ẩn quà tặng</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="reward-desc">MÃ´ táº£ chi tiáº¿t *</Label>
+              <Label htmlFor="reward-desc">Mô tả chi tiết *</Label>
               <Input
                 id="reward-desc"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Äiá»u kiá»‡n Ã¡p dá»¥ng, thá»i háº¡n sá»­ dá»¥ng..."
+                placeholder="Điều kiện áp dụng, thời hạn sử dụng..."
                 className="bg-white"
               />
             </div>
@@ -433,13 +433,13 @@ export default function AdminLoyaltyRewardsPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Há»§y bá»
+              Hủy bỏ
             </Button>
             <Button
               onClick={handleSave}
               className="bg-roast hover:bg-roast/90 text-white"
             >
-              LÆ°u thay Ä‘á»•i
+              Lưu thay đổi
             </Button>
           </DialogFooter>
         </DialogContent>

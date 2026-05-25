@@ -106,6 +106,26 @@ public class CustomerController {
     }
 
     /**
+     * GET /api/customers/{id} — Get details of a single customer.
+     * Accessible by ADMIN, CASHIER, and BRANCH_MANAGER.
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'BRANCH_MANAGER')")
+    @Operation(summary = "Get a customer by ID",
+            description = "Returns the details of a single customer by their ID.")
+    public ResponseEntity<ApiResponse<CustomerResponse>> getCustomerById(
+            @org.springframework.web.bind.annotation.PathVariable UUID id) {
+        
+        User user = userRepository.findById(id)
+                .filter(u -> !u.isDeleted() && u.isActive())
+                .filter(u -> u.getRoles().stream()
+                        .anyMatch(r -> r.getName() == RoleName.ROLE_CUSTOMER))
+                .orElseThrow(() -> new RuntimeException("Customer not found or not active"));
+
+        return ResponseEntity.ok(ApiResponse.success(toCustomerResponse(user), "Lấy thông tin khách hàng thành công."));
+    }
+
+    /**
      * GET /api/customers/{id}/vouchers — Lists vouchers for a specific customer.
      * Accessible by ADMIN, CASHIER, and BRANCH_MANAGER.
      */

@@ -103,6 +103,17 @@ export const orderService = {
     );
   },
 
+  // Get orders for a specific customer
+  getCustomerOrders: async (customerId: string, params?: {
+    page?: number;
+    size?: number;
+  }) => {
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      `/orders/customer/${customerId}`,
+      { params: { page: params?.page || 0, size: params?.size || 10 } }
+    );
+  },
+
   // Get order by ID
   getOrderById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<OrderResponse>>(`/orders/${id}`);
@@ -117,14 +128,10 @@ export const orderService = {
   updateOrderStatus: async (
     id: string,
     status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED",
-    reason?: string,
   ) => {
     return axiosClient.put<any, ApiResponse<OrderResponse>>(
       `/orders/${id}/status`,
-      null,
-      {
-        params: { status, reason },
-      },
+      { status }
     );
   },
 

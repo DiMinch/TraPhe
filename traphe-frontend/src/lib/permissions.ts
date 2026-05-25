@@ -32,9 +32,9 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
 
   // Orders / Sales
-  "/admin/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/admin/orders/pos": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/admin/orders/queue": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BRANCH_MANAGER],
+  "/admin/orders/pos": [UserRole.EMPLOYEE, UserRole.CASHIER],
+  "/admin/orders/queue": [UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA],
 
   // Loyalty & Customers
   "/admin/loyalty": [UserRole.ADMIN],

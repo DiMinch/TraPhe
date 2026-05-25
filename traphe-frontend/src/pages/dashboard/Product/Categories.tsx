@@ -30,7 +30,6 @@ import {
   Edit,
   Trash2,
   ArrowUpDown,
-  Settings,
   Search,
   Loader2,
   Filter,
@@ -42,7 +41,7 @@ import { toast } from "sonner";
 import NewCategoryDialog from "./NewCategory";
 import EditCategoryDialog from "./EditCategory";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
-import CategorySpecsDialog from "./CategorySpecsDialog";
+
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 
 interface Category {
@@ -61,7 +60,7 @@ export default function CategoriesPage() {
   const [isNewCategoryOpen, setIsNewCategoryOpen] = useState(false);
   const [isEditCategoryOpen, setIsEditCategoryOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isSpecsDialogOpen, setIsSpecsDialogOpen] = useState(false);
+
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
@@ -70,6 +69,17 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all-status");
+  const [sortField, setSortField] = useState<"parent" | "productCount" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const handleSort = (field: "parent" | "productCount") => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -119,10 +129,7 @@ export default function CategoriesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleManageSpecs = (category: Category) => {
-    setSelectedCategory(category);
-    setIsSpecsDialogOpen(true);
-  };
+
 
   const handleUpdateCategory = () => {
     fetchCategories();
@@ -167,11 +174,28 @@ export default function CategoriesPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Sort categories
+  const sortedCategories = [...filteredCategories].sort((a, b) => {
+    if (!sortField) return 0;
+    
+    let aVal = a[sortField];
+    let bVal = b[sortField];
+
+    if (typeof aVal === "string") {
+      aVal = aVal.toLowerCase();
+      bVal = (bVal as string).toLowerCase();
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
   return (
     <PageContainer>
       <PageHeader
         title="Categories"
-        subtitle="Manage product categories and specifications"
+        subtitle="Manage product categories"
         onRefresh={fetchCategories}
       />
 
@@ -235,16 +259,16 @@ export default function CategoriesPage() {
                       <div className="flex items-center gap-2">Name</div>
                     </TableHead>
                     <TableHead className="w-[300px]">Description</TableHead>
-                    <TableHead className="w-[150px]">
+                    <TableHead className="w-[150px] cursor-pointer select-none hover:bg-slate-100/50 transition-colors" onClick={() => handleSort("parent")}>
                       <div className="flex items-center gap-2">
                         Parent
-                        <ArrowUpDown className="w-4 h-4" />
+                        <ArrowUpDown className={`w-4 h-4 transition-colors ${sortField === "parent" ? "text-roast font-bold" : "text-slate-400"}`} />
                       </div>
                     </TableHead>
-                    <TableHead className="w-[150px]">
+                    <TableHead className="w-[150px] cursor-pointer select-none hover:bg-slate-100/50 transition-colors" onClick={() => handleSort("productCount")}>
                       <div className="flex items-center gap-2">
                         Number of Product
-                        <ArrowUpDown className="w-4 h-4" />
+                        <ArrowUpDown className={`w-4 h-4 transition-colors ${sortField === "productCount" ? "text-roast font-bold" : "text-slate-400"}`} />
                       </div>
                     </TableHead>
                     <TableHead className="w-[120px]">Status</TableHead>
@@ -254,7 +278,7 @@ export default function CategoriesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.length === 0 ? (
+                  {sortedCategories.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={6}
@@ -266,7 +290,7 @@ export default function CategoriesPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredCategories.map((category) => (
+                    sortedCategories.map((category) => (
                       <TableRow key={category.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -280,7 +304,7 @@ export default function CategoriesPage() {
                             <button
                               onClick={() =>
                                 navigate(
-                                  `/product?category=${encodeURIComponent(
+                                  `/admin/menu/items?category=${encodeURIComponent(
                                     category.name,
                                   )}`,
                                 )
@@ -321,15 +345,6 @@ export default function CategoriesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-purple-50 hover:text-purple-600"
-                              onClick={() => handleManageSpecs(category)}
-                              title="Manage Specifications"
-                            >
-                              <Settings className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-8 w-8"
                               onClick={() => handleEdit(category)}
                             >
@@ -354,7 +369,7 @@ export default function CategoriesPage() {
           )}
 
           {/* Pagination */}
-          {!loading && filteredCategories.length > 0 && (
+          {!loading && sortedCategories.length > 0 && (
             <div className="flex items-center justify-between mt-6">
               <Pagination>
                 <PaginationContent>
@@ -396,13 +411,7 @@ export default function CategoriesPage() {
         }
       />
 
-      {/* Category Specs Dialog */}
-      <CategorySpecsDialog
-        open={isSpecsDialogOpen}
-        onOpenChange={setIsSpecsDialogOpen}
-        categoryId={selectedCategory?.fullId || ""}
-        categoryName={selectedCategory?.name || ""}
-      />
+
 
       {/* Delete Category Dialog */}
       <DeleteConfirmDialog

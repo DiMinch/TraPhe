@@ -5,17 +5,47 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class InventoryReportResponse {
-    private UUID branchId;
-    private String branchName;
-    private UUID menuItemId;
-    private String productName;
-    private boolean isAvailable;
-    private String unavailableReason;
+    private int totalProducts;
+    private int lowStockProducts;
+    private int outOfStockProducts;
+    private List<InventoryReportItem> items;
+    private List<FastMovingItem> fastMovingItems;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InventoryReportItem {
+        private String productVariantId;
+        private String productName;
+        private String variantName;
+        private String sku;
+        private double quantityPhysical;
+        private double quantityReserved;
+        private double quantityAvailable;
+        private double minThreshold;
+        private boolean isLowStock;
+        private boolean isOutOfStock;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FastMovingItem {
+        private String productVariantId;
+        private String productName;
+        private String variantName;
+        private String sku;
+        private int quantitySold;
+        private int daysSinceFirstSale;
+        private double averageDailySales;
+    }
 }

@@ -29,7 +29,7 @@ interface QueueItem {
   id: string;
   orderNumber: string;
   customerName: string;
-  type: string; // "POS" | "ONLINE" | "Táº I CHá»–" | "MANG ÄI"
+  type: string; // "POS" | "ONLINE" | "TẠI CHỖ" | "MANG ĐI"
   timeElapsed: number; // in seconds
   items: Array<{
     name: string;
@@ -113,7 +113,7 @@ export default function PosQueuePage() {
           return {
             id: o.orderId,
             orderNumber: o.orderNumber,
-            customerName: o.customerName || "KhÃ¡ch mua láº»",
+            customerName: o.customerName || "Khách mua lẻ",
             type: o.orderNumber.startsWith("POS-") ? "POS" : "ONLINE",
             timeElapsed: Math.max(0, elapsed),
             items: o.items.map((item) => ({
@@ -181,7 +181,7 @@ export default function PosQueuePage() {
       await orderService.updateBrewingStatus(id, "BREWING");
     } catch (err) {
       console.error(err);
-      toast.error("Lá»—i khi cáº­p nháº­t tráº¡ng thÃ¡i pha cháº¿.");
+      toast.error("Lỗi khi cập nhật trạng thái pha chế.");
       return;
     }
 
@@ -194,7 +194,7 @@ export default function PosQueuePage() {
       setSelectedQueueItem(prev => prev ? { ...prev, status: "BREWING" } : null);
     }
 
-    toast.success("Báº¯t Ä‘áº§u pha cháº¿!");
+    toast.success("Bắt đầu pha chế!");
   };
 
   const handleCompleteBrewing = async (id: string) => {
@@ -202,10 +202,10 @@ export default function PosQueuePage() {
 
     try {
       await orderService.updateBrewingStatus(id, "COMPLETED");
-      toast.success("ÄÃ£ hoÃ n thÃ nh pha cháº¿!");
+      toast.success("Đã hoàn thành pha chế!");
     } catch (err) {
       console.error(err);
-      toast.error("Lá»—i khi hoÃ n thÃ nh pha cháº¿.");
+      toast.error("Lỗi khi hoàn thành pha chế.");
       return;
     }
 
@@ -235,8 +235,8 @@ export default function PosQueuePage() {
   return (
     <PageContainer>
       <PageHeader
-        title="HÃ ng Ä‘á»£i Pha cháº¿ (Barista KDS)"
-        subtitle="MÃ n hÃ¬nh hiá»ƒn thá»‹ vÃ  Ä‘iá»u phá»‘i quy trÃ¬nh pha cháº¿ Ä‘á»“ uá»‘ng táº¡i quáº§y bar"
+        title="Hàng đợi Pha chế (Barista KDS)"
+        subtitle="Màn hình hiển thị và điều phối quy trình pha chế đồ uống tại quầy bar"
         onRefresh={fetchLiveOrders}
       />
 
@@ -252,7 +252,7 @@ export default function PosQueuePage() {
             }
             onClick={() => setActiveTab("WAITING")}
           >
-            Chá» pha cháº¿ (
+            Chờ pha chế (
             {queue.filter((item) => item.status === "WAITING").length}
             )
           </Button>
@@ -265,7 +265,7 @@ export default function PosQueuePage() {
             }
             onClick={() => setActiveTab("BREWING")}
           >
-            Äang pha cháº¿ (
+            Đang pha chế (
             {queue.filter((item) => item.status === "BREWING").length}
             )
           </Button>
@@ -278,7 +278,7 @@ export default function PosQueuePage() {
             }
             onClick={() => setActiveTab("DONE")}
           >
-            ÄÃ£ hoÃ n thÃ nh (
+            Đã hoàn thành (
             {queue.filter((item) => item.status === "DONE").length}
             )
           </Button>
@@ -288,7 +288,7 @@ export default function PosQueuePage() {
           <div className="relative w-48">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="TÃ¬m sá»‘ Ä‘Æ¡n..."
+              placeholder="Tìm số đơn..."
               className="pl-9 h-9 bg-white border-slate-200 focus-visible:ring-roast focus-visible:border-roast"
               value={searchTerm}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
@@ -300,7 +300,7 @@ export default function PosQueuePage() {
             size="icon"
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="bg-white border-slate-200 hover:bg-slate-50"
-            title={soundEnabled ? "Táº¯t Ã¢m thanh thÃ´ng bÃ¡o" : "Báº­t Ã¢m thanh thÃ´ng bÃ¡o"}
+            title={soundEnabled ? "Tắt âm thanh thông báo" : "Bật âm thanh thông báo"}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-roast" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
           </Button>
@@ -312,11 +312,11 @@ export default function PosQueuePage() {
         {filteredItems.length === 0 ? (
           <div className="col-span-full text-center py-20 bg-white border border-slate-200 rounded-2xl shadow-sm">
             <Coffee className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500 font-medium">KhÃ´ng cÃ³ Ä‘Æ¡n hÃ ng nÃ o trong hÃ ng Ä‘á»£i</p>
+            <p className="text-slate-500 font-medium">Không có đơn hàng nào trong hàng đợi</p>
           </div>
         ) : (
           filteredItems.map((order) => {
-            const hasWarnings = order.items.some(item => item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dá»‹ á»©ng"));
+            const hasWarnings = order.items.some(item => item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dị ứng"));
             return (
               <Card
                 key={order.id}
@@ -355,7 +355,7 @@ export default function PosQueuePage() {
                       </Badge>
                       {hasWarnings && (
                         <Badge className="bg-red-500 text-white font-bold animate-pulse">
-                          Cáº¢NH BÃO
+                          CẢNH BÁO
                         </Badge>
                       )}
                     </div>
@@ -367,15 +367,15 @@ export default function PosQueuePage() {
 
                   <CardContent className="p-5 space-y-4">
                     <div className="text-sm">
-                      <span className="text-slate-400 block mb-0.5">KhÃ¡ch hÃ ng</span>
+                      <span className="text-slate-400 block mb-0.5">Khách hàng</span>
                       <span className="font-semibold text-slate-800">{order.customerName}</span>
                     </div>
 
                     <div className="space-y-3">
-                      <span className="text-slate-400 text-sm block">Äá»“ uá»‘ng cáº§n pha</span>
+                      <span className="text-slate-400 text-sm block">Đồ uống cần pha</span>
                       <div className="space-y-2">
                         {order.items.map((item, idx) => {
-                          const isAllergyItem = item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dá»‹ á»©ng");
+                          const isAllergyItem = item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dị ứng");
                           return (
                             <div
                               key={idx}
@@ -388,7 +388,7 @@ export default function PosQueuePage() {
                                   {item.name}
                                   {item.options.length > 0 && (
                                     <span className="text-slate-500 font-normal">
-                                      {" â€” "}{item.options.join(" â€” ")}
+                                      {" — "}{item.options.join(" — ")}
                                     </span>
                                   )}
                                 </span>
@@ -422,7 +422,7 @@ export default function PosQueuePage() {
                       className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-sm transition-all active:scale-[0.98]"
                     >
                       <Play className="w-4 h-4 mr-2" />
-                      Báº¯t Ä‘áº§u pha cháº¿
+                      Bắt đầu pha chế
                     </Button>
                   )}
                   {order.status === "BREWING" && (
@@ -434,13 +434,13 @@ export default function PosQueuePage() {
                       className="w-full bg-roast hover:bg-roast/90 text-white font-medium shadow-sm transition-all active:scale-[0.98]"
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      HoÃ n thÃ nh pha
+                      Hoàn thành pha
                     </Button>
                   )}
                   {order.status === "DONE" && (
                     <div className="w-full flex items-center justify-center gap-1.5 py-2 text-emerald-600 font-semibold text-sm">
                       <CheckCircle className="w-5 h-5" />
-                      <span>ÄÃ£ sáºµn sÃ ng giao khÃ¡ch</span>
+                      <span>Đã sẵn sàng giao khách</span>
                     </div>
                   )}
                 </div>
@@ -450,7 +450,7 @@ export default function PosQueuePage() {
         )}
       </div>
 
-      {/* Chi tiáº¿t Ä‘Æ¡n pha cháº¿ Modal */}
+      {/* Chi tiết đơn pha chế Modal */}
       <Dialog open={selectedQueueItem !== null} onOpenChange={(open) => { if (!open) setSelectedQueueItem(null); }}>
         <DialogContent className="max-w-2xl bg-white rounded-2xl overflow-hidden p-0 gap-0 border-0 shadow-2xl">
           {selectedQueueItem && (
@@ -466,31 +466,31 @@ export default function PosQueuePage() {
                 <div className="flex items-center gap-3">
                   <Receipt className="w-8 h-8 opacity-90" />
                   <div>
-                    <h2 className="text-xl font-bold font-mono">ÄÆ N #{selectedQueueItem.orderNumber}</h2>
+                    <h2 className="text-xl font-bold font-mono">ĐƠN #{selectedQueueItem.orderNumber}</h2>
                     <p className="text-xs opacity-75 mt-0.5">
-                      Loáº¡i Ä‘Æ¡n: {selectedQueueItem.type} | ÄÃ£ trÃ´i qua: {formatTime(selectedQueueItem.timeElapsed)}
+                      Loại đơn: {selectedQueueItem.type} | Đã trôi qua: {formatTime(selectedQueueItem.timeElapsed)}
                     </p>
                   </div>
                 </div>
                 <Badge className="bg-white/20 text-white font-semibold border-white/20">
                   {selectedQueueItem.status === "WAITING"
-                    ? "Chá» pha cháº¿"
+                    ? "Chờ pha chế"
                     : selectedQueueItem.status === "BREWING"
-                    ? "Äang pha cháº¿"
-                    : "ÄÃ£ hoÃ n thÃ nh"}
+                    ? "Đang pha chế"
+                    : "Đã hoàn thành"}
                 </Badge>
               </div>
 
               {/* Body */}
               <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
                 {/* Warnings / Notes */}
-                {selectedQueueItem.items.some(item => item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dá»‹ á»©ng")) && (
+                {selectedQueueItem.items.some(item => item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dị ứng")) && (
                   <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-sm">Cáº¢NH BÃO Dá»Š á»¨NG & Vá»† SINH AN TOÃ€N</h4>
+                      <h4 className="font-bold text-sm">CẢNH BÁO DỊ ỨNG & VỆ SINH AN TOÀN</h4>
                       <p className="text-xs mt-1 leading-relaxed">
-                        ÄÆ¡n hÃ ng nÃ y cÃ³ yÃªu cáº§u dá»‹ á»©ng Ä‘áº·c biá»‡t. Vui lÃ²ng Ä‘áº£m báº£o sá»­ dá»¥ng cÃ¡c dá»¥ng cá»¥ pha cháº¿ (ca Ä‘ong, thÃ¬a khuáº¥y, mÃ¡y xay) hoÃ n toÃ n riÃªng biá»‡t Ä‘á»ƒ trÃ¡nh nhiá»…m chÃ©o.
+                        Đơn hàng này có yêu cầu dị ứng đặc biệt. Vui lòng đảm bảo sử dụng các dụng cụ pha chế (ca đong, thìa khuấy, máy xay) hoàn toàn riêng biệt để tránh nhiễm chéo.
                       </p>
                     </div>
                   </div>
@@ -500,23 +500,23 @@ export default function PosQueuePage() {
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
                   <h3 className="text-slate-700 font-bold text-sm flex items-center gap-2">
                     <User className="w-4 h-4 text-slate-500" />
-                    ThÃ´ng tin khÃ¡ch hÃ ng
+                    Thông tin khách hàng
                   </h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-slate-400 block text-xs">TÃªn khÃ¡ch hÃ ng</span>
+                      <span className="text-slate-400 block text-xs">Tên khách hàng</span>
                       <span className="font-semibold text-slate-800">{selectedQueueItem.customerName}</span>
                     </div>
                     {selectedQueueItem.customerPhone && (
                       <div>
-                        <span className="text-slate-400 block text-xs">Sá»‘ Ä‘iá»‡n thoáº¡i</span>
+                        <span className="text-slate-400 block text-xs">Số điện thoại</span>
                         <span className="font-semibold text-slate-800">{selectedQueueItem.customerPhone}</span>
                       </div>
                     )}
                   </div>
                   {selectedQueueItem.notes && (
                     <div className="mt-2 pt-2 border-t border-slate-200">
-                      <span className="text-slate-400 block text-xs">Ghi chÃº Ä‘Æ¡n hÃ ng</span>
+                      <span className="text-slate-400 block text-xs">Ghi chú đơn hàng</span>
                       <span className="text-amber-800 font-medium text-xs bg-amber-50 px-2 py-1 rounded block mt-1">
                         {selectedQueueItem.notes}
                       </span>
@@ -528,11 +528,11 @@ export default function PosQueuePage() {
                 <div className="space-y-3">
                   <h3 className="text-slate-700 font-bold text-sm flex items-center gap-2">
                     <Coffee className="w-4 h-4 text-slate-500" />
-                    Danh sÃ¡ch mÃ³n cáº§n pha cháº¿
+                    Danh sách món cần pha chế
                   </h3>
                   <div className="space-y-3">
                     {selectedQueueItem.items.map((item, idx) => {
-                      const isAllergy = item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dá»‹ á»©ng");
+                      const isAllergy = item.notes?.toLowerCase().includes("allergy") || item.notes?.toLowerCase().includes("dị ứng");
                       return (
                         <div
                           key={idx}
@@ -547,7 +547,7 @@ export default function PosQueuePage() {
                               </h4>
                               {item.options.length > 0 && (
                                 <p className="text-sm text-slate-500 font-medium">
-                                  {item.options.join(" â€” ")}
+                                  {item.options.join(" — ")}
                                 </p>
                               )}
                             </div>
@@ -578,7 +578,7 @@ export default function PosQueuePage() {
                   onClick={() => setSelectedQueueItem(null)}
                   className="border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl"
                 >
-                  ÄÃ³ng
+                  Đóng
                 </Button>
                 {selectedQueueItem.status === "WAITING" && (
                   <Button
@@ -586,7 +586,7 @@ export default function PosQueuePage() {
                     className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-md"
                   >
                     <Play className="w-4 h-4 mr-2" />
-                    Báº¯t Ä‘áº§u pha cháº¿
+                    Bắt đầu pha chế
                   </Button>
                 )}
                 {selectedQueueItem.status === "BREWING" && (
@@ -595,7 +595,7 @@ export default function PosQueuePage() {
                     className="bg-roast hover:bg-roast/90 text-white rounded-xl font-bold shadow-md"
                   >
                     <Check className="w-4 h-4 mr-2" />
-                    HoÃ n thÃ nh pha
+                    Hoàn thành pha
                   </Button>
                 )}
               </div>

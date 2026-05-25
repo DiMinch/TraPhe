@@ -1,13 +1,13 @@
 export interface CustomerTier {
   id: string;
   name: string;
-  minPoint: number;
+  tierLevel: number;
+  minSpending: number;
+  pointEarningRate: number;
   discountRate: number;
   description?: string;
-  status: "ACTIVE" | "INACTIVE";
-  customerCount?: number;
+  active: boolean;
   createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface LoyaltyPoint {
@@ -58,7 +58,9 @@ export interface UpdateCustomerRequest {
 
 export interface CustomerTierRequest {
   name: string;
-  minPoint: number;
+  tierLevel: number;
+  minSpending: number;
+  pointEarningRate: number;
   discountRate: number;
   description?: string;
 }

@@ -16,7 +16,9 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -61,9 +63,9 @@ public class OrderItem extends BaseEntity {
 
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<OrderItemOption> selectedOptions = new ArrayList<>();
+    private Set<OrderItemOption> selectedOptions = new HashSet<>();
 
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<OrderItemTopping> selectedToppings = new ArrayList<>();
+    private Set<OrderItemTopping> selectedToppings = new HashSet<>();
 }

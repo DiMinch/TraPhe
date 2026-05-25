@@ -23,6 +23,7 @@ import com.example.traphe_backend.repository.StockTransactionRepository;
 import com.example.traphe_backend.repository.SupplierRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.StockService;
+import com.example.traphe_backend.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ public class StockServiceImpl implements StockService {
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
     private final StockMapper stockMapper;
+    private final SystemConfigService systemConfigService;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,10 +59,18 @@ public class StockServiceImpl implements StockService {
 
         List<IngredientStock> stocks;
 
-        if (Boolean.TRUE.equals(lowStockOnly)) {
-            stocks = stockRepository.findLowStockByBranchId(branchId);
+        if (branchId == null) {
+            if (Boolean.TRUE.equals(lowStockOnly)) {
+                stocks = stockRepository.findAllLowStock();
+            } else {
+                stocks = stockRepository.findAll();
+            }
         } else {
-            stocks = stockRepository.findByBranchId(branchId);
+            if (Boolean.TRUE.equals(lowStockOnly)) {
+                stocks = stockRepository.findLowStockByBranchId(branchId);
+            } else {
+                stocks = stockRepository.findByBranchId(branchId);
+            }
         }
 
         // Batch-fetch ingredients
@@ -249,22 +259,40 @@ public class StockServiceImpl implements StockService {
 
     // ==================== Low Stock Helpers ====================
 
+    /**
+     * Returns the effective stock alert threshold for an ingredient.
+     * Uses the ingredient's own minStockAlert if set, otherwise falls back
+     * to the system-wide DEFAULT_INVENTORY_THRESHOLD config.
+     */
+    private BigDecimal getEffectiveThreshold(Ingredient ingredient) {
+        if (ingredient.getMinStockAlert() != null) {
+            return ingredient.getMinStockAlert();
+        }
+        // Fallback to system-wide default
+        return systemConfigService.getValueByKey("DEFAULT_INVENTORY_THRESHOLD")
+                .map(val -> {
+                    try { return new BigDecimal(val); }
+                    catch (NumberFormatException e) { return null; }
+                })
+                .orElse(null);
+    }
+
     private void checkLowStockNotification(IngredientStock stock, Ingredient ingredient, UUID branchId) {
-        if (ingredient.getMinStockAlert() != null
-                && stock.getQuantityAvailable().compareTo(ingredient.getMinStockAlert()) < 0) {
-            createLowStockNotification(ingredient, stock, branchId);
+        BigDecimal threshold = getEffectiveThreshold(ingredient);
+        if (threshold != null && stock.getQuantityAvailable().compareTo(threshold) < 0) {
+            createLowStockNotification(ingredient, stock, branchId, threshold);
         }
     }
 
     private void checkAndClearLowStock(IngredientStock stock, Ingredient ingredient, UUID branchId) {
         // After import, if still low, notify
-        if (ingredient.getMinStockAlert() != null
-                && stock.getQuantityAvailable().compareTo(ingredient.getMinStockAlert()) < 0) {
-            createLowStockNotification(ingredient, stock, branchId);
+        BigDecimal threshold = getEffectiveThreshold(ingredient);
+        if (threshold != null && stock.getQuantityAvailable().compareTo(threshold) < 0) {
+            createLowStockNotification(ingredient, stock, branchId, threshold);
         }
     }
 
-    private void createLowStockNotification(Ingredient ingredient, IngredientStock stock, UUID branchId) {
+    private void createLowStockNotification(Ingredient ingredient, IngredientStock stock, UUID branchId, BigDecimal threshold) {
         Notification notification = Notification.builder()
                 .branchId(branchId)
                 .title("Cảnh báo tồn kho thấp")
@@ -272,7 +300,7 @@ public class StockServiceImpl implements StockService {
                         ingredient.getName(),
                         stock.getQuantityAvailable().toPlainString(),
                         ingredient.getUnit(),
-                        ingredient.getMinStockAlert().toPlainString(),
+                        threshold.toPlainString(),
                         ingredient.getUnit()))
                 .type(NotificationType.LOW_STOCK)
                 .createdAt(LocalDateTime.now())
@@ -280,6 +308,6 @@ public class StockServiceImpl implements StockService {
         notificationRepository.save(notification);
         log.warn("LOW STOCK ALERT: {} at branch {} — {} {} (threshold: {})",
                 ingredient.getName(), branchId,
-                stock.getQuantityAvailable(), ingredient.getUnit(), ingredient.getMinStockAlert());
+                stock.getQuantityAvailable(), ingredient.getUnit(), threshold);
     }
 }

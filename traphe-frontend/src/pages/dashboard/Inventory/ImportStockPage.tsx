@@ -184,7 +184,7 @@ export default function ImportStockPage() {
               ))}
 
               <div className="pt-6 flex justify-end">
-                <Button className="bg-roast hover:bg-roast/90 w-40" onClick={handleSubmit} disabled={submitting}>
+                <Button className="bg-roast hover:bg-roast/90 px-6 py-2 h-10 w-auto" onClick={handleSubmit} disabled={submitting}>
                   {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                   Hoàn tất nhập kho
                 </Button>

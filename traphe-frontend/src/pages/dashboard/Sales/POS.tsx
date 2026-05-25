@@ -314,7 +314,7 @@ export default function POSPage() {
           phone: data.phoneNumber,
           email: "",
           totalPurchase: 0,
-          tier: { id: "std", name: "Standard", minPoint: 0, discountRate: 0, status: "ACTIVE" },
+          tier: { id: "std", name: "Standard", tierLevel: 0, minSpending: 0, pointEarningRate: 1, discountRate: 0, active: true },
           loyaltyPoint: { id: "lp", totalPoints: data.loyaltyPoints, pointsAvailable: data.loyaltyPoints, pointsUsed: 0, pointRate: 1 },
           addresses: [],
           createdAt: new Date().toISOString(),

@@ -30,8 +30,14 @@ export default function AdminToppingsPage() {
     try {
       setIsLoading(true);
       const res = await toppingService.getAll({ size: 100 });
-      if (res.data?.data?.content) {
-        setToppings(res.data.data.content);
+      const content = res.data?.content ?? res.data ?? [];
+      if (Array.isArray(content)) {
+        const mapped = content.map((t: any) => ({
+          ...t,
+          isAvailable: t.isAvailable ?? t.available ?? true,
+          available: t.available ?? t.isAvailable ?? true,
+        }));
+        setToppings(mapped);
       }
     } catch (error) {
       toast.error("Không thể tải danh sách Topping");
@@ -82,7 +88,7 @@ export default function AdminToppingsPage() {
     setForm({
       name: t.name,
       extraPrice: t.extraPrice.toString(),
-      isAvailable: t.isAvailable,
+      isAvailable: t.isAvailable ?? t.available ?? true,
     });
     setEditingId(t.id);
     setShowForm(true);

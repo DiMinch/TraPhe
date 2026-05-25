@@ -6,6 +6,7 @@ export interface Topping {
   extraPrice: number;
   imageUrl: string | null;
   isAvailable: boolean;
+  available?: boolean;
 }
 
 export interface ToppingRequest {

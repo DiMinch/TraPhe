@@ -9,9 +9,10 @@ interface MapLocationPickerProps {
   lat: string;
   lng: string;
   onChange: (lat: string, lng: string) => void;
+  address?: string;
 }
 
-export default function MapLocationPicker({ lat, lng, onChange }: MapLocationPickerProps) {
+export default function MapLocationPicker({ lat, lng, onChange, address }: MapLocationPickerProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
@@ -74,9 +75,41 @@ export default function MapLocationPicker({ lat, lng, onChange }: MapLocationPic
       }
     }
   }, [lat, lng]);
+  // Trigger geocoding when address prop changes
+  useEffect(() => {
+    if (address && address.trim()) {
+      setSearchQuery(address);
+      
+      const delayDebounceFn = setTimeout(() => {
+        const parts = address.split(",").map(p => p.trim()).filter(Boolean);
+        // Only auto search if we have a reasonably complete address (street, commune, province)
+        if (parts.length >= 3 && parts[0] && parts[1] && parts[2]) {
+          autoSearch(address);
+        }
+      }, 1000);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [address]);
+
+  const autoSearch = async (query: string) => {
+    try {
+      const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=VN&autocomplete=true`);
+      const data = await res.json();
+      if (data.features && data.features.length > 0) {
+        const firstFeature = data.features[0];
+        const [featureLng, featureLat] = firstFeature.center;
+        if (mapRef.current && markerRef.current) {
+          mapRef.current.flyTo({ center: [featureLng, featureLat], zoom: 15 });
+          markerRef.current.setLngLat([featureLng, featureLat]);
+          onChange(featureLat.toFixed(6), featureLng.toFixed(6));
+        }
+      }
+    } catch (err) {
+      console.error("Auto geocoding error", err);
+    }
+  };
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return;
 
     try {
@@ -103,7 +136,7 @@ export default function MapLocationPicker({ lat, lng, onChange }: MapLocationPic
 
   return (
     <div className="space-y-3">
-      <form onSubmit={handleSearch} className="relative">
+      <div className="relative">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -116,11 +149,17 @@ export default function MapLocationPicker({ lat, lng, onChange }: MapLocationPic
                 setSearchQuery(e.target.value);
                 if (e.target.value === "") setSearchResults([]);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
               placeholder="Tìm kiếm địa điểm..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#5C3317] focus:border-[#5C3317] text-sm"
             />
           </div>
-          <button type="submit" className="px-4 py-2 bg-[#5C3317] text-white rounded-md text-sm hover:bg-[#4A2810]">
+          <button type="button" onClick={handleSearch} className="px-4 py-2 bg-[#5C3317] text-white rounded-md text-sm hover:bg-[#4A2810]">
             Tìm
           </button>
         </div>
@@ -138,7 +177,7 @@ export default function MapLocationPicker({ lat, lng, onChange }: MapLocationPic
             ))}
           </div>
         )}
-      </form>
+      </div>
       
       <div className="relative h-[300px] w-full rounded-md border border-gray-300 overflow-hidden">
         <div ref={mapContainer} className="absolute inset-0 w-full h-full" />

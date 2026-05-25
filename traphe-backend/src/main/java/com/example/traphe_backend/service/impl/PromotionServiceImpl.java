@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import com.example.traphe_backend.enums.PromotionScope;
 
 @Slf4j
 @Service
@@ -37,12 +40,17 @@ public class PromotionServiceImpl implements PromotionService {
      * @return Số tiền giảm giá (VND)
      */
     public BigDecimal calculateDiscount(String code, BigDecimal orderAmount, User user) {
+        return calculateDiscount(code, orderAmount, user, null);
+    }
+
+    public BigDecimal calculateDiscount(String code, BigDecimal orderAmount, User user, List<ItemInfo> items) {
         Promotion promotion = promotionRepository.findByCodeAndIsDeletedFalse(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Mã khuyến mãi '" + code + "' không tồn tại"));
 
         validatePromotion(promotion, orderAmount, user);
 
-        return computeDiscountAmount(promotion, orderAmount);
+        BigDecimal eligibleAmount = computeEligibleAmount(promotion, orderAmount, items);
+        return computeDiscountAmount(promotion, eligibleAmount);
     }
 
     /**
@@ -56,7 +64,8 @@ public class PromotionServiceImpl implements PromotionService {
 
         validatePromotion(promotion, order.getSubtotal(), user);
 
-        BigDecimal discountAmount = computeDiscountAmount(promotion, order.getSubtotal());
+        BigDecimal eligibleAmount = getEligibleAmountForOrder(promotion, order);
+        BigDecimal discountAmount = computeDiscountAmount(promotion, eligibleAmount);
 
         // Increment usage count (with implicit optimistic locking via BaseEntity version if available)
         promotion.setUsageCount(promotion.getUsageCount() + 1);
@@ -92,7 +101,10 @@ public class PromotionServiceImpl implements PromotionService {
 
         validatePromotion(promotion, combinedSubtotal, user);
 
-        BigDecimal discountAmount = computeDiscountAmount(promotion, combinedSubtotal);
+        // Đối với combined order, ta tính eligible amount trên primary order (để đơn giản)
+        // Hoặc truyền list items của tất cả các đơn. Hiện tại pass combinedSubtotal làm fallback.
+        BigDecimal eligibleAmount = getEligibleAmountForOrder(promotion, primaryOrder);
+        BigDecimal discountAmount = computeDiscountAmount(promotion, eligibleAmount);
 
         // Increment usage count
         promotion.setUsageCount(promotion.getUsageCount() + 1);
@@ -130,6 +142,15 @@ public class PromotionServiceImpl implements PromotionService {
             throw new IllegalArgumentException("Mã khuyến mãi '" + promotion.getCode() + "' đã hết hạn.");
         }
 
+        // 2b. Kiểm tra khung giờ (happy hour)
+        LocalTime timeNow = LocalTime.now();
+        if (promotion.getDailyStartTime() != null && timeNow.isBefore(promotion.getDailyStartTime())) {
+            throw new IllegalArgumentException("Mã khuyến mãi '" + promotion.getCode() + "' chỉ áp dụng từ " + promotion.getDailyStartTime() + " hàng ngày.");
+        }
+        if (promotion.getDailyEndTime() != null && timeNow.isAfter(promotion.getDailyEndTime())) {
+            throw new IllegalArgumentException("Mã khuyến mãi '" + promotion.getCode() + "' chỉ áp dụng đến " + promotion.getDailyEndTime() + " hàng ngày.");
+        }
+
         // 3. Kiểm tra giới hạn tổng
         if (promotion.getUsageLimit() != null && promotion.getUsageCount() >= promotion.getUsageLimit()) {
             throw new IllegalArgumentException("Mã khuyến mãi '" + promotion.getCode() + "' đã hết lượt sử dụng.");
@@ -154,6 +175,55 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     // ======================== CALCULATION ========================
+
+    private BigDecimal computeEligibleAmount(Promotion promotion, BigDecimal defaultAmount, List<ItemInfo> items) {
+        if (promotion.getScope() == PromotionScope.ORDER || promotion.getScope() == PromotionScope.PERSONAL) {
+            return defaultAmount;
+        }
+
+        if (items == null || items.isEmpty()) {
+            return BigDecimal.ZERO; 
+        }
+
+        BigDecimal eligibleAmount = BigDecimal.ZERO;
+        if (promotion.getScope() == PromotionScope.CATEGORY && promotion.getApplicableCategoryIds() != null) {
+            for (ItemInfo item : items) {
+                if (item.categoryId() != null && promotion.getApplicableCategoryIds().contains(item.categoryId())) {
+                    eligibleAmount = eligibleAmount.add(item.quantity().multiply(item.unitPrice()));
+                }
+            }
+        } else if (promotion.getScope() == PromotionScope.PRODUCT && promotion.getApplicableProductIds() != null) {
+            for (ItemInfo item : items) {
+                if (item.productId() != null && promotion.getApplicableProductIds().contains(item.productId())) {
+                    eligibleAmount = eligibleAmount.add(item.quantity().multiply(item.unitPrice()));
+                }
+            }
+        }
+        return eligibleAmount;
+    }
+
+    private BigDecimal getEligibleAmountForOrder(Promotion promotion, Order order) {
+        if (promotion.getScope() == PromotionScope.ORDER || promotion.getScope() == PromotionScope.PERSONAL) {
+            return order.getSubtotal();
+        }
+        
+        BigDecimal eligibleAmount = BigDecimal.ZERO;
+        if (promotion.getScope() == PromotionScope.CATEGORY && promotion.getApplicableCategoryIds() != null) {
+            for (var item : order.getItems()) {
+                if (item.getMenuItem() != null && item.getMenuItem().getCategory() != null && 
+                    promotion.getApplicableCategoryIds().contains(item.getMenuItem().getCategory().getId())) {
+                    eligibleAmount = eligibleAmount.add(item.getSubtotal());
+                }
+            }
+        } else if (promotion.getScope() == PromotionScope.PRODUCT && promotion.getApplicableProductIds() != null) {
+            for (var item : order.getItems()) {
+                if (item.getMenuItem() != null && promotion.getApplicableProductIds().contains(item.getMenuItem().getId())) {
+                    eligibleAmount = eligibleAmount.add(item.getSubtotal());
+                }
+            }
+        }
+        return eligibleAmount;
+    }
 
     private BigDecimal computeDiscountAmount(Promotion promotion, BigDecimal orderAmount) {
         BigDecimal discount;

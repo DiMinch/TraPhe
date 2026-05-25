@@ -214,9 +214,6 @@ export default function CategoryPage() {
                       <TableHead className="font-semibold text-slate-700">
                         Parent
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Specs
-                      </TableHead>
                       <TableHead className="text-right font-semibold text-slate-700">
                         Actions
                       </TableHead>
@@ -262,14 +259,6 @@ export default function CategoryPage() {
                               Root
                             </Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-purple-50 text-purple-700 border-purple-200 rounded-full px-3"
-                          >
-                            {category.specs?.length || 0} specs
-                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
@@ -322,7 +311,7 @@ export default function CategoryPage() {
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
             <DialogDescription>
-              Create a new product category with specifications
+              Create a new product category
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

@@ -73,7 +73,7 @@ import {
 import { toast } from "sonner";
 
 const getPromotionStatus = (promo: PromotionResponse): PromotionStatus => {
-  if (!promo.isActive) return "INACTIVE";
+  if (!promo.active) return "INACTIVE";
   const now = new Date();
   const start = new Date(promo.startDate);
   const end = new Date(promo.endDate);
@@ -125,6 +125,8 @@ export default function PromotionListPage() {
     applicableCategoryIds: [],
     applicableProductIds: [],
     conflictingPromotionIds: [],
+    dailyStartTime: null,
+    dailyEndTime: null,
   });
 
   // Categories and products for selection
@@ -193,7 +195,7 @@ export default function PromotionListPage() {
         const perUserLimit = p.perUserLimit || 1;
 
         let status: PromotionStatus = "INACTIVE";
-        if (p.isActive) {
+        if (p.active) {
           const now = new Date();
           const start = new Date(p.startDate);
           const end = new Date(p.endDate);
@@ -362,7 +364,7 @@ export default function PromotionListPage() {
           promotions.map((p) => (p.id === promotion.id ? enrichedUpdated : p)),
         );
         toast.success(
-          `Promotion ${enrichedUpdated.isActive ? "activated" : "deactivated"} successfully`,
+          `Promotion ${enrichedUpdated.active ? "activated" : "deactivated"} successfully`,
         );
       } else {
         // Fallback: just refresh the list
@@ -426,6 +428,11 @@ export default function PromotionListPage() {
         perUserLimit: formData.usagePerCustomer || 1,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        scope: formData.scope as any,
+        dailyStartTime: formData.dailyStartTime || null,
+        dailyEndTime: formData.dailyEndTime || null,
+        applicableCategoryIds: formData.applicableCategoryIds,
+        applicableProductIds: formData.applicableProductIds,
       };
 
       const response = await promotionService.createPromotion(requestData);
@@ -487,6 +494,8 @@ export default function PromotionListPage() {
       applicableCategoryIds: [],
       applicableProductIds: [],
       conflictingPromotionIds: [],
+      dailyStartTime: null,
+      dailyEndTime: null,
     });
     setEditingPromotion(null);
   };
@@ -511,6 +520,8 @@ export default function PromotionListPage() {
       applicableCategoryIds: promotion.applicableCategoryIds || [],
       applicableProductIds: promotion.applicableProductIds || [],
       conflictingPromotionIds: promotion.conflictingPromotionIds || [],
+      dailyStartTime: promotion.dailyStartTime || null,
+      dailyEndTime: promotion.dailyEndTime || null,
     });
     setIsEditDialogOpen(true);
   };
@@ -568,6 +579,11 @@ export default function PromotionListPage() {
         perUserLimit: formData.usagePerCustomer || 1,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        scope: formData.scope as any,
+        dailyStartTime: formData.dailyStartTime || null,
+        dailyEndTime: formData.dailyEndTime || null,
+        applicableCategoryIds: formData.applicableCategoryIds,
+        applicableProductIds: formData.applicableProductIds,
       };
 
       const response = await promotionService.updatePromotion(
@@ -841,12 +857,12 @@ export default function PromotionListPage() {
                           <span className="font-bold text-emerald-600">
                             {(promo.type || "PERCENTAGE") === "PERCENTAGE"
                               ? `${promo.value || 0}%`
-                              : `${(promo.value || 0).toLocaleString()}â‚«`}
+                              : `${(promo.value || 0).toLocaleString()}₫`}
                           </span>
                           {promo.maxDiscountAmount &&
                             promo.maxDiscountAmount > 0 && (
                               <div className="text-xs text-slate-500">
-                                Max: {promo.maxDiscountAmount.toLocaleString()}â‚«
+                                Max: {promo.maxDiscountAmount.toLocaleString()}₫
                               </div>
                             )}
                         </TableCell>
@@ -856,7 +872,7 @@ export default function PromotionListPage() {
                               {formatDate(promo.startDate)}
                             </div>
                             <div className="text-slate-500">
-                              â†’ {formatDate(promo.endDate)}
+                              → {formatDate(promo.endDate)}
                             </div>
                           </div>
                         </TableCell>
@@ -882,7 +898,7 @@ export default function PromotionListPage() {
                               </div>
                             ) : (
                               <span className="text-slate-400 text-xs">
-                                âˆž Unlimited
+                                ∞ Unlimited
                               </span>
                             )}
                           </div>
@@ -894,9 +910,9 @@ export default function PromotionListPage() {
                               size="icon"
                               className="h-9 w-9 hover:bg-emerald-50 rounded-lg transition-colors"
                               onClick={() => handleToggleStatus(promo)}
-                              title={promo.isActive ? "Deactivate" : "Activate"}
+                              title={promo.active ? "Deactivate" : "Activate"}
                             >
-                              {promo.isActive ? (
+                              {promo.active ? (
                                 <ToggleRight className="text-emerald-600" />
                               ) : (
                                 <ToggleLeft className="text-gray-400" />
@@ -1079,7 +1095,7 @@ export default function PromotionListPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="value">
-                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "(Ä‘)"}
+                  Value * {formData.type === "PERCENTAGE" ? "(%)" : "(đ)"}
                 </Label>
                 <Input
                   id="value"
@@ -1288,7 +1304,32 @@ export default function PromotionListPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="minOrderValue">Min Order Value (Ä‘)</Label>
+                  <Label htmlFor="dailyStartTime">Khung giờ bắt đầu (HH:mm)</Label>
+                  <Input
+                    id="dailyStartTime"
+                    type="time"
+                    value={formData.dailyStartTime || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dailyStartTime: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dailyEndTime">Khung giờ kết thúc (HH:mm)</Label>
+                  <Input
+                    id="dailyEndTime"
+                    type="time"
+                    value={formData.dailyEndTime || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dailyEndTime: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minOrderValue">Min Order Value (đ)</Label>
                   <Input
                     id="minOrderValue"
                     type="number"
@@ -1304,7 +1345,7 @@ export default function PromotionListPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="maxDiscountAmount">Max Discount (Ä‘)</Label>
+                  <Label htmlFor="maxDiscountAmount">Max Discount (đ)</Label>
                   <Input
                     id="maxDiscountAmount"
                     type="number"

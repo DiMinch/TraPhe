@@ -27,16 +27,6 @@ import {
   Loader2,
   Users,
   ChevronRight,
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Clipboard,
-  ChartBar,
-  Tag,
-  Settings,
-  UserCog,
-  ClipboardList,
-  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
@@ -46,6 +36,7 @@ import {
   type UserInRole,
 } from "@/services/role.service";
 import { toast } from "sonner";
+import { navItems } from "@/components/navItems";
 import {
   PageContainer,
   PageHeader,
@@ -61,114 +52,20 @@ interface PageAccess {
   subPages?: { title: string; path: string }[];
 }
 
-// Define all available pages with their allowed roles
-const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = [
-  {
-    title: "Dashboard",
-    path: "/admin",
-    icon: LayoutDashboard,
-    allowedRoles: [
-      UserRole.ADMIN,
-      UserRole.EMPLOYEE,
-      UserRole.CASHIER,
-      UserRole.ACCOUNTANT,
-    ],
-  },
-  {
-    title: "Menu",
-    path: "/admin/menu",
-    icon: Package,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Sản phẩm", path: "/admin/menu/items" },
-      { title: "Topping", path: "/admin/menu/toppings" },
-      { title: "Danh mục", path: "/admin/menu/categories" },
-      { title: "Menu chi nhánh", path: "/admin/menu/branch" },
-    ],
-  },
-  {
-    title: "Kho hàng",
-    path: "/admin/stock",
-    icon: ShoppingCart,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Tổng quan", path: "/admin/stock" },
-      { title: "Tồn kho", path: "/admin/stock/all" },
-      { title: "Lịch sử­", path: "/admin/stock/history" },
-    ],
-  },
-  {
-    title: "NhÃ  cung cáº¥p",
-    path: "/admin/suppliers",
-    icon: Clipboard,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Danh sÃ¡ch NCC", path: "/admin/suppliers" },
-      { title: "ÄÆ¡n mua hÃ ng", path: "/admin/suppliers/purchase-orders" },
-    ],
-  },
-  {
-    title: "ÄÆ¡n hÃ ng",
-    path: "/admin/orders",
-    icon: ChartBar,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-    subPages: [
-      { title: "POS", path: "/admin/orders/pos" },
-      { title: "Táº¥t cáº£ Ä‘Æ¡n", path: "/admin/orders" },
-    ],
-  },
-  {
-    title: "KhÃ¡ch hÃ ng",
-    path: "/admin/loyalty/customers",
-    icon: Users,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-    subPages: [
-      { title: "Danh sÃ¡ch KH", path: "/admin/loyalty/customers" },
-      { title: "Háº¡ng thÃ nh viÃªn", path: "/admin/loyalty/tiers" },
-    ],
-  },
-  {
-    title: "Khuyáº¿n mÃ£i",
-    path: "/admin/promotions",
-    icon: Tag,
-    allowedRoles: [UserRole.ADMIN],
-  },
-  {
-    title: "BÃ¡o cÃ¡o",
-    path: "/admin/reports",
-    icon: BarChart3,
-    allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT],
-    subPages: [
-      { title: "Doanh thu", path: "/admin/reports/revenue" },
-      { title: "Lá»£i nhuáº­n", path: "/admin/reports/profit" },
-      { title: "MÃ³n bÃ¡n cháº¡y", path: "/admin/reports/products" },
-      { title: "Tá»“n kho", path: "/admin/reports/inventory" },
-    ],
-  },
-  {
-    title: "CÃ i Ä‘áº·t",
-    path: "/admin/settings",
-    icon: Settings,
-    allowedRoles: [UserRole.ADMIN],
-    subPages: [{ title: "Cáº¥u hÃ¬nh", path: "/admin/settings" }],
-  },
-  {
-    title: "NhÃ¢n sá»±",
-    path: "/admin/staff",
-    icon: UserCog,
-    allowedRoles: [UserRole.ADMIN],
-    subPages: [
-      { title: "TÃ i khoáº£n NV", path: "/admin/staff" },
-      { title: "Vai trÃ² & Quyá»n", path: "/admin/staff/roles" },
-    ],
-  },
-  {
-    title: "Nháº­t kÃ½",
-    path: "/admin/settings/audit-log",
-    icon: ClipboardList,
-    allowedRoles: [UserRole.ADMIN],
-  },
-];
+// Get all pages from navItems for consistency
+const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = navItems.map(
+  (item) => ({
+    title: item.title,
+    path: item.path,
+    icon: item.icon,
+    allowedRoles: item.allowedRoles || [],
+    subPages: item.subItems?.map((sub) => ({
+      title: sub.title,
+      path: sub.path,
+      allowedRoles: sub.allowedRoles, // Optional, can use later if needed
+    })),
+  })
+);
 
 export default function RolesPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -231,6 +128,8 @@ export default function RolesPermissionsPage() {
       ROLE_CASHIER: UserRole.CASHIER,
       ROLE_ACCOUNTANT: UserRole.ACCOUNTANT,
       ROLE_CUSTOMER: UserRole.CUSTOMER,
+      ROLE_BARISTA: UserRole.BARISTA,
+      ROLE_BRANCH_MANAGER: UserRole.BRANCH_MANAGER,
     };
     return roleMap[roleName] || null;
   };

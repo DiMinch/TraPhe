@@ -9,5 +9,9 @@ package com.example.traphe_backend.enums;
  */
 public enum PromotionScope {
     PUBLIC,
-    PERSONAL
+    PERSONAL,
+    ORDER,
+    CATEGORY,
+    PRODUCT,
+    SHIPPING
 }

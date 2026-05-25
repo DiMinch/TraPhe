@@ -37,4 +37,9 @@ public interface IngredientStockRepository extends JpaRepository<IngredientStock
             "WHERE s.branch.id = :branchId AND i.minStockAlert IS NOT NULL " +
             "AND s.quantityAvailable < i.minStockAlert AND i.isDeleted = false")
     List<IngredientStock> findLowStockByBranchId(@Param("branchId") UUID branchId);
+
+    @Query("SELECT s FROM IngredientStock s JOIN s.ingredient i " +
+            "WHERE i.minStockAlert IS NOT NULL " +
+            "AND s.quantityAvailable < i.minStockAlert AND i.isDeleted = false")
+    List<IngredientStock> findAllLowStock();
 }

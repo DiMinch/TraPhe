@@ -1,6 +1,8 @@
 package com.example.traphe_backend.service.impl;
 
 import com.example.traphe_backend.service.PosService;
+import com.example.traphe_backend.service.InventoryDeductionService;
+import com.example.traphe_backend.service.LoyaltyService;
 
 import com.example.traphe_backend.dto.request.CreatePosOrderRequest;
 import com.example.traphe_backend.dto.request.OrderItemOptionRequest;
@@ -51,6 +53,8 @@ public class PosServiceImpl implements PosService {
     private final ToppingRepository toppingRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final LoyaltyPointRepository loyaltyPointRepository;
+    private final InventoryDeductionService inventoryDeductionService;
+    private final LoyaltyService loyaltyService;
 
     public List<PosMenuResponse> getMenuByBranch(UUID branchId) {
         List<BranchMenuItem> items = branchMenuItemRepository.findByBranchId(branchId);
@@ -248,11 +252,38 @@ public class PosServiceImpl implements PosService {
 
         order.setBrewingStatus(bs);
 
+        boolean justCompleted = false;
         if (bs == BrewingStatus.COMPLETED && order.getStatus() == OrderStatus.CONFIRMED) {
             order.setStatus(OrderStatus.COMPLETED);
+            justCompleted = true;
         }
 
-        orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+
+        // ===== Auto-trigger on COMPLETED (UC22 + UC24) =====
+        if (justCompleted) {
+            // UC22: Trừ nguyên liệu tự động
+            try {
+                inventoryDeductionService.deductStockForOrder(saved, null);
+            } catch (Exception e) {
+                log.error("POS stock deduction failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                throw e; // Rollback to prevent data inconsistency
+            }
+
+            // UC24: Tích điểm loyalty cho khách hàng (chỉ khi có tra SĐT khách)
+            if (saved.getCustomer() != null) {
+                try {
+                    loyaltyService.earnPointsForOrder(saved.getCustomer(), saved);
+                    log.info("POS loyalty points earned for customer {} on order {}",
+                            saved.getCustomer().getEmail(), saved.getOrderNumber());
+                } catch (Exception e) {
+                    log.error("POS loyalty earning failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                    // Non-critical: don't rollback the entire transaction
+                }
+            } else {
+                log.info("POS order {} completed without customer — no loyalty points earned.", saved.getOrderNumber());
+            }
+        }
     }
 
     private String generateOrderNumber() {

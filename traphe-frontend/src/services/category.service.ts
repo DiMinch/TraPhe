@@ -4,8 +4,6 @@ import type {
   Category,
   CreateCategoryRequest,
   UpdateCategoryRequest,
-  CategorySpec,
-  CreateCategorySpecRequest,
 } from "@/types/category.types";
 
 export const categoryService = {
@@ -19,10 +17,7 @@ export const categoryService = {
 
   createCategory: async (data: CreateCategoryRequest, imageFile?: File) => {
     const formData = new FormData();
-    formData.append(
-      "data",
-      new Blob([JSON.stringify(data)], { type: "application/json" }),
-    );
+    formData.append("data", JSON.stringify(data));
     if (imageFile) {
       formData.append("image", imageFile);
     }
@@ -41,10 +36,7 @@ export const categoryService = {
     imageFile?: File,
   ) => {
     const formData = new FormData();
-    formData.append(
-      "data",
-      new Blob([JSON.stringify(data)], { type: "application/json" }),
-    );
+    formData.append("data", JSON.stringify(data));
     if (imageFile) {
       formData.append("image", imageFile);
     }
@@ -59,32 +51,5 @@ export const categoryService = {
 
   deleteCategory: async (id: string) => {
     return axiosClient.delete<unknown, ApiResponse<void>>(`/categories/${id}`);
-  },
-
-  // Spec management
-  getSpecs: async (categoryId: string) => {
-    return axiosClient.get<unknown, ApiResponse<CategorySpec[]>>(
-      `/categories/${categoryId}/specs`,
-    );
-  },
-
-  createSpec: async (data: CreateCategorySpecRequest) => {
-    return axiosClient.post<unknown, ApiResponse<CategorySpec>>(
-      "/categories/specs",
-      data,
-    );
-  },
-
-  updateSpec: async (specId: string, data: CreateCategorySpecRequest) => {
-    return axiosClient.put<unknown, ApiResponse<CategorySpec>>(
-      `/categories/specs/${specId}`,
-      data,
-    );
-  },
-
-  deleteSpec: async (specId: string) => {
-    return axiosClient.delete<unknown, ApiResponse<void>>(
-      `/categories/specs/${specId}`,
-    );
   },
 };
