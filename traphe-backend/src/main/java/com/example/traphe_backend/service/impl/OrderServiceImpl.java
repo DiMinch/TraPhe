@@ -90,6 +90,7 @@ public class OrderServiceImpl implements OrderService {
     private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
     private final UserAddressRepository userAddressRepository;
     private final MerchandiseOrderService merchandiseOrderService;
+    private final OrderQueryService orderQueryService;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -608,136 +609,40 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Map Order entity to OrderResponse DTO.
+     * Delegates to OrderQueryService for shared mapping logic.
      */
-    // ==========================================
-    // GET /api/orders/:id — Chi tiết đơn hàng
-    // ==========================================
+    // ========== Delegated read-only operations → OrderQueryService ==========
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(UUID orderId) {
-        Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Đơn hàng không tồn tại với ID: " + orderId));
-        return mapToOrderResponse(order);
+        return orderQueryService.getOrderById(orderId);
     }
 
-    /**
-     * Object-level access control for getOrderById.
-     * Staff roles (ADMIN, BRANCH_MANAGER, CASHIER, BARISTA) can view any order.
-     * Customers can only view their own orders.
-     */
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(UUID orderId, String userEmail) {
-        Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Đơn hàng không tồn tại với ID: " + orderId));
-
-        User requester = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        boolean isStaff = requester.getRoles().stream()
-                .anyMatch(r -> r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_ADMIN
-                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_BRANCH_MANAGER
-                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_CASHIER
-                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_BARISTA);
-
-        if (!isStaff && (order.getCustomer() == null || !order.getCustomer().getId().equals(requester.getId()))) {
-            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng này.");
-        }
-
-        return mapToOrderResponse(order);
+        return orderQueryService.getOrderById(orderId, userEmail);
     }
-
-    // ==========================================
-    // GET /api/orders/user — Lịch sử đơn hàng của User
-    // ==========================================
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return orderRepository
-                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
-                .map(this::mapToOrderResponse);
+        return orderQueryService.getMyOrders(userEmail, pageable);
     }
-
-    // ==========================================
-    // GET /api/orders/customer/{id} — Lịch sử đơn hàng của khách hàng (Admin)
-    // ==========================================
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
-        User user = userRepository.findById(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        return orderRepository
-                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
-                .map(this::mapToOrderResponse);
+        return orderQueryService.getCustomerOrders(customerId, pageable);
     }
-
-    // ==========================================
-    // GET /api/orders — Danh sách đơn hàng (Admin)
-    // ==========================================
 
     @Transactional(readOnly = true)
     public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
-        OrderStatus status = null;
-        if (statusStr != null && !statusStr.isBlank() && !"all-status".equalsIgnoreCase(statusStr)) {
-            try {
-                status = OrderStatus.valueOf(statusStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Trạng thái không hợp lệ: " + statusStr);
-            }
-        }
-        return orderRepository.findAllWithFilters(status, branchId, pageable)
-                .map(this::mapToOrderResponse);
+        return orderQueryService.getAllOrders(statusStr, branchId, pageable);
     }
 
+    /**
+     * Delegates to OrderQueryService.mapToOrderResponse.
+     */
     private OrderResponse mapToOrderResponse(Order order) {
-        // Build item details
-        List<OrderResponse.OrderItemDetail> itemDetails = order.getItems().stream()
-                .map(item -> {
-                    List<String> optionNames = item.getSelectedOptions().stream()
-                            .map(opt -> opt.getOptionGroup().getName() + ": " + opt.getOptionValue().getLabel())
-                            .collect(Collectors.toList());
-                    List<String> toppingNames = item.getSelectedToppings().stream()
-                            .map(top -> top.getTopping().getName() + (top.getQuantity() > 1 ? " x" + top.getQuantity() : ""))
-                            .collect(Collectors.toList());
-                    return OrderResponse.OrderItemDetail.builder()
-                            .id(item.getId())
-                            .menuItemName(item.getMenuItem() != null ? item.getMenuItem().getName() : null)
-                            .sizeName(item.getMenuItemSize() != null ? item.getMenuItemSize().getSizeName() : null)
-                            .quantity(item.getQuantity())
-                            .unitPrice(item.getUnitPrice())
-                            .subtotal(item.getSubtotal())
-                            .notes(item.getNotes())
-                            .options(optionNames)
-                            .toppings(toppingNames)
-                            .build();
-                }).collect(Collectors.toList());
-
-        return OrderResponse.builder()
-                .orderId(order.getId())
-                .orderNumber(order.getOrderNumber())
-                .orderType(order.getOrderType() != null ? order.getOrderType().name() : null)
-                .status(order.getStatus().name())
-                .brewingStatus(order.getBrewingStatus() != null ? order.getBrewingStatus().name() : null)
-                .paymentMethod(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null)
-                .paymentStatus(order.getPaymentStatus() != null ? order.getPaymentStatus().name() : null)
-                .subtotal(order.getSubtotal())
-                .totalDiscount(order.getTotalDiscount())
-                .shippingFee(order.getShippingFee())
-                .finalAmount(order.getFinalAmount())
-                .loyaltyPointsUsed(order.getLoyaltyPointsUsed())
-                .branchId(order.getBranch() != null ? order.getBranch().getId() : null)
-                .branchName(order.getBranch() != null ? order.getBranch().getName() : null)
-                .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
-                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : null)
-                .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhoneNumber() : null)
-                .estimatedReadyTime(order.getEstimatedReadyTime())
-                .createdAt(order.getCreatedAt())
-                .items(itemDetails)
-                .paymentUrl(null)
-                .build();
+        return orderQueryService.mapToOrderResponse(order);
     }
 
     @Transactional
