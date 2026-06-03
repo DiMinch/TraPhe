@@ -342,7 +342,7 @@ export default function CheckoutStep({
     } catch (error: any) {
       resetCouponState();
       toast.error(
-        error.response?.data?.message || "Invalid or expired coupon code",
+        error.message || "Invalid or expired coupon code",
       );
     } finally {
       setIsApplyingCoupon(false);

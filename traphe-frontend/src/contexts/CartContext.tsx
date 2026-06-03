@@ -113,13 +113,27 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const res = await axiosClient.get<any, any>("/branches");
         const items = Array.isArray(res.data) ? res.data : res.data?.content || [];
         setBranches(items);
-        if (items.length > 0 && !localStorage.getItem("selectedBranchId")) {
+        const storedBranchId = localStorage.getItem("selectedBranchId");
+        let activeBranchId = null;
+
+        if (storedBranchId) {
+          const storedBranch = items.find((item: any) => item.id === storedBranchId);
+          if (storedBranch && storedBranch.isActive !== false) {
+            activeBranchId = storedBranchId;
+          }
+        }
+
+        if (!activeBranchId && items.length > 0) {
           const firstActive = items.find((item: any) => item.isActive !== false);
           if (firstActive) {
-            setSelectedBranchId(firstActive.id);
+            activeBranchId = firstActive.id;
           } else {
-            setSelectedBranchId(items[0].id);
+            activeBranchId = items[0].id;
           }
+        }
+
+        if (activeBranchId) {
+          setSelectedBranchId(activeBranchId);
         }
       } catch (err) {
         console.error("Failed to fetch branches in CartContext", err);

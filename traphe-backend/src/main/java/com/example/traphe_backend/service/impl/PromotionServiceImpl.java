@@ -50,6 +50,9 @@ public class PromotionServiceImpl implements PromotionService {
         validatePromotion(promotion, orderAmount, user);
 
         BigDecimal eligibleAmount = computeEligibleAmount(promotion, orderAmount, items);
+        if (eligibleAmount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Mã khuyến mãi '" + code + "' không áp dụng cho các sản phẩm trong đơn hàng.");
+        }
         return computeDiscountAmount(promotion, eligibleAmount);
     }
 
@@ -65,6 +68,9 @@ public class PromotionServiceImpl implements PromotionService {
         validatePromotion(promotion, order.getSubtotal(), user);
 
         BigDecimal eligibleAmount = getEligibleAmountForOrder(promotion, order);
+        if (eligibleAmount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Mã khuyến mãi '" + code + "' không áp dụng cho các sản phẩm trong đơn hàng.");
+        }
         BigDecimal discountAmount = computeDiscountAmount(promotion, eligibleAmount);
 
         // Increment usage count (with implicit optimistic locking via BaseEntity version if available)
@@ -104,6 +110,9 @@ public class PromotionServiceImpl implements PromotionService {
         // Đối với combined order, ta tính eligible amount trên primary order (để đơn giản)
         // Hoặc truyền list items của tất cả các đơn. Hiện tại pass combinedSubtotal làm fallback.
         BigDecimal eligibleAmount = getEligibleAmountForOrder(promotion, primaryOrder);
+        if (eligibleAmount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Mã khuyến mãi '" + code + "' không áp dụng cho các sản phẩm trong đơn hàng.");
+        }
         BigDecimal discountAmount = computeDiscountAmount(promotion, eligibleAmount);
 
         // Increment usage count

@@ -69,6 +69,12 @@ public class CartServiceImpl implements CartService {
             if (!size.getMenuItem().getId().equals(menuItem.getId())) {
                 throw new IllegalArgumentException("Size does not belong to this menu item");
             }
+        } else if (menuItem.isDrink()) {
+            // Fallback to default size if not specified
+            List<MenuItemSize> sizes = menuItemSizeRepository.findByMenuItemIdAndIsDeletedFalseOrderByDisplayOrderAsc(menuItem.getId());
+            if (!sizes.isEmpty()) {
+                size = sizes.get(0);
+            }
         }
 
         // Validate toppings
@@ -151,6 +157,12 @@ public class CartServiceImpl implements CartService {
                     .orElseThrow(() -> new ResourceNotFoundException("Size not found: " + request.getMenuItemSizeId()));
             if (!size.getMenuItem().getId().equals(menuItem.getId())) {
                 throw new IllegalArgumentException("Size does not belong to this menu item");
+            }
+        } else if (menuItem.isDrink()) {
+            // Fallback to default size if not specified
+            List<MenuItemSize> sizes = menuItemSizeRepository.findByMenuItemIdAndIsDeletedFalseOrderByDisplayOrderAsc(menuItem.getId());
+            if (!sizes.isEmpty()) {
+                size = sizes.get(0);
             }
         }
 

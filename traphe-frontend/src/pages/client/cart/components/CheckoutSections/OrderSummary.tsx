@@ -49,8 +49,25 @@ export default function OrderSummary({
 }: OrderSummaryProps) {
   const itemsCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  const publicPromotions = availablePromotions.filter((p) => !p.isMyVoucher);
-  const myVouchers = availablePromotions.filter((p) => p.isMyVoucher);
+  const checkEligibility = (promo: any) => {
+    if (promo.minOrderValue && subtotal < promo.minOrderValue) {
+      return { isEligible: false, reason: `Đơn tối thiểu ${(promo.minOrderValue).toLocaleString()}₫` };
+    }
+    return { isEligible: true, reason: null };
+  };
+
+  const processPromotions = (promos: any[]) => {
+    return promos
+      .map((promo) => ({ ...promo, ...checkEligibility(promo) }))
+      .sort((a, b) => {
+        if (a.isEligible && !b.isEligible) return -1;
+        if (!a.isEligible && b.isEligible) return 1;
+        return 0;
+      });
+  };
+
+  const publicPromotions = processPromotions(availablePromotions.filter((p) => !p.isMyVoucher));
+  const myVouchers = processPromotions(availablePromotions.filter((p) => p.isMyVoucher));
 
   return (
     <div className="bg-surface-container-lowest border border-admin-border rounded-xl p-6 lg:p-8 sticky top-24 shadow-sm font-ui-body">
@@ -152,11 +169,13 @@ export default function OrderSummary({
                       {publicPromotions.map((promo) => (
                         <div
                           key={promo.id}
-                          onClick={() => onApplyCoupon(promo.code)}
-                          className="flex items-center justify-between p-2 rounded-md border border-dashed border-mist/50 hover:border-roast hover:bg-cream cursor-pointer transition-all group"
+                          onClick={() => promo.isEligible && onApplyCoupon(promo.code)}
+                          className={`flex items-center justify-between p-2 rounded-md border border-dashed border-mist/50 transition-all group ${
+                            promo.isEligible ? "hover:border-roast hover:bg-cream cursor-pointer" : "opacity-60 cursor-not-allowed bg-mist/10"
+                          }`}
                         >
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-bold text-roast group-hover:text-espresso">
+                            <span className={`text-xs font-bold ${promo.isEligible ? "text-roast group-hover:text-espresso" : "text-dust"}`}>
                               {promo.code}
                             </span>
                             <span className="text-[10px] text-smoke">
@@ -164,10 +183,17 @@ export default function OrderSummary({
                                 ? `Giảm ${promo.discountValue ?? 0}%`
                                 : `Giảm ${(promo.discountValue ?? 0).toLocaleString()}₫`}
                             </span>
+                            {!promo.isEligible && promo.reason && (
+                              <span className="text-[10px] text-red-500 font-medium mt-0.5">
+                                {promo.reason}
+                              </span>
+                            )}
                           </div>
                           <Badge
                             variant="secondary"
-                            className="text-[10px] bg-cream text-roast border border-roast/10 group-hover:bg-roast group-hover:text-white pointer-events-none transition-colors"
+                            className={`text-[10px] pointer-events-none transition-colors ${
+                              promo.isEligible ? "bg-cream text-roast border border-roast/10 group-hover:bg-roast group-hover:text-white" : "bg-mist/30 text-dust border-none"
+                            }`}
                           >
                             Apply
                           </Badge>
@@ -184,11 +210,13 @@ export default function OrderSummary({
                           {myVouchers.map((promo) => (
                             <div
                               key={promo.id}
-                              onClick={() => onApplyCoupon(promo.code)}
-                              className="flex items-center justify-between p-2 rounded-md border border-solid border-roast/30 bg-white hover:border-roast hover:bg-cream cursor-pointer transition-all group"
+                              onClick={() => promo.isEligible && onApplyCoupon(promo.code)}
+                              className={`flex items-center justify-between p-2 rounded-md border border-solid transition-all group ${
+                                promo.isEligible ? "border-roast/30 bg-white hover:border-roast hover:bg-cream cursor-pointer" : "border-mist/30 bg-mist/5 opacity-60 cursor-not-allowed"
+                              }`}
                             >
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-xs font-bold text-roast group-hover:text-espresso">
+                                <span className={`text-xs font-bold ${promo.isEligible ? "text-roast group-hover:text-espresso" : "text-dust"}`}>
                                   {promo.code}
                                 </span>
                                 <span className="text-[10px] text-smoke">
@@ -196,10 +224,17 @@ export default function OrderSummary({
                                     ? `Giảm ${promo.discountValue ?? 0}%`
                                     : `Giảm ${(promo.discountValue ?? 0).toLocaleString()}₫`}
                                 </span>
+                                {!promo.isEligible && promo.reason && (
+                                  <span className="text-[10px] text-red-500 font-medium mt-0.5">
+                                    {promo.reason}
+                                  </span>
+                                )}
                               </div>
                               <Badge
                                 variant="secondary"
-                                className="text-[10px] bg-roast text-white border border-roast/10 group-hover:bg-espresso pointer-events-none transition-colors"
+                                className={`text-[10px] pointer-events-none transition-colors ${
+                                  promo.isEligible ? "bg-roast text-white border border-roast/10 group-hover:bg-espresso" : "bg-mist/30 text-dust border-none"
+                                }`}
                               >
                                 Apply
                               </Badge>
