@@ -63,6 +63,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { categoryService } from "@/services/category.service";
 import { productService } from "@/services/product.service";
+import { membershipTierService, type MembershipTier } from "@/services/membership-tier.service";
 import type { Category } from "@/types/category.types";
 import type { Product } from "@/types/product.types";
 import {
@@ -132,41 +133,46 @@ export default function PromotionListPage() {
   // Categories and products for selection
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [membershipTiers, setMembershipTiers] = useState<MembershipTier[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
 
   // Fetch categories and products when dialog opens
   useEffect(() => {
     if (
-      isCreateDialogOpen &&
-      (categories.length === 0 || products.length === 0)
+      (isCreateDialogOpen || isEditDialogOpen) &&
+      (categories.length === 0 || products.length === 0 || membershipTiers.length === 0)
     ) {
       fetchCategoriesAndProducts();
     }
-  }, [isCreateDialogOpen]);
+  }, [isCreateDialogOpen, isEditDialogOpen]);
 
   const fetchCategoriesAndProducts = async () => {
     setLoadingOptions(true);
     try {
-      const [categoriesRes, productsRes] = await Promise.all([
+      const [categoriesRes, productsRes, tiersRes] = await Promise.all([
         categoryService.getAllCategories(),
         productService.getAllProducts(),
+        membershipTierService.getActiveTiers(),
       ]);
       console.log("Categories response:", categoriesRes);
       console.log("Products response:", productsRes);
+      console.log("Tiers response:", tiersRes);
 
       // Handle different response structures
       const categoryData = Array.isArray(categoriesRes.data)
         ? categoriesRes.data
         : (categoriesRes.data as any)?.data || [];
       const productData = productsRes.data?.content || (productsRes.data as any)?.data || [];
+      const tiersData = Array.isArray(tiersRes.data) ? tiersRes.data : (tiersRes.data as any)?.data || [];
 
       console.log("Category data:", categoryData);
       console.log("Product data:", productData);
 
       setCategories(categoryData);
       setProducts(productData);
+      setMembershipTiers(tiersData);
     } catch (err: any) {
-      console.error("Error fetching categories/products:", err);
+      console.error("Error fetching categories/products/tiers:", err);
     } finally {
       setLoadingOptions(false);
     }
@@ -1423,33 +1429,37 @@ export default function PromotionListPage() {
               <div className="space-y-2">
                 <Label>Customer Tiers</Label>
                 <div className="flex gap-2 flex-wrap">
-                  {["BRONZE", "SILVER", "GOLD", "PLATINUM"].map((tier) => (
-                    <label key={tier} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.applicableCustomerTiers?.includes(
-                          tier,
-                        )}
-                        onChange={(e) => {
-                          const tiers = formData.applicableCustomerTiers || [];
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              applicableCustomerTiers: [...tiers, tier],
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              applicableCustomerTiers: tiers.filter(
-                                (t: string) => t !== tier,
-                              ),
-                            });
-                          }
-                        }}
-                      />
-                      <span className="text-sm">{tier}</span>
-                    </label>
-                  ))}
+                  {membershipTiers.length > 0 ? (
+                    membershipTiers.map((tier) => (
+                      <label key={tier.name} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.applicableCustomerTiers?.includes(
+                            tier.name,
+                          )}
+                          onChange={(e) => {
+                            const tiers = formData.applicableCustomerTiers || [];
+                            if (e.target.checked) {
+                              setFormData({
+                                ...formData,
+                                applicableCustomerTiers: [...tiers, tier.name],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                applicableCustomerTiers: tiers.filter(
+                                  (t: string) => t !== tier.name,
+                                ),
+                              });
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{tier.name}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">No active tiers found</span>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -1565,6 +1575,7 @@ export default function PromotionListPage() {
                       <SelectItem value="PRODUCT">Product</SelectItem>
                       <SelectItem value="CATEGORY">Category</SelectItem>
                       <SelectItem value="SHIPPING">Shipping</SelectItem>
+                      <SelectItem value="PERSONAL">Personal</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1721,6 +1732,31 @@ export default function PromotionListPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Khung giờ bắt đầu (HH:mm)</label>
+                  <Input
+                    type="time"
+                    value={formData.dailyStartTime || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dailyStartTime: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Khung giờ kết thúc (HH:mm)</label>
+                  <Input
+                    type="time"
+                    value={formData.dailyEndTime || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, dailyEndTime: e.target.value })
+                    }
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
               {/* Categories Selection */}
               {(formData.scope === "CATEGORY" ||
                 formData.scope === "PRODUCT") && (
@@ -1832,13 +1868,13 @@ export default function PromotionListPage() {
                 <label className="text-sm font-medium">
                   Applicable Customer Tiers
                 </label>
-                <div className="mt-2 space-y-2">
-                  {["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"].map(
-                    (tier) => (
-                      <label key={tier} className="flex items-center space-x-2">
+                <div className="mt-2 flex flex-wrap gap-4">
+                  {membershipTiers.length > 0 ? (
+                    membershipTiers.map((tier) => (
+                      <label key={tier.name} className="flex items-center space-x-2">
                         <Checkbox
                           checked={formData.applicableCustomerTiers?.includes(
-                            tier,
+                            tier.name,
                           )}
                           onCheckedChange={(checked) => {
                             const currentTiers =
@@ -1846,14 +1882,16 @@ export default function PromotionListPage() {
                             setFormData({
                               ...formData,
                               applicableCustomerTiers: checked
-                                ? [...currentTiers, tier]
-                                : currentTiers.filter((t: string) => t !== tier),
+                                ? [...currentTiers, tier.name]
+                                : currentTiers.filter((t: string) => t !== tier.name),
                             });
                           }}
                         />
-                        <span className="text-sm">{tier}</span>
+                        <span className="text-sm">{tier.name}</span>
                       </label>
-                    ),
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">No active tiers found</span>
                   )}
                 </div>
               </div>

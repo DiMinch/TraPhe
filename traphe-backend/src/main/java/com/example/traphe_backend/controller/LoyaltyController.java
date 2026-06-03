@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.traphe_backend.annotation.Idempotent;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -120,6 +121,7 @@ public class LoyaltyController {
      * Tạo Promotion (scope=PERSONAL) + UserVoucher + trừ điểm + ghi transaction.
      */
     @PostMapping("/redeem")
+    @Idempotent
     @Transactional
     @Operation(summary = "Đổi điểm lấy phần thưởng",
             description = "Trừ điểm tích luỹ, tạo voucher cá nhân và gán cho user.")

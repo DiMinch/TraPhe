@@ -12,6 +12,8 @@ import com.example.traphe_backend.enums.BrewingStatus;
 import com.example.traphe_backend.enums.OrderStatus;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
@@ -40,6 +42,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     /** Tìm đơn hàng chưa soft-delete theo ID */
     Optional<Order> findByIdAndIsDeletedFalse(UUID id);
+
+    /** Dùng để khoá dòng Order khi xử lý thanh toán (Pessimistic Lock) */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :id AND o.isDeleted = false")
+    Optional<Order> findByIdForUpdate(@Param("id") UUID id);
 
     /** Danh sách đơn hàng của 1 khách hàng (phân trang) */
     Page<Order> findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(UUID customerId, Pageable pageable);

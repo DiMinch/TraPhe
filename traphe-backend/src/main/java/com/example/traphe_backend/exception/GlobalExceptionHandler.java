@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
+import java.util.HashMap;
 import java.util.Map;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.CannotAcquireLockException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -81,6 +84,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error("BAD_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, CannotAcquireLockException.class, IllegalStateException.class})
+    public ResponseEntity<ApiResponse<Void>> handleConcurrencyExceptions(Exception ex) {
+        if (ex instanceof IllegalStateException && ex.getMessage() != null && !ex.getMessage().contains("IDEMPOTENT")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("BAD_REQUEST", ex.getMessage()));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("CONFLICT", "Hệ thống đang xử lý giao dịch hoặc có quá nhiều tương tác cùng lúc. Vui lòng thử lại."));
     }
 
     @ExceptionHandler(Exception.class)

@@ -268,7 +268,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (orderIdStr == null) return false;
 
         UUID orderId = UUID.fromString(orderIdStr);
-        Order order = orderRepository.findById(orderId).orElse(null);
+        Order order = orderRepository.findByIdForUpdate(orderId).orElse(null);
         if (order == null) {
             log.error("Order not found for VNPAY IPN: {}", orderId);
             return false;
@@ -345,7 +345,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (orderIdStr == null) return false;
 
         UUID orderId = UUID.fromString(orderIdStr);
-        Order order = orderRepository.findById(orderId).orElse(null);
+        Order order = orderRepository.findByIdForUpdate(orderId).orElse(null);
         if (order == null) {
             log.error("Order not found for MoMo IPN: {}", orderId);
             return false;

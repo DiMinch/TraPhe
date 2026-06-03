@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import com.example.traphe_backend.annotation.Idempotent;
 import java.util.UUID;
 
 @RestController
@@ -130,6 +131,7 @@ public class OrderController {
      * Requires JWT authentication.
      */
     @PostMapping("/drink")
+    @Idempotent
     @Operation(summary = "Tạo đơn Đồ uống (Online)",
             description = "Submit giỏ hàng đồ uống lên hệ thống. Yêu cầu branchId để xác định chi nhánh. "
                     + "Hỗ trợ chọn size, options (đường/đá), toppings. Cần JWT token.")
@@ -150,6 +152,7 @@ public class OrderController {
      * Requires JWT authentication.
      */
     @PostMapping("/merchandise")
+    @Idempotent
     @Operation(summary = "Tạo đơn Merchandise (Sản phẩm đóng gói)",
             description = "Tạo đơn hàng cho các sản phẩm không phải đồ uống — ví dụ cà phê gói, trà túi lọc, gift set. "
                     + "Không có size/options/toppings. Dùng basePrice. Cần shipping address.")
@@ -170,6 +173,7 @@ public class OrderController {
      * Hỗ trợ thanh toán 1 hoặc cả 2 loại đơn trong 1 giao dịch.
      */
     @PostMapping("/checkout")
+    @Idempotent
     @Operation(summary = "Thanh toán gộp (Combined Checkout)",
             description = "Thanh toán 1 hoặc 2 đơn hàng (drink + merchandise) trong cùng một giao dịch. "
                     + "Tạo bản ghi combined_checkouts, xử lý payment, và tự động chuyển trạng thái đơn sang CONFIRMED nếu thành công. "
