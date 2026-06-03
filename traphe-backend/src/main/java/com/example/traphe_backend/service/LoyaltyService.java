@@ -10,4 +10,16 @@ public interface LoyaltyService {
     public BigDecimal redeemPoints(User customer, Order order, int pointsToRedeem);
     public void refundPointsForOrder(User user, Order order, int pointsToRefund);
     public LoyaltyPoint getOrCreateLoyaltyPoint(User user);
+
+    /**
+     * Redeem loyalty points for a reward voucher.
+     * Business logic extracted from controller to service layer.
+     */
+    public RedeemRewardResult redeemReward(User user, String rewardId, String rewardName,
+            int pointsCost, String rewardDescription, BigDecimal discountValue, String discountType);
+
+    /**
+     * Simple DTO for redeem reward results.
+     */
+    public record RedeemRewardResult(String voucherCode, String rewardName, int pointsDeducted, int remainingPoints) {}
 }

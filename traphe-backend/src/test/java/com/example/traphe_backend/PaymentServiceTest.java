@@ -6,7 +6,6 @@ import com.example.traphe_backend.enums.PaymentMethod;
 import com.example.traphe_backend.enums.PaymentStatus;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.PaymentTransactionRepository;
-import com.example.traphe_backend.service.PaymentService;
 import com.example.traphe_backend.service.impl.PaymentServiceImpl;
 import com.example.traphe_backend.util.MoMoUtil;
 import com.example.traphe_backend.util.VnPayUtil;

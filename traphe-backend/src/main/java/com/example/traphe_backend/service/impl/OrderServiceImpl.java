@@ -620,6 +620,33 @@ public class OrderServiceImpl implements OrderService {
         return mapToOrderResponse(order);
     }
 
+    /**
+     * Object-level access control for getOrderById.
+     * Staff roles (ADMIN, BRANCH_MANAGER, CASHIER, BARISTA) can view any order.
+     * Customers can only view their own orders.
+     */
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderById(UUID orderId, String userEmail) {
+        Order order = orderRepository.findByIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Đơn hàng không tồn tại với ID: " + orderId));
+
+        User requester = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isStaff = requester.getRoles().stream()
+                .anyMatch(r -> r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_ADMIN
+                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_BRANCH_MANAGER
+                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_CASHIER
+                            || r.getName() == com.example.traphe_backend.enums.RoleName.ROLE_BARISTA);
+
+        if (!isStaff && (order.getCustomer() == null || !order.getCustomer().getId().equals(requester.getId()))) {
+            throw new IllegalArgumentException("Bạn không có quyền xem đơn hàng này.");
+        }
+
+        return mapToOrderResponse(order);
+    }
+
     // ==========================================
     // GET /api/orders/user — Lịch sử đơn hàng của User
     // ==========================================

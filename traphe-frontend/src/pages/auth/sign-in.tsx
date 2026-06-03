@@ -42,11 +42,7 @@ export default function SignInPage() {
           navigate("/admin/orders/queue");
         } else if (userRoles.includes(UserRole.BRANCH_MANAGER)) {
           navigate("/admin/stock/all");
-        } else if (
-          userRoles.includes(UserRole.ADMIN) ||
-          userRoles.includes(UserRole.EMPLOYEE) ||
-          userRoles.includes(UserRole.ACCOUNTANT)
-        ) {
+        } else if (userRoles.includes(UserRole.ADMIN)) {
           navigate("/admin");
         } else {
           navigate("/");

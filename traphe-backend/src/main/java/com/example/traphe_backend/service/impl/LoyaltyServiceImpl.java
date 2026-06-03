@@ -11,6 +11,8 @@ import com.example.traphe_backend.enums.LoyaltyTransactionType;
 import com.example.traphe_backend.repository.LoyaltyPointRepository;
 import com.example.traphe_backend.repository.LoyaltyPointTransactionRepository;
 import com.example.traphe_backend.repository.MembershipTierRepository;
+import com.example.traphe_backend.repository.PromotionRepository;
+import com.example.traphe_backend.repository.UserVoucherRepository;
 import com.example.traphe_backend.event.TierUpgradeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         private final LoyaltyPointRepository loyaltyPointRepository;
         private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
         private final MembershipTierRepository membershipTierRepository;
+        private final PromotionRepository promotionRepository;
+        private final UserVoucherRepository userVoucherRepository;
         private final ApplicationEventPublisher eventPublisher;
 
         private static final BigDecimal POINT_UNIT = new BigDecimal("1000"); // 1 point per 1,000 VND (base rate)
@@ -188,6 +192,83 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                                                  eventPublisher.publishEvent(new TierUpgradeEvent(this, customer, eligibleTier));
                                          }
                                 });
+        }
+
+        // ======================== REDEEM REWARD (Voucher) ========================
+
+        /**
+         * Đổi điểm tích luỹ lấy phần thưởng (voucher).
+         * Tạo Promotion (scope=PERSONAL) + UserVoucher + trừ điểm + ghi transaction.
+         * Business logic extracted from controller to service layer.
+         */
+        @Transactional
+        public RedeemRewardResult redeemReward(User user, String rewardId, String rewardName,
+                int pointsCost, String rewardDescription, java.math.BigDecimal discountValue, String discountType) {
+
+                LoyaltyPoint loyaltyPoint = getOrCreateLoyaltyPoint(user);
+
+                // Validate enough points
+                if (loyaltyPoint.getPointsAvailable() < pointsCost) {
+                        throw new IllegalArgumentException(
+                                        "Không đủ điểm. Hiện có: " + loyaltyPoint.getPointsAvailable()
+                                                        + ", cần: " + pointsCost);
+                }
+
+                // 1. Generate unique voucher code
+                String voucherCode = "TRAPHE-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+                // Determine discount type and value
+                com.example.traphe_backend.entity.Promotion.DiscountType discType = com.example.traphe_backend.entity.Promotion.DiscountType.FIXED_AMOUNT;
+                java.math.BigDecimal discValue = discountValue != null ? discountValue : java.math.BigDecimal.ZERO;
+                if ("PERCENTAGE".equalsIgnoreCase(discountType)) {
+                        discType = com.example.traphe_backend.entity.Promotion.DiscountType.PERCENTAGE;
+                }
+
+                // 2. Create Promotion record (scope = PERSONAL)
+                com.example.traphe_backend.entity.Promotion voucher = com.example.traphe_backend.entity.Promotion.builder()
+                                .code(voucherCode)
+                                .name(rewardName)
+                                .description(rewardDescription != null
+                                                ? rewardDescription
+                                                : "Voucher đổi từ " + pointsCost + " điểm tích luỹ")
+                                .discountType(discType)
+                                .discountValue(discValue)
+                                .usageLimit(1)
+                                .perUserLimit(1)
+                                .startDate(java.time.LocalDateTime.now())
+                                .endDate(java.time.LocalDateTime.now().plusMonths(3))
+                                .scope(com.example.traphe_backend.enums.PromotionScope.PERSONAL)
+                                .build();
+                promotionRepository.save(voucher);
+
+                // 3. Create UserVoucher link
+                com.example.traphe_backend.entity.UserVoucher userVoucher = com.example.traphe_backend.entity.UserVoucher.builder()
+                                .user(user)
+                                .promotion(voucher)
+                                .status(com.example.traphe_backend.enums.UserVoucherStatus.AVAILABLE)
+                                .source("LOYALTY_REDEEM")
+                                .assignedAt(java.time.LocalDateTime.now())
+                                .build();
+                userVoucherRepository.save(userVoucher);
+
+                // 4. Deduct points and save
+                loyaltyPoint.setPointsAvailable(loyaltyPoint.getPointsAvailable() - pointsCost);
+                loyaltyPointRepository.save(loyaltyPoint);
+
+                // 5. Record loyalty transaction
+                LoyaltyPointTransaction tx = LoyaltyPointTransaction.builder()
+                                .user(user)
+                                .type(LoyaltyTransactionType.REDEEM)
+                                .points(-pointsCost)
+                                .description("Đổi " + pointsCost + " điểm lấy: " + rewardName
+                                                + " (Mã: " + voucherCode + ")")
+                                .build();
+                loyaltyPointTransactionRepository.save(tx);
+
+                log.info("User {} redeemed {} points for reward '{}' → voucher {}",
+                                user.getEmail(), pointsCost, rewardName, voucherCode);
+
+                return new RedeemRewardResult(voucherCode, rewardName, pointsCost, loyaltyPoint.getPointsAvailable());
         }
 
         public LoyaltyPoint getOrCreateLoyaltyPoint(User user) {

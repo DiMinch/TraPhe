@@ -1,7 +1,6 @@
 package com.example.traphe_backend.service.impl;
 
 import com.example.traphe_backend.service.OtpService;
-import com.example.traphe_backend.service.*;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,6 @@ public class OtpServiceImpl implements OtpService {
     private int otpLength;
 
     private static final String OTP_PREFIX = "otp:";
-
 
     /**
      * Generate a random OTP code, save in Redis, and return the code.

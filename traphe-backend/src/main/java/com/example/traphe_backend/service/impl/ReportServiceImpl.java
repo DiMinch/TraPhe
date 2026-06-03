@@ -11,7 +11,6 @@ import com.example.traphe_backend.dto.response.report.RevenueReportResponse.Reve
 import com.example.traphe_backend.entity.*;
 import com.example.traphe_backend.enums.OrderStatus;
 import com.example.traphe_backend.enums.OrderType;
-import com.example.traphe_backend.enums.LoyaltyTransactionType;
 import com.example.traphe_backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +18,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,7 +39,6 @@ public class ReportServiceImpl implements ReportService {
     private final BranchMenuItemRepository branchMenuItemRepository;
     private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
     private final LoyaltyPointRepository loyaltyPointRepository;
-    private final MembershipTierRepository membershipTierRepository;
     private final RecipeRepository recipeRepository;
     private final RecipeItemRepository recipeItemRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;

@@ -46,11 +46,7 @@ export default function ProtectedRoute({
       defaultRedirect = "/admin/orders/queue";
     } else if (userRoles.includes(UserRole.BRANCH_MANAGER)) {
       defaultRedirect = "/admin/stock/all";
-    } else if (
-      !userRoles.includes(UserRole.ADMIN) &&
-      !userRoles.includes(UserRole.EMPLOYEE) &&
-      !userRoles.includes(UserRole.ACCOUNTANT)
-    ) {
+    } else if (!userRoles.includes(UserRole.ADMIN)) {
       defaultRedirect = "/";
     }
 

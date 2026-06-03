@@ -239,7 +239,7 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
                   ) : (
                     branches.map((branch) => {
                       const isSelected = localBranchId === branch.id;
-                      const isActive = branch.isActive !== false && !branch.name.toLowerCase().includes("đóng cửa");
+                      const isActive = branch.active !== false && branch.isActive !== false;
                       return (
                         <button
                           key={branch.id}

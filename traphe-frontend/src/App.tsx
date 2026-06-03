@@ -111,54 +111,54 @@ function App() {
 
         {/* Admin - Protected Routes */}
         <Route element={<AdminLayout />}>
-          {/* B1: Dashboard */}
+          {/* B1: Dashboard — Admin + Branch Manager */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.ACCOUNTANT]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}>
                 <DashboardPage />
               </ProtectedRoute>
             }
           />
 
-          {/* B2: Menu & Sản phẩm */}
-          <Route path="/admin/menu" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><ProductListPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/items" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><ProductListPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/items/new" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><ProductEditPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/items/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><ProductDetailPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/items/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><ProductEditPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/categories" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><CategoriesPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/categories/:categoryName/attributes" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><AttributesPage /></ProtectedRoute>} />
+          {/* B2: Menu & Sản phẩm — Admin manages master menu */}
+          <Route path="/admin/menu" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProductListPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/items" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProductListPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/items/new" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProductEditPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/items/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProductDetailPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/items/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProductEditPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/categories" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CategoriesPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/categories/:categoryName/attributes" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AttributesPage /></ProtectedRoute>} />
           <Route path="/admin/menu/branch" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><AdminBranchMenuPage /></ProtectedRoute>} />
           {/* Legacy category routes */}
-          <Route path="/admin/category" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><CategoryPage /></ProtectedRoute>} />
-          <Route path="/admin/category/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><CategoryEditPage /></ProtectedRoute>} />
+          <Route path="/admin/category" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CategoryPage /></ProtectedRoute>} />
+          <Route path="/admin/category/:id/edit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CategoryEditPage /></ProtectedRoute>} />
 
-          {/* B3: Đơn hàng */}
-          <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BRANCH_MANAGER]}><OrdersPage /></ProtectedRoute>} />
-          <Route path="/admin/orders/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BRANCH_MANAGER]}><OrderDetailPage /></ProtectedRoute>} />
-          <Route path="/admin/orders/pos" element={<ProtectedRoute allowedRoles={[UserRole.EMPLOYEE, UserRole.CASHIER]}><POSPage /></ProtectedRoute>} />
-          <Route path="/admin/orders/queue" element={<ProtectedRoute allowedRoles={[UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA]}><PosQueuePage /></ProtectedRoute>} />
+          {/* B3: Đơn hàng — Admin, Cashier, Branch Manager */}
+          <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.CASHIER, UserRole.BRANCH_MANAGER]}><OrdersPage /></ProtectedRoute>} />
+          <Route path="/admin/orders/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.CASHIER, UserRole.BRANCH_MANAGER]}><OrderDetailPage /></ProtectedRoute>} />
+          <Route path="/admin/orders/pos" element={<ProtectedRoute allowedRoles={[UserRole.CASHIER]}><POSPage /></ProtectedRoute>} />
+          <Route path="/admin/orders/queue" element={<ProtectedRoute allowedRoles={[UserRole.CASHIER, UserRole.BARISTA]}><PosQueuePage /></ProtectedRoute>} />
 
           {/* B4: Chi nhánh */}
           <Route path="/admin/branches" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminBranchesPage /></ProtectedRoute>} />
 
           {/* B4: Nguyên liệu & Công thức */}
-          <Route path="/admin/ingredients" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><AdminIngredientsPage /></ProtectedRoute>} />
-          <Route path="/admin/ingredients/recipes" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><AdminRecipesPage /></ProtectedRoute>} />
+          <Route path="/admin/ingredients" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminIngredientsPage /></ProtectedRoute>} />
+          <Route path="/admin/ingredients/recipes" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminRecipesPage /></ProtectedRoute>} />
 
-          {/* B4: Kho hàng */}
-          <Route path="/admin/stock" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><InventoryOverviewPage /></ProtectedRoute>} />
-          <Route path="/admin/stock/all" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><AllInventoryPage /></ProtectedRoute>} />
-          <Route path="/admin/stock/import" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><ImportStockPage /></ProtectedRoute>} />
-          <Route path="/admin/stock/adjust" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><StockAdjustPage /></ProtectedRoute>} />
-          <Route path="/admin/stock/history" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><TransactionsPage /></ProtectedRoute>} />
+          {/* B4: Kho hàng — Admin + Branch Manager */}
+          <Route path="/admin/stock" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><InventoryOverviewPage /></ProtectedRoute>} />
+          <Route path="/admin/stock/all" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><AllInventoryPage /></ProtectedRoute>} />
+          <Route path="/admin/stock/import" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><ImportStockPage /></ProtectedRoute>} />
+          <Route path="/admin/stock/adjust" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><StockAdjustPage /></ProtectedRoute>} />
+          <Route path="/admin/stock/history" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><TransactionsPage /></ProtectedRoute>} />
 
           {/* B4: Nhà cung cấp */}
-          <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><SuppliersPage /></ProtectedRoute>} />
-          <Route path="/admin/suppliers/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><SupplierDetailPage /></ProtectedRoute>} />
+          <Route path="/admin/suppliers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><SuppliersPage /></ProtectedRoute>} />
+          <Route path="/admin/suppliers/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><SupplierDetailPage /></ProtectedRoute>} />
           {/* Nhập kho nguyên liệu từ nhà cung cấp → dùng ImportStockPage */}
-          <Route path="/admin/suppliers/import" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER]}><ImportStockPage /></ProtectedRoute>} />
+          <Route path="/admin/suppliers/import" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><ImportStockPage /></ProtectedRoute>} />
 
           {/* B5: Nhân sự */}
           <Route path="/admin/staff" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><UserAccountsPage /></ProtectedRoute>} />
@@ -168,19 +168,19 @@ function App() {
           <Route path="/admin/loyalty" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminLoyaltyPage /></ProtectedRoute>} />
           <Route path="/admin/loyalty/tiers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerTierPage /></ProtectedRoute>} />
           <Route path="/admin/loyalty/rewards" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminLoyaltyRewardsPage /></ProtectedRoute>} />
-          <Route path="/admin/loyalty/customers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><CustomerPage /></ProtectedRoute>} />
-          <Route path="/admin/loyalty/customers/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><CustomerDetailPage /></ProtectedRoute>} />
+          <Route path="/admin/loyalty/customers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerPage /></ProtectedRoute>} />
+          <Route path="/admin/loyalty/customers/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerDetailPage /></ProtectedRoute>} />
           <Route path="/admin/promotions" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><PromotionListPage /></ProtectedRoute>} />
           <Route path="/admin/promotions/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><PromotionDetailPage /></ProtectedRoute>} />
           <Route path="/admin/vouchers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminVouchersPage /></ProtectedRoute>} />
-          <Route path="/admin/menu/toppings" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><AdminToppingsPage /></ProtectedRoute>} />
+          <Route path="/admin/menu/toppings" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminToppingsPage /></ProtectedRoute>} />
 
-          {/* B7: Báo cáo */}
-          <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER]}><RevenueReportPage /></ProtectedRoute>} />
-          <Route path="/admin/reports/revenue" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER]}><RevenueReportPage /></ProtectedRoute>} />
-          <Route path="/admin/reports/profit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT]}><ProfitReportPage /></ProtectedRoute>} />
-          <Route path="/admin/reports/products" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER]}><TopProductsReportPage /></ProtectedRoute>} />
-          <Route path="/admin/reports/inventory" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER]}><InventoryReportPage /></ProtectedRoute>} />
+          {/* B7: Báo cáo — Admin + Branch Manager */}
+          <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><RevenueReportPage /></ProtectedRoute>} />
+          <Route path="/admin/reports/revenue" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><RevenueReportPage /></ProtectedRoute>} />
+          <Route path="/admin/reports/profit" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ProfitReportPage /></ProtectedRoute>} />
+          <Route path="/admin/reports/products" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><TopProductsReportPage /></ProtectedRoute>} />
+          <Route path="/admin/reports/inventory" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><InventoryReportPage /></ProtectedRoute>} />
           <Route path="/admin/reports/loyalty" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><LoyaltyReportPage /></ProtectedRoute>} />
 
           {/* B8: Cài đặt */}
@@ -188,7 +188,7 @@ function App() {
           <Route path="/admin/settings/audit-log" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AuditLogsPage /></ProtectedRoute>} />
 
           {/* User profile (admin side) */}
-          <Route path="/admin/user" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.EMPLOYEE]}><UserPage /></ProtectedRoute>} />
+          <Route path="/admin/user" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><UserPage /></ProtectedRoute>} />
 
           {/* Legacy admin route redirects */}
           <Route path="/dashboard" element={<Navigate to="/admin" replace />} />

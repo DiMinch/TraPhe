@@ -9,12 +9,9 @@ import com.example.traphe_backend.entity.MenuItemSize;
 import com.example.traphe_backend.entity.MenuItemTopping;
 import com.example.traphe_backend.entity.OptionGroup;
 import com.example.traphe_backend.entity.OptionValue;
-import com.example.traphe_backend.entity.Promotion;
 import com.example.traphe_backend.entity.Topping;
-import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.enums.MenuItemStatus;
 import com.example.traphe_backend.enums.OptionGroupType;
-import com.example.traphe_backend.enums.RoleName;
 import com.example.traphe_backend.repository.BranchMenuItemRepository;
 import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.MenuCategoryRepository;
@@ -24,7 +21,6 @@ import com.example.traphe_backend.repository.MenuItemSizeRepository;
 import com.example.traphe_backend.repository.MenuItemToppingRepository;
 import com.example.traphe_backend.repository.OptionGroupRepository;
 import com.example.traphe_backend.repository.OptionValueRepository;
-import com.example.traphe_backend.repository.PromotionRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +45,6 @@ public class DataSeeder implements CommandLineRunner {
         private final ToppingRepository toppingRepository;
         private final MenuItemToppingRepository menuItemToppingRepository;
         private final BranchMenuItemRepository branchMenuItemRepository;
-        private final PromotionRepository promotionRepository;
         private final com.example.traphe_backend.repository.UserRepository userRepository;
 
         @Override

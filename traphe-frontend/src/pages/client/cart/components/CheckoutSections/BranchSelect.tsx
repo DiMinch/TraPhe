@@ -17,6 +17,7 @@ interface Branch {
   address: string;
   phone?: string;
   isActive: boolean;
+  active?: boolean;
   hours?: BranchHour[];
 }
 
@@ -69,7 +70,7 @@ export default function BranchSelect({
           {branches.map((branch) => {
             const isSelected = selectedBranchId === branch.id;
             const hoursStr = getTodayHours(branch.hours);
-            const isActive = branch.isActive !== false && !branch.name.toLowerCase().includes("đóng cửa");
+            const isActive = branch.active !== false && branch.isActive !== false;
 
             return (
               <div

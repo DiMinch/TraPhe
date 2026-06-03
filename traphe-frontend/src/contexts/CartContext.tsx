@@ -118,13 +118,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
         if (storedBranchId) {
           const storedBranch = items.find((item: any) => item.id === storedBranchId);
-          if (storedBranch && storedBranch.isActive !== false) {
+          if (storedBranch && storedBranch.active !== false && storedBranch.isActive !== false) {
             activeBranchId = storedBranchId;
           }
         }
 
         if (!activeBranchId && items.length > 0) {
-          const firstActive = items.find((item: any) => item.isActive !== false);
+          const firstActive = items.find((item: any) => item.active !== false && item.isActive !== false);
           if (firstActive) {
             activeBranchId = firstActive.id;
           } else {

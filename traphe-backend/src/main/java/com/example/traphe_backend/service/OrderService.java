@@ -12,6 +12,7 @@ public interface OrderService {
     public OrderResponse updateOrderStatus(UUID orderId, String newStatusStr, String userEmail);
     public OrderResponse cancelOrder(UUID orderId, String userEmail);
     public OrderResponse getOrderById(UUID orderId);
+    public OrderResponse getOrderById(UUID orderId, String userEmail);
     public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable);
     public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
     public OrderResponse createCompatibleOrder(Map<String, Object> payload, String userEmail);

@@ -3,42 +3,43 @@ import { UserRole } from "@/enums/roles.enum";
 /**
  * Route permission configuration
  * Define which roles can access which routes
+ *
+ * Roles aligned with backend RoleName enum:
+ *   ADMIN, CUSTOMER, CASHIER, BARISTA, BRANCH_MANAGER
  */
 export const routePermissions: Record<string, UserRole[]> = {
-  // Dashboard - All admin roles
+  // Dashboard - Admin + Branch Manager
   "/admin": [
     UserRole.ADMIN,
-    UserRole.EMPLOYEE,
-    UserRole.ACCOUNTANT,
     UserRole.BRANCH_MANAGER,
   ],
 
-  // Menu & Product Management
-  "/admin/menu": [UserRole.ADMIN, UserRole.EMPLOYEE],
-  "/admin/menu/toppings": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  // Menu & Product Management — Admin only (master menu)
+  "/admin/menu": [UserRole.ADMIN],
+  "/admin/menu/toppings": [UserRole.ADMIN],
   "/admin/menu/branch": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
-  "/admin/category": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/category": [UserRole.ADMIN],
 
   // Branches
   "/admin/branches": [UserRole.ADMIN],
 
   // Ingredients & Recipes
-  "/admin/ingredients": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/ingredients": [UserRole.ADMIN],
 
   // Inventory / Stock
-  "/admin/stock": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
+  "/admin/stock": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
 
   // Suppliers / Procurement
-  "/admin/suppliers": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.BRANCH_MANAGER],
+  "/admin/suppliers": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
 
   // Orders / Sales
-  "/admin/orders": [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BRANCH_MANAGER],
-  "/admin/orders/pos": [UserRole.EMPLOYEE, UserRole.CASHIER],
-  "/admin/orders/queue": [UserRole.EMPLOYEE, UserRole.CASHIER, UserRole.BARISTA],
+  "/admin/orders": [UserRole.ADMIN, UserRole.CASHIER, UserRole.BRANCH_MANAGER],
+  "/admin/orders/pos": [UserRole.CASHIER],
+  "/admin/orders/queue": [UserRole.CASHIER, UserRole.BARISTA],
 
   // Loyalty & Customers
   "/admin/loyalty": [UserRole.ADMIN],
-  "/admin/loyalty/customers": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/loyalty/customers": [UserRole.ADMIN],
   "/admin/loyalty/tiers": [UserRole.ADMIN],
   "/admin/loyalty/rewards": [UserRole.ADMIN],
 
@@ -47,7 +48,7 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin/vouchers": [UserRole.ADMIN],
 
   // Reports
-  "/admin/reports": [UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.BRANCH_MANAGER],
+  "/admin/reports": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
 
   // Staff / Users & Roles
   "/admin/staff": [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
@@ -56,7 +57,7 @@ export const routePermissions: Record<string, UserRole[]> = {
   "/admin/settings": [UserRole.ADMIN],
 
   // User profile (admin side)
-  "/admin/user": [UserRole.ADMIN, UserRole.EMPLOYEE],
+  "/admin/user": [UserRole.ADMIN],
 };
 
 /**

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.example.traphe_backend.annotation.Idempotent;
 import java.util.UUID;
@@ -51,6 +52,7 @@ public class OrderController {
      * Hỗ trợ lọc theo trạng thái, chi nhánh và phân trang.
      */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     @Operation(summary = "Danh sách đơn hàng (Admin)",
             description = "Lấy danh sách tất cả đơn hàng. Hỗ trợ lọc theo trạng thái, chi nhánh và phân trang.")
     public ResponseEntity<ApiResponse<Page<OrderResponse>>> getAllOrders(
@@ -68,6 +70,7 @@ public class OrderController {
      * GET /api/orders/customer/{customerId} — Lịch sử đơn hàng của 1 khách hàng cụ thể (Admin, Cashier).
      */
     @GetMapping("/customer/{customerId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     @Operation(summary = "Lịch sử đơn hàng của khách hàng (Admin/Cashier)",
             description = "Lấy danh sách đơn hàng của một khách hàng cụ thể. Phân trang, sắp xếp mới nhất.")
     public ResponseEntity<ApiResponse<Page<OrderResponse>>> getCustomerOrders(
@@ -103,8 +106,12 @@ public class OrderController {
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết đơn hàng",
             description = "Xem thông tin chi tiết 1 đơn hàng bao gồm danh sách món, topping, options.")
-    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable UUID id) {
-        OrderResponse order = orderService.getOrderById(id);
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
+            @PathVariable UUID id,
+            Authentication authentication
+    ) {
+        String userEmail = authentication.getName();
+        OrderResponse order = orderService.getOrderById(id, userEmail);
         return ResponseEntity.ok(ApiResponse.success(order, "Chi tiết đơn hàng"));
     }
 
@@ -194,6 +201,7 @@ public class OrderController {
      * PUT /api/orders/:id/status — Cập nhật trạng thái đơn hàng
      */
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'BARISTA', 'BRANCH_MANAGER')")
     @Operation(summary = "Cập nhật trạng thái đơn",
             description = "Chuyển đơn từ PENDING → CONFIRMED → COMPLETED. (Dành cho Quản lý / Nhân viên). "
                     + "Để huỷ đơn thì gọi DELETE endpoint.")

@@ -124,9 +124,7 @@ export default function RolesPermissionsPage() {
   const getRoleEnum = (roleName: string): UserRole | null => {
     const roleMap: Record<string, UserRole> = {
       ROLE_ADMIN: UserRole.ADMIN,
-      ROLE_EMPLOYEE: UserRole.EMPLOYEE,
       ROLE_CASHIER: UserRole.CASHIER,
-      ROLE_ACCOUNTANT: UserRole.ACCOUNTANT,
       ROLE_CUSTOMER: UserRole.CUSTOMER,
       ROLE_BARISTA: UserRole.BARISTA,
       ROLE_BRANCH_MANAGER: UserRole.BRANCH_MANAGER,

@@ -25,6 +25,7 @@ interface Branch {
   lat?: number;
   lng?: number;
   isActive: boolean;
+  active?: boolean;
   hours?: BranchHour[];
 }
 
@@ -256,7 +257,7 @@ export default function BranchesPage() {
                     )}
                     <h3 className="font-serif text-lg font-semibold text-[#2C1A0E] mb-1 pr-8 flex items-center flex-wrap gap-2">
                       <span>{branch.name}</span>
-                      {!branch.isActive && (
+                      {(branch.active === false || branch.isActive === false) && (
                         <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-sans font-bold">
                           Tạm đóng
                         </span>
