@@ -3,6 +3,7 @@ package com.example.traphe_backend.service.impl;
 import com.example.traphe_backend.service.OrderService;
 import com.example.traphe_backend.service.*;
 
+import com.example.traphe_backend.dto.request.CreateCompatibleOrderRequest;
 import com.example.traphe_backend.dto.request.CreateDrinkOrderRequest;
 import com.example.traphe_backend.dto.request.OrderItemOptionRequest;
 import com.example.traphe_backend.dto.request.OrderItemRequest;
@@ -740,14 +741,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    public OrderResponse createCompatibleOrder(Map<String, Object> payload, String userEmail) {
+    public OrderResponse createCompatibleOrder(CreateCompatibleOrderRequest request, String userEmail) {
         log.info("Processing compatible order creation for: {}", userEmail);
 
         // 1. Resolve Branch ID
-        UUID branchId = null;
-        if (payload.containsKey("branchId") && payload.get("branchId") != null) {
-            branchId = UUID.fromString(payload.get("branchId").toString());
-        } else {
+        UUID branchId = request.getBranchId();
+        if (branchId == null) {
             branchId = branchRepository.findAll().stream()
                     .filter(b -> !b.isDeleted())
                     .map(Branch::getId)
@@ -755,17 +754,13 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("No active branch found"));
         }
 
-        // 2. Resolve items and split by Drink vs Merchandise
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> itemsList = (List<Map<String, Object>>) payload.get("items");
+        // 2. Split items by Drink vs Merchandise
+        List<CreateCompatibleOrderRequest.CompatibleOrderItem> drinkItems = new ArrayList<>();
+        List<CreateCompatibleOrderRequest.CompatibleOrderItem> merchandiseItems = new ArrayList<>();
 
-        List<Map<String, Object>> drinkItemsMaps = new java.util.ArrayList<>();
-        List<Map<String, Object>> merchandiseItemsMaps = new java.util.ArrayList<>();
-
-        if (itemsList != null) {
-            for (Map<String, Object> itemMap : itemsList) {
-                String variantIdStr = (String) itemMap.get("productVariantId");
-                UUID variantId = UUID.fromString(variantIdStr);
+        if (request.getItems() != null) {
+            for (CreateCompatibleOrderRequest.CompatibleOrderItem item : request.getItems()) {
+                UUID variantId = UUID.fromString(item.getProductVariantId());
 
                 boolean isDrink = true;
                 if (menuItemSizeRepository.existsById(variantId)) {
@@ -778,43 +773,29 @@ public class OrderServiceImpl implements OrderService {
                 }
 
                 if (isDrink) {
-                    drinkItemsMaps.add(itemMap);
+                    drinkItems.add(item);
                 } else {
-                    merchandiseItemsMaps.add(itemMap);
+                    merchandiseItems.add(item);
                 }
             }
         }
 
-        // Map merchandise items request
-        List<MerchandiseOrderItemRequest> mappedMerchItems = new java.util.ArrayList<>();
-        for (Map<String, Object> itemMap : merchandiseItemsMaps) {
-            String variantIdStr = (String) itemMap.get("productVariantId");
-            UUID variantId = UUID.fromString(variantIdStr);
-            int qty = itemMap.containsKey("quantity") ? ((Number) itemMap.get("quantity")).intValue() : 1;
-
+        // Map merchandise items
+        List<MerchandiseOrderItemRequest> mappedMerchItems = new ArrayList<>();
+        for (CreateCompatibleOrderRequest.CompatibleOrderItem item : merchandiseItems) {
+            UUID variantId = UUID.fromString(item.getProductVariantId());
             MerchandiseOrderItemRequest itemReq = new MerchandiseOrderItemRequest();
             itemReq.setMenuItemId(variantId);
-            itemReq.setQuantity(qty);
+            itemReq.setQuantity(item.getQuantity());
             mappedMerchItems.add(itemReq);
         }
 
         // Handle case where only merchandise items exist
-        if (drinkItemsMaps.isEmpty() && !merchandiseItemsMaps.isEmpty()) {
+        if (drinkItems.isEmpty() && !merchandiseItems.isEmpty()) {
             CreateMerchandiseOrderRequest merchReq = new CreateMerchandiseOrderRequest();
             merchReq.setBranchId(branchId);
             merchReq.setItems(mappedMerchItems);
-
-            String shippingAddress = "Store Pickup"; // default
-            if (payload.containsKey("shippingAddress") && payload.get("shippingAddress") != null) {
-                shippingAddress = payload.get("shippingAddress").toString();
-            } else if (payload.containsKey("addressId") && payload.get("addressId") != null) {
-                UUID addrId = UUID.fromString(payload.get("addressId").toString());
-                UserAddress addr = userAddressRepository.findById(addrId).orElse(null);
-                if (addr != null) {
-                    shippingAddress = addr.getAddressLine() + ", " + addr.getWardName() + ", " + addr.getProvinceName();
-                }
-            }
-            merchReq.setShippingAddress(shippingAddress);
+            merchReq.setShippingAddress(resolveShippingAddress(request));
 
             MerchandiseOrderResponse merchRes = merchandiseOrderService.createMerchandiseOrder(merchReq, userEmail);
 
@@ -829,47 +810,40 @@ public class OrderServiceImpl implements OrderService {
                     .build();
         }
 
-        // Otherwise process drinks, map drink items request
-        List<OrderItemRequest> mappedDrinkItems = new java.util.ArrayList<>();
-        for (Map<String, Object> itemMap : drinkItemsMaps) {
-            String variantIdStr = (String) itemMap.get("productVariantId");
-            UUID variantId = UUID.fromString(variantIdStr);
-            int qty = itemMap.containsKey("quantity") ? ((Number) itemMap.get("quantity")).intValue() : 1;
+        // 3. Process drink items
+        List<OrderItemRequest> mappedDrinkItems = new ArrayList<>();
+        for (CreateCompatibleOrderRequest.CompatibleOrderItem item : drinkItems) {
+            UUID variantId = UUID.fromString(item.getProductVariantId());
 
             OrderItemRequest itemReq = new OrderItemRequest();
-            itemReq.setQuantity(qty);
+            itemReq.setQuantity(item.getQuantity());
+            itemReq.setNotes(item.getNotes());
 
-            if (itemMap.containsKey("notes")) {
-                itemReq.setNotes((String) itemMap.get("notes"));
-            }
-
-            if (itemMap.containsKey("options") && itemMap.get("options") != null) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> optsList = (List<Map<String, Object>>) itemMap.get("options");
-                List<OrderItemOptionRequest> optionRequests = new java.util.ArrayList<>();
-                for (Map<String, Object> optMap : optsList) {
+            // Map options
+            if (item.getOptions() != null && !item.getOptions().isEmpty()) {
+                List<OrderItemOptionRequest> optionRequests = new ArrayList<>();
+                for (CreateCompatibleOrderRequest.CompatibleOrderItemOption opt : item.getOptions()) {
                     OrderItemOptionRequest optReq = new OrderItemOptionRequest();
-                    optReq.setOptionGroupId(UUID.fromString((String) optMap.get("optionGroupId")));
-                    optReq.setOptionValueId(UUID.fromString((String) optMap.get("optionValueId")));
+                    optReq.setOptionGroupId(UUID.fromString(opt.getOptionGroupId()));
+                    optReq.setOptionValueId(UUID.fromString(opt.getOptionValueId()));
                     optionRequests.add(optReq);
                 }
                 itemReq.setOptions(optionRequests);
             }
 
-            if (itemMap.containsKey("toppings") && itemMap.get("toppings") != null) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> topsList = (List<Map<String, Object>>) itemMap.get("toppings");
-                List<OrderItemToppingRequest> toppingRequests = new java.util.ArrayList<>();
-                for (Map<String, Object> topMap : topsList) {
+            // Map toppings
+            if (item.getToppings() != null && !item.getToppings().isEmpty()) {
+                List<OrderItemToppingRequest> toppingRequests = new ArrayList<>();
+                for (CreateCompatibleOrderRequest.CompatibleOrderItemTopping top : item.getToppings()) {
                     OrderItemToppingRequest topReq = new OrderItemToppingRequest();
-                    topReq.setToppingId(UUID.fromString((String) topMap.get("toppingId")));
-                    topReq.setQuantity(topMap.containsKey("quantity") ? ((Number) topMap.get("quantity")).intValue() : 1);
+                    topReq.setToppingId(UUID.fromString(top.getToppingId()));
+                    topReq.setQuantity(top.getQuantity());
                     toppingRequests.add(topReq);
                 }
                 itemReq.setToppings(toppingRequests);
             }
 
-            // Check if variantId is a MenuItemSize
+            // Resolve variant → menuItem + size
             if (menuItemSizeRepository.existsById(variantId)) {
                 MenuItemSize size = menuItemSizeRepository.findById(variantId).orElse(null);
                 if (size != null) {
@@ -884,65 +858,70 @@ public class OrderServiceImpl implements OrderService {
             mappedDrinkItems.add(itemReq);
         }
 
-        // Construct CreateDrinkOrderRequest
+        // 4. Construct CreateDrinkOrderRequest
         CreateDrinkOrderRequest drinkReq = new CreateDrinkOrderRequest();
         drinkReq.setBranchId(branchId);
         drinkReq.setItems(mappedDrinkItems);
 
         // Resolve order type
-        String orderType = (String) payload.get("orderType");
+        String orderType = request.getOrderType();
         if ("ONLINE_COD".equals(orderType) || "ONLINE_TRANSFER".equals(orderType)) {
             drinkReq.setOrderType("DRINK_DELIVERY");
         } else {
             drinkReq.setOrderType("DRINK_PICKUP");
         }
 
-        // Resolve delivery address
-        if (payload.containsKey("addressId") && payload.get("addressId") != null) {
-            drinkReq.setDeliveryAddressId(UUID.fromString(payload.get("addressId").toString()));
+        // Delivery address
+        if (request.getAddressId() != null) {
+            drinkReq.setDeliveryAddressId(request.getAddressId());
         }
 
-        String paymentMethod = (String) payload.get("paymentMethod");
-        drinkReq.setPaymentMethod(paymentMethod != null ? paymentMethod : "CASH");
+        // Payment method
+        drinkReq.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "CASH");
 
-        if (payload.containsKey("voucherCode") && payload.get("voucherCode") != null) {
-            drinkReq.setVoucherCode(payload.get("voucherCode").toString());
-        } else if (payload.containsKey("promotionCode") && payload.get("promotionCode") != null) {
-            drinkReq.setVoucherCode(payload.get("promotionCode").toString());
+        // Voucher code
+        if (request.getVoucherCode() != null) {
+            drinkReq.setVoucherCode(request.getVoucherCode());
+        } else if (request.getPromotionCode() != null) {
+            drinkReq.setVoucherCode(request.getPromotionCode());
         }
 
-        if (payload.containsKey("loyaltyPointsUsed") && payload.get("loyaltyPointsUsed") != null) {
-            drinkReq.setLoyaltyPointsUsed(((Number) payload.get("loyaltyPointsUsed")).intValue());
-        } else if (payload.containsKey("loyaltyPointsToUse") && payload.get("loyaltyPointsToUse") != null) {
-            drinkReq.setLoyaltyPointsUsed(((Number) payload.get("loyaltyPointsToUse")).intValue());
+        // Loyalty points
+        if (request.getLoyaltyPointsToUse() != null && request.getLoyaltyPointsToUse() > 0) {
+            drinkReq.setLoyaltyPointsUsed(request.getLoyaltyPointsToUse());
         }
 
-        // Create drink order
+        // 5. Create drink order
         OrderResponse drinkOrderResponse = createDrinkOrder(drinkReq, userEmail);
 
-        // If there are also merchandise items, create a merchandise order and link it
-        if (!merchandiseItemsMaps.isEmpty()) {
+        // 6. If mixed cart, also create merchandise order
+        if (!merchandiseItems.isEmpty()) {
             CreateMerchandiseOrderRequest merchReq = new CreateMerchandiseOrderRequest();
             merchReq.setBranchId(branchId);
             merchReq.setItems(mappedMerchItems);
-
-            String shippingAddress = "Store Pickup"; // default
-            if (payload.containsKey("shippingAddress") && payload.get("shippingAddress") != null) {
-                shippingAddress = payload.get("shippingAddress").toString();
-            } else if (payload.containsKey("addressId") && payload.get("addressId") != null) {
-                UUID addrId = UUID.fromString(payload.get("addressId").toString());
-                UserAddress addr = userAddressRepository.findById(addrId).orElse(null);
-                if (addr != null) {
-                    shippingAddress = addr.getAddressLine() + ", " + addr.getWardName() + ", " + addr.getProvinceName();
-                }
-            }
-            merchReq.setShippingAddress(shippingAddress);
+            merchReq.setShippingAddress(resolveShippingAddress(request));
 
             MerchandiseOrderResponse merchRes = merchandiseOrderService.createMerchandiseOrder(merchReq, userEmail);
             drinkOrderResponse.setMerchandiseOrderId(merchRes.getOrderId());
         }
 
         return drinkOrderResponse;
+    }
+
+    /**
+     * Resolve shipping address from the compatible order request.
+     */
+    private String resolveShippingAddress(CreateCompatibleOrderRequest request) {
+        if (request.getShippingAddress() != null) {
+            return request.getShippingAddress();
+        }
+        if (request.getAddressId() != null) {
+            UserAddress addr = userAddressRepository.findById(request.getAddressId()).orElse(null);
+            if (addr != null) {
+                return addr.getAddressLine() + ", " + addr.getWardName() + ", " + addr.getProvinceName();
+            }
+        }
+        return "Store Pickup";
     }
 
     /**

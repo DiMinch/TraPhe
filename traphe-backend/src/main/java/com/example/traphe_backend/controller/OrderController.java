@@ -1,6 +1,7 @@
 package com.example.traphe_backend.controller;
 
 import com.example.traphe_backend.dto.request.CheckoutRequest;
+import com.example.traphe_backend.dto.request.CreateCompatibleOrderRequest;
 import com.example.traphe_backend.dto.request.CreateDrinkOrderRequest;
 import com.example.traphe_backend.dto.request.CreateMerchandiseOrderRequest;
 import com.example.traphe_backend.dto.request.UpdateOrderStatusRequest;
@@ -124,7 +125,7 @@ public class OrderController {
     @Operation(summary = "Tạo đơn hàng tương thích (Client Online)",
             description = "Endpoint tương thích hỗ trợ tạo đơn hàng trực tiếp từ giỏ hàng client. Tự động ánh xạ sản phẩm sang cấu trúc đồ uống F&B.")
     public ResponseEntity<ApiResponse<OrderResponse>> createCompatibleOrder(
-            @RequestBody java.util.Map<String, Object> request,
+            @Valid @RequestBody CreateCompatibleOrderRequest request,
             Authentication authentication
     ) {
         String userEmail = authentication.getName();
