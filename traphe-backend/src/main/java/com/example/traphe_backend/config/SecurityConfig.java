@@ -59,7 +59,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/system-config/public/**").permitAll()
                         .requestMatchers("/api/payment/vnpay-return", "/api/payment/momo-ipn").permitAll()
                         .requestMatchers("/ws/**").permitAll()
-                        // Swagger — gated by profile in OpenApiConfig, but also allow here for dev
+                        // Swagger — OpenApiConfig bean is @Profile("!prod"); these permitAll rules
+                        // ensure swagger-ui is accessible without JWT in dev. In prod, the bean is absent
+                        // so Swagger 404s, but the permitAll here is harmless.
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -532,19 +532,21 @@ public class OrderServiceImpl implements OrderService {
             throw new IllegalArgumentException("Bạn không có quyền huỷ đơn hàng này.");
         }
 
-        // 3. Validate cancellable status
+        // 3. Validate cancellable status — per BA spec, only PENDING orders can be cancelled
         OrderStatus currentStatus = order.getStatus();
 
-        if (currentStatus == OrderStatus.COMPLETED) {
-            throw new IllegalArgumentException(
-                    "Đơn hàng " + order.getOrderNumber() + " đã hoàn thành, không thể huỷ.");
-        }
-
         if (currentStatus == OrderStatus.CANCELLED) {
+            // Already cancelled — soft-delete to hide from history
             order.setDeleted(true);
             Order saved = orderRepository.save(order);
             log.info("Order {} is soft-deleted (hidden) from history.", order.getOrderNumber());
             return mapToOrderResponse(saved);
+        }
+
+        if (currentStatus != OrderStatus.PENDING) {
+            throw new IllegalArgumentException(
+                    "Chỉ có thể huỷ đơn hàng ở trạng thái PENDING. Đơn hàng " 
+                    + order.getOrderNumber() + " đang ở trạng thái: " + currentStatus.name());
         }
 
         // 4. Process refunds
