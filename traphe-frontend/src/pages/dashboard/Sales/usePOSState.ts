@@ -605,7 +605,7 @@ export function usePOSState() {
 
     // Customization modal
     customizingProduct,
-    selectedVariant,
+    selectedVariant, setSelectedVariant,
     selectedOptions, setSelectedOptions,
     selectedToppings,
     customNote, setCustomNote,
@@ -618,7 +618,8 @@ export function usePOSState() {
     // Payment & promotion
     voucherCode, setVoucherCode,
     paymentMethod, setPaymentMethod,
-    appliedPromotions,
+    appliedPromotions, setAppliedPromotions,
+    discountCalculation, setDiscountCalculation,
     applyingPromotion,
     activePromotions,
     myVouchers,
@@ -638,7 +639,7 @@ export function usePOSState() {
     processing,
     showConfirmation, setShowConfirmation,
     showOrderSuccess, setShowOrderSuccess,
-    completedOrder,
+    completedOrder, setCompletedOrder,
     copiedSerial,
     handleProceed,
     handleConfirmOrder,

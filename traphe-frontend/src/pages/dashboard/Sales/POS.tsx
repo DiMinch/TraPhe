@@ -33,6 +33,7 @@ import {
   Check,
 } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
+import type { ProductVariant } from "@/types/product.types";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { usePOSState } from "./usePOSState";
 
 
@@ -56,7 +58,7 @@ export default function POSPage() {
     expandedProductId, setExpandedProductId,
     fetchProducts,
     handleProductClick,
-    orderItems,
+    orderItems, setOrderItems,
     isCartVisible, setIsCartVisible,
     handleQuantityChange,
     handleRemoveItem,
@@ -70,7 +72,7 @@ export default function POSPage() {
     handleClearCustomer,
     handleCustomerLookup,
     customizingProduct,
-    selectedVariant,
+    selectedVariant, setSelectedVariant,
     selectedOptions, setSelectedOptions,
     selectedToppings,
     customNote, setCustomNote,
@@ -81,7 +83,8 @@ export default function POSPage() {
     toggleTopping,
     voucherCode, setVoucherCode,
     paymentMethod, setPaymentMethod,
-    appliedPromotions,
+    appliedPromotions, setAppliedPromotions,
+    setDiscountCalculation,
     applyingPromotion,
     activePromotions,
     myVouchers,
@@ -95,7 +98,7 @@ export default function POSPage() {
     processing,
     showConfirmation, setShowConfirmation,
     showOrderSuccess, setShowOrderSuccess,
-    completedOrder,
+    completedOrder, setCompletedOrder,
     copiedSerial,
     handleProceed,
     handleConfirmOrder,
