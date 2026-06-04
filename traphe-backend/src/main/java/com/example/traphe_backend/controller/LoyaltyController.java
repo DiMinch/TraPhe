@@ -3,7 +3,6 @@ package com.example.traphe_backend.controller;
 import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.entity.LoyaltyPointTransaction;
 import com.example.traphe_backend.entity.User;
-import com.example.traphe_backend.repository.LoyaltyPointTransactionRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.LoyaltyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 @Tag(name = "Loyalty (Customer)", description = "Loyalty points, transaction history & reward redemption")
 public class LoyaltyController {
 
-    private final LoyaltyPointTransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final LoyaltyService loyaltyService;
 
@@ -94,8 +92,8 @@ public class LoyaltyController {
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<LoyaltyTransactionResponse> list = transactionRepository
-                .findByUserIdOrderByCreatedAtDesc(user.getId())
+        List<LoyaltyTransactionResponse> list = loyaltyService
+                .getTransactionsForUser(user)
                 .stream()
                 .map(this::toTransactionResponse)
                 .collect(Collectors.toList());

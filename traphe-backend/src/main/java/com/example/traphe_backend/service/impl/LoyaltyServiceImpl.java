@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -317,5 +318,13 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                         }
                 }
                 return lp;
+        }
+
+        // ======================== TRANSACTION HISTORY ========================
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<LoyaltyPointTransaction> getTransactionsForUser(User user) {
+                return loyaltyPointTransactionRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         }
 }
