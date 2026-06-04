@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -59,10 +60,12 @@ public class OrderItem extends BaseEntity {
     @Builder.Default
     private boolean isDeleted = false;
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<OrderItemOption> selectedOptions = new HashSet<>();
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<OrderItemTopping> selectedToppings = new HashSet<>();

@@ -27,7 +27,8 @@ export interface OrderResponse {
   estimatedReadyTime: string | null;
   createdAt: string;
   // Items
-  items: OrderItemDetail[];
+  items?: OrderItemDetail[];
+  itemCount?: number;
   paymentUrl: string | null;
   merchandiseOrderId?: string | null;
 }
@@ -83,7 +84,7 @@ export const orderService = {
   }) => {
     const queryParams = {
       page: params?.page || 0,
-      size: params?.size || 100,
+      size: params?.size || 20,
       ...(params?.status &&
         params.status !== "all-status" && {
           status: params.status,
@@ -99,6 +100,37 @@ export const orderService = {
 
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
       "/orders",
+      { params: queryParams },
+    );
+  },
+
+  getFullOrders: async (params?: {
+    page?: number;
+    size?: number;
+    status?: string;
+    orderType?: string;
+    startDate?: string;
+    endDate?: string;
+    sort?: string;
+  }) => {
+    const queryParams = {
+      page: params?.page || 0,
+      size: params?.size || 100,
+      ...(params?.status &&
+        params.status !== "all-status" && {
+          status: params.status,
+        }),
+      ...(params?.orderType &&
+        params.orderType !== "all-type" && {
+          orderType: params.orderType,
+        }),
+      ...(params?.startDate && { startDate: params.startDate }),
+      ...(params?.endDate && { endDate: params.endDate }),
+      ...(params?.sort && { sort: params.sort }),
+    };
+
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      "/orders/full",
       { params: queryParams },
     );
   },

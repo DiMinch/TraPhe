@@ -419,30 +419,12 @@ public class ReportServiceImpl implements ReportService {
                 .collect(Collectors.groupingBy(oi -> oi.getMenuItem().getId(), Collectors.summingLong(OrderItem::getQuantity)));
 
         List<BranchMenuItem> bmis = branchId == null ? branchMenuItemRepository.findAll() : branchMenuItemRepository.findByBranchId(branchId);
-        List<IngredientStock> stocks = branchId == null ? ingredientStockRepository.findAll() : ingredientStockRepository.findByBranchId(branchId);
-        Map<UUID, BigDecimal> ingredientStockMap = stocks.stream()
-                .collect(Collectors.toMap(s -> s.getIngredient().getId(), IngredientStock::getQuantityAvailable, (a, b) -> a.add(b)));
 
-        List<Recipe> recipes = recipeRepository.findAll();
-        List<RecipeItem> recipeItems = recipeItemRepository.findAll();
-
-        Map<UUID, List<RecipeItem>> itemsByRecipeId = recipeItems.stream()
-                .filter(ri -> ri.getRecipe() != null)
-                .collect(Collectors.groupingBy(ri -> ri.getRecipe().getId()));
-
-        Map<String, Recipe> recipeMap = new HashMap<>();
-        for (Recipe r : recipes) {
-            if (r.getMenuItem() == null || r.isDeleted() || !r.isActive()) continue;
-            String sizeKey = r.getSize() != null ? r.getSize().toUpperCase() : "GENERAL";
-            recipeMap.put(r.getMenuItem().getId().toString() + "_" + sizeKey, r);
-        }
 
         List<StockForecastResponse> forecastList = new ArrayList<>();
         for (BranchMenuItem bmi : bmis) {
             MenuItem mi = bmi.getMenuItem();
             if (mi.isDeleted()) continue;
-
-            double currentStock = getMenuItemAvailableStock(mi, null, recipeMap, itemsByRecipeId, ingredientStockMap, bmi.isAvailable());
 
             long totalSales = itemSales.getOrDefault(mi.getId(), 0L);
             double avgDailySales = totalSales / 30.0;

@@ -35,17 +35,14 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
     setDeliveryAddress,
     setIsBranchConfirmed,
     setShippingFee,
+    cart,
   } = useCart();
 
   const [activeTab, setActiveTab] = useState<"pickup" | "delivery">(shippingMethod);
   const [localBranchId, setLocalBranchId] = useState<string | null>(selectedBranchId);
   const [addressInput, setAddressInput] = useState<string>(deliveryAddress || "");
   const [isCalculating, setIsCalculating] = useState(false);
-  const [nearestBranchData, setNearestBranchData] = useState<{
-    branch: any;
-    distanceKm: number;
-    shippingFee: number;
-  } | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
@@ -94,7 +91,7 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
       if (deliveryAddress) {
         setAddressInput(deliveryAddress);
       }
-      setNearestBranchData(null);
+      setSuggestions([]);
     }
   }, [isOpen, shippingMethod, selectedBranchId, deliveryAddress]);
 
@@ -102,7 +99,7 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
     const addr = typeof addressToUse === "string" ? addressToUse : addressInput;
     if (!addr.trim()) {
       toast.error("Vui lòng nhập địa chỉ giao hàng");
-      return;
+      return null;
     }
 
     setIsCalculating(true);
@@ -120,19 +117,27 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
         lng = 108.2022;
       }
 
-      const res = await axiosClient.get(`/branches/nearest`, {
-        params: { lat, lng },
+      // Map cart items for AI prep time/stock calculation
+      const cartItems = cart?.items.map(item => ({
+        menuItemId: item.menuItemId,
+        sizeId: item.menuItemSizeId,
+        quantity: item.quantity
+      })) || [];
+
+      const res = await axiosClient.post(`/ai/branch-suggest`, {
+        customerLat: lat,
+        customerLng: lng,
+        items: cartItems
       });
 
-      if (res.data) {
-        setNearestBranchData({
-          branch: res.data.branch,
-          distanceKm: res.data.distanceKm,
-          shippingFee: res.data.shippingFee,
-        });
-        setLocalBranchId(res.data.branch.id);
-        toast.success(`Đã tìm thấy chi nhánh gần nhất: ${res.data.branch.name}`);
-        return res.data;
+      if (res.data && res.data.suggestions) {
+        setSuggestions(res.data.suggestions);
+        const topSuggestion = res.data.suggestions[0];
+        if (topSuggestion) {
+          setLocalBranchId(topSuggestion.branchId);
+        }
+        toast.success("AI đã phân tích và đề xuất chi nhánh tốt nhất cho bạn!");
+        return res.data.suggestions;
       }
       return null;
     } catch (error) {
@@ -164,23 +169,29 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
       }
       
       let finalBranchId = localBranchId;
-      let finalNearestData = nearestBranchData;
+      let currentSuggestions = suggestions;
 
-      if (!finalBranchId || (!finalNearestData && addressInput !== deliveryAddress)) {
+      if (!finalBranchId || (currentSuggestions.length === 0 && addressInput !== deliveryAddress)) {
         // Auto-calculate nearest branch if not calculated yet
         const calculated = await handleCalculateNearest(addressInput);
-        if (!calculated) return; // Error handled inside calculate
+        if (!calculated || calculated.length === 0) return;
         
-        finalBranchId = calculated.branch.id;
-        finalNearestData = calculated;
+        const topSuggestion = calculated[0];
+        finalBranchId = topSuggestion.branchId;
+        currentSuggestions = calculated;
+      }
+
+      const selectedSuggestion = currentSuggestions.find(s => s.branchId === finalBranchId) || currentSuggestions[0];
+
+      if (!selectedSuggestion) {
+        toast.error("Không tìm thấy chi nhánh phù hợp.");
+        return;
       }
 
       setSelectedBranchId(finalBranchId);
       setShippingMethod("delivery");
       setDeliveryAddress(addressInput);
-      if (finalNearestData) {
-        setShippingFee(finalNearestData.shippingFee);
-      }
+      setShippingFee(selectedSuggestion.shippingFee);
       setIsBranchConfirmed(true);
       toast.success("Đã xác nhận địa chỉ giao hàng");
       onClose();
@@ -395,29 +406,60 @@ export default function BranchSelectionModal({ isOpen, onClose }: BranchSelectio
                   </div>
                 )}
 
-                {nearestBranchData && (
-                  <div className="p-4 bg-[#F5EAD8]/40 border border-[#EFE5D3] rounded-xl space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#A0622A]">
-                        Chi nhánh giao hàng
-                      </span>
-                      <span className="text-xs bg-[#5C3317]/10 text-[#5C3317] px-2 py-0.5 rounded-full font-bold">
-                        {nearestBranchData.distanceKm} km
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-sans font-bold text-[#2C1A0E] text-sm">
-                        {nearestBranchData.branch.name}
-                      </h4>
-                      <p className="font-sans text-[#5C4A3C] text-xs mt-0.5">
-                        {nearestBranchData.branch.address}
-                      </p>
-                    </div>
-                    <div className="pt-2.5 border-t border-[#EFE5D3] flex items-center justify-between">
-                      <span className="text-xs font-sans text-[#5C4A3C]">Phí giao hàng:</span>
-                      <span className="font-sans font-bold text-[#5C3317] text-base">
-                        {nearestBranchData.shippingFee.toLocaleString("vi-VN")} ₫
-                      </span>
+                {suggestions && suggestions.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C7B6E]">
+                      AI Đề xuất chi nhánh phù hợp nhất:
+                    </span>
+                    <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                      {suggestions.map((suggestion) => {
+                        const isSelected = localBranchId === suggestion.branchId;
+                        return (
+                          <button
+                            key={suggestion.branchId}
+                            type="button"
+                            onClick={() => setLocalBranchId(suggestion.branchId)}
+                            className={`flex flex-col p-3.5 rounded-xl border text-left transition-all relative cursor-pointer ${
+                              isSelected
+                                ? "border-[#5C3317] bg-[#5C3317]/5 shadow-sm"
+                                : "border-stone-200 hover:border-[#A0622A] hover:bg-[#F5EAD8]/20 bg-white"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between w-full gap-2">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="font-sans font-bold text-[#2C1A0E] text-sm">
+                                    {suggestion.branchName}
+                                  </h4>
+                                  {suggestion.rank === 1 && (
+                                    <span className="text-[10px] bg-emerald-100 text-emerald-850 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                                      <Sparkles className="w-2.5 h-2.5 text-emerald-700" />
+                                      Đề xuất tốt nhất
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="font-sans text-[#5C4A3C] text-[11px] mt-0.5">
+                                  Khoảng cách: {suggestion.distanceKm} km
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-sans font-bold text-[#5C3317] text-sm block">
+                                  {suggestion.shippingFee.toLocaleString("vi-VN")} ₫
+                                </span>
+                                <span className="text-[10px] text-[#8C7B6E] block mt-0.5">
+                                  Chuẩn bị: ~{suggestion.estimatedPrepMinutes} phút
+                                </span>
+                              </div>
+                            </div>
+
+                            {suggestion.reason && (
+                              <div className="mt-2 text-[11px] text-[#A0622A] bg-[#A0622A]/5 px-2.5 py-1.5 rounded-lg font-medium w-full">
+                                💡 {suggestion.reason}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}

@@ -76,6 +76,7 @@ const RolesPermissionsPage = lazy(() => import("./pages/dashboard/UsersRoles/Rol
 const CustomerPage = lazy(() => import("./pages/dashboard/Customer/Customer"));
 const CustomerTierPage = lazy(() => import("./pages/dashboard/Customer/CustomerTier"));
 const CustomerDetailPage = lazy(() => import("./pages/dashboard/Customer/CustomerDetail"));
+const CustomerSegmentsPage = lazy(() => import("./pages/dashboard/Customer/CustomerSegments"));
 const AdminLoyaltyPage = lazy(() => import("./pages/dashboard/Loyalty/AdminLoyaltyPage"));
 const AdminLoyaltyRewardsPage = lazy(() => import("./pages/dashboard/Loyalty/AdminLoyaltyRewardsPage"));
 const PromotionListPage = lazy(() => import("./pages/dashboard/Promotions/PromotionList"));
@@ -93,6 +94,9 @@ const LoyaltyReportPage = lazy(() => import("./pages/dashboard/Reports/LoyaltyRe
 const ConfigurationsPage = lazy(() => import("./pages/dashboard/System/Configurations"));
 const AuditLogsPage = lazy(() => import("./pages/dashboard/AuditLogs"));
 const UserPage = lazy(() => import("./pages/dashboard/User"));
+
+// Admin — AI Features
+const ForecastPage = lazy(() => import("./pages/dashboard/AI/ForecastPage"));
 
 // 404
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
@@ -196,6 +200,7 @@ function App() {
             <Route path="/admin/loyalty/tiers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerTierPage /></ProtectedRoute>} />
             <Route path="/admin/loyalty/rewards" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><AdminLoyaltyRewardsPage /></ProtectedRoute>} />
             <Route path="/admin/loyalty/customers" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerPage /></ProtectedRoute>} />
+            <Route path="/admin/loyalty/customers/segments" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerSegmentsPage /></ProtectedRoute>} />
             <Route path="/admin/loyalty/customers/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><CustomerDetailPage /></ProtectedRoute>} />
             <Route path="/admin/promotions" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><PromotionListPage /></ProtectedRoute>} />
             <Route path="/admin/promotions/:id" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><PromotionDetailPage /></ProtectedRoute>} />
@@ -208,6 +213,9 @@ function App() {
             <Route path="/admin/reports/products" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><TopProductsReportPage /></ProtectedRoute>} />
             <Route path="/admin/reports/inventory" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><InventoryReportPage /></ProtectedRoute>} />
             <Route path="/admin/reports/loyalty" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><LoyaltyReportPage /></ProtectedRoute>} />
+
+            {/* AI Features */}
+            <Route path="/admin/ai/forecast" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER]}><ForecastPage /></ProtectedRoute>} />
 
             {/* B8: Cài đặt */}
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><ConfigurationsPage /></ProtectedRoute>} />

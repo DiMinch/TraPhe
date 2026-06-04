@@ -13,9 +13,10 @@ public interface OrderService {
     public OrderResponse cancelOrder(UUID orderId, String userEmail);
     public OrderResponse getOrderById(UUID orderId);
     public OrderResponse getOrderById(UUID orderId, String userEmail);
-    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable);
-    public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable);
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
+    public Page<OrderResponse> getFullOrders(String statusStr, UUID branchId, Pageable pageable);
     public OrderResponse createCompatibleOrder(CreateCompatibleOrderRequest request, String userEmail);
-    Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable);
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getCustomerOrders(UUID customerId, Pageable pageable);
 
 }

@@ -56,15 +56,30 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     @Operation(summary = "Danh sách đơn hàng (Admin)",
             description = "Lấy danh sách tất cả đơn hàng. Hỗ trợ lọc theo trạng thái, chi nhánh và phân trang.")
-    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getAllOrders(
+    public ResponseEntity<ApiResponse<Page<com.example.traphe_backend.dto.response.OrderSummaryResponse>>> getAllOrders(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID branchId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<OrderResponse> orders = orderService.getAllOrders(status, branchId, pageable);
+        Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> orders = orderService.getAllOrders(status, branchId, pageable);
         return ResponseEntity.ok(ApiResponse.success(orders, "Danh sách đơn hàng"));
+    }
+
+    @GetMapping("/full")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'BARISTA')")
+    @Operation(summary = "Danh sách đơn hàng chi tiết (dành cho PosQueue)",
+            description = "Lấy danh sách tất cả đơn hàng kèm theo chi tiết món, dùng cho màn hình KDS.")
+    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getFullOrders(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) UUID branchId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<OrderResponse> orders = orderService.getFullOrders(status, branchId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(orders, "Danh sách đơn hàng chi tiết"));
     }
 
     /**
@@ -74,13 +89,13 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER')")
     @Operation(summary = "Lịch sử đơn hàng của khách hàng (Admin/Cashier)",
             description = "Lấy danh sách đơn hàng của một khách hàng cụ thể. Phân trang, sắp xếp mới nhất.")
-    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getCustomerOrders(
+    public ResponseEntity<ApiResponse<Page<com.example.traphe_backend.dto.response.OrderSummaryResponse>>> getCustomerOrders(
             @org.springframework.web.bind.annotation.PathVariable UUID customerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<OrderResponse> orders = orderService.getCustomerOrders(customerId, pageable);
+        Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> orders = orderService.getCustomerOrders(customerId, pageable);
         return ResponseEntity.ok(ApiResponse.success(orders, "Lịch sử đơn hàng của khách hàng"));
     }
 
@@ -90,14 +105,14 @@ public class OrderController {
     @GetMapping("/user")
     @Operation(summary = "Lịch sử đơn hàng của tôi",
             description = "Khách hàng xem danh sách đơn hàng đã đặt. Phân trang, sắp xếp mới nhất.")
-    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getMyOrders(
+    public ResponseEntity<ApiResponse<Page<com.example.traphe_backend.dto.response.OrderSummaryResponse>>> getMyOrders(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
         String userEmail = authentication.getName();
-        Page<OrderResponse> orders = orderService.getMyOrders(userEmail, pageable);
+        Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> orders = orderService.getMyOrders(userEmail, pageable);
         return ResponseEntity.ok(ApiResponse.success(orders, "Lịch sử đơn hàng"));
     }
 

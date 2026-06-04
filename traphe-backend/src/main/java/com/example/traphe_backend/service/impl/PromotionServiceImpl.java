@@ -21,6 +21,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import com.example.traphe_backend.enums.PromotionScope;
+import com.example.traphe_backend.ai.repository.CustomerSegmentRepository;
+import com.example.traphe_backend.ai.enums.CustomerSegmentEnum;
 
 @Slf4j
 @Service
@@ -30,6 +32,7 @@ public class PromotionServiceImpl implements PromotionService {
     private final PromotionRepository promotionRepository;
     private final PromotionUsageRepository promotionUsageRepository;
     private final UserVoucherRepository userVoucherRepository;
+    private final CustomerSegmentRepository customerSegmentRepository;
 
     /**
      * Validate và tính toán số tiền giảm giá cho mã khuyến mãi.
@@ -180,6 +183,17 @@ public class PromotionServiceImpl implements PromotionService {
                 && orderAmount.compareTo(promotion.getMinOrderValue()) < 0) {
             throw new IllegalArgumentException(
                     "Đơn hàng cần tối thiểu " + promotion.getMinOrderValue() + " VND để sử dụng mã '" + promotion.getCode() + "'.");
+        }
+
+        // 6. Kiểm tra nhóm đối tượng khách hàng (AI Dynamic Target Segments)
+        if (promotion.getTargetSegments() != null && !promotion.getTargetSegments().isEmpty()) {
+            CustomerSegmentEnum userSegment = customerSegmentRepository.findByCustomerId(user.getId())
+                    .map(com.example.traphe_backend.ai.entity.CustomerSegment::getSegment)
+                    .orElse(null);
+
+            if (userSegment == null || !promotion.getTargetSegments().contains(userSegment)) {
+                throw new IllegalArgumentException("Rất tiếc, tài khoản của bạn không nằm trong nhóm khách hàng mục tiêu của chương trình khuyến mãi này.");
+            }
         }
     }
 

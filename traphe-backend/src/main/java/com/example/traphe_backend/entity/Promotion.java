@@ -117,6 +117,12 @@ public class Promotion extends BaseEntity {
     @Column(name = "product_id")
     private Set<UUID> applicableProductIds;
 
+    @ElementCollection
+    @CollectionTable(name = "promotion_target_segments", joinColumns = @JoinColumn(name = "promotion_id"))
+    @Column(name = "segment", length = 50)
+    @Enumerated(EnumType.STRING)
+    private Set<com.example.traphe_backend.ai.enums.CustomerSegmentEnum> targetSegments;
+
     public enum DiscountType {
         PERCENTAGE,
         FIXED_AMOUNT

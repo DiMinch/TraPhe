@@ -16,11 +16,12 @@ public interface OrderQueryService {
 
     OrderResponse getOrderById(UUID orderId, String userEmail);
 
-    Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable);
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable);
 
-    Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
 
-    Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable);
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getCustomerOrders(UUID customerId, Pageable pageable);
+    Page<OrderResponse> getFullOrders(String statusStr, UUID branchId, Pageable pageable);
 
     /**
      * Maps an Order entity to an OrderResponse DTO.

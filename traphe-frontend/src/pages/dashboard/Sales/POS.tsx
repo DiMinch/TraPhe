@@ -92,7 +92,7 @@ export default function POSPage() {
     handleApplyPromotion,
     handleRemovePromotion,
     subtotal, tierDiscount, loyaltyDiscount,
-    promotionDiscount, discount, total,
+    promotionDiscount, total,
     loyaltyPointsUsed, setLoyaltyPointsUsed,
     orderServeType, setOrderServeType,
     processing,
@@ -104,7 +104,7 @@ export default function POSPage() {
     handleConfirmOrder,
     handleCopySerial,
     handleCopyAllSerials,
-    pageSize,
+    upsellSuggestions,
   } = pos;
 
   return (
@@ -664,6 +664,52 @@ export default function POSPage() {
                   ))
                 )}
               </div>
+
+              {/* AI Upsell Suggestions */}
+              {upsellSuggestions && upsellSuggestions.length > 0 && (
+                <div className="bg-foam/50 border-t border-admin-border p-3 shrink-0">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-base">✨</span>
+                    <Label className="text-[11px] font-bold text-roast uppercase tracking-wider">
+                      Khách khác cũng mua
+                    </Label>
+                  </div>
+                  <div className="flex overflow-x-auto gap-2 pb-1 no-scrollbar">
+                    {upsellSuggestions.map((suggestion: any, index: number) => (
+                      <div key={index} className="flex-shrink-0 w-28 bg-white rounded-lg border border-admin-border p-2 shadow-sm flex flex-col gap-1 items-center text-center group hover:border-caramel transition-colors">
+                        <div className="w-10 h-10 bg-mist rounded-full overflow-hidden mb-1 border border-admin-border group-hover:shadow-md transition-shadow">
+                          {suggestion.imageUrl ? (
+                            <img src={suggestion.imageUrl} alt={suggestion.itemName} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-lg mt-1 block">📦</span>
+                          )}
+                        </div>
+                        <span className="font-ui-heading font-bold text-[10px] text-ink line-clamp-2 leading-tight h-6">
+                          {suggestion.itemName}
+                        </span>
+                        <span className="text-[10px] font-bold text-roast">
+                          +{suggestion.price?.toLocaleString() || 0}đ
+                        </span>
+                        <Button 
+                          size="sm" 
+                          className="w-full h-6 text-[9px] px-1 bg-white text-roast border border-roast hover:bg-roast hover:text-white mt-1 rounded"
+                          onClick={() => {
+                            const prod = pos.products.find(p => p.id === suggestion.itemId);
+                            if (prod && prod.variants && prod.variants.length > 0) {
+                              // If it has multiple variants, open modal, else just add
+                              pos.handleAddVariantToCart(prod.variants[0], prod);
+                            } else {
+                              toast.error("Sản phẩm không có sẵn");
+                            }
+                          }}
+                        >
+                          Thêm
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Order Summary & Checkout (Fixed Bottom) */}
               <div className="bg-white border-t border-admin-border p-3 shrink-0 flex flex-col gap-3">

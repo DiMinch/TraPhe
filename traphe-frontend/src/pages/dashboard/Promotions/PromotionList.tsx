@@ -83,6 +83,17 @@ const getPromotionStatus = (promo: PromotionResponse): PromotionStatus => {
   return "ACTIVE";
 };
 
+const RFM_SEGMENTS = [
+  { value: "CHAMPIONS", label: "Champions 🏆" },
+  { value: "LOYAL_CUSTOMERS", label: "Trung thành ❤️" },
+  { value: "POTENTIAL_LOYALIST", label: "Tiềm năng 🌟" },
+  { value: "NEW_CUSTOMERS", label: "Mới 🆕" },
+  { value: "PROMISING", label: "Hứa hẹn 👍" },
+  { value: "AT_RISK", label: "Rủi ro ⚠️" },
+  { value: "HIBERNATING", label: "Ngủ đông 💤" },
+  { value: "LOST", label: "Đã mất ❌" },
+];
+
 export default function PromotionListPage() {
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -128,6 +139,7 @@ export default function PromotionListPage() {
     conflictingPromotionIds: [],
     dailyStartTime: null,
     dailyEndTime: null,
+    targetSegments: [],
   });
 
   // Categories and products for selection
@@ -227,7 +239,8 @@ export default function PromotionListPage() {
           applicableCustomerTiers: p.applicableCustomerTiers || [],
           conflictingPromotionIds: p.conflictingPromotionIds || [],
           hasQuota: p.usageLimit ? true : false,
-          remainingQuota: p.usageLimit ? (p.usageLimit - p.usageCount) : undefined
+          remainingQuota: p.usageLimit ? (p.usageLimit - p.usageCount) : undefined,
+          targetSegments: p.targetSegments || [],
         };
       });
 
@@ -439,6 +452,7 @@ export default function PromotionListPage() {
         dailyEndTime: formData.dailyEndTime || null,
         applicableCategoryIds: formData.applicableCategoryIds,
         applicableProductIds: formData.applicableProductIds,
+        targetSegments: formData.targetSegments,
       };
 
       const response = await promotionService.createPromotion(requestData);
@@ -461,7 +475,8 @@ export default function PromotionListPage() {
           applicableCustomerTiers: newPromotion.applicableCustomerTiers || [],
           conflictingPromotionIds: newPromotion.conflictingPromotionIds || [],
           hasQuota: newPromotion.usageLimit ? true : false,
-          remainingQuota: newPromotion.usageLimit ? (newPromotion.usageLimit - newPromotion.usageCount) : undefined
+          remainingQuota: newPromotion.usageLimit ? (newPromotion.usageLimit - newPromotion.usageCount) : undefined,
+          targetSegments: newPromotion.targetSegments || [],
         };
 
         setPromotions([enrichedNew, ...promotions]);
@@ -502,6 +517,7 @@ export default function PromotionListPage() {
       conflictingPromotionIds: [],
       dailyStartTime: null,
       dailyEndTime: null,
+      targetSegments: [],
     });
     setEditingPromotion(null);
   };
@@ -528,6 +544,7 @@ export default function PromotionListPage() {
       conflictingPromotionIds: promotion.conflictingPromotionIds || [],
       dailyStartTime: promotion.dailyStartTime || null,
       dailyEndTime: promotion.dailyEndTime || null,
+      targetSegments: promotion.targetSegments || [],
     });
     setIsEditDialogOpen(true);
   };
@@ -590,6 +607,7 @@ export default function PromotionListPage() {
         dailyEndTime: formData.dailyEndTime || null,
         applicableCategoryIds: formData.applicableCategoryIds,
         applicableProductIds: formData.applicableProductIds,
+        targetSegments: formData.targetSegments,
       };
 
       const response = await promotionService.updatePromotion(
@@ -614,7 +632,8 @@ export default function PromotionListPage() {
           applicableCustomerTiers: updatedPromotion.applicableCustomerTiers || [],
           conflictingPromotionIds: updatedPromotion.conflictingPromotionIds || [],
           hasQuota: updatedPromotion.usageLimit ? true : false,
-          remainingQuota: updatedPromotion.usageLimit ? (updatedPromotion.usageLimit - updatedPromotion.usageCount) : undefined
+          remainingQuota: updatedPromotion.usageLimit ? (updatedPromotion.usageLimit - updatedPromotion.usageCount) : undefined,
+          targetSegments: updatedPromotion.targetSegments || [],
         };
 
         setPromotions(
@@ -1462,6 +1481,37 @@ export default function PromotionListPage() {
                   )}
                 </div>
               </div>
+
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-semibold">Target RFM Segments (AI Dynamic Targeting)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {RFM_SEGMENTS.map((segment) => (
+                    <label key={segment.value} className="flex items-center gap-2 cursor-pointer p-2 border rounded-md hover:bg-slate-50 transition-colors">
+                      <Checkbox
+                        checked={formData.targetSegments?.includes(segment.value) || false}
+                        onCheckedChange={(checked) => {
+                          const segments = formData.targetSegments || [];
+                          if (checked) {
+                            setFormData({
+                              ...formData,
+                              targetSegments: [...segments, segment.value],
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              targetSegments: segments.filter((s) => s !== segment.value),
+                            });
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium">{segment.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Nếu không chọn phân khúc nào, khuyến mãi sẽ áp dụng cho tất cả khách hàng.
+                </p>
+              </div>
             </TabsContent>
           </Tabs>
 
@@ -1894,6 +1944,37 @@ export default function PromotionListPage() {
                     <span className="text-sm text-gray-500">No active tiers found</span>
                   )}
                 </div>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label className="text-sm font-semibold">Target RFM Segments (AI Dynamic Targeting)</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {RFM_SEGMENTS.map((segment) => (
+                    <label key={segment.value} className="flex items-center gap-2 cursor-pointer p-2 border rounded-md hover:bg-slate-50 transition-colors">
+                      <Checkbox
+                        checked={formData.targetSegments?.includes(segment.value) || false}
+                        onCheckedChange={(checked) => {
+                          const segments = formData.targetSegments || [];
+                          if (checked) {
+                            setFormData({
+                              ...formData,
+                              targetSegments: [...segments, segment.value],
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              targetSegments: segments.filter((s) => s !== segment.value),
+                            });
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-medium">{segment.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Nếu không chọn phân khúc nào, khuyến mãi sẽ áp dụng cho tất cả khách hàng.
+                </p>
               </div>
             </TabsContent>
           </Tabs>

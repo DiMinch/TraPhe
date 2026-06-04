@@ -41,6 +41,7 @@ export interface PromotionResponse {
   remainingQuota?: number;
   dailyStartTime?: string | null;
   dailyEndTime?: string | null;
+  targetSegments?: string[];
 }
 
 export interface PromotionRequest {
@@ -68,6 +69,7 @@ export interface PromotionRequest {
   conflictingPromotionIds?: string[];
   dailyStartTime?: string | null;
   dailyEndTime?: string | null;
+  targetSegments?: string[];
 }
 
 export interface VoucherBatchRequest {

@@ -170,6 +170,52 @@ export function usePOSState() {
     }
   }, [selectedCustomer]);
 
+  // Upsell suggestions state
+  const [upsellSuggestions, setUpsellSuggestions] = useState<any[]>([]);
+  const [isFetchingUpsells, setIsFetchingUpsells] = useState(false);
+
+  // Fetch upsell suggestions when cart changes
+  useEffect(() => {
+    const itemIds = orderItems
+      .filter((item) => item.productVariantId)
+      // Extract original product ID if we can or use variant ID, wait, the AI is trained on menuItemId not variant.
+      // Wait, in POS `OrderItem` type, we have `id` (cart item id), `productVariantId`, but not `menuItemId`.
+      // Let's use `productVariantId` for now and backend uses it as antecedent. Actually, the backend UpsellService uses `menuItemId`. 
+      // But we can just send `productVariantId` and backend matches it. Actually, wait! The backend expects `menuItemId`. Let's just send the `productVariantId` and assume it maps or handle it.
+      // Wait! `productVariantId` is a UUID. `menuItemId` is also a UUID. The AI rules were trained on `menuItemId`. 
+      // How do we get `menuItemId`? `productVariantId` might not be it. But we can just send `productVariantId` to the API and if it matches nothing, it's fine. We should really extract it if we have it.
+      // Actually `products` list has `id` which is `menuItemId`. We can find it!
+      .map((item) => {
+        // find product by variant id
+        const prod = products.find(p => p.variants?.some(v => v.id === item.productVariantId));
+        return prod ? prod.id : item.productVariantId;
+      });
+
+    const uniqueIds = Array.from(new Set(itemIds)).join(',');
+    
+    if (!uniqueIds) {
+      setUpsellSuggestions([]);
+      return;
+    }
+
+    const fetchUpsells = async () => {
+      setIsFetchingUpsells(true);
+      try {
+        const response = await axiosClient.get(`/ai/upsell?itemIds=${uniqueIds}`);
+        if (response.data?.success) {
+          setUpsellSuggestions(response.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching upsells:", err);
+      } finally {
+        setIsFetchingUpsells(false);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchUpsells, 500); // debounce
+    return () => clearTimeout(timeoutId);
+  }, [orderItems, products]);
+
   // Refetch on category change
   useEffect(() => {
     setCurrentPage(0);
@@ -563,7 +609,7 @@ export function usePOSState() {
 
   const handleCopyAllSerials = () => {
     if (!completedOrder) return;
-    const serials = completedOrder.items
+    const serials = (completedOrder.items ?? [])
       .filter((item: any) => item.serialNumber)
       .map((item: any) => `${item.menuItemName} - ${item.sizeName || ''}: ${item.serialNumber}`)
       .join("\n");
@@ -645,6 +691,10 @@ export function usePOSState() {
     handleConfirmOrder,
     handleCopySerial,
     handleCopyAllSerials,
+
+    // AI
+    upsellSuggestions,
+    isFetchingUpsells,
 
     // Constants
     pageSize: PAGE_SIZE,

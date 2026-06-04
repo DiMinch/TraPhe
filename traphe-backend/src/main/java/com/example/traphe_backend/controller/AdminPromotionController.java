@@ -67,6 +67,7 @@ public class AdminPromotionController {
         private LocalTime dailyEndTime;
         private Set<UUID> applicableCategoryIds;
         private Set<UUID> applicableProductIds;
+        private Set<com.example.traphe_backend.ai.enums.CustomerSegmentEnum> targetSegments;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -92,6 +93,7 @@ public class AdminPromotionController {
         private LocalTime dailyEndTime;
         private Set<UUID> applicableCategoryIds;
         private Set<UUID> applicableProductIds;
+        private Set<com.example.traphe_backend.ai.enums.CustomerSegmentEnum> targetSegments;
     }
 
     // ======================== ENDPOINTS ========================
@@ -142,6 +144,7 @@ public class AdminPromotionController {
                 .dailyEndTime(req.getDailyEndTime())
                 .applicableCategoryIds(req.getApplicableCategoryIds())
                 .applicableProductIds(req.getApplicableProductIds())
+                .targetSegments(req.getTargetSegments())
                 .build();
         Promotion saved = promotionRepository.save(p);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -170,6 +173,7 @@ public class AdminPromotionController {
         p.setDailyEndTime(req.getDailyEndTime());
         p.setApplicableCategoryIds(req.getApplicableCategoryIds());
         p.setApplicableProductIds(req.getApplicableProductIds());
+        p.setTargetSegments(req.getTargetSegments());
         Promotion saved = promotionRepository.save(p);
         return ResponseEntity.ok(ApiResponse.success(toResponse(saved), "Cập nhật khuyến mãi thành công"));
     }
@@ -219,6 +223,7 @@ public class AdminPromotionController {
                 .dailyEndTime(p.getDailyEndTime())
                 .applicableCategoryIds(p.getApplicableCategoryIds())
                 .applicableProductIds(p.getApplicableProductIds())
+                .targetSegments(p.getTargetSegments())
                 .build();
     }
 }

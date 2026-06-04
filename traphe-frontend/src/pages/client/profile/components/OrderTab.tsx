@@ -155,7 +155,7 @@ export default function OrderTab() {
     }
   };
 
-  const formatItemsSummary = (items: OrderItemDetail[]) => {
+  const formatItemsSummary = (items?: OrderItemDetail[]) => {
     if (!items || items.length === 0) return "No items";
     return items.map(item => `${item.quantity}x ${item.menuItemName}${item.sizeName ? ` (${item.sizeName})` : ""}`).join(", ");
   };
@@ -391,7 +391,7 @@ export default function OrderTab() {
               <div className="py-4 space-y-4">
                 <h4 className="font-serif text-[#5C3317] font-bold text-sm uppercase tracking-wider">Danh sách món</h4>
                 <div className="space-y-3">
-                  {selectedOrder.items.map((item, idx) => (
+                  {selectedOrder.items?.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-start text-sm">
                       <div className="flex-1 pr-4">
                         <div className="flex items-center gap-1.5">

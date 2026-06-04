@@ -12,6 +12,7 @@ import {
   Store,
   Leaf,
   Gift,
+  Brain,
 } from "lucide-react";
 import { UserRole } from "@/enums/roles.enum";
 
@@ -105,6 +106,7 @@ export const navItems: NavItem[] = [
     allowedRoles: [UserRole.ADMIN],
     subItems: [
       { title: "Danh sách KH", path: "/admin/loyalty/customers" },
+      { title: "Phân khúc RFM", path: "/admin/loyalty/customers/segments", allowedRoles: [UserRole.ADMIN] },
       {
         title: "Hạng thành viên",
         path: "/admin/loyalty/tiers",
@@ -143,6 +145,15 @@ export const navItems: NavItem[] = [
       { title: "Món bán chạy", path: "/admin/reports/products" },
       { title: "Tồn kho", path: "/admin/reports/inventory" },
       { title: "Loyalty", path: "/admin/reports/loyalty", allowedRoles: [UserRole.ADMIN] },
+    ],
+  },
+  {
+    title: "AI Insights",
+    path: "/admin/ai",
+    icon: Brain,
+    allowedRoles: [UserRole.ADMIN, UserRole.BRANCH_MANAGER],
+    subItems: [
+      { title: "Dự báo nguyên liệu", path: "/admin/ai/forecast" },
     ],
   },
   {

@@ -76,12 +76,10 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     // ==========================================
 
     @Override
-    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return orderRepository
-                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
-                .map(this::mapToOrderResponse);
+        return orderRepository.findSummariesByCustomerId(user.getId(), pageable);
     }
 
     // ==========================================
@@ -89,12 +87,10 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     // ==========================================
 
     @Override
-    public Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
         User user = userRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        return orderRepository
-                .findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
-                .map(this::mapToOrderResponse);
+        return orderRepository.findSummariesByCustomerId(user.getId(), pageable);
     }
 
     // ==========================================
@@ -102,7 +98,19 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     // ==========================================
 
     @Override
-    public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
+        OrderStatus status = null;
+        if (statusStr != null && !statusStr.isBlank() && !"all-status".equalsIgnoreCase(statusStr)) {
+            try {
+                status = OrderStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Trạng thái không hợp lệ: " + statusStr);
+            }
+        }
+        return orderRepository.findSummariesWithFilters(status, branchId, pageable);
+    }
+    @Override
+    public Page<OrderResponse> getFullOrders(String statusStr, UUID branchId, Pageable pageable) {
         OrderStatus status = null;
         if (statusStr != null && !statusStr.isBlank() && !"all-status".equalsIgnoreCase(statusStr)) {
             try {
@@ -114,7 +122,6 @@ public class OrderQueryServiceImpl implements OrderQueryService {
         return orderRepository.findAllWithFilters(status, branchId, pageable)
                 .map(this::mapToOrderResponse);
     }
-
     // ==========================================
     // Shared mapper
     // ==========================================

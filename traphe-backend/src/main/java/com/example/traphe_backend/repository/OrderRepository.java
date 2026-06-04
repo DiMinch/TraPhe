@@ -60,5 +60,41 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             @Param("status") OrderStatus status,
             @Param("branchId") UUID branchId,
             Pageable pageable);
+
+    @Query("""
+        SELECT new com.example.traphe_backend.dto.response.OrderSummaryResponse(
+            o.id, o.orderNumber, CAST(o.orderType AS string), CAST(o.status AS string), CAST(o.brewingStatus AS string),
+            CAST(o.paymentMethod AS string), CAST(o.paymentStatus AS string),
+            o.finalAmount, SIZE(o.items), b.name, c.fullName, o.createdAt
+        )
+        FROM Order o
+        LEFT JOIN o.branch b
+        LEFT JOIN o.customer c
+        WHERE o.isDeleted = false
+          AND (:status IS NULL OR o.status = :status)
+          AND (:branchId IS NULL OR b.id = :branchId)
+        ORDER BY o.createdAt DESC
+        """)
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> findSummariesWithFilters(
+            @Param("status") OrderStatus status,
+            @Param("branchId") UUID branchId,
+            Pageable pageable);
+
+    @Query("""
+        SELECT new com.example.traphe_backend.dto.response.OrderSummaryResponse(
+            o.id, o.orderNumber, CAST(o.orderType AS string), CAST(o.status AS string), CAST(o.brewingStatus AS string),
+            CAST(o.paymentMethod AS string), CAST(o.paymentStatus AS string),
+            o.finalAmount, SIZE(o.items), b.name, c.fullName, o.createdAt
+        )
+        FROM Order o
+        LEFT JOIN o.branch b
+        LEFT JOIN o.customer c
+        WHERE o.isDeleted = false
+          AND o.customer.id = :customerId
+        ORDER BY o.createdAt DESC
+        """)
+    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> findSummariesByCustomerId(
+            @Param("customerId") UUID customerId,
+            Pageable pageable);
 }
 

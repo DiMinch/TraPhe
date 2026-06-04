@@ -164,6 +164,13 @@
 			<version>1.10.0</version>
 		</dependency>
 
+		<!-- Smile ML Engine -->
+		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+
 		<!-- Automatically load .env file -->
 		<dependency>
 			<groupId>me.paulschwarz</groupId>

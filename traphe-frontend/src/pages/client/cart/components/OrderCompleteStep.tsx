@@ -221,7 +221,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                 </h2>
                 <div className="bg-foam p-5 rounded-xl border border-mist/30 flex-grow flex flex-col justify-between shadow-sm">
                   <ul className="space-y-3 mb-4 max-h-[160px] overflow-y-auto pr-1">
-                    {order.items.map((item) => (
+                    {order.items?.map((item) => (
                       <li key={item.id} className="flex justify-between items-start text-xs text-[#1A1410]">
                         <div className="min-w-0 pr-2">
                           <span className="font-bold text-sm text-[#2C1A0E]">

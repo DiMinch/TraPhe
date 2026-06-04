@@ -21,6 +21,17 @@ import { toast } from "sonner";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
 import { format } from "date-fns";
 
+const SEGMENT_COLORS: Record<string, { label: string; color: string }> = {
+  CHAMPIONS: { label: "Champions 🏆", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  LOYAL_CUSTOMERS: { label: "Trung thành ❤️", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  POTENTIAL_LOYALIST: { label: "Tiềm năng 🌟", color: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  NEW_CUSTOMERS: { label: "Mới 🆕", color: "bg-teal-100 text-teal-800 border-teal-200" },
+  PROMISING: { label: "Hứa hẹn 👍", color: "bg-amber-100 text-amber-800 border-amber-200" },
+  AT_RISK: { label: "Rủi ro ⚠️", color: "bg-rose-100 text-rose-800 border-rose-200" },
+  HIBERNATING: { label: "Ngủ đông 💤", color: "bg-gray-100 text-gray-800 border-gray-200" },
+  LOST: { label: "Đã mất ❌", color: "bg-red-100 text-red-800 border-red-200" },
+};
+
 export default function CustomerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -114,9 +125,25 @@ export default function CustomerDetailPage() {
                 <div className="flex-1 font-medium text-gray-900">
                   {customer.fullName}
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">
-                  {customer.tier?.name || "No Tier"}
-                </Badge>
+                <div className="flex flex-col gap-1 items-end">
+                  <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">
+                    {customer.tier?.name || "No Tier"}
+                  </Badge>
+                  {customer.rfmSegment && SEGMENT_COLORS[customer.rfmSegment] && (
+                    <>
+                      <Badge className={`${SEGMENT_COLORS[customer.rfmSegment].color} border text-[10px] whitespace-nowrap`}>
+                        {SEGMENT_COLORS[customer.rfmSegment].label}
+                      </Badge>
+                      {customer.rScore !== undefined && customer.rScore !== null && (
+                        <div className="flex gap-1 text-[9px] font-bold text-gray-500 bg-gray-50 border border-gray-200/60 rounded px-1.5 py-0.5 mt-1 justify-center">
+                          <span>R:{customer.rScore}</span>
+                          <span>F:{customer.fScore}</span>
+                          <span>M:{customer.mScore}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

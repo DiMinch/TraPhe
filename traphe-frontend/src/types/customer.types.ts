@@ -37,6 +37,10 @@ export interface Customer {
   totalPurchase: number;
   tier?: CustomerTier;
   loyaltyPoint?: LoyaltyPoint;
+  rfmSegment?: string;
+  rScore?: number;
+  fScore?: number;
+  mScore?: number;
   addresses: CustomerAddress[];
   createdAt: string;
   updatedAt: string;

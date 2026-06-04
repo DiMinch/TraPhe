@@ -40,6 +40,7 @@ public class CustomerController {
     private final UserRepository userRepository;
     private final LoyaltyPointRepository loyaltyPointRepository;
     private final com.example.traphe_backend.repository.UserVoucherRepository userVoucherRepository;
+    private final com.example.traphe_backend.ai.repository.CustomerSegmentRepository customerSegmentRepository;
 
     // ======================== Response DTO ========================
 
@@ -55,6 +56,10 @@ public class CustomerController {
         private BigDecimal totalPurchase;
         private TierInfo tier;
         private LoyaltyPointInfo loyaltyPoint;
+        private String rfmSegment;
+        private Integer rScore;
+        private Integer fScore;
+        private Integer mScore;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
     }
@@ -185,6 +190,11 @@ public class CustomerController {
     private CustomerResponse toCustomerResponse(User user) {
         LoyaltyPoint lp = loyaltyPointRepository.findByUserId(user.getId()).orElse(null);
         MembershipTier mt = lp != null ? lp.getMembershipTier() : null;
+        var segmentOpt = customerSegmentRepository.findByCustomerId(user.getId());
+        String segmentName = segmentOpt.map(s -> s.getSegment().name()).orElse(null);
+        Integer rScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getRScore).orElse(null);
+        Integer fScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getFScore).orElse(null);
+        Integer mScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getMScore).orElse(null);
 
         return CustomerResponse.builder()
                 .id(user.getId())
@@ -204,6 +214,10 @@ public class CustomerController {
                         .pointsAvailable(lp.getPointsAvailable())
                         .pointsUsed(0)
                         .build() : null)
+                .rfmSegment(segmentName)
+                .rScore(rScore)
+                .fScore(fScore)
+                .mScore(mScore)
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

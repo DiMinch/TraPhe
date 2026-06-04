@@ -90,7 +90,7 @@ export default function OrdersPage() {
     setError(null);
     try {
       // Fetch the last 100 orders
-      const response = await orderService.getAllOrders({
+      const response = await orderService.getFullOrders({
         page: 0,
         size: 100,
         sort: "createdAt,asc", // Chronological oldest first
@@ -220,9 +220,20 @@ export default function OrdersPage() {
   const waitingCount = orders.filter((o) => o.brewingStatus !== "BREWING").length;
   const brewingCount = orders.filter((o) => o.brewingStatus === "BREWING").length;
 
-  const handleOpenDetail = (order: OrderResponse) => {
-    setSelectedOrder(order);
-    setIsDetailOpen(true);
+  const handleOpenDetail = async (order: any) => {
+    try {
+      setLoading(true);
+      const res = await orderService.getOrderById(order.orderId);
+      setSelectedOrder(res.data || order);
+      setIsDetailOpen(true);
+    } catch (e) {
+      toast.error("Không thể tải chi tiết đơn hàng.");
+      // Fallback
+      setSelectedOrder(order);
+      setIsDetailOpen(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleConfirmPayment = async () => {
@@ -505,7 +516,7 @@ export default function OrdersPage() {
               <div>
                 <h4 className="text-xs font-bold text-smoke uppercase tracking-wider mb-2">Sản phẩm F&B</h4>
                 <div className="divide-y divide-admin-border">
-                  {selectedOrder.items.map((item) => (
+                  {selectedOrder.items?.map((item: any) => (
                     <div key={item.id} className="py-3 first:pt-0 last:pb-0">
                       <div className="flex justify-between text-sm">
                         <span className="font-semibold text-slate-800">
@@ -524,7 +535,7 @@ export default function OrdersPage() {
                       {/* Options details */}
                       {item.options && item.options.length > 0 && (
                         <div className="text-xs text-smoke pl-3 mt-1 space-y-0.5">
-                          {item.options.map((opt, oIdx) => (
+                          {item.options.map((opt: string, oIdx: number) => (
                             <p key={oIdx}>• {opt}</p>
                           ))}
                         </div>
@@ -533,7 +544,7 @@ export default function OrdersPage() {
                       {/* Toppings details */}
                       {item.toppings && item.toppings.length > 0 && (
                         <div className="text-xs text-caramel pl-3 mt-1 space-y-0.5 font-medium">
-                          {item.toppings.map((top, tIdx) => (
+                          {item.toppings.map((top: string, tIdx: number) => (
                             <p key={tIdx}>+ {top}</p>
                           ))}
                         </div>
@@ -970,7 +981,7 @@ export default function OrdersPage() {
                         {/* Item Details (Inline list) */}
                         <td className="px-6 py-4 max-w-[280px]">
                           <div className="space-y-1">
-                            {order.items.map((item) => (
+                            {order.items?.map((item) => (
                               <div key={item.id} className="text-[11px] text-slate-700 flex items-start gap-1">
                                 <span className="font-bold text-espresso bg-foam/60 px-1 rounded text-[10px] shrink-0 mt-0.5">
                                   {item.quantity}x
@@ -1383,7 +1394,7 @@ export default function OrdersPage() {
 
                   {/* Items List */}
                   <div className="flex-1 space-y-2">
-                    {order.items.map((item) => (
+                    {order.items?.map((item) => (
                       <div key={item.id} className="text-xs text-slate-700">
                         <div className="flex justify-between font-medium">
                           <span>
@@ -1417,12 +1428,12 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Order Notes */}
-                  {order.items.some(item => item.notes) && (
+                  {order.items?.some(item => item.notes) && (
                     <div className="mt-2 bg-amber-50/70 border border-amber-100 rounded-lg p-2 flex items-start gap-1.5">
                       <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                       <div className="text-[11px] text-amber-800 leading-tight">
                         {order.items
-                          .filter(item => item.notes)
+                          ?.filter(item => item.notes)
                           .map((item, idx) => (
                             <p key={idx}>
                               <span className="font-semibold">{item.menuItemName}:</span> {item.notes}

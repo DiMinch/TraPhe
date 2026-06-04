@@ -74,7 +74,7 @@ export default function PosQueuePage() {
 
   const fetchLiveOrders = async () => {
     try {
-      const response = await orderService.getAllOrders();
+      const response = await orderService.getFullOrders();
       const orders = response.data?.content || [];
 
       // Filter and map to queue items
@@ -108,7 +108,7 @@ export default function PosQueuePage() {
           const elapsed = Math.floor((Date.now() - new Date(o.createdAt).getTime()) / 1000);
 
           // Merge all item notes for order level notes
-          const itemNotes = o.items.map(item => item.notes).filter(Boolean).join("; ");
+          const itemNotes = (o.items ?? []).map(item => item.notes).filter(Boolean).join("; ");
 
           return {
             id: o.orderId,
@@ -116,7 +116,7 @@ export default function PosQueuePage() {
             customerName: o.customerName || "Khách mua lẻ",
             type: o.orderNumber.startsWith("POS-") ? "POS" : "ONLINE",
             timeElapsed: Math.max(0, elapsed),
-            items: o.items.map((item) => ({
+            items: (o.items ?? []).map((item) => ({
               name: item.menuItemName,
               quantity: item.quantity,
               options: [

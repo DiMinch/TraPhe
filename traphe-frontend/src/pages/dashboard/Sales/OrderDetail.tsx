@@ -471,7 +471,7 @@ export default function OrderDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Package className="w-5 h-5 text-roast" />
-              Order Items ({order.items.length})
+              Order Items ({order.items?.length || 0})
             </h2>
           </div>
 
@@ -489,7 +489,7 @@ export default function OrderDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map((item, index) => (
+                {order.items?.map((item, index) => (
                   <TableRow key={item.id} className="hover:bg-slate-50/50">
                     <TableCell className="font-medium text-gray-500">
                       {index + 1}

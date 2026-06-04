@@ -626,18 +626,23 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable) {
         return orderQueryService.getMyOrders(userEmail, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getCustomerOrders(UUID customerId, Pageable pageable) {
         return orderQueryService.getCustomerOrders(customerId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
+    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable) {
         return orderQueryService.getAllOrders(statusStr, branchId, pageable);
+    }
+
+    @Override
+    public Page<OrderResponse> getFullOrders(String statusStr, UUID branchId, Pageable pageable) {
+        return orderQueryService.getFullOrders(statusStr, branchId, pageable);
     }
 
     /**
