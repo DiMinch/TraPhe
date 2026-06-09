@@ -45,6 +45,7 @@ public class BranchServiceImpl implements BranchService {
     private final BranchMenuItemRepository branchMenuItemRepository;
     private final MenuItemRepository menuItemRepository;
     private final UserRepository userRepository;
+    private final com.example.traphe_backend.repository.SystemConfigRepository systemConfigRepository;
 
     private final BranchMapper branchMapper;
     private final BranchMenuItemMapper branchMenuItemMapper;
@@ -77,6 +78,102 @@ public class BranchServiceImpl implements BranchService {
 
         List<BranchHour> hours = branchHourRepository.findByBranchIdOrderByDayOfWeekAsc(id);
         return branchMapper.toResponse(branch, hours);
+    }
+
+    @Override
+    public List<BranchResponse> getAllBranches() {
+        return branchRepository.findAll().stream()
+                .filter(b -> !b.isDeleted())
+                .map(branch -> {
+                    List<BranchHour> hours = branchHourRepository.findByBranchIdOrderByDayOfWeekAsc(branch.getId());
+                    return branchMapper.toResponse(branch, hours);
+                })
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    @com.example.traphe_backend.annotation.AuditLogging(action = "CREATE", entityName = "Branch")
+    public BranchResponse createBranch(com.example.traphe_backend.dto.request.BranchRequest request) {
+        Branch branch = Branch.builder()
+                .name(request.getName())
+                .address(request.getAddress())
+                .lat(request.getLat())
+                .lng(request.getLng())
+                .phone(request.getPhone())
+                .isActive(request.getIsActive() != null ? request.getIsActive() : true)
+                .build();
+        Branch savedBranch = branchRepository.save(branch);
+        return branchMapper.toResponse(savedBranch, new ArrayList<>());
+    }
+
+    @Override
+    @Transactional
+    @com.example.traphe_backend.annotation.AuditLogging(action = "UPDATE", entityName = "Branch")
+    public BranchResponse updateBranch(UUID id, com.example.traphe_backend.dto.request.BranchRequest request) {
+        Branch branch = branchRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
+        if (branch.isDeleted()) throw new ResourceNotFoundException("Branch not found");
+
+        branch.setName(request.getName());
+        branch.setAddress(request.getAddress());
+        branch.setLat(request.getLat());
+        branch.setLng(request.getLng());
+        branch.setPhone(request.getPhone());
+        if (request.getIsActive() != null) {
+            branch.setActive(request.getIsActive());
+        }
+
+        Branch savedBranch = branchRepository.save(branch);
+        List<BranchHour> hours = branchHourRepository.findByBranchIdOrderByDayOfWeekAsc(id);
+        return branchMapper.toResponse(savedBranch, hours);
+    }
+
+    @Override
+    @Transactional
+    @com.example.traphe_backend.annotation.AuditLogging(action = "DELETE", entityName = "Branch")
+    public void deleteBranch(UUID id) {
+        Branch branch = branchRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Branch not found"));
+        branch.setDeleted(true);
+        branchRepository.save(branch);
+    }
+
+    @Override
+    public com.example.traphe_backend.dto.response.NearestBranchResponse getNearestBranch(double lat, double lng) {
+        List<Branch> activeBranches = branchRepository.findAll().stream()
+                .filter(b -> !b.isDeleted() && b.isActive() && b.getLat() != null && b.getLng() != null)
+                .toList();
+
+        if (activeBranches.isEmpty()) {
+            throw new ResourceNotFoundException("No active branches available");
+        }
+
+        Branch nearestBranch = null;
+        double minDistance = Double.MAX_VALUE;
+        double EARTH_RADIUS_KM = 6371.0;
+
+        for (Branch branch : activeBranches) {
+            double dLat = Math.toRadians(branch.getLat().doubleValue() - lat);
+            double dLon = Math.toRadians(branch.getLng().doubleValue() - lng);
+            double lat1 = Math.toRadians(lat);
+            double lat2 = Math.toRadians(branch.getLat().doubleValue());
+            double a = Math.pow(Math.sin(dLat / 2), 2) + Math.pow(Math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2);
+            double c = 2 * Math.asin(Math.sqrt(a));
+            double distance = EARTH_RADIUS_KM * c;
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestBranch = branch;
+            }
+        }
+
+        java.math.BigDecimal shippingFee = calculateShippingFee(minDistance);
+        List<BranchHour> hours = branchHourRepository.findByBranchIdOrderByDayOfWeekAsc(nearestBranch.getId());
+
+        return com.example.traphe_backend.dto.response.NearestBranchResponse.builder()
+                .branch(branchMapper.toResponse(nearestBranch, hours))
+                .distanceKm(Math.round(minDistance * 100.0) / 100.0)
+                .shippingFee(shippingFee)
+                .build();
     }
 
     @Override
@@ -156,6 +253,24 @@ public class BranchServiceImpl implements BranchService {
     }
 
     // ---- Private helpers ----
+
+    private java.math.BigDecimal calculateShippingFee(double distanceKm) {
+        double baseFee = 15000.0; // Default 15k
+        double feePerKm = 5000.0;  // Default 5k/km
+
+        try {
+            com.example.traphe_backend.entity.SystemConfig baseFeeConfig = systemConfigRepository.findByConfigKey("SHIPPING_BASE_FEE").orElse(null);
+            if (baseFeeConfig != null) baseFee = Double.parseDouble(baseFeeConfig.getConfigValue());
+
+            com.example.traphe_backend.entity.SystemConfig feePerKmConfig = systemConfigRepository.findByConfigKey("SHIPPING_PER_KM").orElse(null);
+            if (feePerKmConfig != null) feePerKm = Double.parseDouble(feePerKmConfig.getConfigValue());
+        } catch (Exception e) {
+            // Ignore parse errors, fallback to defaults
+        }
+
+        double totalFee = baseFee + (distanceKm * feePerKm);
+        return java.math.BigDecimal.valueOf(Math.round(totalFee / 1000.0) * 1000); // Round to nearest 1000
+    }
 
     private Specification<Branch> buildBranchSpec(String search, Boolean isActive) {
         return (root, query, cb) -> {
