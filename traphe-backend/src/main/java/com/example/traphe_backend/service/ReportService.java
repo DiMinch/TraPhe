@@ -11,6 +11,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,32 +24,48 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ReportService {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final BranchMenuItemRepository branchMenuItemRepository;
     private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
+    private final Executor reportExecutor;
 
     public RevenueReportResponse getRevenueReport(String period, UUID branchId) {
         LocalDateTime[] dateRange = getDateRange(period);
         LocalDateTime startDate = dateRange[0];
         LocalDateTime endDate = dateRange[1];
 
-        BigDecimal totalRevenue = orderRepository.sumRevenueByDateRangeAndBranch(startDate, endDate, branchId);
-        long totalOrders = orderRepository.countOrdersByDateRangeAndBranch(startDate, endDate, branchId);
+        CompletableFuture<BigDecimal> revenueFuture = CompletableFuture.supplyAsync(
+                () -> orderRepository.sumRevenueByDateRangeAndBranch(startDate, endDate, branchId),
+                reportExecutor
+        );
 
-        return RevenueReportResponse.builder()
-                .totalRevenue(totalRevenue)
-                .totalOrders(totalOrders)
-                .periodStart(startDate)
-                .periodEnd(endDate)
-                .periodType(period)
-                .build();
+        CompletableFuture<Long> ordersFuture = CompletableFuture.supplyAsync(
+                () -> orderRepository.countOrdersByDateRangeAndBranch(startDate, endDate, branchId),
+                reportExecutor
+        );
+
+        return CompletableFuture.allOf(revenueFuture, ordersFuture)
+                .thenApply(v -> {
+                    BigDecimal totalRevenue = revenueFuture.join();
+                    Long totalOrders = ordersFuture.join();
+                    return RevenueReportResponse.builder()
+                            .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
+                            .totalOrders(totalOrders != null ? totalOrders : 0L)
+                            .periodStart(startDate)
+                            .periodEnd(endDate)
+                            .periodType(period)
+                            .build();
+                }).join();
     }
 
     public List<TopProductResponse> getTopProducts(String period, UUID branchId, int limit) {
@@ -77,15 +94,58 @@ public class ReportService {
     }
 
     public LoyaltyStatsResponse getLoyaltyStats() {
-        Long earned = loyaltyPointTransactionRepository.sumPointsByType(LoyaltyTransactionType.EARN);
-        Long redeemed = loyaltyPointTransactionRepository.sumPointsByType(LoyaltyTransactionType.REDEEM);
-        long activeUsers = loyaltyPointTransactionRepository.countActiveLoyaltyUsers();
+        CompletableFuture<Long> earnedFuture = CompletableFuture.supplyAsync(
+                () -> loyaltyPointTransactionRepository.sumPointsByType(LoyaltyTransactionType.EARN),
+                reportExecutor
+        );
 
-        return LoyaltyStatsResponse.builder()
-                .totalPointsIssued(earned != null ? earned : 0L)
-                .totalPointsRedeemed(redeemed != null ? redeemed : 0L)
-                .activeLoyaltyUsers(activeUsers)
-                .build();
+        CompletableFuture<Long> redeemedFuture = CompletableFuture.supplyAsync(
+                () -> loyaltyPointTransactionRepository.sumPointsByType(LoyaltyTransactionType.REDEEM),
+                reportExecutor
+        );
+
+        CompletableFuture<Long> activeUsersFuture = CompletableFuture.supplyAsync(
+                () -> loyaltyPointTransactionRepository.countActiveLoyaltyUsers(),
+                reportExecutor
+        );
+
+        return CompletableFuture.allOf(earnedFuture, redeemedFuture, activeUsersFuture)
+                .thenApply(v -> {
+                    Long earned = earnedFuture.join();
+                    Long redeemed = redeemedFuture.join();
+                    Long activeUsers = activeUsersFuture.join();
+
+                    return LoyaltyStatsResponse.builder()
+                            .totalPointsIssued(earned != null ? earned : 0L)
+                            .totalPointsRedeemed(redeemed != null ? redeemed : 0L)
+                            .activeLoyaltyUsers(activeUsers != null ? activeUsers : 0L)
+                            .build();
+                }).join();
+    }
+
+    public DashboardResponse getDashboardSummary(String period, UUID branchId) {
+        CompletableFuture<RevenueReportResponse> revenueFuture = CompletableFuture.supplyAsync(
+                () -> getRevenueReport(period, branchId),
+                reportExecutor
+        );
+
+        CompletableFuture<List<TopProductResponse>> topProductsFuture = CompletableFuture.supplyAsync(
+                () -> getTopProducts(period, branchId, 5),
+                reportExecutor
+        );
+
+        CompletableFuture<LoyaltyStatsResponse> loyaltyFuture = CompletableFuture.supplyAsync(
+                this::getLoyaltyStats,
+                reportExecutor
+        );
+
+        return CompletableFuture.allOf(revenueFuture, topProductsFuture, loyaltyFuture)
+                .thenApply(v -> DashboardResponse.builder()
+                        .revenueSummary(revenueFuture.join())
+                        .topProducts(topProductsFuture.join())
+                        .loyaltyStats(loyaltyFuture.join())
+                        .build()
+                ).join();
     }
 
     public List<InventoryReportResponse> getInventoryReport(UUID branchId) {

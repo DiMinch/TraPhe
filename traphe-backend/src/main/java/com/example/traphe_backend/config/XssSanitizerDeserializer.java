@@ -1,8 +1,8 @@
 package com.example.traphe_backend.config;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.core.JsonParser;
 import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ public class XssSanitizerDeserializer extends StdDeserializer<String> {
     }
 
     @Override
-    public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    public String deserialize(com.fasterxml.jackson.core.JsonParser p, com.fasterxml.jackson.databind.DeserializationContext ctxt) throws IOException {
         String value = p.getValueAsString();
         if (value != null) {
             // Escape HTML characters to prevent XSS
