@@ -38,8 +38,4 @@ public class Branch extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true;
-
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    private boolean isDeleted = false;
 }

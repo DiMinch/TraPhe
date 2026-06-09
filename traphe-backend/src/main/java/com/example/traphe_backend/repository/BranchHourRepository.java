@@ -1,0 +1,17 @@
+package com.example.traphe_backend.repository;
+
+import com.example.traphe_backend.entity.BranchHour;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface BranchHourRepository extends JpaRepository<BranchHour, UUID> {
+
+    List<BranchHour> findByBranchIdOrderByDayOfWeekAsc(UUID branchId);
+
+    Optional<BranchHour> findByBranchIdAndDayOfWeek(UUID branchId, int dayOfWeek);
+}

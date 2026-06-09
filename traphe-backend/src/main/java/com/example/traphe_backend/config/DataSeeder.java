@@ -88,11 +88,11 @@ public class DataSeeder implements CommandLineRunner {
 
         // ==================== MENU CATEGORIES ====================
         MenuCategory catTraSua = menuCategoryRepository.save(MenuCategory.builder()
-                .name("Trà Sữa").description("Các loại trà sữa truyền thống và hiện đại").build());
+                .name("Trà Sữa").isDrinkCategory(true).displayOrder(1).build());
         MenuCategory catCaPhe = menuCategoryRepository.save(MenuCategory.builder()
-                .name("Cà Phê & Trà").description("Cà phê Việt Nam và trà các loại").build());
+                .name("Cà Phê & Trà").isDrinkCategory(true).displayOrder(2).build());
         MenuCategory catSinhTo = menuCategoryRepository.save(MenuCategory.builder()
-                .name("Sinh Tố & Nước Ép").description("Sinh tố và nước ép trái cây tươi").build());
+                .name("Sinh Tố & Nước Ép").isDrinkCategory(true).displayOrder(3).build());
 
         // ==================== OPTION GROUPS ====================
         OptionGroup grpSugar = optionGroupRepository.save(OptionGroup.builder()

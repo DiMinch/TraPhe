@@ -36,8 +36,4 @@ public class MenuItemSize extends BaseEntity {
     @Column(name = "display_order")
     @Builder.Default
     private int displayOrder = 0;
-
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    private boolean isDeleted = false;
 }

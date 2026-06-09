@@ -11,6 +11,9 @@ import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.example.traphe_backend.dto.request.BranchMenuItemRequest;
+import com.example.traphe_backend.dto.response.BranchMenuItemResponse;
+import com.example.traphe_backend.dto.response.PageResponse;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -77,6 +80,34 @@ public class BranchService {
         branch.setDeleted(true);
         branchRepository.save(branch);
     }
+  
+    public PageResponse<BranchResponse> getBranches(
+          String search,
+          Boolean isActive,
+          int page,
+          int size,
+          String sortBy,
+          String sortDir
+  ) {
+      return null;
+  }
+
+  public PageResponse<BranchMenuItemResponse> getBranchMenuItems(
+          UUID branchId,
+          Boolean isAvailable,
+          String search,
+          int page,
+          int size
+  ) {
+      return null;
+  }
+
+  public BranchMenuItemResponse updateBranchMenuItem(
+          UUID branchId,
+          BranchMenuItemRequest request
+  ) {
+      return null;
+  }
 
     public NearestBranchResponse getNearestBranch(double lat, double lng) {
         List<Branch> activeBranches = branchRepository.findAll().stream()

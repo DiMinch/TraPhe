@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -20,4 +21,5 @@ public class BranchResponse {
     private BigDecimal lng;
     private String phone;
     private boolean isActive;
+    private List<BranchHourResponse> hours;
 }

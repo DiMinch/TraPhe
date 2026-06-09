@@ -16,6 +16,8 @@ public class UserResponse {
     private UUID id;
     private String email;
     private String fullName;
+    private String phoneNumber;
     private String avatarUrl;
+    private boolean isEmailVerified;
     private List<String> roles;
 }
