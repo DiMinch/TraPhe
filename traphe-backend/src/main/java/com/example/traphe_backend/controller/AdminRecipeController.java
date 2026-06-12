@@ -57,4 +57,36 @@ public class AdminRecipeController {
         List<RecipeResponse> result = recipeService.getRecipesByMenuItemId(menuItemId);
         return ResponseEntity.ok(ApiResponse.success(result, "Danh sách công thức"));
     }
+
+    @PutMapping("/menu-item/{menuItemId}")
+    @Operation(summary = "Cập nhật công thức mặc định của món", description = "Tạo mới hoặc cập nhật công thức mặc định (không size) của món nước.")
+    public ResponseEntity<ApiResponse<RecipeResponse>> updateDefaultRecipeForMenuItem(
+            @PathVariable UUID menuItemId,
+            @Valid @RequestBody List<CreateRecipeRequest.RecipeItemRequest> items) {
+        
+        List<RecipeResponse> existingRecipes = recipeService.getRecipesByMenuItemId(menuItemId);
+        RecipeResponse defaultRecipe = existingRecipes.stream()
+                .filter(r -> r.getSize() == null || r.getSize().isEmpty())
+                .findFirst()
+                .orElse(null);
+
+        if (defaultRecipe != null) {
+            // Update existing
+            UpdateRecipeRequest updateReq = new UpdateRecipeRequest();
+            updateReq.setItems(items.stream()
+                    .map(i -> new UpdateRecipeRequest.RecipeItemRequest(i.getIngredientId(), i.getQuantity()))
+                    .toList());
+            RecipeResponse result = recipeService.updateRecipe(defaultRecipe.getId(), updateReq);
+            return ResponseEntity.ok(ApiResponse.success(result, "Công thức đã cập nhật"));
+        } else {
+            // Create new
+            CreateRecipeRequest createReq = new CreateRecipeRequest();
+            createReq.setMenuItemId(menuItemId);
+            createReq.setSize(null);
+            createReq.setItems(items);
+            RecipeResponse result = recipeService.createRecipe(createReq);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(result, "Công thức đã được tạo"));
+        }
+    }
 }
