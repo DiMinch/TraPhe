@@ -12,6 +12,8 @@ export interface UserInfo {
   phone?: string;
   avatar?: string;
   status?: UserStatus;
+  branchId?: string;
+  branchName?: string;
   hasEmailProvider?: boolean;
   shouldPromptLinking?: boolean;
   linkingStatus?: LinkingStatus;
@@ -30,14 +32,14 @@ export interface UserInfo {
 }
 
 export interface Province {
-  code: string;
+  code: number | string;
   name: string;
 }
 
 export interface Commune {
-  code: string;
+  code: number | string;
   name: string;
-  provinceCode: string;
+  provinceCode?: string;
 }
 
 export interface UserAddress {

@@ -52,6 +52,9 @@ import {
 } from "@/services/report.service";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageLayout";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
+import axiosClient from "@/lib/axios-client";
 
 const COLORS = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -76,6 +79,7 @@ export default function RevenueReport() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [report, setReport] = useState<RevenueReportResponse | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "comparison">("overview");
   const [startDate, setStartDate] = useState(
     new Date(new Date().setDate(new Date().getDate() - 30))
       .toISOString()
@@ -86,6 +90,28 @@ export default function RevenueReport() {
   );
   const [groupBy, setGroupBy] = useState<"DAY" | "WEEK" | "MONTH">("DAY");
 
+  // Branch scoping for BRANCH_MANAGER
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        if (isBranchManager && currentUser?.branchId) {
+          setBranches([{ id: currentUser.branchId, name: "Chi nhánh của tôi" }]);
+          setSelectedBranchId(currentUser.branchId);
+          return;
+        }
+        const branchRes = await axiosClient.get("/branches");
+        const allBranches = Array.isArray(branchRes.data) ? branchRes.data : branchRes.data?.content || [];
+        setBranches(allBranches);
+      } catch { /* ignore */ }
+    };
+    fetchBranches();
+  }, []);
+
   const fetchReport = async () => {
     try {
       setLoading(true);
@@ -93,6 +119,7 @@ export default function RevenueReport() {
         startDate,
         endDate,
         groupBy,
+        branchId: selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined,
       });
       // axios interceptor returns response.data, so use response directly or response.data if wrapped
       const reportData = (response as any).data ?? response;
@@ -193,7 +220,19 @@ export default function RevenueReport() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {branches.length > 0 && (
+              <div className="space-y-2">
+                <Label>Chi nhánh</Label>
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} disabled={isBranchManager}>
+                  <SelectTrigger><SelectValue placeholder="Tất cả chi nhánh" /></SelectTrigger>
+                  <SelectContent>
+                    {!isBranchManager && <SelectItem value="all">Tất cả chi nhánh</SelectItem>}
+                    {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
               <Input
@@ -242,27 +281,84 @@ export default function RevenueReport() {
         </CardContent>
       </Card>
 
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b mb-6">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+            activeTab === "overview"
+              ? "border-roast text-roast"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          Tổng quan doanh thu
+        </button>
+        <button
+          onClick={() => setActiveTab("comparison")}
+          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+            activeTab === "comparison"
+              ? "border-roast text-roast"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          So sánh chi nhánh
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-roast" />
         </div>
       ) : report ? (
         <>
-          {/* KPI Cards */}
+          {activeTab === "comparison" && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>So sánh doanh thu giữa các chi nhánh</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={report.byBranch || []}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="branchName" />
+                      <YAxis tickFormatter={formatCurrency} />
+                      <Tooltip
+                        formatter={(value: any) => [formatFullCurrency(value) + "đ", "Doanh thu"]}
+                      />
+                      <Legend />
+                      <Bar dataKey="revenue" name="Doanh thu" fill="#8b5cf6" radius={[4, 4, 0, 0]}>
+                        {(report.byBranch || []).map((_entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "overview" && (
+            <>
+              {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Revenue */}
-            <Card className="bg-linear-to-br from-indigo-500 to-indigo-600 text-white">
+            <Card className="bg-linear-to-br from-roast to-espresso text-white">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-indigo-100">
+                <CardTitle className="text-sm font-medium text-cream/90">
                   Total Revenue
                 </CardTitle>
-                <DollarSign className="h-5 w-5 text-indigo-200" />
+                <DollarSign className="h-5 w-5 text-cream/80" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {formatCurrency(report.totalRevenue || 0)}
                 </div>
-                <div className="flex items-center text-xs text-indigo-200 mt-2">
+                <div className="flex items-center text-xs text-cream/80 mt-2">
                   {isPositiveGrowth ? (
                     <TrendingUp className="h-4 w-4 mr-1" />
                   ) : (
@@ -344,7 +440,7 @@ export default function RevenueReport() {
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-indigo-600" />
+                  <TrendingUp className="h-5 w-5 text-roast" />
                   Revenue Trend
                 </CardTitle>
               </CardHeader>
@@ -529,7 +625,7 @@ export default function RevenueReport() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-indigo-600" />
+                <ShoppingCart className="h-5 w-5 text-roast" />
                 Revenue Details by Date
               </CardTitle>
             </CardHeader>
@@ -585,7 +681,7 @@ export default function RevenueReport() {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-indigo-600">
+                          <TableCell className="text-right font-semibold text-roast">
                             {formatFullCurrency(item.revenue)}
                           </TableCell>
                           <TableCell className="text-right">
@@ -598,7 +694,7 @@ export default function RevenueReport() {
                             <div className="flex items-center justify-end gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-2">
                                 <div
-                                  className="bg-indigo-600 h-2 rounded-full"
+                                  className="bg-roast h-2 rounded-full"
                                   style={{
                                     width: `${Math.min(percentage, 100)}%`,
                                   }}
@@ -621,7 +717,7 @@ export default function RevenueReport() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Total Revenue:</span>
-                    <p className="font-bold text-indigo-600">
+                    <p className="font-bold text-roast">
                       {formatFullCurrency(report.totalRevenue || 0)}
                     </p>
                   </div>
@@ -694,6 +790,8 @@ export default function RevenueReport() {
                 </div>
               </CardContent>
             </Card>
+          )}
+            </>
           )}
         </>
       ) : (

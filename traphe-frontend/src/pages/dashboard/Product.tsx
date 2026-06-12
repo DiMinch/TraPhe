@@ -28,7 +28,7 @@ export default function ProductPage() {
   const products = [
     {
       id: 1,
-      image: "¥",
+      image: "Â¥",
       name: "MacBook Pro M1 2020",
       variants: "3 variants",
       category: "Laptop",
@@ -38,7 +38,7 @@ export default function ProductPage() {
     },
     {
       id: 2,
-      image: "¥",
+      image: "Â¥",
       name: "ZADEZ Mouse Gaming 2025",
       variants: "2 variants",
       category: "Mouse",
@@ -57,7 +57,7 @@ export default function ProductPage() {
 
       {/* Action Buttons */}
       <div className="flex gap-3 mb-6">
-        <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-lg">
+        <Button className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-lg">
           <Plus className="w-4 h-4 mr-2" />
           New Product
         </Button>

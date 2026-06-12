@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.4</version>
+		<version>3.2.4</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
@@ -28,6 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
 
 	<dependencyManagement>
@@ -60,7 +62,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -72,11 +74,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 			<version>3.2.4</version>
+		</dependency>
 		<!-- Swagger / OpenAPI (3.x for Spring Boot 4 + Jackson 3) -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>3.0.3</version>
+			<version>2.5.0</version>
 		</dependency>
 
 		<!-- JJWT for JWT Generation/Parsing -->
@@ -128,6 +131,7 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
+			<version>1.18.46</version>
 			<optional>true</optional>
 		</dependency>
 		<!-- MapStruct for DTO mapping -->
@@ -138,17 +142,12 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -164,6 +163,20 @@
 			<artifactId>commons-csv</artifactId>
 			<version>1.10.0</version>
 		</dependency>
+
+		<!-- Smile ML Engine -->
+		<dependency>
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+
+		<!-- Automatically load .env file -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -171,21 +184,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
 				<configuration>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
+							<version>1.18.46</version>
 						</path>
 						<path>
 							<groupId>org.mapstruct</groupId>
 							<artifactId>mapstruct-processor</artifactId>
 							<version>1.6.3</version>
-						</path>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok-mapstruct-binding</artifactId>
-							<version>0.2.0</version>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -200,6 +210,7 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+					<jvmArguments>-Dfile.encoding=UTF-8</jvmArguments>
 				</configuration>
 			</plugin>
 		</plugins>

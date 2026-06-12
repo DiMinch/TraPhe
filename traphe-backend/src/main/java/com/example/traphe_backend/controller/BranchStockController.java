@@ -132,6 +132,11 @@ public class BranchStockController {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getBranchId() == null) {
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+            if (isAdmin) {
+                return null;
+            }
             throw new IllegalArgumentException(
                     "Bạn chưa được gán chi nhánh. ADMIN vui lòng truyền branchId trong query param.");
         }

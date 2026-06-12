@@ -24,6 +24,9 @@ public class MenuCategory extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(length = 255)
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private MenuCategory parent;
@@ -35,7 +38,10 @@ public class MenuCategory extends BaseEntity {
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
-    @Column(name = "is_drink_category", nullable = false)
+    @Column(name = "is_drink_category", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean isDrinkCategory = false;
+
+    @org.hibernate.annotations.Formula("(SELECT COUNT(*) FROM menu_items m WHERE m.category_id = id AND m.is_deleted = false)")
+    private long productCount;
 }

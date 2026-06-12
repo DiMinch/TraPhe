@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,7 +33,15 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "orders")
+@Table(name = "orders",
+       indexes = {
+           @jakarta.persistence.Index(name = "idx_orders_branch_status_created",
+                  columnList = "branch_id, status, created_at DESC, is_deleted"),
+           @jakarta.persistence.Index(name = "idx_orders_customer_created",
+                  columnList = "customer_id, created_at DESC, is_deleted"),
+           @jakarta.persistence.Index(name = "idx_orders_deleted_created",
+                  columnList = "is_deleted, created_at DESC")
+       })
 public class Order extends BaseEntity {
 
     @Column(name = "order_number", nullable = false, length = 50, unique = true)
@@ -115,10 +124,11 @@ public class Order extends BaseEntity {
     @Column(name = "point_discount_amount", precision = 15, scale = 2)
     private BigDecimal pointDiscountAmount;
 
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean isDeleted = false;
 
+    @BatchSize(size = 30)
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();

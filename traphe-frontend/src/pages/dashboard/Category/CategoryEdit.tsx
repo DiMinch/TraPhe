@@ -213,7 +213,7 @@ export default function CategoryEditPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800"
+              className="bg-roast hover:bg-roast/80"
               onClick={handleUpdate}
               disabled={loading}
             >

@@ -13,7 +13,9 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-    if (token) {
+    const user = localStorage.getItem("user");
+    // Only attach token if both exist (prevents stale token issues on public pages)
+    if (token && user) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -29,7 +31,14 @@ axiosClient.interceptors.response.use(
     if (response.config.responseType === "blob") {
       return response.data;
     }
-    return response.data;
+    const data = response.data;
+    // Backend returns { success, message, data, meta, error }
+    // Frontend expects { statusCode, success, message, data, ... }
+    // Map HTTP status code into the response so existing code using res.statusCode works
+    if (data && typeof data === "object" && !("statusCode" in data)) {
+      data.statusCode = response.status;
+    }
+    return data;
   },
   (error) => {
     const status = error.response ? error.response.status : null;
@@ -39,7 +48,16 @@ axiosClient.interceptors.response.use(
     // We should not redirect on 403, just let the calling code handle it
     if (status === 401) {
       localStorage.clear();
-      window.location.href = "/sign-in";
+      
+      const pathname = window.location.pathname;
+      const isPrivateRoute = 
+        pathname.startsWith("/admin") || 
+        pathname.startsWith("/pos") || 
+        pathname.startsWith("/account");
+
+      if (isPrivateRoute) {
+        window.location.href = "/sign-in";
+      }
     }
     return Promise.reject(error);
   },

@@ -12,9 +12,12 @@ export default function ProductSection() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productService.getAllProducts(0, 8);
-        if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.content);
+        const res = await productService.getAllProducts({ page: 0, size: 8, sortBy: 'createdAt', sortDir: 'desc', status: 'ACTIVE' });
+        // Backend returns { success: true, data: [...items], meta: { page, size, ... } }
+        if (res.success && res.data) {
+          // data is an array directly (from ApiResponse.successPagination)
+          const items = Array.isArray(res.data) ? res.data : (res.data as any).content || [];
+          setProducts(items);
         }
       } catch (error) {
         console.error("Failed to fetch products", error);
@@ -40,7 +43,7 @@ export default function ProductSection() {
           New <br /> Arrivals
         </h2>
         <Link
-          to="/shop"
+          to="/menu"
           className="flex items-center text-sm font-medium border-b border-black pb-0.5 hover:opacity-70"
         >
           More Products <ArrowRight className="w-4 h-4 ml-2" />
@@ -48,16 +51,18 @@ export default function ProductSection() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-        {products.map((product) => {
-          const firstVariant = product.variants?.[0];
-          const displayPrice = product.variants?.[0]?.sellingPrice || 0;
+        {products.map((product: any) => {
+          // Backend returns MenuItemResponse: { basePrice, effectivePrice, sizes, ... }
+          // For drinks: price comes from sizes[0].sellingPrice when basePrice is null
+          const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
+          const firstSizeId = product.sizes?.[0]?.id;
 
           return (
-            <Link key={product.id} to={`/products/${product.id}`}>
+            <Link key={product.id} to={`/menu/${product.id}`}>
               <ProductCard
                 product={{
                   id: product.id,
-                  variantId: firstVariant?.id,
+                  variantId: firstSizeId || product.variants?.[0]?.id,
                   name: product.name,
                   price: displayPrice,
                   image: product.imageUrl,

@@ -4,30 +4,27 @@ import {
   Grid,
   StretchHorizontal,
   AlignJustify,
-  ChevronDown,
   Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import Banner from "@/components/common/banner/Banner";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
 import ProductCard from "@/components/common/product/ProductCard";
 import FilterSection from "@/components/common/filter/FilterSection";
-import ShopCategorySection from "./components/ShopCategorySection";
 import ProductSearch from "@/components/common/search/ProductSearch"; // Import Search Component
 import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
 import type { Product } from "@/types/product.types";
 import { Link, useSearchParams } from "react-router"; // [1] Import useSearchParams
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/contexts/CartContext";
 
-export default function ShopPage() {
+interface ShopPageProps {
+  isDrink?: boolean;
+}
+
+export default function ShopPage({ isDrink = true }: ShopPageProps) {
+  const { selectedBranchId } = useCart();
   const [gridCols, setGridCols] = useState<number>(3);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,11 +33,23 @@ export default function ShopPage() {
   const [totalPages, setTotalPages] = useState(0);
   const pageSize = 12;
 
+  // Sorting State
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortDir, setSortDir] = useState<string>("desc");
+
   // [2] Lấy Search Params từ URL
   const [searchParams] = useSearchParams();
   const urlSearchQuery = searchParams.get("search");
 
   const [filters, setFilters] = useState<FilterParams>({});
+
+  // Reset filters when changing menu type (drink vs merchandise)
+  useEffect(() => {
+    setFilters({});
+    setSortBy("createdAt");
+    setSortDir("desc");
+    setCurrentPage(0);
+  }, [isDrink]);
 
   // [3] Effect: Đồng bộ URL Search -> Filters State
   useEffect(() => {
@@ -65,20 +74,7 @@ export default function ShopPage() {
     setCurrentPage(0);
   };
 
-  const handleTopCategorySelect = (categoryId: string) => {
-    if (filters.categoryId === categoryId) {
-      const { categoryId: _, ...rest } = filters;
-      // Giữ lại search nếu có
-      setFilters({ ...rest, search: urlSearchQuery || undefined });
-    } else {
-      setFilters((prev) => ({
-        ...prev,
-        categoryId,
-        search: urlSearchQuery || undefined,
-      }));
-    }
-    setCurrentPage(0);
-  };
+
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -87,12 +83,18 @@ export default function ShopPage() {
         const res = await productService.getAllProducts({
           page: currentPage,
           size: pageSize,
+          isDrink,
+          sortBy,
+          sortDir,
+          branchId: selectedBranchId || undefined,
           ...filters,
         });
 
         if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.content);
-          setTotalPages(res.data.totalPages);
+          // Backend successPagination puts items in data (array) and pagination in meta
+          const items = Array.isArray(res.data) ? res.data : (res.data as any).content || [];
+          setProducts(items);
+          setTotalPages(res.meta?.totalPages || (res.data as any).totalPages || 1);
         }
       } catch (error) {
         console.error("Failed to fetch shop products", error);
@@ -101,7 +103,7 @@ export default function ShopPage() {
       }
     };
     fetchProducts();
-  }, [currentPage, filters]);
+  }, [currentPage, filters, isDrink, sortBy, sortDir, selectedBranchId]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 0 && newPage < totalPages) {
@@ -111,77 +113,99 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      <Banner />
-      <div className="border-b border-gray-100 bg-white">
-        <ShopCategorySection
-          onSelectCategory={handleTopCategorySelect}
-          selectedCategoryId={filters.categoryId}
-        />
+    <div className="bg-foam min-h-screen pb-16 font-body-md text-ink">
+      {/* Page Header */}
+      <section className="text-center pt-16 pb-12 px-6">
+        <h1 className="font-display-xl text-5xl md:text-6xl text-roast mb-4 tracking-tight">
+          {isDrink ? "Thực Đơn" : "Vật Phẩm TraPhe"}
+        </h1>
+        <p className="font-body-md text-base md:text-lg text-dust max-w-2xl mx-auto leading-relaxed">
+          {isDrink
+            ? "Khám phá hương vị tinh tế từ những hạt cà phê và lá trà được tuyển chọn kỹ lưỡng, kết hợp hoàn hảo cùng các món bánh ngọt thủ công."
+            : "Sở hữu những thiết kế độc quyền, cốc sứ cao cấp và các dụng cụ pha chế chuyên nghiệp mang đậm dấu ấn phong cách TraPhe."}
+        </p>
+      </section>
 
-        {/* Thanh tìm kiếm */}
-        <div className="pb-8 px-6">
-          <div className="max-w-[1240px] mx-auto">
-            <ProductSearch placeholder="Find your favorite tech items..." />
-          </div>
+      {/* Search Bar */}
+      <div className="max-w-7xl mx-auto px-6 mb-12">
+        <div className="bg-parchment p-4 rounded-xl shadow-sm border border-mist">
+          <ProductSearch
+            placeholder={isDrink ? "Tìm kiếm món uống..." : "Tìm kiếm vật phẩm..."}
+            className="w-full"
+            isDrink={isDrink}
+          />
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row py-8 gap-8">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row gap-8">
         <FilterSection
           onFilterChange={handleFilterChange}
           categoryId={filters.categoryId}
+          isDrink={isDrink}
+          className="shrink-0"
         />
 
-        <div className="flex-1 mt-8 lg:mt-0">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4">
-            <h1 className="text-xl font-semibold text-black mb-4 sm:mb-0">
-              {/* Hiển thị tiêu đề động */}
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 pb-4 border-b border-mist/10 gap-4">
+            <h2 className="font-heading-lg text-2xl text-espresso mb-4 sm:mb-0">
               {urlSearchQuery
-                ? `Search results for "${urlSearchQuery}"`
+                ? `Kết quả tìm kiếm cho "${urlSearchQuery}"`
                 : filters.categoryId
-                  ? "Products in Category"
-                  : "All Products"}
-            </h1>
+                  ? "Sản phẩm theo danh mục"
+                  : "Tất cả sản phẩm"}
+            </h2>
 
-            <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-              {/* <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:opacity-80">
-                                        Sort by <ChevronDown className="w-4 h-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Price: Low to High</DropdownMenuItem>
-                                    <DropdownMenuItem>Price: High to Low</DropdownMenuItem>
-                                    <DropdownMenuItem>Newest</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu> */}
+            <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+              {/* Sort Selection */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-ui-body text-dust">Sắp xếp:</span>
+                <select
+                  value={`${sortBy}-${sortDir}`}
+                  onChange={(e) => {
+                    const [field, direction] = e.target.value.split("-");
+                    setSortBy(field);
+                    setSortDir(direction);
+                    setCurrentPage(0);
+                  }}
+                  className="bg-parchment border border-mist/30 hover:border-mist rounded-xl px-3 py-1.5 font-ui-body text-xs font-medium text-espresso focus:outline-none focus:ring-1 focus:ring-roast cursor-pointer hover:bg-cream/40 transition-colors"
+                >
+                  <option value="createdAt-desc">Mới nhất</option>
+                  <option value="basePrice-asc">Giá: Thấp đến Cao</option>
+                  <option value="basePrice-desc">Giá: Cao đến Thấp</option>
+                  <option value="name-asc">Tên: A - Z</option>
+                  <option value="name-desc">Tên: Z - A</option>
+                </select>
+              </div>
 
-              <div className="flex items-center gap-1 bg-white">
+              {/* View Mode Buttons */}
+              <div className="flex items-center gap-1 bg-parchment p-1 rounded-xl border border-mist/20 shadow-sm">
                 <button
                   onClick={() => setGridCols(4)}
-                  className={`p-2 rounded hover:bg-gray-100 ${gridCols === 4 ? "bg-gray-100 text-black" : "text-gray-400"}`}
+                  className={`p-2 rounded-lg transition-colors duration-200 cursor-pointer ${gridCols === 4 ? "bg-roast text-white" : "text-dust hover:bg-cream/50 hover:text-roast"}`}
+                  title="Grid 4 cột"
                 >
-                  <LayoutGrid className="w-5 h-5" />
+                  <LayoutGrid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGridCols(3)}
-                  className={`p-2 rounded hover:bg-gray-100 ${gridCols === 3 ? "bg-gray-100 text-black" : "text-gray-400"}`}
+                  className={`p-2 rounded-lg transition-colors duration-200 cursor-pointer ${gridCols === 3 ? "bg-roast text-white" : "text-dust hover:bg-cream/50 hover:text-roast"}`}
+                  title="Grid 3 cột"
                 >
-                  <Grid className="w-5 h-5" />
+                  <Grid className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGridCols(2)}
-                  className={`p-2 rounded hover:bg-gray-100 ${gridCols === 2 ? "bg-gray-100 text-black" : "text-gray-400"}`}
+                  className={`p-2 rounded-lg transition-colors duration-200 cursor-pointer ${gridCols === 2 ? "bg-roast text-white" : "text-dust hover:bg-cream/50 hover:text-roast"}`}
+                  title="Grid 2 cột"
                 >
-                  <StretchHorizontal className="w-5 h-5" />
+                  <StretchHorizontal className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setGridCols(1)}
-                  className={`p-2 rounded hover:bg-gray-100 ${gridCols === 1 ? "bg-gray-100 text-black" : "text-gray-400"}`}
+                  className={`p-2 rounded-lg transition-colors duration-200 cursor-pointer ${gridCols === 1 ? "bg-roast text-white" : "text-dust hover:bg-cream/50 hover:text-roast"}`}
+                  title="List view"
                 >
-                  <AlignJustify className="w-5 h-5" />
+                  <AlignJustify className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -189,50 +213,46 @@ export default function ShopPage() {
 
           {isLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              <Loader2 className="w-8 h-8 animate-spin text-roast" />
             </div>
           ) : (
             <>
               {products.length === 0 ? (
-                <div className="text-center py-20 text-gray-500">
+                <div className="text-center py-20 text-dust font-body-md text-lg italic">
                   {urlSearchQuery
-                    ? `No products found for "${urlSearchQuery}"`
-                    : "No products found matching your criteria."}
+                    ? `Không tìm thấy sản phẩm nào khớp với "${urlSearchQuery}"`
+                    : "Không có sản phẩm nào phù hợp với bộ lọc đã chọn."}
                 </div>
               ) : (
                 <div
-                  className={`grid gap-x-6 gap-y-10 transition-all duration-300 ease-in-out
-                                    ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
-                                    ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
-                                    ${gridCols === 2 ? "grid-cols-2" : ""}
-                                    ${gridCols === 1 ? "grid-cols-1" : ""}
-                                `}
+                  className={`grid gap-6 transition-all duration-300 ease-in-out
+                    ${gridCols === 4 ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : ""}
+                    ${gridCols === 3 ? "grid-cols-2 md:grid-cols-3" : ""}
+                    ${gridCols === 2 ? "grid-cols-2" : ""}
+                    ${gridCols === 1 ? "grid-cols-1" : ""}
+                  `}
                 >
-                  {products.map((product) => {
-                    const firstVariant = product.variants?.[0];
-                    const displayPrice = firstVariant?.sellingPrice || 0;
+                  {products.map((product: any) => {
+                    const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
+                    const firstSizeId = product.sizes?.[0]?.id;
                     return (
-                      <div
-                        key={product.id}
-                        className={
-                          gridCols === 1
-                            ? "flex gap-6 items-center border-b pb-4 w-full"
-                            : ""
-                        }
-                      >
+                      <div key={product.id} className="w-full">
                         <Link
-                          to={`/products/${product.id}`}
-                          className="block w-full"
+                          to={`/menu/${product.id}`}
+                          className="block w-full h-full"
                         >
                           <ProductCard
                             product={{
                               id: product.id,
-                              variantId: firstVariant?.id,
+                              variantId: firstSizeId || product.variants?.[0]?.id,
                               name: product.name,
                               price: displayPrice,
-                              image: product.imageUrl,
+                              image: product.imageUrl || undefined,
                               rating: 5,
                               isNew: false,
+                              description: product.description,
+                              categoryName: product.categoryName,
+                              layout: gridCols === 1 ? "list" : "grid",
                             }}
                           />
                         </Link>
@@ -243,19 +263,19 @@ export default function ShopPage() {
               )}
 
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-12">
+                <div className="flex justify-center items-center gap-3 mt-12">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 0}
-                    className="w-9 h-9"
+                    className="w-9 h-9 border-roast text-roast hover:bg-cream hover:text-roast disabled:opacity-40 cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
 
-                  <span className="text-sm font-medium px-4">
-                    Page {currentPage + 1} of {totalPages}
+                  <span className="text-sm font-semibold text-espresso font-ui-body px-4">
+                    Trang {currentPage + 1} / {totalPages}
                   </span>
 
                   <Button
@@ -263,7 +283,7 @@ export default function ShopPage() {
                     size="icon"
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages - 1}
-                    className="w-9 h-9"
+                    className="w-9 h-9 border-roast text-roast hover:bg-cream hover:text-roast disabled:opacity-40 cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </Button>

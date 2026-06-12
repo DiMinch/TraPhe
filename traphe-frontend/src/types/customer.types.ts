@@ -1,13 +1,13 @@
 export interface CustomerTier {
   id: string;
   name: string;
-  minPoint: number;
+  tierLevel: number;
+  minSpending: number;
+  pointEarningRate: number;
   discountRate: number;
   description?: string;
-  status: "ACTIVE" | "INACTIVE"; //TODO: redefine later
-  customerCount?: number;
+  active: boolean;
   createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface LoyaltyPoint {
@@ -19,9 +19,14 @@ export interface LoyaltyPoint {
 }
 
 export interface CustomerAddress {
-  id?: number;
-  address: string;
-  // TODO: add another field later
+  id?: string;
+  label?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+  province?: string;
+  ward?: string;
+  addressDetail: string;
+  isPrimary?: boolean;
 }
 
 export interface Customer {
@@ -32,6 +37,10 @@ export interface Customer {
   totalPurchase: number;
   tier?: CustomerTier;
   loyaltyPoint?: LoyaltyPoint;
+  rfmSegment?: string;
+  rScore?: number;
+  fScore?: number;
+  mScore?: number;
   addresses: CustomerAddress[];
   createdAt: string;
   updatedAt: string;
@@ -53,7 +62,9 @@ export interface UpdateCustomerRequest {
 
 export interface CustomerTierRequest {
   name: string;
-  minPoint: number;
+  tierLevel: number;
+  minSpending: number;
+  pointEarningRate: number;
   discountRate: number;
   description?: string;
 }

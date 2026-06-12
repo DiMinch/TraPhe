@@ -52,11 +52,10 @@ export default function EditCategoryDialog({
     status: "Active",
   });
   const [allCategories, setAllCategories] = useState<ApiCategory[]>([]);
-  const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
-
+ 
   useEffect(() => {
     if (open) {
       fetchCategories();
@@ -72,10 +71,9 @@ export default function EditCategoryDialog({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, category]);
-
+ 
   const fetchCategories = async () => {
     try {
-      setLoading(true);
       const response = await categoryService.getAllCategories();
       if (response.data) {
         // Handle both direct array and paginated response
@@ -86,8 +84,6 @@ export default function EditCategoryDialog({
       }
     } catch (error: unknown) {
       console.error("Failed to load categories:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -279,7 +275,7 @@ export default function EditCategoryDialog({
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/80 text-white"
               onClick={handleUpdate}
               disabled={submitting}
             >

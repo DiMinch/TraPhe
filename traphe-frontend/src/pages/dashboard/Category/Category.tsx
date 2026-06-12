@@ -156,7 +156,7 @@ export default function CategoryPage() {
       />
       <div className="flex justify-end mb-6">
         <Button
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+          className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -166,7 +166,7 @@ export default function CategoryPage() {
 
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <h3 className="text-lg font-semibold text-slate-800">
               All Categories
             </h3>
@@ -176,7 +176,7 @@ export default function CategoryPage() {
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-lg h-10 bg-white shadow-sm"
+                className="pl-10 border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 bg-white shadow-sm"
               />
             </div>
           </div>
@@ -184,8 +184,8 @@ export default function CategoryPage() {
           <div className="p-6">
             {loading && categories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center animate-pulse">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 flex items-center justify-center animate-pulse">
+                  <Loader2 className="w-8 h-8 animate-spin text-roast" />
                 </div>
                 <span className="mt-4 text-slate-600 font-medium">
                   Loading categories...
@@ -214,9 +214,6 @@ export default function CategoryPage() {
                       <TableHead className="font-semibold text-slate-700">
                         Parent
                       </TableHead>
-                      <TableHead className="font-semibold text-slate-700">
-                        Specs
-                      </TableHead>
                       <TableHead className="text-right font-semibold text-slate-700">
                         Actions
                       </TableHead>
@@ -226,7 +223,7 @@ export default function CategoryPage() {
                     {filteredCategories.map((category) => (
                       <TableRow
                         key={category.id}
-                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                       >
                         <TableCell>
                           {category.imageUrl ? (
@@ -258,25 +255,17 @@ export default function CategoryPage() {
                               {category.parentName}
                             </Badge>
                           ) : (
-                            <Badge className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-0 rounded-full px-3">
+                            <Badge className="bg-roast/20 text-roast/90 hover:bg-roast/20 border-0 rounded-full px-3">
                               Root
                             </Badge>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-purple-50 text-purple-700 border-purple-200 rounded-full px-3"
-                          >
-                            {category.specs?.length || 0} specs
-                          </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                              className="h-9 w-9 rounded-lg text-slate-600 hover:text-roast hover:bg-roast/10 transition-colors"
                               onClick={() =>
                                 navigate(`/category/${category.id}`)
                               }
@@ -322,7 +311,7 @@ export default function CategoryPage() {
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
             <DialogDescription>
-              Create a new product category with specifications
+              Create a new product category
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -405,7 +394,7 @@ export default function CategoryPage() {
               Cancel
             </Button>
             <Button
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white"
               onClick={handleCreate}
               disabled={loading}
             >

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +21,133 @@ import { toast } from "sonner";
 import { userService } from "@/services/user.service";
 import { authService } from "@/services/auth.service";
 import type { Province, Commune, UserAddress } from "@/types/user.types";
+
+export interface SearchableSelectProps<T> {
+  value: string;
+  onChange: (value: string) => void;
+  options: T[];
+  getOptionValue: (option: T) => string;
+  getOptionLabel: (option: T) => string;
+  placeholder: string;
+  disabled?: boolean;
+}
+
+export function SearchableSelect<T>({
+  value,
+  onChange,
+  options,
+  getOptionValue,
+  getOptionLabel,
+  placeholder,
+  disabled = false,
+}: SearchableSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedOption = options.find((opt) => getOptionValue(opt) === value);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm(selectedOption ? getOptionLabel(selectedOption) : "");
+    }
+  }, [isOpen, selectedOption, options]);
+
+  const cleanVietnameseName = (name: string): string => {
+    if (!name) return "";
+    let cleaned = name.trim();
+    const prefixes = [
+      /^(tỉnh|thành phố|thành\s*phố)\s+/i,
+      /^(phường|xã|thị trấn|thị\s*trấn)\s+/i
+    ];
+    for (const regex of prefixes) {
+      cleaned = cleaned.replace(regex, "");
+    }
+    return cleaned
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d");
+  };
+
+  const filteredOptions = options.filter((option) => {
+    if (!searchTerm) return true;
+    const cleanedLabel = cleanVietnameseName(getOptionLabel(option));
+    const cleanedSearch = cleanVietnameseName(searchTerm);
+    return cleanedLabel.includes(cleanedSearch);
+  });
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          className="w-full flex h-10 w-full rounded-md border border-[#E2DDD7] bg-white px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5C3317] disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder={placeholder}
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          disabled={disabled}
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+            onClick={() => {
+              setSearchTerm("");
+              onChange("");
+              setIsOpen(true);
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {isOpen && !disabled && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setIsOpen(false)}
+          ></div>
+          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-[#E2DDD7] bg-white text-stone-900 shadow-lg outline-none">
+            <div className="p-1">
+              {filteredOptions.length === 0 ? (
+                <div className="relative flex w-full select-none items-center rounded-sm py-1.5 px-2 text-sm text-gray-400">
+                  No options found
+                </div>
+              ) : (
+                filteredOptions.map((option) => {
+                  const val = getOptionValue(option);
+                  const label = getOptionLabel(option);
+                  const isSelected = val === value;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        onChange(val);
+                        setSearchTerm(label);
+                        setIsOpen(false);
+                      }}
+                      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none transition-colors hover:bg-[#F5EAD8] hover:text-[#5C3317] ${
+                        isSelected ? "bg-[#EFE5D3] text-[#5C3317] font-semibold" : ""
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 interface AddressDialogProps {
   open: boolean;
@@ -143,12 +269,17 @@ export default function AddressDialog({
 
     setIsSubmitting(true);
     try {
+      const selectedProvince = provinces.find((p) => String(p.code) === formData.provinceCode);
+      const selectedCommune = communes.find((c) => String(c.code) === formData.communeCode);
+
       const payload = {
         contactName: formData.contactName,
         contactPhone: formData.contactPhone,
         street: formData.street,
         provinceCode: formData.provinceCode,
+        provinceName: selectedProvince?.name || "",
         communeCode: formData.communeCode,
+        communeName: selectedCommune?.name || "",
         postalCode: formData.postalCode,
         type: formData.type,
         isPrimary: formData.isPrimary,
@@ -254,57 +385,31 @@ export default function AddressDialog({
 
           <div className="space-y-2">
             <Label>Province / City *</Label>
-            <Select
+            <SearchableSelect
               value={formData.provinceCode}
-              onValueChange={(val) =>
+              onChange={(val) =>
                 setFormData({ ...formData, provinceCode: val, communeCode: "" })
               }
-            >
-              <SelectTrigger className="cursor-pointer">
-                <SelectValue placeholder="Select Province" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                {provinces.map((p) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={p.code}
-                    value={p.code}
-                  >
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={provinces}
+              getOptionValue={(p) => String(p.code)}
+              getOptionLabel={(p) => p.name}
+              placeholder="Search Province / City"
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Commune / Ward *</Label>
-            <Select
+            <SearchableSelect
               value={formData.communeCode}
-              onValueChange={(val) =>
+              onChange={(val) =>
                 setFormData({ ...formData, communeCode: val })
               }
+              options={communes}
+              getOptionValue={(c) => String(c.code)}
+              getOptionLabel={(c) => c.name}
+              placeholder={isLoadingCommunes ? "Loading..." : "Search Commune / Ward"}
               disabled={!formData.provinceCode || isLoadingCommunes}
-            >
-              <SelectTrigger className="cursor-pointer">
-                {isLoadingCommunes ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <SelectValue placeholder="Select Commune" />
-                )}
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                {communes.map((c) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={c.code}
-                    value={c.code}
-                  >
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
 
           <div className="space-y-2">
@@ -318,20 +423,34 @@ export default function AddressDialog({
             />
           </div>
 
-          <div className="flex items-center space-x-2 pt-2 cursor-pointer">
-            <Checkbox
-              id="isPrimary"
-              checked={formData.isPrimary}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isPrimary: checked as boolean })
-              }
-            />
-            <Label
-              htmlFor="isPrimary"
-              className="text-sm font-normal cursor-pointer"
-            >
+          <div 
+            onClick={() => setFormData({ ...formData, isPrimary: !formData.isPrimary })}
+            className="flex items-center space-x-2.5 pt-2 cursor-pointer select-none"
+          >
+            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+              formData.isPrimary 
+                ? "bg-[#5C3317] border-[#5C3317] text-white shadow-sm" 
+                : "border-[#E2DDD7] bg-white hover:border-[#5C3317]"
+            }`}>
+              {formData.isPrimary && (
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="3.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">
               Set as default address
-            </Label>
+            </span>
           </div>
         </div>
 

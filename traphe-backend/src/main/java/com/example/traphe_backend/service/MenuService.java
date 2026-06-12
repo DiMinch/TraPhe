@@ -7,7 +7,6 @@ import com.example.traphe_backend.dto.response.MenuTreeResponse;
 import com.example.traphe_backend.dto.response.PageResponse;
 import com.example.traphe_backend.dto.response.ToppingResponse;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface MenuService {
@@ -18,11 +17,11 @@ public interface MenuService {
 
     MenuItemDetailResponse getMenuItemById(UUID id, UUID branchId);
 
-    List<MenuCategoryResponse> getCategories(String search, UUID parentId, String sortBy, String sortDir);
+    MenuCategoryResponse[] getCategories(String search, UUID parentId, String sortBy, String sortDir);
 
     PageResponse<ToppingResponse> getToppings(String search, Boolean isAvailable, int page, int size);
 
-    List<MenuTreeResponse> getMenuTree(UUID branchId);
+    MenuTreeResponse[] getMenuTree(UUID branchId);
 
     MenuItemDetailResponse findMenuItemByBarcode(String barcode, UUID branchId);
 }

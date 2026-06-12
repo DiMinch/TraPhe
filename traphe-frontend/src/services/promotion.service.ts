@@ -1,137 +1,145 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 
-// Enums matching backend
-export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT" | "BUY_X_GET_Y";
-export type PromotionScope = "ORDER" | "PRODUCT" | "CATEGORY" | "SHIPPING";
-export type PromotionStatus = "ACTIVE" | "INACTIVE" | "SCHEDULED" | "EXPIRED";
+// ============================
+// Promotion Types (matching backend)
+// ============================
 
-// Response interface matching backend PromotionResponse
+export type DiscountType = "PERCENTAGE" | "FIXED_AMOUNT";
+export type PromotionStatus = "ACTIVE" | "INACTIVE" | "EXPIRED" | "SCHEDULED";
+export type PromotionType = "PERCENTAGE" | "FIXED_AMOUNT" | "BUY_X_GET_Y";
+
 export interface PromotionResponse {
   id: string;
   code: string;
   name: string;
-  type: PromotionType;
-  scope: PromotionScope;
-  value: number;
+  description: string | null;
+  discountType: DiscountType;
+  discountValue: number;
   minOrderValue: number | null;
   maxDiscountAmount: number | null;
-  applicableCustomerTiers: string[] | null;
+  usageLimit: number | null;
+  usageCount: number;
+  perUserLimit: number;
   startDate: string;
   endDate: string;
-  status: PromotionStatus;
-  usageLimit: number | null;
-  usageCount: number | null;
-  usagePerCustomer: number | null;
-  priority: number;
-  description: string | null;
-  applicableCategoryIds: string[] | null;
-  applicableProductIds: string[] | null;
-  conflictingPromotionIds: string[] | null;
-  isActive: boolean;
-  hasQuota: boolean;
-  remainingQuota: number | null;
+  active: boolean;
   createdAt: string;
-  updatedAt: string;
+
+  // Frontend compatibility fields
+  status?: PromotionStatus;
+  type?: PromotionType;
+  value?: number;
+  scope?: string;
+  priority?: number;
+  usagePerCustomer?: number;
+  applicableCategoryIds?: string[];
+  applicableProductIds?: string[];
+  applicableCustomerTiers?: string[];
+  conflictingPromotionIds?: string[];
+  hasQuota?: boolean;
+  remainingQuota?: number;
+  dailyStartTime?: string | null;
+  dailyEndTime?: string | null;
+  targetSegments?: string[];
 }
 
-// Request interface matching backend PromotionRequest
 export interface PromotionRequest {
   code: string;
   name: string;
-  type: PromotionType;
-  scope: PromotionScope;
-  value: number;
+  description?: string;
+  discountType?: DiscountType;
+  discountValue?: number;
   minOrderValue?: number;
   maxDiscountAmount?: number;
-  applicableCustomerTiers?: string[];
+  usageLimit?: number;
+  perUserLimit?: number;
   startDate: string;
   endDate: string;
-  usageLimit?: number;
+
+  // Frontend compatibility fields
+  type?: PromotionType;
+  value?: number;
+  scope?: string;
+  priority?: number;
   usagePerCustomer?: number;
-  priority: number;
-  description?: string;
   applicableCategoryIds?: string[];
   applicableProductIds?: string[];
+  applicableCustomerTiers?: string[];
   conflictingPromotionIds?: string[];
+  dailyStartTime?: string | null;
+  dailyEndTime?: string | null;
+  targetSegments?: string[];
 }
 
-// Usage report interface
+export interface VoucherBatchRequest {
+  batchName: string;
+  prefix: string;
+  quantity: number;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue?: number;
+  maxDiscount?: number;
+  startDate: string;
+  endDate: string;
+}
+
+export interface VoucherBatchResponse {
+  batchName: string;
+  prefix: string;
+  quantity: number;
+  codes: string[];
+}
+
 export interface PromotionUsageReportResponse {
-  promotionId: string;
-  promotionCode: string;
-  promotionName: string;
   totalUsage: number;
   totalDiscountGiven: number;
   averageDiscountPerUse: number;
-  usageByDate: Record<string, number>;
+  usageByDate?: Record<string, number>;
 }
 
-// Apply promotion request
-export interface ApplyPromotionCodeRequest {
-  items: Array<{
-    productId: string; // Added productId
-    productVariantId: string;
-    quantity: number;
-    unitPrice: number;
-  }>;
-  code?: string;
-  appliedCodes?: string[]; // Added appliedCodes
-  customerId?: string;
-}
-
-// Cart discount calculation response
-export interface AppliedPromotionDetail {
-  promotionId: string;
-  code: string;
-  name: string;
-  type: string;
-  discountAmount: number;
-  message: string;
-}
-
-export interface CartDiscountCalculationResponse {
-  subtotal: number;
-  tierDiscount: number;
-  productPromotionDiscount: number;
-  orderPromotionDiscount: number;
-  totalDiscount: number;
-  finalAmount: number;
-  productPromotions: AppliedPromotionDetail[];
-  orderPromotion: AppliedPromotionDetail | null;
-  warnings: string[];
-}
+// ============================
+// Service
+// ============================
 
 export const promotionService = {
-  // ========================================
-  // ADMIN ENDPOINTS
-  // ========================================
-
-  // Get all promotions (Admin)
-  getAllPromotions: async (params?: { status?: string; type?: string }) => {
-    const queryParams: any = {};
-
-    if (params?.status && params.status !== "all-status") {
-      queryParams.status = params.status.toUpperCase();
-    }
-    if (params?.type && params.type !== "all-type") {
-      queryParams.type = params.type.toUpperCase();
-    }
-
+  /** Lấy tất cả khuyến mãi (Admin) */
+  getAllPromotions: async () => {
     return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
       "/admin/promotions",
-      { params: queryParams },
     );
   },
 
-  // Get promotion by ID (Admin)
+  /** Lấy khuyến mãi đang hoạt động (Public) */
+  getActivePromotions: async () => {
+    return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
+      "/promotions/active",
+    );
+  },
+
+  /**
+   * Lấy tất cả khuyến mãi kèm trạng thái eligible cho user hiện tại (Authenticated).
+   * Server pre-validates: per-user usage, min order, time windows, target segments, etc.
+   * Returns each promotion with `eligible` (boolean) + `ineligibleReason` (string | null).
+   */
+  getCheckoutEligible: async (payload: {
+    subtotal: number;
+    items: Array<{ productId?: string; productVariantId?: string; quantity: number; unitPrice: number }>;
+  }) => {
+    return axiosClient.post<any, ApiResponse<CheckoutEligiblePromotion[]>>(
+      "/promotions/checkout-eligible",
+      payload
+    );
+  },
+
+  /** Chi tiết khuyến mãi */
   getPromotionById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<PromotionResponse>>(
       `/admin/promotions/${id}`,
     );
   },
 
-  // Create new promotion (Admin)
+  /** Tạo khuyến mãi mới */
   createPromotion: async (data: PromotionRequest) => {
     return axiosClient.post<any, ApiResponse<PromotionResponse>>(
       "/admin/promotions",
@@ -139,7 +147,7 @@ export const promotionService = {
     );
   },
 
-  // Update promotion (Admin)
+  /** Cập nhật khuyến mãi */
   updatePromotion: async (id: string, data: PromotionRequest) => {
     return axiosClient.put<any, ApiResponse<PromotionResponse>>(
       `/admin/promotions/${id}`,
@@ -147,94 +155,163 @@ export const promotionService = {
     );
   },
 
-  // Delete promotion (Admin)
+  /** Xoá khuyến mãi (soft delete) */
   deletePromotion: async (id: string) => {
-    return axiosClient.delete<any, ApiResponse<void>>(
+    return axiosClient.delete<any, ApiResponse<null>>(
       `/admin/promotions/${id}`,
     );
   },
 
-  // Toggle promotion status (Admin)
-  togglePromotionStatus: async (id: string) => {
-    return axiosClient.patch<any, ApiResponse<PromotionResponse>>(
-      `/admin/promotions/${id}/toggle`,
-    );
-  },
-
-  // Get promotion usage report (Admin)
-  getPromotionUsageReport: async (id: string) => {
-    return axiosClient.get<any, ApiResponse<PromotionUsageReportResponse>>(
-      `/admin/promotions/${id}/report`,
-    );
-  },
-
-  // Get top promotions by usage (Admin)
-  getTopPromotions: async (limit: number = 10) => {
-    return axiosClient.get<any, ApiResponse<PromotionUsageReportResponse[]>>(
-      `/admin/promotions/top?limit=${limit}`,
-    );
-  },
-
-  // ========================================
-  // PUBLIC ENDPOINTS
-  // ========================================
-
-  // Get all active promotions (Public)
-  getActivePromotions: async () => {
-    return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
-      "/promotions",
-    );
-  },
-
-  // Get promotion detail (Public)
-  getPromotionDetail: async (id: string) => {
-    return axiosClient.get<any, ApiResponse<PromotionResponse>>(
-      `/promotions/${id}`,
-    );
-  },
-
-  // Calculate cart discount (auto-apply promotions)
-  calculateCartDiscount: async (data: ApplyPromotionCodeRequest) => {
-    return axiosClient.post<any, ApiResponse<CartDiscountCalculationResponse>>(
-      "/promotions/calculate-discount",
-      data,
-    );
-  },
-
-  // Apply promotion code to cart
-  applyPromotionCode: async (data: ApplyPromotionCodeRequest) => {
-    return axiosClient.post<any, ApiResponse<CartDiscountCalculationResponse>>(
-      "/promotions/apply-code",
-      data,
-    );
-  },
-
-  // Remove promotion code from cart
-  removePromotionCode: async (data: ApplyPromotionCodeRequest) => {
-    return axiosClient.post<any, ApiResponse<CartDiscountCalculationResponse>>(
-      "/promotions/remove-code",
-      data,
-    );
-  },
-
-  // ========================================
-  // EMPLOYEE ENDPOINTS
-  // ========================================
-
-  // Validate promotion code (for POS)
-  validatePromotionCode: async (code: string) => {
+  /** Bật/tắt trạng thái */
+  toggleStatus: async (id: string) => {
     return axiosClient.post<any, ApiResponse<PromotionResponse>>(
-      "/employee/promotions/validate",
-      { code },
+      `/admin/promotions/${id}/toggle-status`,
     );
   },
 
-  // Get active promotions for employees
-  getEmployeePromotions: async () => {
-    return axiosClient.get<any, ApiResponse<PromotionResponse[]>>(
-      "/employee/promotions",
+  /** Bật/tắt trạng thái (alias cho frontend) */
+  togglePromotionStatus: async (id: string) => {
+    return axiosClient.post<any, ApiResponse<PromotionResponse>>(
+      `/admin/promotions/${id}/toggle-status`,
+    );
+  },
+
+  /** Lấy báo cáo sử dụng khuyến mãi (mocked) */
+  getPromotionUsageReport: async (id: string) => {
+    console.log("Mock usage report for:", id);
+    return {
+      data: {
+        success: true,
+        message: "Promotion usage report fetched successfully",
+        data: {
+          totalUsage: 25,
+          totalDiscountGiven: 1250000,
+          averageDiscountPerUse: 50000,
+          usageByDate: {
+            "2026-05-18": 5,
+            "2026-05-19": 12,
+            "2026-05-20": 8
+          }
+        }
+      }
+    } as any;
+  },
+
+  calculateCartDiscount: async (payload: {
+    items: Array<{ productId?: string; productVariantId?: string; quantity: number; unitPrice: number }>;
+    code: string;
+    appliedCodes?: string[];
+    customerId?: string;
+  }) => {
+    try {
+      const response = await axiosClient.post<any, ApiResponse<{ discountAmount: number; finalAmount: number; promotionId?: string }>>(
+        "/promotions/calculate",
+        payload
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Không thể tính giảm giá");
+      }
+
+      const { discountAmount, finalAmount, promotionId } = response.data;
+
+      return {
+        data: {
+          totalDiscount: discountAmount,
+          finalAmount: finalAmount,
+          orderPromotion: {
+            promotionId: promotionId || "",
+            code: payload.code,
+            discountAmount: discountAmount,
+          },
+          productPromotions: [] as Array<{ promotionId: string }>,
+        },
+      };
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || error.message || "Mã khuyến mãi không tồn tại hoặc đã hết hạn";
+      throw new Error(errMsg);
+    }
+  },
+
+  // === Admin Voucher Batch ===
+  generateVoucherBatch: async (data: VoucherBatchRequest) => {
+    return axiosClient.post<any, ApiResponse<VoucherBatchResponse>>(
+      "/admin/vouchers/batch",
+      data,
+    );
+  },
+
+  // ======================== Customer Voucher APIs ========================
+
+  /** Lấy danh sách voucher cá nhân của user (My Vouchers) */
+  getMyVouchers: async (status?: string) => {
+    const params = status ? { status } : {};
+    return axiosClient.get<any, ApiResponse<MyVoucherResponse[]>>(
+      "/vouchers/me",
+      { params },
+    );
+  },
+
+  /** Đổi điểm tích lũy lấy phần thưởng (tạo voucher cá nhân) */
+  redeemReward: async (data: {
+    rewardId: string;
+    rewardName: string;
+    pointsCost: number;
+    rewardDescription?: string;
+    discountValue?: number;
+    discountType?: string;
+  }) => {
+    return axiosClient.post<any, ApiResponse<RedeemRewardResponse>>(
+      "/loyalty/redeem",
+      data,
     );
   },
 };
 
-export default promotionService;
+// ======================== Customer Voucher Types ========================
+
+export interface MyVoucherResponse {
+  id: string;
+  promotionId: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discountType: DiscountType;
+  discountValue: number;
+  minOrderValue: number | null;
+  maxDiscountAmount: number | null;
+  startDate: string;
+  endDate: string;
+  status: "AVAILABLE" | "USED" | "EXPIRED";
+  source: string | null;  // LOYALTY_REDEEM, ADMIN_BATCH, EVENT
+  assignedAt: string;
+  usedAt: string | null;
+}
+
+export interface RedeemRewardResponse {
+  voucherCode: string;
+  rewardName: string;
+  pointsDeducted: number;
+  remainingPoints: number;
+}
+
+// ======================== Checkout Eligible Types ========================
+
+export interface CheckoutEligiblePromotion {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue: number;
+  minOrderValue: number | null;
+  maxDiscountAmount: number | null;
+  startDate: string;
+  endDate: string;
+  myVoucher: boolean;
+  /** Pre-computed by server: true if this user can apply this voucher right now */
+  eligible: boolean;
+  /** Human-readable reason why not eligible (null if eligible) */
+  ineligibleReason: string | null;
+}
+

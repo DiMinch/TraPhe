@@ -83,10 +83,17 @@ export default function ProductListPage() {
     fetchCategories();
   }, []);
 
+  // Sync URL category filter to state
+  useEffect(() => {
+    if (categoryFilter) {
+      setSelectedCategory(categoryFilter);
+    }
+  }, [categoryFilter]);
+
   // Fetch products from API
   useEffect(() => {
     fetchProducts();
-  }, [categoryFilter]);
+  }, []);
 
   // Filter products based on search and category
   useEffect(() => {
@@ -98,8 +105,7 @@ export default function ProductListPage() {
       filtered = filtered.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
-          product.categoryName?.toLowerCase().includes(query) ||
-          product.supplierName?.toLowerCase().includes(query),
+          product.categoryName?.toLowerCase().includes(query),
       );
     }
 
@@ -122,17 +128,6 @@ export default function ProductListPage() {
       const productList = response.data?.content || [];
 
       setAllProducts(productList);
-
-      // Filter products by category if category filter is provided
-      if (categoryFilter) {
-        const filtered = productList.filter((product) => {
-          // Match products where category name matches
-          return product.categoryName === categoryFilter;
-        });
-        setProducts(filtered);
-      } else {
-        setProducts(productList);
-      }
     } catch (error: unknown) {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load products";
@@ -190,16 +185,16 @@ export default function ProductListPage() {
       {/* Search, Filter & Actions */}
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden mb-6">
         <CardContent className="p-0">
-          <div className="p-4 bg-gradient-to-r from-slate-50/80 to-indigo-50/50 border-b border-slate-200/60">
+          <div className="p-4 bg-gradient-to-r from-slate-50/80 to-foam/50 border-b border-slate-200/60">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               {/* Search Input */}
               <div className="relative flex-1 min-w-0 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
-                  placeholder="Search products by name, category, supplier..."
+                  placeholder="Search products by name or category..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                  className="pl-10 h-10 rounded-lg border-slate-200 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20 bg-white"
                 />
               </div>
 
@@ -211,7 +206,7 @@ export default function ProductListPage() {
                     value={selectedCategory}
                     onValueChange={setSelectedCategory}
                   >
-                    <SelectTrigger className="w-[180px] h-10 rounded-lg border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white">
+                    <SelectTrigger className="w-[180px] h-10 rounded-lg border-slate-200 shadow-sm focus:border-roast focus:ring-2 focus:ring-roast/20 bg-white">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -227,7 +222,7 @@ export default function ProductListPage() {
 
                 {/* New Product Button */}
                 <Button
-                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-md"
+                  className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-md"
                   onClick={() => setIsNewProductOpen(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -243,7 +238,7 @@ export default function ProductListPage() {
                 {searchQuery && (
                   <Badge
                     variant="secondary"
-                    className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer"
+                    className="bg-roast/20 text-roast/90 hover:bg-mist cursor-pointer"
                     onClick={() => setSearchQuery("")}
                   >
                     Search: "{searchQuery}" ×
@@ -281,8 +276,8 @@ export default function ProductListPage() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 animate-pulse"></div>
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-foam to-purple-100 animate-pulse"></div>
+                <Loader2 className="w-8 h-8 animate-spin text-roast absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
               <span className="mt-4 text-slate-500 font-medium">
                 Loading products...
@@ -316,7 +311,7 @@ export default function ProductListPage() {
                         Category
                       </TableHead>
                       <TableHead className="font-semibold text-slate-700">
-                        Supplier
+                        Base Price
                       </TableHead>
                       <TableHead className="font-semibold text-slate-700">
                         Variants
@@ -333,7 +328,7 @@ export default function ProductListPage() {
                     {currentProducts.map((product) => (
                       <TableRow
                         key={product.id}
-                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-indigo-50/30 transition-all duration-200"
+                        className="cursor-pointer border-slate-100 hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-foam/30 transition-all duration-200"
                         onClick={() =>
                           navigate(`/product/detail/${product.id}`)
                         }
@@ -352,15 +347,8 @@ export default function ProductListPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-semibold text-slate-800">
-                              {product.name}
-                            </div>
-                            <div className="text-sm text-slate-500">
-                              {product.warrantyPeriod
-                                ? `${product.warrantyPeriod} months warranty`
-                                : "No warranty"}
-                            </div>
+                          <div className="font-semibold text-slate-800">
+                            {product.name}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -368,10 +356,10 @@ export default function ProductListPage() {
                             {product.categoryName || "N/A"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 font-medium">
-                            {product.supplierName || "N/A"}
-                          </Badge>
+                        <TableCell className="font-medium text-slate-700">
+                          {product.basePrice !== null && product.basePrice !== undefined
+                            ? `${product.basePrice.toLocaleString()}đ`
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <span className="text-slate-600 font-medium">
@@ -399,7 +387,7 @@ export default function ProductListPage() {
                               size="icon"
                               className="h-9 w-9 hover:bg-amber-50 text-slate-600 hover:text-amber-600 rounded-lg transition-colors"
                               onClick={() =>
-                                navigate(`/product/edit/${product.id}`)
+                                navigate(`/admin/menu/items/${product.id}/edit`)
                               }
                             >
                               <Edit className="w-4 h-4" />
@@ -458,7 +446,7 @@ export default function ProductListPage() {
                           <PaginationLink
                             onClick={() => setCurrentPage(page)}
                             isActive={currentPage === page}
-                            className={`cursor-pointer rounded-lg ${currentPage === page ? "bg-indigo-600 text-white hover:bg-indigo-700 border-0" : "text-slate-600 hover:bg-slate-100"}`}
+                            className={`cursor-pointer rounded-lg ${currentPage === page ? "bg-roast text-white hover:bg-roast/90 border-0" : "text-slate-600 hover:bg-slate-100"}`}
                           >
                             {page}
                           </PaginationLink>

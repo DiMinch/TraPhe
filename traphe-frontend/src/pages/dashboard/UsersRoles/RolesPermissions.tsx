@@ -27,17 +27,6 @@ import {
   Loader2,
   Users,
   ChevronRight,
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Clipboard,
-  ChartBar,
-  Tag,
-  Settings,
-  UserCog,
-  ClipboardList,
-  Wrench,
-  BarChart3,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import DeleteConfirmDialog from "@/components/common/DeleteConfirmDialog";
@@ -47,6 +36,7 @@ import {
   type UserInRole,
 } from "@/services/role.service";
 import { toast } from "sonner";
+import { navItems } from "@/components/navItems";
 import {
   PageContainer,
   PageHeader,
@@ -62,123 +52,20 @@ interface PageAccess {
   subPages?: { title: string; path: string }[];
 }
 
-// Define all available pages with their allowed roles
-const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = [
-  {
-    title: "Dashboard",
-    path: "/dashboard",
-    icon: LayoutDashboard,
-    allowedRoles: [
-      UserRole.ADMIN,
-      UserRole.EMPLOYEE,
-      UserRole.CASHIER,
-      UserRole.ACCOUNTANT,
-    ],
-  },
-  {
-    title: "Product",
-    path: "/product",
-    icon: Package,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Product List", path: "/product/productlist" },
-      { title: "Categories", path: "/product/categories" },
-    ],
-  },
-  {
-    title: "Inventory",
-    path: "/inventory",
-    icon: ShoppingCart,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Overview", path: "/inventory/overview" },
-      { title: "All Inventory", path: "/inventory/all" },
-      { title: "Transactions", path: "/inventory/transactions" },
-    ],
-  },
-  {
-    title: "Procurement",
-    path: "/procurement",
-    icon: Clipboard,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Suppliers", path: "/procurement/suppliers" },
-      { title: "Purchase Orders", path: "/procurement/purchase-orders" },
-    ],
-  },
-  {
-    title: "Sales",
-    path: "/sales",
-    icon: ChartBar,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-    subPages: [
-      { title: "POS", path: "/sales/pos" },
-      { title: "Orders", path: "/sales/orders" },
-    ],
-  },
-  {
-    title: "Customers",
-    path: "/customer",
-    icon: Users,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE, UserRole.CASHIER],
-    subPages: [
-      { title: "Customer List", path: "/customer" },
-      { title: "Customer Tiers", path: "/customer/tiers" },
-    ],
-  },
-  {
-    title: "Warranty & Service",
-    path: "/warranty",
-    icon: Wrench,
-    allowedRoles: [UserRole.ADMIN, UserRole.EMPLOYEE],
-    subPages: [
-      { title: "Warranty Tickets", path: "/warranty/tickets" },
-      { title: "Service Types", path: "/warranty/service-types" },
-      { title: "Parts & Components", path: "/warranty/parts-components" },
-    ],
-  },
-  {
-    title: "Promotions",
-    path: "/promotions",
-    icon: Tag,
-    allowedRoles: [UserRole.ADMIN],
-  },
-  {
-    title: "Reports",
-    path: "/reports",
-    icon: BarChart3,
-    allowedRoles: [UserRole.ADMIN, UserRole.ACCOUNTANT],
-    subPages: [
-      { title: "Revenue Report", path: "/reports/revenue" },
-      { title: "Profit Report", path: "/reports/profit" },
-      { title: "Top Products", path: "/reports/top-products" },
-      { title: "Inventory Report", path: "/reports/inventory" },
-    ],
-  },
-  {
-    title: "System",
-    path: "/system",
-    icon: Settings,
-    allowedRoles: [UserRole.ADMIN],
-    subPages: [{ title: "Configurations", path: "/system/configurations" }],
-  },
-  {
-    title: "Users & Roles",
-    path: "/users-roles",
-    icon: UserCog,
-    allowedRoles: [UserRole.ADMIN],
-    subPages: [
-      { title: "User Accounts", path: "/users-roles/user-accounts" },
-      { title: "Roles & Permissions", path: "/users-roles/roles-permissions" },
-    ],
-  },
-  {
-    title: "Audit Logs",
-    path: "/audit-logs",
-    icon: ClipboardList,
-    allowedRoles: [UserRole.ADMIN],
-  },
-];
+// Get all pages from navItems for consistency
+const allPages: (PageAccess & { allowedRoles: UserRole[] })[] = navItems.map(
+  (item) => ({
+    title: item.title,
+    path: item.path,
+    icon: item.icon,
+    allowedRoles: item.allowedRoles || [],
+    subPages: item.subItems?.map((sub) => ({
+      title: sub.title,
+      path: sub.path,
+      allowedRoles: sub.allowedRoles, // Optional, can use later if needed
+    })),
+  })
+);
 
 export default function RolesPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -237,10 +124,10 @@ export default function RolesPermissionsPage() {
   const getRoleEnum = (roleName: string): UserRole | null => {
     const roleMap: Record<string, UserRole> = {
       ROLE_ADMIN: UserRole.ADMIN,
-      ROLE_EMPLOYEE: UserRole.EMPLOYEE,
       ROLE_CASHIER: UserRole.CASHIER,
-      ROLE_ACCOUNTANT: UserRole.ACCOUNTANT,
       ROLE_CUSTOMER: UserRole.CUSTOMER,
+      ROLE_BARISTA: UserRole.BARISTA,
+      ROLE_BRANCH_MANAGER: UserRole.BRANCH_MANAGER,
     };
     return roleMap[roleName] || null;
   };
@@ -401,7 +288,7 @@ export default function RolesPermissionsPage() {
             </CardTitle>
             <Button
               onClick={() => setIsNewRoleDialogOpen(true)}
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white h-8"
+              className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white h-8"
             >
               <Plus className="mr-1 w-4 h-4" />
               New Role
@@ -449,7 +336,7 @@ export default function RolesPermissionsPage() {
                     <TableRow
                       key={role.id}
                       className={`cursor-pointer transition-colors hover:bg-slate-50 ${
-                        selectedRole === role.id ? "bg-indigo-50" : ""
+                        selectedRole === role.id ? "bg-roast/10" : ""
                       }`}
                       onClick={() => setSelectedRole(role.id)}
                     >
@@ -541,8 +428,8 @@ export default function RolesPermissionsPage() {
                       className="bg-slate-50/80 rounded-lg p-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 rounded-lg">
-                          <IconComponent className="w-4 h-4 text-indigo-600" />
+                        <div className="p-2 bg-roast/20 rounded-lg">
+                          <IconComponent className="w-4 h-4 text-roast" />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-slate-800 text-sm">

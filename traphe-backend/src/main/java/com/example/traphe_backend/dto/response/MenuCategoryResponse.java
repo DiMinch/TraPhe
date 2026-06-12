@@ -14,8 +14,11 @@ import java.util.UUID;
 public class MenuCategoryResponse {
     private UUID id;
     private String name;
+    private String description;
     private UUID parentId;
+    private String parentName;
     private int displayOrder;
     private String imageUrl;
     private boolean isDrinkCategory;
+    private long productCount;
 }

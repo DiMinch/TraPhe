@@ -16,7 +16,7 @@ public class NotificationResponse {
     private UUID id;
     private UUID branchId;
     private String title;
-    private String message;
+    private String content;   // maps from entity's "message" field
     private String type;
     private boolean isRead;
     private LocalDateTime createdAt;

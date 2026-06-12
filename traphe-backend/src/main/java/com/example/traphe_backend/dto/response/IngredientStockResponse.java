@@ -16,6 +16,7 @@ import java.util.UUID;
 public class IngredientStockResponse {
     private UUID id;
     private UUID branchId;
+    private String branchName;
     private UUID ingredientId;
     private String ingredientName;
     private String unit;

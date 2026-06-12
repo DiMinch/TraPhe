@@ -4,17 +4,10 @@ import {
   Grid,
   StretchHorizontal,
   AlignJustify,
-  ChevronDown,
   Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import FilterSection from "@/components/common/filter/FilterSection";
 import type { FilterParams } from "@/components/common/filter/FilterSection.types";
 import { productService } from "@/services/product.service";
@@ -72,8 +65,9 @@ export default function ClientProductPage() {
           ...filters,
         });
         if (res.statusCode === 200 && res.data) {
-          setProducts(res.data.content);
-          setTotalPages(res.data.totalPages);
+          const items = Array.isArray(res.data) ? res.data : (res.data as any).content || [];
+          setProducts(items);
+          setTotalPages(res.meta?.totalPages || (res.data as any).totalPages || 1);
         }
       } catch (error) {
         console.error("Failed to fetch products", error);
@@ -176,13 +170,13 @@ export default function ClientProductPage() {
                         ${gridCols === 1 ? "grid-cols-1" : ""}
                     `}
                 >
-                  {products.map((product) => {
-                    const firstVariant = product.variants?.[0];
-                    const displayPrice = firstVariant?.sellingPrice || 0;
+                  {products.map((product: any) => {
+                    const displayPrice = product.effectivePrice || product.basePrice || product.sizes?.[0]?.sellingPrice || 0;
+                    const firstSizeId = product.sizes?.[0]?.id;
                     return (
                       <Link
                         key={product.id}
-                        to={`/products/${product.id}`}
+                        to={`/menu/${product.id}`}
                         className={gridCols === 1 ? "w-full" : ""}
                       >
                         <div
@@ -195,7 +189,7 @@ export default function ClientProductPage() {
                           <ProductCard
                             product={{
                               id: product.id,
-                              variantId: firstVariant?.id,
+                              variantId: firstSizeId || product.variants?.[0]?.id,
                               name: product.name,
                               price: displayPrice,
                               image: product.imageUrl,

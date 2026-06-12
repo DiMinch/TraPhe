@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,8 +16,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -55,15 +56,17 @@ public class OrderItem extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "is_deleted", nullable = false)
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default
     private boolean isDeleted = false;
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<OrderItemOption> selectedOptions = new ArrayList<>();
+    private Set<OrderItemOption> selectedOptions = new HashSet<>();
 
+    @BatchSize(size = 50)
     @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<OrderItemTopping> selectedToppings = new ArrayList<>();
+    private Set<OrderItemTopping> selectedToppings = new HashSet<>();
 }

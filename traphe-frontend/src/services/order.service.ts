@@ -1,44 +1,48 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse, PageResponse } from "@/types/api.types";
 
-// Order response from backend
+// Order response from backend (enriched)
 export interface OrderResponse {
-  id: string;
+  orderId: string;
   orderNumber: string;
-  customer: {
-    id: string;
-    fullName: string;
-    phone: string;
-    email: string;
-  } | null;
-  guestName: string | null;
-  guestPhone: string | null;
   orderType: string;
   status: string;
-  paymentMethod: string;
-  items: OrderItemResponse[];
-  promotions: any[];
+  brewingStatus: string | null;
+  paymentMethod: string | null;
+  paymentStatus: string;
+  // Pricing
   subtotal: number;
   totalDiscount: number;
+  shippingFee: number | null;
   finalAmount: number;
   loyaltyPointsUsed: number;
-  loyaltyPointsEarned: number;
+  // Branch
+  branchId: string | null;
+  branchName: string | null;
+  // Customer (nullable for POS anonymous)
+  customerId: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  // Timing
+  estimatedReadyTime: string | null;
   createdAt: string;
+  // Items
+  items?: OrderItemDetail[];
+  itemCount?: number;
+  paymentUrl: string | null;
+  merchandiseOrderId?: string | null;
 }
 
-export interface OrderItemResponse {
+export interface OrderItemDetail {
   id: string;
-  productVariantId: string;
-  sku: string;
-  productName: string;
-  variantName: string;
-  productImage: string | null;
-  serialNumber: string | null;
+  menuItemName: string;
+  sizeName: string | null;
   quantity: number;
   unitPrice: number;
-  discount: number;
   subtotal: number;
-  warrantyExpireDate: string | null;
+  notes: string | null;
+  options: string[];
+  toppings: string[];
 }
 
 // Request interfaces
@@ -47,13 +51,16 @@ export interface OrderItemRequest {
   quantity: number;
   unitPrice: number;
   discount?: number;
+  notes?: string | null;
+  options?: { optionGroupId: string; optionValueId: string }[];
+  toppings?: { toppingId: string; quantity: number }[];
 }
 
 export interface CreateOrderRequest {
   customerId?: string;
   employeeId?: string;
   orderType: "OFFLINE" | "ONLINE_COD" | "ONLINE_TRANSFER";
-  paymentMethod: "CASH" | "TRANSFER" | "COD";
+  paymentMethod: "CASH" | "VNPAY" | "MOMO" | "QR";
   items: OrderItemRequest[];
   promotionIds?: string[];
   loyaltyPointsToUse?: number;
@@ -67,6 +74,37 @@ export interface CreateOrderRequest {
 export const orderService = {
   // Get all orders with filters
   getAllOrders: async (params?: {
+    page?: number;
+    size?: number;
+    status?: string;
+    orderType?: string;
+    startDate?: string;
+    endDate?: string;
+    sort?: string;
+  }) => {
+    const queryParams = {
+      page: params?.page || 0,
+      size: params?.size || 20,
+      ...(params?.status &&
+        params.status !== "all-status" && {
+          status: params.status,
+        }),
+      ...(params?.orderType &&
+        params.orderType !== "all-type" && {
+          orderType: params.orderType,
+        }),
+      ...(params?.startDate && { startDate: params.startDate }),
+      ...(params?.endDate && { endDate: params.endDate }),
+      ...(params?.sort && { sort: params.sort }),
+    };
+
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      "/orders",
+      { params: queryParams },
+    );
+  },
+
+  getFullOrders: async (params?: {
     page?: number;
     size?: number;
     status?: string;
@@ -92,8 +130,19 @@ export const orderService = {
     };
 
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
-      "/orders",
+      "/orders/full",
       { params: queryParams },
+    );
+  },
+
+  // Get orders for a specific customer
+  getCustomerOrders: async (customerId: string, params?: {
+    page?: number;
+    size?: number;
+  }) => {
+    return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
+      `/orders/customer/${customerId}`,
+      { params: { page: params?.page || 0, size: params?.size || 10 } }
     );
   },
 
@@ -111,14 +160,10 @@ export const orderService = {
   updateOrderStatus: async (
     id: string,
     status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED",
-    reason?: string,
   ) => {
     return axiosClient.put<any, ApiResponse<OrderResponse>>(
       `/orders/${id}/status`,
-      null,
-      {
-        params: { status, reason },
-      },
+      { status }
     );
   },
 
@@ -129,15 +174,9 @@ export const orderService = {
     );
   },
 
-  // Cancel order (shortcut)
-  cancelOrder: async (id: string, reason: string) => {
-    return axiosClient.put<any, ApiResponse<OrderResponse>>(
-      `/orders/${id}/cancel`,
-      null,
-      {
-        params: { reason },
-      },
-    );
+  // Cancel order
+  cancelOrder: async (id: string) => {
+    return axiosClient.delete<any, ApiResponse<OrderResponse>>(`/orders/${id}`);
   },
 
   // Delete order
@@ -160,5 +199,25 @@ export const orderService = {
         },
       },
     );
+  },
+
+  // Update brewing status
+  updateBrewingStatus: async (
+    id: string,
+    status: "WAITING" | "BREWING" | "COMPLETED"
+  ) => {
+    return axiosClient.put<any, ApiResponse<void>>(
+      `/pos/orders/${id}/brewing-status`,
+      { status }
+    );
+  },
+
+  // Process POS payment
+  processPayment: async (orderId: string, paymentMethod: string) => {
+    return axiosClient.post<any, ApiResponse<void>>(`/pos/payment`, {
+      paymentMethod,
+    }, {
+      params: { orderId }
+    });
   },
 };

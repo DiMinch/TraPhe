@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.CannotAcquireLockException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -52,8 +54,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Bạn không có quyền truy cập tài nguyên này.";
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("FORBIDDEN", "Bạn không có quyền truy cập tài nguyên này."));
+                .body(ApiResponse.error("FORBIDDEN", message));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -80,9 +85,21 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("BAD_REQUEST", ex.getMessage()));
     }
 
+    @ExceptionHandler({ObjectOptimisticLockingFailureException.class, CannotAcquireLockException.class, IllegalStateException.class})
+    public ResponseEntity<ApiResponse<Void>> handleConcurrencyExceptions(Exception ex) {
+        if (ex instanceof IllegalStateException && ex.getMessage() != null && !ex.getMessage().contains("IDEMPOTENT")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("BAD_REQUEST", ex.getMessage()));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("CONFLICT", "Hệ thống đang xử lý giao dịch hoặc có quá nhiều tương tác cùng lúc. Vui lòng thử lại."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+        ex.printStackTrace(); // Print stack trace to console for developer
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", "An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("INTERNAL_SERVER_ERROR", 
+                        "An unexpected error occurred: [" + ex.getClass().getSimpleName() + "] " + ex.getMessage()));
     }
 }

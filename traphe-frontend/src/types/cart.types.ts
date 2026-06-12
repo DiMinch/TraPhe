@@ -1,42 +1,61 @@
+/**
+ * TraPhe Cart Types — F&B domain (drinks with size/options/toppings + merchandise)
+ */
+
+export interface ToppingSelection {
+  toppingId: string;
+  quantity: number;
+}
+
+export interface ToppingInfo {
+  toppingId: string;
+  toppingName: string;
+  extraPrice: number;
+  quantity: number;
+}
+
 export interface CartItem {
   id: string;
-  productId: string;
-  productName: string;
-  productImageUrl: string;
-  productStatus: string;
-  warrantyPeriod: number;
-  productVariantId: string;
-  variantName: string;
-  variantSpecs: string;
-  sku: string;
-  barcode: string;
+
+  // Menu item info
+  menuItemId: string;
+  menuItemName: string;
+  menuItemImageUrl: string;
+  isDrink: boolean;
+  status: string;
+
+  // Size info (drinks only)
+  menuItemSizeId: string | null;
+  sizeName: string | null;
+
+  // Customization
+  selectedOptions: Record<string, string> | null;
+  selectedToppings: ToppingInfo[];
+  note: string | null;
+
+  // Pricing
   quantity: number;
   unitPrice: number;
-  currentPrice: number;
-  priceChanged: boolean;
   subtotal: number;
-  availableStock: number;
-  isAvailable: boolean;
+
   addedAt: string;
 }
 
 export interface Cart {
-  id: string;
-  customerId: string;
-  customerName: string;
   items: CartItem[];
   totalItems: number;
   totalAmount: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface AddToCartRequest {
-  productVariantId: string;
+  menuItemId: string;
+  menuItemSizeId?: string;
   quantity?: number;
+  note?: string;
+  selectedOptions?: Record<string, string>;
+  selectedToppings?: { toppingId: string; quantity: number }[];
 }
 
 export interface UpdateCartRequest {
-  productVariantId: string;
   quantity: number;
 }

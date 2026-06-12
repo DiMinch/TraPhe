@@ -2,9 +2,7 @@
 @import "@fontsource/geist-mono";
 
 @import "tw-animate-css";
-body {
-  font-family: "Geist Mono";
-}
+
 
 /* Custom highlight animation for orders */
 @keyframes highlight-pulse {

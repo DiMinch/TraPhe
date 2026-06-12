@@ -41,7 +41,7 @@ interface Attribute {
 export default function AttributesPage() {
   const { categoryName } = useParams();
   const navigate = useNavigate();
-  const [attributes, setAttributes] = useState<Attribute[]>([
+  const [attributes] = useState<Attribute[]>([
     {
       id: 1,
       name: "RAM",
@@ -76,7 +76,7 @@ export default function AttributesPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
         <button
-          onClick={() => navigate("/product/categories")}
+          onClick={() => navigate("/admin/menu/categories")}
           className="hover:text-gray-900"
         >
           {categoryName || "Laptop Gaming"}
@@ -87,7 +87,7 @@ export default function AttributesPage() {
 
       {/* New Attribute Button */}
       <div className="flex justify-end mb-4">
-        <Button className="bg-indigo-900 hover:bg-indigo-800 text-white">
+        <Button className="bg-roast hover:bg-roast/80 text-white">
           <Plus className="w-4 h-4 mr-2" />
           New Attribute
         </Button>
@@ -128,7 +128,7 @@ export default function AttributesPage() {
               <TableBody>
                 {attributes.map((attribute) => (
                   <TableRow key={attribute.id}>
-                    <TableCell className="font-medium text-indigo-900">
+                    <TableCell className="font-medium text-roast">
                       {attribute.name}
                     </TableCell>
                     <TableCell className="text-gray-600">
