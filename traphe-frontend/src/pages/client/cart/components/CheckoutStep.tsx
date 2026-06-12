@@ -67,15 +67,11 @@ export default function CheckoutStep({
 
   const [couponCode, setCouponCode] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [calculatedFinalAmount, setCalculatedFinalAmount] = useState<
-    number | null
-  >(null);
+  const [calculatedFinalAmount, setCalculatedFinalAmount] = useState<number | null>(null);
   const [appliedPromotionIds, setAppliedPromotionIds] = useState<string[]>([]);
   const [appliedCodes, setAppliedCodes] = useState<string[]>([]);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [availablePromotions, setAvailablePromotions] = useState<
-    any[]
-  >([]);
+  const [availablePromotions, setAvailablePromotions] = useState<any[]>([]);
   const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [pointsUsed, setPointsUsed] = useState<number>(0);
@@ -177,42 +173,40 @@ export default function CheckoutStep({
   const fetchPromotions = async () => {
     setIsLoadingPromotions(true);
     try {
-      const res = await promotionService.getActivePromotions();
-      let promotions: any[] = [];
-      if (res.statusCode === 200 && res.data) {
-        promotions = Array.isArray(res.data)
-          ? res.data
-          : (res.data as any).content || [];
-      }
-
       if (user) {
-        try {
-          const myVouchersRes = await promotionService.getMyVouchers("AVAILABLE");
-          if (myVouchersRes.statusCode === 200 && myVouchersRes.data) {
-            const mappedMyVouchers = myVouchersRes.data.map((v: any) => ({
-              id: v.promotionId,
-              code: v.code,
-              name: v.name,
-              description: v.description,
-              discountType: v.discountType,
-              discountValue: v.discountValue,
-              minOrderValue: v.minOrderValue,
-              maxDiscountAmount: v.maxDiscountAmount,
-              startDate: v.startDate,
-              endDate: v.endDate,
-              isActive: true,
-              type: v.discountType,
-              value: v.discountValue,
-              isMyVoucher: true,
-            }));
-            promotions = [...promotions, ...mappedMyVouchers];
-          }
-        } catch (err) {
-          console.error("Failed to fetch my vouchers", err);
+        // Authenticated: use the new checkout-eligible API that pre-validates per user
+        const cartSubtotal = cart?.totalAmount || 0;
+        const payload = {
+          subtotal: cartSubtotal,
+          items: (cart?.items || []).map((item) => ({
+            productId: item.menuItemId,
+            productVariantId: item.menuItemSizeId || item.menuItemId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice || 0,
+          })),
+        };
+        const res = await promotionService.getCheckoutEligible(payload);
+        if (res.statusCode === 200 && res.data) {
+          const promotions = (Array.isArray(res.data) ? res.data : []).map((p: any) => ({
+            ...p,
+            isMyVoucher: p.myVoucher,
+            // Server already provides eligible + ineligibleReason
+            isEligible: p.eligible,
+            reason: p.ineligibleReason,
+          }));
+          setAvailablePromotions(promotions);
         }
+      } else {
+        // Guest: fallback to public-only active promotions
+        const res = await promotionService.getActivePromotions();
+        let promotions: any[] = [];
+        if (res.statusCode === 200 && res.data) {
+          promotions = Array.isArray(res.data)
+            ? res.data
+            : (res.data as any).content || [];
+        }
+        setAvailablePromotions(promotions);
       }
-
-      setAvailablePromotions(promotions);
     } catch (error) {
       console.error("Failed to load promotions", error);
     } finally {
@@ -241,7 +235,7 @@ export default function CheckoutStep({
       setShippingFee(0);
       return;
     }
-    
+
     let targetAddress = "";
     if (selectedAddressId === "new_address" || isGuest) {
       targetAddress = guestInfo.address;
@@ -312,7 +306,6 @@ export default function CheckoutStep({
         customerId: user?.customerId || user?.id,
       };
 
-
       // Vẫn giữ logic gọi calculate-discount khi bấm Apply
       const res = await promotionService.calculateCartDiscount(payload);
 
@@ -332,18 +325,15 @@ export default function CheckoutStep({
             setAppliedCodes([...appliedCodes, code]);
           }
 
-          toast.success(
-            `Applied! Saved ${data.totalDiscount.toLocaleString()}₫`,
-          );
+          toast.success(`Applied! Saved ${data.totalDiscount.toLocaleString()}₫`);
         } else {
           toast.info("Coupon is valid but no discount applicable.");
         }
       }
     } catch (error: any) {
       resetCouponState();
-      toast.error(
-        error.message || "Invalid or expired coupon code",
-      );
+      const errorMsg = error.message || "Mã không hợp lệ hoặc đã hết hạn";
+      toast.error(errorMsg);
     } finally {
       setIsApplyingCoupon(false);
     }
@@ -474,7 +464,7 @@ export default function CheckoutStep({
 
         if (checkoutRes.statusCode === 200 || checkoutRes.statusCode === 201) {
           await clearCart();
-          
+
           const finalOrderData = {
             ...orderData,
             finalAmount: checkoutRes.data.finalAmount,
@@ -482,7 +472,7 @@ export default function CheckoutStep({
             paymentUrl: checkoutRes.data.paymentUrl,
             paymentStatus: checkoutRes.data.paymentStatus,
           };
-          
+
           onOrderSuccess(finalOrderData);
 
           if (checkoutRes.data.paymentUrl) {
@@ -603,7 +593,7 @@ export default function CheckoutStep({
         />
       )}
       </div>
-      
+
       {/* Branch Conflict Modal */}
       <Dialog open={conflictModalOpen} onOpenChange={setConflictModalOpen}>
         <DialogContent className="sm:max-w-[425px]">

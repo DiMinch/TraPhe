@@ -38,6 +38,10 @@ public class PromotionController {
     private final PromotionRepository promotionRepository;
     private final PromotionService promotionService;
     private final UserRepository userRepository;
+    private final com.example.traphe_backend.repository.PromotionUsageRepository promotionUsageRepository;
+    private final com.example.traphe_backend.repository.UserVoucherRepository userVoucherRepository;
+    private final com.example.traphe_backend.ai.repository.CustomerSegmentRepository customerSegmentRepository;
+    private final com.example.traphe_backend.repository.MenuItemRepository menuItemRepository;
 
     // ======================== DTO ========================
 
@@ -86,37 +90,9 @@ public class PromotionController {
             throw new IllegalArgumentException("Mã khuyến mãi không được trống.");
         }
 
-        BigDecimal subtotal = BigDecimal.ZERO;
-        java.util.List<PromotionService.ItemInfo> itemInfos = new java.util.ArrayList<>();
-        if (req.containsKey("items") && req.get("items") instanceof List) {
-            List<?> items = (List<?>) req.get("items");
-            for (Object itemObj : items) {
-                if (itemObj instanceof Map) {
-                    Map<?, ?> item = (Map<?, ?>) itemObj;
-                    Object qtyObj = item.get("quantity");
-                    Object priceObj = item.get("unitPrice");
-                    Object productObj = item.get("productId");
-                    Object categoryObj = item.get("categoryId");
-                    if (qtyObj != null && priceObj != null) {
-                        BigDecimal quantity = new BigDecimal(qtyObj.toString());
-                        BigDecimal unitPrice = new BigDecimal(priceObj.toString());
-                        subtotal = subtotal.add(quantity.multiply(unitPrice));
-                        
-                        UUID productId = null;
-                        if (productObj != null) {
-                            try { productId = UUID.fromString(productObj.toString()); } catch(Exception ignore) {}
-                        }
-                        UUID categoryId = null;
-                        if (categoryObj != null) {
-                            try { categoryId = UUID.fromString(categoryObj.toString()); } catch(Exception ignore) {}
-                        }
-                        itemInfos.add(new PromotionService.ItemInfo(productId, categoryId, quantity, unitPrice));
-                    }
-                }
-            }
-        } else if (req.containsKey("subtotal") && req.get("subtotal") != null) {
-            subtotal = new BigDecimal(req.get("subtotal").toString());
-        }
+        ParsedCart cart = parseCartRequest(req);
+        BigDecimal subtotal = cart.subtotal;
+        java.util.List<PromotionService.ItemInfo> itemInfos = cart.items;
 
         User user = null;
         if (auth != null) {
@@ -142,6 +118,250 @@ public class PromotionController {
             "promotionId", promotion.getId().toString()
         );
         return ResponseEntity.ok(ApiResponse.success(data, "Tính giảm giá thành công"));
+    }
+
+    // ======================== Checkout-Eligible DTO ========================
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class EligiblePromotionResponse {
+        private UUID id;
+        private String code;
+        private String name;
+        private String description;
+        private String discountType;
+        private BigDecimal discountValue;
+        private BigDecimal minOrderValue;
+        private BigDecimal maxDiscountAmount;
+        private LocalDateTime startDate;
+        private LocalDateTime endDate;
+        private boolean isMyVoucher;
+        // Pre-computed eligibility
+        private boolean eligible;
+        private String ineligibleReason;
+    }
+
+    /**
+     * POST /api/promotions/checkout-eligible — Returns all promotions + user's personal vouchers,
+     * each annotated with `eligible` (boolean) + `ineligibleReason` (string).
+     *
+     * Requires authentication. Checks per-user usage limits, order minimum, time windows,
+     * usage quotas, category/product scope applicability, and target segments — all server-side.
+     */
+    @PostMapping("/checkout-eligible")
+    @Operation(summary = "Danh sách khuyến mãi kèm trạng thái eligible cho user hiện tại",
+            description = "Trả về PUBLIC promotions + personal vouchers, mỗi item kèm eligible + ineligibleReason. " +
+                    "Yêu cầu đăng nhập.")
+    public ResponseEntity<ApiResponse<List<EligiblePromotionResponse>>> getCheckoutEligible(
+            Authentication auth,
+            @RequestBody(required = false) Map<String, Object> req
+    ) {
+        if (auth == null) {
+            return ResponseEntity.ok(ApiResponse.success(List.of(), "Cần đăng nhập"));
+        }
+
+        User user = userRepository.findByEmail(auth.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.ok(ApiResponse.success(List.of(), "User không tồn tại"));
+        }
+
+        ParsedCart cart = parseCartRequest(req);
+        BigDecimal orderAmount = cart.subtotal;
+        List<PromotionService.ItemInfo> items = cart.items;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. Public promotions
+        List<Promotion> publicPromos = promotionRepository
+                .findByIsActiveTrueAndIsDeletedFalseAndScopeAndStartDateBeforeAndEndDateAfterOrderByCreatedAtDesc(
+                        PromotionScope.PUBLIC, now, now);
+
+        // 2. Personal vouchers
+        List<com.example.traphe_backend.entity.UserVoucher> userVouchers =
+                userVoucherRepository.findByUserIdAndStatusOrderByAssignedAtDesc(
+                        user.getId(), com.example.traphe_backend.enums.UserVoucherStatus.AVAILABLE);
+
+        // Build response list
+        java.util.List<EligiblePromotionResponse> result = new java.util.ArrayList<>();
+
+        for (Promotion p : publicPromos) {
+            EligibilityResult check = checkEligibilityForUser(p, orderAmount, user, items);
+            result.add(EligiblePromotionResponse.builder()
+                    .id(p.getId()).code(p.getCode()).name(p.getName())
+                    .description(p.getDescription())
+                    .discountType(p.getDiscountType().name())
+                    .discountValue(p.getDiscountValue())
+                    .minOrderValue(p.getMinOrderValue())
+                    .maxDiscountAmount(p.getMaxDiscountAmount())
+                    .startDate(p.getStartDate()).endDate(p.getEndDate())
+                    .isMyVoucher(false)
+                    .eligible(check.eligible)
+                    .ineligibleReason(check.reason)
+                    .build());
+        }
+
+        for (var uv : userVouchers) {
+            // Auto-expire
+            if (uv.getPromotion().getEndDate() != null && now.isAfter(uv.getPromotion().getEndDate())) {
+                uv.setStatus(com.example.traphe_backend.enums.UserVoucherStatus.EXPIRED);
+                userVoucherRepository.save(uv);
+                continue;
+            }
+            Promotion p = uv.getPromotion();
+            EligibilityResult check = checkEligibilityForUser(p, orderAmount, user, items);
+            result.add(EligiblePromotionResponse.builder()
+                    .id(p.getId()).code(p.getCode()).name(p.getName())
+                    .description(p.getDescription())
+                    .discountType(p.getDiscountType().name())
+                    .discountValue(p.getDiscountValue())
+                    .minOrderValue(p.getMinOrderValue())
+                    .maxDiscountAmount(p.getMaxDiscountAmount())
+                    .startDate(p.getStartDate()).endDate(p.getEndDate())
+                    .isMyVoucher(true)
+                    .eligible(check.eligible)
+                    .ineligibleReason(check.reason)
+                    .build());
+        }
+
+        // Sort: eligible first, then ineligible
+        result.sort((a, b) -> Boolean.compare(b.isEligible(), a.isEligible()));
+
+        return ResponseEntity.ok(ApiResponse.success(result, "Danh sách khuyến mãi kèm trạng thái eligible"));
+    }
+
+    private ParsedCart parseCartRequest(Map<String, Object> req) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        java.util.List<PromotionService.ItemInfo> itemInfos = new java.util.ArrayList<>();
+
+        if (req != null && req.containsKey("items") && req.get("items") instanceof List) {
+            List<?> items = (List<?>) req.get("items");
+            for (Object itemObj : items) {
+                if (itemObj instanceof Map) {
+                    Map<?, ?> item = (Map<?, ?>) itemObj;
+                    Object qtyObj = item.get("quantity");
+                    Object priceObj = item.get("unitPrice");
+                    Object productObj = item.get("productId");
+                    Object categoryObj = item.get("categoryId");
+                    if (qtyObj != null && priceObj != null) {
+                        BigDecimal quantity = new BigDecimal(qtyObj.toString());
+                        BigDecimal unitPrice = new BigDecimal(priceObj.toString());
+                        subtotal = subtotal.add(quantity.multiply(unitPrice));
+
+                        UUID productId = null;
+                        if (productObj != null) {
+                            try { productId = UUID.fromString(productObj.toString()); } catch(Exception ignore) {}
+                        }
+                        UUID categoryId = null;
+                        if (categoryObj != null) {
+                            try { categoryId = UUID.fromString(categoryObj.toString()); } catch(Exception ignore) {}
+                        }
+
+                        // Resolve categoryId if null but productId is present (database lookup)
+                        if (categoryId == null && productId != null) {
+                            var menuItemOpt = menuItemRepository.findById(productId);
+                            if (menuItemOpt.isPresent() && menuItemOpt.get().getCategory() != null) {
+                                categoryId = menuItemOpt.get().getCategory().getId();
+                            }
+                        }
+                        itemInfos.add(new PromotionService.ItemInfo(productId, categoryId, quantity, unitPrice));
+                    }
+                }
+            }
+        }
+
+        if (subtotal.compareTo(BigDecimal.ZERO) == 0 && req != null && req.containsKey("subtotal") && req.get("subtotal") != null) {
+            subtotal = new BigDecimal(req.get("subtotal").toString());
+        }
+
+        return new ParsedCart(subtotal, itemInfos);
+    }
+
+    private record ParsedCart(BigDecimal subtotal, List<PromotionService.ItemInfo> items) {}
+
+    // ======================== Eligibility Check (non-throwing) ========================
+
+    private record EligibilityResult(boolean eligible, String reason) {}
+
+
+    /**
+     * Checks all the same rules as PromotionServiceImpl.validatePromotion(),
+     * but returns a result instead of throwing exceptions.
+     */
+    private EligibilityResult checkEligibilityForUser(Promotion p, BigDecimal orderAmount, User user, List<PromotionService.ItemInfo> items) {
+        // 1. Active
+        if (!p.isActive()) return new EligibilityResult(false, "Khuyến mãi đã bị vô hiệu hoá");
+
+        // 2. Time range
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(p.getStartDate())) return new EligibilityResult(false, "Chưa đến ngày hiệu lực");
+        if (now.isAfter(p.getEndDate())) return new EligibilityResult(false, "Đã hết hạn");
+
+        // 2b. Daily time window (happy hour)
+        java.time.LocalTime timeNow = java.time.LocalTime.now();
+        if (p.getDailyStartTime() != null && timeNow.isBefore(p.getDailyStartTime()))
+            return new EligibilityResult(false, "Chỉ áp dụng từ " + p.getDailyStartTime());
+        if (p.getDailyEndTime() != null && timeNow.isAfter(p.getDailyEndTime()))
+            return new EligibilityResult(false, "Chỉ áp dụng đến " + p.getDailyEndTime());
+
+        // 3. Global usage limit
+        if (p.getUsageLimit() != null && p.getUsageCount() >= p.getUsageLimit())
+            return new EligibilityResult(false, "Đã hết lượt sử dụng");
+
+        // 4. Per-user usage limit
+        long userUsage = promotionUsageRepository.countByPromotionIdAndUserId(p.getId(), user.getId());
+        if (userUsage >= p.getPerUserLimit())
+            return new EligibilityResult(false, "Bạn đã dùng mã này đủ " + p.getPerUserLimit() + " lần");
+
+        // 5. Min order value
+        if (p.getMinOrderValue() != null && orderAmount.compareTo(p.getMinOrderValue()) < 0)
+            return new EligibilityResult(false, "Đơn tối thiểu " + p.getMinOrderValue().toPlainString() + "₫");
+
+        // 6. Target segments
+        if (p.getTargetSegments() != null && !p.getTargetSegments().isEmpty()) {
+            var userSegment = customerSegmentRepository.findByCustomerId(user.getId())
+                    .map(com.example.traphe_backend.ai.entity.CustomerSegment::getSegment)
+                    .orElse(null);
+            if (userSegment == null || !p.getTargetSegments().contains(userSegment))
+                return new EligibilityResult(false, "Không thuộc nhóm khách hàng mục tiêu");
+        }
+
+        // 7. Discount value sanity
+        if (p.getDiscountValue() == null || p.getDiscountValue().compareTo(BigDecimal.ZERO) == 0)
+            return new EligibilityResult(false, "Voucher không có giá trị giảm");
+
+        // 8. Product/Category applicability scope
+        BigDecimal eligibleAmount = computeEligibleAmount(p, orderAmount, items);
+        if (p.getScope() != com.example.traphe_backend.enums.PromotionScope.ORDER && p.getScope() != com.example.traphe_backend.enums.PromotionScope.PERSONAL) {
+            if (eligibleAmount.compareTo(BigDecimal.ZERO) == 0) {
+                return new EligibilityResult(false, "Không áp dụng cho các sản phẩm trong đơn hàng");
+            }
+        }
+
+        return new EligibilityResult(true, null);
+    }
+
+    private BigDecimal computeEligibleAmount(Promotion promotion, BigDecimal defaultAmount, List<PromotionService.ItemInfo> items) {
+        if (promotion.getScope() == com.example.traphe_backend.enums.PromotionScope.ORDER || promotion.getScope() == com.example.traphe_backend.enums.PromotionScope.PERSONAL) {
+            return defaultAmount;
+        }
+
+        if (items == null || items.isEmpty()) {
+            return BigDecimal.ZERO; 
+        }
+
+        BigDecimal eligibleAmount = BigDecimal.ZERO;
+        if (promotion.getScope() == com.example.traphe_backend.enums.PromotionScope.CATEGORY && promotion.getApplicableCategoryIds() != null) {
+            for (var item : items) {
+                if (item.categoryId() != null && promotion.getApplicableCategoryIds().contains(item.categoryId())) {
+                    eligibleAmount = eligibleAmount.add(item.quantity().multiply(item.unitPrice()));
+                }
+            }
+        } else if (promotion.getScope() == com.example.traphe_backend.enums.PromotionScope.PRODUCT && promotion.getApplicableProductIds() != null) {
+            for (var item : items) {
+                if (item.productId() != null && promotion.getApplicableProductIds().contains(item.productId())) {
+                    eligibleAmount = eligibleAmount.add(item.quantity().multiply(item.unitPrice()));
+                }
+            }
+        }
+        return eligibleAmount;
     }
 
     // ---- Helper ----

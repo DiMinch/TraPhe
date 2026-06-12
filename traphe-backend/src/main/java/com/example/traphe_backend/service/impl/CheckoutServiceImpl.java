@@ -196,47 +196,28 @@ public class CheckoutServiceImpl implements CheckoutService {
             merchandiseOrder.setCombinedCheckoutId(savedCheckout.getId());
         }
 
-        // ========== 10. Process payment ==========
+        // ========== 10. Process payment (MOCK — auto success for all methods) ==========
         String paymentUrl = null;
 
-        if (paymentMethod == PaymentMethod.VNPAY || paymentMethod == PaymentMethod.MOMO) {
-            // Online payment — generate redirect URL, status stays PENDING until IPN
-            savedCheckout.setPaymentStatus(PaymentStatus.PENDING);
+        // MOCK MODE: Treat all payment methods as instant success
+        savedCheckout.setPaymentStatus(PaymentStatus.COMPLETED);
 
-            if (paymentMethod == PaymentMethod.VNPAY) {
-                String clientIp = VnPayUtil.getClientIp(
-                        ((jakarta.servlet.http.HttpServletRequest)
-                                org.springframework.web.context.request.RequestContextHolder
-                                        .currentRequestAttributes()
-                                        instanceof org.springframework.web.context.request.ServletRequestAttributes sra
-                                ? sra.getRequest() : null));
-                paymentUrl = paymentService.createVnPayPaymentUrl(primaryOrder, clientIp != null ? clientIp : "127.0.0.1");
-            } else {
-                paymentUrl = paymentService.createMoMoPaymentUrl(primaryOrder);
-            }
-
-            log.info("Online checkout {} PENDING — redirecting to {}", transactionRef, paymentMethod);
-        } else {
-            // CASH / QR — mark as completed immediately
-            savedCheckout.setPaymentStatus(PaymentStatus.COMPLETED);
-
-            if (drinkOrder != null) {
-                drinkOrder.setPaymentStatus(PaymentStatus.COMPLETED);
-                drinkOrder.setStatus(OrderStatus.CONFIRMED);
-                orderRepository.save(drinkOrder);
-            }
-            if (merchandiseOrder != null) {
-                merchandiseOrder.setPaymentStatus(PaymentStatus.COMPLETED);
-                merchandiseOrder.setStatus(OrderStatus.CONFIRMED);
-                orderRepository.save(merchandiseOrder);
-            }
-
-            log.info("Checkout {} COMPLETED. Drink: {}, Merchandise: {}, Total: {}",
-                    transactionRef,
-                    drinkOrder != null ? drinkOrder.getOrderNumber() : "N/A",
-                    merchandiseOrder != null ? merchandiseOrder.getOrderNumber() : "N/A",
-                    finalAmount);
+        if (drinkOrder != null) {
+            drinkOrder.setPaymentStatus(PaymentStatus.COMPLETED);
+            drinkOrder.setStatus(OrderStatus.CONFIRMED);
+            orderRepository.save(drinkOrder);
         }
+        if (merchandiseOrder != null) {
+            merchandiseOrder.setPaymentStatus(PaymentStatus.COMPLETED);
+            merchandiseOrder.setStatus(OrderStatus.CONFIRMED);
+            orderRepository.save(merchandiseOrder);
+        }
+
+        log.info("Checkout {} COMPLETED (MOCK). Drink: {}, Merchandise: {}, Total: {}",
+                transactionRef,
+                drinkOrder != null ? drinkOrder.getOrderNumber() : "N/A",
+                merchandiseOrder != null ? merchandiseOrder.getOrderNumber() : "N/A",
+                finalAmount);
 
         combinedCheckoutRepository.save(savedCheckout);
 

@@ -241,6 +241,25 @@ Hệ thống được nâng cấp với các tính năng thông minh để tối
 | UC28 | Quản lý voucher | Admin | Tạo voucher theo batch (mã tự động hoặc cố định), giới hạn số lần dùng, thời hạn. Voucher có thể tặng qua event hoặc loyalty milestone. |
 | UC29 | Áp dụng voucher/KM | Customer, Cashier | Nhập mã voucher, hệ thống validate và hiển thị số tiền giảm trước khi thanh toán. |
 
+### Chi tiết kỹ thuật Loyalty & Khuyến mãi
+
+**API Endpoints:**
+
+| Method | Endpoint | Auth | Mô tả |
+| --- | --- | --- | --- |
+| GET | `/api/promotions/active` | Public | Danh sách khuyến mãi public đang hoạt động. |
+| POST | `/api/promotions/calculate` | Optional | Tính toán số tiền giảm giá cho một code khuyến mãi dựa trên giỏ hàng và khách hàng. |
+| POST | `/api/promotions/checkout-eligible` | Bearer | Trả về tất cả khuyến mãi khả dụng và voucher cá nhân của user hiện tại, kèm trạng thái và lý do không đủ điều kiện (`eligible`, `ineligibleReason`). |
+
+**Quy trình pre-validation và check scope voucher tại checkout:**
+1. **POST Payload nhận thông tin giỏ hàng:** Client gửi danh sách sản phẩm gồm `productId`, `quantity`, `unitPrice` và `subtotal`. Nếu thiếu `categoryId`, backend sẽ tự động truy vấn từ DB để kiểm tra.
+2. **Kiểm tra điều kiện toàn diện (Server-side):**
+   - Trạng thái hoạt động, thời hạn hiệu lực, và khung giờ áp dụng (Happy Hour).
+   - Giới hạn lượt sử dụng tổng thể và giới hạn lượt dùng của riêng khách hàng đó (`perUserLimit`).
+   - Giá trị đơn hàng tối thiểu (`minOrderValue`).
+   - Phân khúc khách hàng mục tiêu (AI Dynamic Segment).
+   - Kiểm tra xem giỏ hàng có chứa sản phẩm/danh mục hợp lệ không (đối với voucher có scope `CATEGORY` hoặc `PRODUCT`). Nếu số tiền áp dụng bằng 0, đánh dấu `eligible = false` với lý do: *"Không áp dụng cho các sản phẩm trong đơn hàng"*.
+
 ## 3.7. Module Báo cáo & Thống kê
 
 | **Mã UC** | **Tên Usecase** | **Actor chính** | **Mô tả ngắn** |

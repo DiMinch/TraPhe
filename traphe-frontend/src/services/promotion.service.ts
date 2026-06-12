@@ -117,6 +117,21 @@ export const promotionService = {
     );
   },
 
+  /**
+   * Lấy tất cả khuyến mãi kèm trạng thái eligible cho user hiện tại (Authenticated).
+   * Server pre-validates: per-user usage, min order, time windows, target segments, etc.
+   * Returns each promotion with `eligible` (boolean) + `ineligibleReason` (string | null).
+   */
+  getCheckoutEligible: async (payload: {
+    subtotal: number;
+    items: Array<{ productId?: string; productVariantId?: string; quantity: number; unitPrice: number }>;
+  }) => {
+    return axiosClient.post<any, ApiResponse<CheckoutEligiblePromotion[]>>(
+      "/promotions/checkout-eligible",
+      payload
+    );
+  },
+
   /** Chi tiết khuyến mãi */
   getPromotionById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<PromotionResponse>>(
@@ -278,5 +293,25 @@ export interface RedeemRewardResponse {
   rewardName: string;
   pointsDeducted: number;
   remainingPoints: number;
+}
+
+// ======================== Checkout Eligible Types ========================
+
+export interface CheckoutEligiblePromotion {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  discountType: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue: number;
+  minOrderValue: number | null;
+  maxDiscountAmount: number | null;
+  startDate: string;
+  endDate: string;
+  myVoucher: boolean;
+  /** Pre-computed by server: true if this user can apply this voucher right now */
+  eligible: boolean;
+  /** Human-readable reason why not eligible (null if eligible) */
+  ineligibleReason: string | null;
 }
 

@@ -54,6 +54,7 @@ export default function OrderTab() {
   
   // Details Modal
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   
   const navigate = useNavigate();
 
@@ -112,6 +113,21 @@ export default function OrderTab() {
       window.location.href = paymentUrl;
     } else {
       toast.error("Không tìm thấy liên kết thanh toán cho đơn hàng này.");
+    }
+  };
+
+  const handleOpenDetails = async (order: OrderResponse) => {
+    setSelectedOrder(order);
+    setIsFetchingDetails(true);
+    try {
+      const res = await orderService.getOrderById(order.orderId);
+      if (res.statusCode === 200 && res.data) {
+        setSelectedOrder(res.data);
+      }
+    } catch (error) {
+      toast.error("Không thể tải chi tiết đơn hàng");
+    } finally {
+      setIsFetchingDetails(false);
     }
   };
 
@@ -270,7 +286,7 @@ export default function OrderTab() {
                     
                     <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#D4C9BC]/60">
                       <span className="font-sans text-xl font-bold text-roast">
-                        {order.finalAmount.toLocaleString("vi-VN")}₫
+                        {(order.finalAmount ?? 0).toLocaleString("vi-VN")}₫
                       </span>
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         {order.paymentStatus === "PENDING" && order.paymentUrl && (
@@ -283,7 +299,7 @@ export default function OrderTab() {
                           </Button>
                         )}
                         <Button 
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => handleOpenDetails(order)}
                           className="bg-[#5C3317] text-white hover:bg-espresso h-9 px-4 rounded-xl text-xs font-medium shadow-sm"
                         >
                           Chi Tiết
@@ -300,7 +316,7 @@ export default function OrderTab() {
               <div 
                 key={order.orderId}
                 className={`bg-surface-bright rounded-2xl shadow-sm border border-[#D4C9BC] p-6 hover:-translate-y-1 transition-transform duration-300 flex flex-col justify-between cursor-pointer ${isCancelled ? 'opacity-80' : ''}`}
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => handleOpenDetails(order)}
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
@@ -320,14 +336,14 @@ export default function OrderTab() {
 
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#D4C9BC]/50">
                   <span className={`font-sans text-lg font-bold ${isCancelled ? 'text-smoke line-through decoration-[#D4C9BC]' : 'text-roast'}`}>
-                    {order.finalAmount.toLocaleString("vi-VN")}₫
+                    {(order.finalAmount ?? 0).toLocaleString("vi-VN")}₫
                   </span>
                   
                   <div onClick={(e) => e.stopPropagation()}>
                     {isCancelled ? (
                       <Button 
                         variant="ghost"
-                        onClick={() => setSelectedOrder(order)}
+                        onClick={() => handleOpenDetails(order)}
                         className="text-smoke hover:text-[#5C3317] text-xs font-medium underline"
                       >
                         Chi Tiết
@@ -391,34 +407,42 @@ export default function OrderTab() {
               <div className="py-4 space-y-4">
                 <h4 className="font-serif text-[#5C3317] font-bold text-sm uppercase tracking-wider">Danh sách món</h4>
                 <div className="space-y-3">
-                  {selectedOrder.items?.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start text-sm">
-                      <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-[#5C3317]">{item.quantity}x</span>
-                          <span className="font-medium text-[#2C1A0E]">{item.menuItemName}</span>
-                          {item.sizeName && (
-                            <span className="text-xs text-gray-500 font-semibold">({item.sizeName})</span>
+                  {isFetchingDetails ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-5 h-5 animate-spin text-[#A0622A]" />
+                    </div>
+                  ) : !selectedOrder.items || selectedOrder.items.length === 0 ? (
+                    <div className="text-gray-500 italic text-sm text-center py-2">Chưa có thông tin món</div>
+                  ) : (
+                    selectedOrder.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start text-sm">
+                        <div className="flex-1 pr-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-[#5C3317]">{item.quantity}x</span>
+                            <span className="font-medium text-[#2C1A0E]">{item.menuItemName}</span>
+                            {item.sizeName && (
+                              <span className="text-xs text-gray-500 font-semibold">({item.sizeName})</span>
+                            )}
+                          </div>
+                          {/* Options & Toppings */}
+                          {((item.options && item.options.length > 0) || (item.toppings && item.toppings.length > 0) || item.notes) && (
+                            <div className="text-xs text-[#8C7B6E] mt-1 space-y-0.5 ml-5">
+                              {item.options && item.options.map((opt, oIdx) => (
+                                <div key={oIdx}>• Option: {opt}</div>
+                              ))}
+                              {item.toppings && item.toppings.map((top, tIdx) => (
+                                <div key={tIdx}>• Topping: {top}</div>
+                              ))}
+                              {item.notes && <div className="text-gray-500 italic">Ghi chú: {item.notes}</div>}
+                            </div>
                           )}
                         </div>
-                        {/* Options & Toppings */}
-                        {((item.options && item.options.length > 0) || (item.toppings && item.toppings.length > 0)) && (
-                          <div className="text-xs text-[#8C7B6E] mt-1 space-y-0.5 ml-5">
-                            {item.options && item.options.map((opt, oIdx) => (
-                              <div key={oIdx}>• Option: {opt}</div>
-                            ))}
-                            {item.toppings && item.toppings.map((top, tIdx) => (
-                              <div key={tIdx}>• Topping: {top}</div>
-                            ))}
-                            {item.notes && <div className="text-gray-500 italic">Ghi chú: {item.notes}</div>}
-                          </div>
-                        )}
+                        <div className="text-right font-semibold text-[#2C1A0E]">
+                          {(item.subtotal ?? 0).toLocaleString("vi-VN")}₫
+                        </div>
                       </div>
-                      <div className="text-right font-semibold text-[#2C1A0E]">
-                        {item.subtotal.toLocaleString("vi-VN")}₫
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -445,23 +469,23 @@ export default function OrderTab() {
               <div className="py-4 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Tạm tính</span>
-                  <span>{selectedOrder.subtotal.toLocaleString("vi-VN")}₫</span>
+                  <span>{(selectedOrder.subtotal ?? 0).toLocaleString("vi-VN")}₫</span>
                 </div>
                 {selectedOrder.totalDiscount > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Khuyến mãi</span>
-                    <span>-{selectedOrder.totalDiscount.toLocaleString("vi-VN")}₫</span>
+                    <span>-{(selectedOrder.totalDiscount ?? 0).toLocaleString("vi-VN")}₫</span>
                   </div>
                 )}
                 {selectedOrder.shippingFee !== null && selectedOrder.shippingFee > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Phí vận chuyển</span>
-                    <span>{selectedOrder.shippingFee.toLocaleString("vi-VN")}₫</span>
+                    <span>{(selectedOrder.shippingFee ?? 0).toLocaleString("vi-VN")}₫</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base text-espresso pt-2 border-t border-gray-100">
                   <span>Tổng tiền</span>
-                  <span>{selectedOrder.finalAmount.toLocaleString("vi-VN")}₫</span>
+                  <span>{(selectedOrder.finalAmount ?? 0).toLocaleString("vi-VN")}₫</span>
                 </div>
               </div>
 

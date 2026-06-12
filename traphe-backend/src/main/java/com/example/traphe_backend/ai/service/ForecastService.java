@@ -148,29 +148,8 @@ public class ForecastService {
             return;
         }
 
-        // Step 1: Build daily ingredient consumption time-series
-        for (Order order : orders) {
-            for (OrderItem item : order.getItems()) {
-                MenuItem menuItem = item.getMenuItem();
-                if (menuItem == null) continue;
-
-                // Recipe-based per-ingredient consumption would go here.
-                // For now, ingredient demand is proxied via daily order volume.
-                // Production: join Recipe + RecipeItem for exact quantities.
-            }
-        }
-
-        // Fallback: Build a simpler time-series based on item counts per day
-        // grouped by MenuItem as a proxy (until Recipe is integrated).
-        Map<String, Map<LocalDate, Double>> itemDailyCount = new HashMap<>();
-        for (Order order : orders) {
-            LocalDate date = order.getCreatedAt().toLocalDate();
-            for (OrderItem item : order.getItems()) {
-                String itemName = item.getMenuItem() != null ? item.getMenuItem().getName() : "Unknown";
-                itemDailyCount.computeIfAbsent(itemName, k -> new TreeMap<>())
-                        .merge(date, (double) item.getQuantity(), Double::sum);
-            }
-        }
+        // Step 1: Build daily ingredient consumption time-series.
+        // For now, ingredient demand is proxied via daily order volume.
 
         // Now forecast per ingredient using the stock data for this branch
         List<IngredientStock> stocks = ingredientStockRepository.findByBranchId(branchId);

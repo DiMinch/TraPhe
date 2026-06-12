@@ -189,9 +189,10 @@ export default function DashboardTab({ currentUser, setActiveTab }: DashboardTab
                     </div>
                     <p className="text-gray-500 text-xs">
                       {format(new Date(order.createdAt), "dd MMM yyyy, HH:mm")} •{" "}
-                      {order.items?.length || 0} Item(s) (
-                      {order.items?.map((i: OrderItemDetail) => i.menuItemName).join(", ")}
-                      )
+                      {order.itemCount ?? order.items?.length ?? 0} Item(s)
+                      {order.items && order.items.length > 0 && (
+                        <> ({order.items.map((i: OrderItemDetail) => i.menuItemName).join(", ")})</>
+                      )}
                     </p>
                   </div>
                 </div>

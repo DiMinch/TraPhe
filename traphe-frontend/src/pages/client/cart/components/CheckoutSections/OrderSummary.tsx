@@ -49,21 +49,30 @@ export default function OrderSummary({
 }: OrderSummaryProps) {
   const itemsCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  const checkEligibility = (promo: any) => {
-    if (promo.minOrderValue && subtotal < promo.minOrderValue) {
-      return { isEligible: false, reason: `Đơn tối thiểu ${(promo.minOrderValue).toLocaleString()}₫` };
-    }
-    return { isEligible: true, reason: null };
-  };
-
+  /**
+   * For authenticated users, the server already provides `isEligible` + `reason`
+   * via the /checkout-eligible API. We just pass them through.
+   * For guests, we do a simple client-side fallback check.
+   */
   const processPromotions = (promos: any[]) => {
-    return promos
-      .map((promo) => ({ ...promo, ...checkEligibility(promo) }))
-      .sort((a, b) => {
-        if (a.isEligible && !b.isEligible) return -1;
-        if (!a.isEligible && b.isEligible) return 1;
-        return 0;
-      });
+    return promos.map((promo) => {
+      // If server already provided eligibility (authenticated user)
+      if (promo.isEligible !== undefined) {
+        return promo;
+      }
+      // Guest fallback: simple local checks only
+      if (!promo.discountValue || promo.discountValue === 0) {
+        return { ...promo, isEligible: false, reason: "Voucher không có giá trị" };
+      }
+      if (promo.minOrderValue && subtotal < promo.minOrderValue) {
+        return { ...promo, isEligible: false, reason: `Đơn tối thiểu ${(promo.minOrderValue).toLocaleString()}₫` };
+      }
+      return { ...promo, isEligible: true, reason: null };
+    }).sort((a, b) => {
+      if (a.isEligible && !b.isEligible) return -1;
+      if (!a.isEligible && b.isEligible) return 1;
+      return 0;
+    });
   };
 
   const publicPromotions = processPromotions(availablePromotions.filter((p) => !p.isMyVoucher));
