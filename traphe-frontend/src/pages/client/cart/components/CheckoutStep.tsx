@@ -174,7 +174,6 @@ export default function CheckoutStep({
     setIsLoadingPromotions(true);
     try {
       if (user) {
-        // Authenticated: use the new checkout-eligible API that pre-validates per user
         const cartSubtotal = cart?.totalAmount || 0;
         const payload = {
           subtotal: cartSubtotal,

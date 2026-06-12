@@ -280,7 +280,6 @@ public class PromotionController {
 
     private record EligibilityResult(boolean eligible, String reason) {}
 
-
     /**
      * Checks all the same rules as PromotionServiceImpl.validatePromotion(),
      * but returns a result instead of throwing exceptions.
