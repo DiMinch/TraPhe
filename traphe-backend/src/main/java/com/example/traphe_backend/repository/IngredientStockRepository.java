@@ -25,7 +25,7 @@ public interface IngredientStockRepository extends JpaRepository<IngredientStock
      * Critical for race condition prevention when multiple orders complete simultaneously.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM IngredientStock s WHERE s.branch.id = :branchId AND s.ingredient.id IN :ingredientIds")
+    @Query("SELECT s FROM IngredientStock s WHERE s.branch.id = :branchId AND s.ingredient.id IN :ingredientIds ORDER BY s.ingredient.id ASC")
     List<IngredientStock> findByBranchIdAndIngredientIdsForUpdate(
             @Param("branchId") UUID branchId,
             @Param("ingredientIds") Collection<UUID> ingredientIds);
@@ -37,4 +37,9 @@ public interface IngredientStockRepository extends JpaRepository<IngredientStock
             "WHERE s.branch.id = :branchId AND i.minStockAlert IS NOT NULL " +
             "AND s.quantityAvailable < i.minStockAlert AND i.isDeleted = false")
     List<IngredientStock> findLowStockByBranchId(@Param("branchId") UUID branchId);
+
+    @Query("SELECT s FROM IngredientStock s JOIN s.ingredient i " +
+            "WHERE i.minStockAlert IS NOT NULL " +
+            "AND s.quantityAvailable < i.minStockAlert AND i.isDeleted = false")
+    List<IngredientStock> findAllLowStock();
 }

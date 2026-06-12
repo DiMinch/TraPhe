@@ -29,4 +29,8 @@ export const customerService = {
   deleteCustomer: async (id: string) => {
     return axiosClient.delete<any, ApiResponse<null>>(`/customers/${id}`);
   },
+
+  getCustomerVouchers: async (id: string) => {
+    return axiosClient.get<any, ApiResponse<any[]>>(`/customers/${id}/vouchers`);
+  },
 };

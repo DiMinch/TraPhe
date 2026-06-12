@@ -4,8 +4,9 @@ import com.example.traphe_backend.dto.response.BranchMenuItemResponse;
 import com.example.traphe_backend.entity.BranchMenuItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface BranchMenuItemMapper {
 
     @Mapping(target = "branchId", source = "branch.id")

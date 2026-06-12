@@ -44,9 +44,9 @@ import {
   type SupplierRequest,
 } from "@/services/supplier.service";
 import {
-  purchaseOrderService,
-  type PurchaseOrderResponse,
-} from "@/services/purchase-order.service";
+  branchStockService,
+  type StockTransactionResponse,
+} from "@/services/branch-stock.service";
 import {
   PageContainer,
   PageHeader,
@@ -62,7 +62,7 @@ export default function SupplierDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [supplier, setSupplier] = useState<SupplierResponse | null>(null);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderResponse[]>(
+  const [transactions, setTransactions] = useState<StockTransactionResponse[]>(
     [],
   );
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,9 +87,8 @@ export default function SupplierDetailPage() {
   const fetchSupplierData = async () => {
     setLoading(true);
     try {
-      const [supplierRes, posRes] = await Promise.all([
+      const [supplierRes] = await Promise.all([
         supplierService.getSupplierById(id!),
-        purchaseOrderService.getAllPurchaseOrders({ supplierId: id }),
       ]);
 
       const supplierData = supplierRes.data;
@@ -102,18 +101,13 @@ export default function SupplierDetailPage() {
         address: supplierData.address || "",
       });
 
-      // Filter POs for this supplier
-      const posData = Array.isArray(posRes.data)
-        ? posRes.data
-        : (posRes.data as any)?.content || [];
-      const filteredPOs = posData.filter(
-        (po: PurchaseOrderResponse) => po.supplier?.id === id,
-      );
-      setPurchaseOrders(filteredPOs);
+      // Fetch stock transactions for this supplier
+      const txRes = await branchStockService.getTransactions({ referenceId: id, size: 100 });
+      setTransactions(txRes.data?.content || []);
     } catch (error: any) {
       console.error("Error fetching supplier:", error);
       toast.error(error.response?.data?.message || "Failed to load supplier");
-      navigate("/procurement/suppliers");
+      navigate("/admin/suppliers");
     } finally {
       setLoading(false);
     }
@@ -164,7 +158,7 @@ export default function SupplierDetailPage() {
     try {
       await supplierService.deleteSupplier(id!);
       toast.success("Supplier deleted successfully");
-      navigate("/procurement/suppliers");
+      navigate("/admin/suppliers");
     } catch (error: any) {
       console.error("Error deleting supplier:", error);
       toast.error(error.response?.data?.message || "Failed to delete supplier");
@@ -173,48 +167,23 @@ export default function SupplierDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString("vi-VN");
-  };
 
-  const formatCurrency = (amount: number | null) => {
-    if (amount === null || amount === undefined) return "-";
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "DRAFT":
-        return (
-          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
-            Draft
-          </Badge>
-        );
-      case "RECEIVED":
-        return (
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-            Received
-          </Badge>
-        );
-      case "CLOSED":
-        return (
-          <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">
-            Closed
-          </Badge>
-        );
+  const getTxTypeBadge = (type: string) => {
+    switch (type) {
+      case "IMPORT":
+        return <Badge className="bg-emerald-100 text-emerald-700">Nhập kho</Badge>;
+      case "RETURN":
+        return <Badge className="bg-red-100 text-red-700">Trả hàng</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge variant="outline">{type}</Badge>;
     }
   };
 
   // Pagination
-  const totalPages = Math.ceil(purchaseOrders.length / itemsPerPage);
+  const totalPages = Math.ceil(transactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentPOs = purchaseOrders.slice(
+  const currentTxs = transactions.slice(
     startIndex,
     startIndex + itemsPerPage,
   );
@@ -237,7 +206,7 @@ export default function SupplierDetailPage() {
           title="Supplier not found"
           description="The supplier you're looking for doesn't exist or has been deleted."
           action={
-            <Button onClick={() => navigate("/procurement/suppliers")}>
+            <Button onClick={() => navigate("/admin/suppliers")}>
               Back to Suppliers
             </Button>
           }
@@ -257,7 +226,7 @@ export default function SupplierDetailPage() {
       >
         <Button
           variant="outline"
-          onClick={() => navigate("/procurement/suppliers")}
+          onClick={() => navigate("/admin/suppliers")}
           className="gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -274,7 +243,7 @@ export default function SupplierDetailPage() {
               Cancel
             </Button>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/90 text-white"
               onClick={handleSave}
               disabled={saving}
             >
@@ -289,7 +258,7 @@ export default function SupplierDetailPage() {
         ) : (
           <>
             <Button
-              className="bg-indigo-900 hover:bg-indigo-800 text-white"
+              className="bg-roast hover:bg-roast/90 text-white"
               onClick={() => setIsEditing(true)}
             >
               <Edit className="w-4 h-4 mr-2" />
@@ -411,15 +380,15 @@ export default function SupplierDetailPage() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold">
-              Purchase Orders ({purchaseOrders.length})
+              Lịch sử nhập hàng ({transactions.length})
             </h2>
           </div>
 
-          {purchaseOrders.length === 0 ? (
+          {transactions.length === 0 ? (
             <EmptyState
               icon={<Building2 className="w-8 h-8 text-slate-400" />}
-              title="No purchase orders"
-              description="This supplier doesn't have any purchase orders yet."
+              title="Không có lịch sử nhập hàng"
+              description="Nhà cung cấp này chưa có đợt nhập hàng nào."
             />
           ) : (
             <>
@@ -427,46 +396,24 @@ export default function SupplierDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead>Expected Date</TableHead>
-                    <TableHead>Actual Date</TableHead>
-                    <TableHead>Total Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
+                    <TableHead>Ngày nhập</TableHead>
+                    <TableHead>Loại</TableHead>
+                    <TableHead>Nguyên liệu</TableHead>
+                    <TableHead className="text-right">SL Tăng</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentPOs.map((po) => (
-                    <TableRow key={po.id}>
+                  {currentTxs.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-gray-700">
+                        {new Date(tx.createdAt).toLocaleString("vi-VN")}
+                      </TableCell>
+                      <TableCell>{getTxTypeBadge(tx.type)}</TableCell>
                       <TableCell className="font-medium">
-                        {po.poNumber}
+                        {tx.ingredientName}
                       </TableCell>
-                      <TableCell className="text-gray-700">
-                        {formatDate(po.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {formatDate(po.expectedDeliveryDate)}
-                      </TableCell>
-                      <TableCell className="text-gray-700">
-                        {formatDate(po.actualDeliveryDate)}
-                      </TableCell>
-                      <TableCell className="font-medium text-gray-900">
-                        {formatCurrency(po.totalAmount)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(po.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigate(`/procurement/purchase-orders/${po.id}`)
-                            }
-                          >
-                            View
-                          </Button>
-                        </div>
+                      <TableCell className="text-right font-medium text-emerald-600">
+                        +{tx.quantityChange}
                       </TableCell>
                     </TableRow>
                   ))}

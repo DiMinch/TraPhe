@@ -21,6 +21,7 @@ import com.example.traphe_backend.repository.RecipeRepository;
 import com.example.traphe_backend.repository.StockTransactionRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.InventoryDeductionService;
+import com.example.traphe_backend.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,7 @@ public class InventoryDeductionServiceImpl implements InventoryDeductionService 
     private final IngredientRepository ingredientRepository;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final SystemConfigService systemConfigService;
 
     @Override
     public void deductStockForOrder(Order order, String userEmail) {
@@ -214,24 +216,31 @@ public class InventoryDeductionServiceImpl implements InventoryDeductionService 
                     .build();
             transactionRepository.save(tx);
 
-            // 9. Check low stock notification
-            if (ingredient != null && ingredient.getMinStockAlert() != null
-                    && quantityAfter.compareTo(ingredient.getMinStockAlert()) < 0) {
-                Notification notification = Notification.builder()
-                        .branchId(branchId)
-                        .title("Cảnh báo tồn kho thấp")
-                        .message(String.format(
-                                "Nguyên liệu '%s' còn %s %s sau khi pha đơn %s (ngưỡng: %s %s).",
-                                ingredient.getName(),
-                                quantityAfter.toPlainString(), ingredient.getUnit(),
-                                order.getOrderNumber(),
-                                ingredient.getMinStockAlert().toPlainString(), ingredient.getUnit()))
-                        .type(NotificationType.LOW_STOCK)
-                        .createdAt(now)
-                        .build();
-                notificationRepository.save(notification);
-                log.warn("LOW STOCK after order {}: {} — {} {} remaining",
-                        order.getOrderNumber(), ingredient.getName(), quantityAfter, ingredient.getUnit());
+            // 9. Check low stock notification (per-ingredient threshold or system-wide default)
+            if (ingredient != null) {
+                BigDecimal threshold = ingredient.getMinStockAlert();
+                if (threshold == null) {
+                    threshold = systemConfigService.getValueByKey("DEFAULT_INVENTORY_THRESHOLD")
+                            .map(val -> { try { return new BigDecimal(val); } catch (NumberFormatException e) { return null; } })
+                            .orElse(null);
+                }
+                if (threshold != null && quantityAfter.compareTo(threshold) < 0) {
+                    Notification notification = Notification.builder()
+                            .branchId(branchId)
+                            .title("Cảnh báo tồn kho thấp")
+                            .message(String.format(
+                                    "Nguyên liệu '%s' còn %s %s sau khi pha đơn %s (ngưỡng: %s %s).",
+                                    ingredient.getName(),
+                                    quantityAfter.toPlainString(), ingredient.getUnit(),
+                                    order.getOrderNumber(),
+                                    threshold.toPlainString(), ingredient.getUnit()))
+                            .type(NotificationType.LOW_STOCK)
+                            .createdAt(now)
+                            .build();
+                    notificationRepository.save(notification);
+                    log.warn("LOW STOCK after order {}: {} — {} {} remaining",
+                            order.getOrderNumber(), ingredient.getName(), quantityAfter, ingredient.getUnit());
+                }
             }
         }
 

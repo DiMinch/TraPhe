@@ -4,48 +4,48 @@ import type { CustomerTier, CustomerTierRequest } from "@/types/customer.types";
 
 export const customerTierService = {
   getAllTiers: async () => {
-    return axiosClient.get<any, ApiResponse<CustomerTier[]>>("/customer-tiers");
+    return axiosClient.get<any, ApiResponse<CustomerTier[]>>("/admin/membership-tiers");
   },
 
   getActiveTiers: async () => {
     return axiosClient.get<any, ApiResponse<CustomerTier[]>>(
-      "/customer-tiers/active",
+      "/admin/membership-tiers/active",
     );
   },
 
   getTierById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<CustomerTier>>(
-      `/customer-tiers/${id}`,
+      `/admin/membership-tiers/${id}`,
     );
   },
 
   createTier: async (data: CustomerTierRequest) => {
     return axiosClient.post<any, ApiResponse<CustomerTier>>(
-      "/customer-tiers",
+      "/admin/membership-tiers",
       data,
     );
   },
 
   updateTier: async (id: string, data: CustomerTierRequest) => {
     return axiosClient.put<any, ApiResponse<CustomerTier>>(
-      `/customer-tiers/${id}`,
+      `/admin/membership-tiers/${id}`,
       data,
     );
   },
 
   deleteTier: async (id: string) => {
-    return axiosClient.delete<any, ApiResponse<null>>(`/customer-tiers/${id}`);
+    return axiosClient.delete<any, ApiResponse<null>>(`/admin/membership-tiers/${id}`);
   },
 
   toggleStatus: async (id: string) => {
     return axiosClient.post<any, ApiResponse<CustomerTier>>(
-      `/customer-tiers/${id}/toggle-status`,
+      `/admin/membership-tiers/${id}/toggle-status`,
     );
   },
 
   recalculateAll: async () => {
     return axiosClient.post<any, ApiResponse<null>>(
-      "/customer-tiers/recalculate-all",
+      "/admin/membership-tiers/recalculate-all",
     );
   },
 };

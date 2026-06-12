@@ -164,7 +164,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                   description: newNotification.content,
                   action: {
                     label: "View",
-                    onClick: () => navigate("/sales/orders"),
+                    onClick: () => navigate("/admin/orders"),
                   },
                 });
               } catch (e) {

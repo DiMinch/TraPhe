@@ -63,6 +63,12 @@
   --color-latte: #C89A6E;
   --color-foam: #FBF5EC;
   --color-background: #fff8f5;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a1410;
+  --color-accent: #f1e6e1;
+  --color-accent-foreground: #201b18;
+  --color-border: #e2ddd7;
+
 
   --spacing-space-1: 4px;
   --spacing-space-2: 8px;
@@ -73,14 +79,14 @@
   --spacing-space-12: 48px;
   --spacing-space-20: 80px;
 
-  --font-ui-heading: "Google Sans", "sans-serif";
-  --font-heading-lg: "Source Serif 4", "serif";
-  --font-display-md: "Viaoda Libre", "serif";
-  --font-display-lg: "Viaoda Libre", "serif";
-  --font-ui-body: "Google Sans", "sans-serif";
-  --font-display-xl: "Viaoda Libre", "serif";
-  --font-body-md: "Source Serif 4", "serif";
-  --font-pos-total: "Google Sans", "sans-serif";
+  --font-ui-heading: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
+  --font-heading-lg: "Source Serif 4", "Noto Serif", Georgia, serif;
+  --font-display-md: "Viaoda Libre", Georgia, serif;
+  --font-display-lg: "Viaoda Libre", Georgia, serif;
+  --font-ui-body: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
+  --font-display-xl: "Viaoda Libre", Georgia, serif;
+  --font-body-md: "Source Serif 4", "Newsreader", Georgia, serif;
+  --font-pos-total: "Google Sans", "Inter", "Be Vietnam Pro", sans-serif;
 }
 
 @layer base {
@@ -88,17 +94,59 @@
     --destructive: 0 84% 60%;
   }
 
-  *:not(button *):not(button) {
-    font-family: "Inter", sans-serif;
-    color: #1e1b4b;
+  body {
+    font-family: var(--font-ui-body);
+    color: var(--color-ink);
+    background-color: var(--color-admin-bg);
+  }
+
+  body[data-context="customer"] {
+    font-family: var(--font-body-md);
+    background-color: var(--color-foam);
+  }
+
+  body[data-context="admin"] {
+    font-family: var(--font-ui-body);
+    background-color: var(--color-admin-bg);
+  }
+
+  body[data-context="pos"] {
+    font-family: var(--font-ui-body);
+    background-color: var(--color-espresso);
+  }
+
+  /* Custom Scrollbar Styles */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-outline-variant);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-roast);
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  /* Firefox Support */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-outline-variant) transparent;
   }
 }
 
-:root {
-  font-family: "Inter", sans-serif;
-}
-
-body {
-  font-family: "Inter", sans-serif;
-  color: #1e1b4b;
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

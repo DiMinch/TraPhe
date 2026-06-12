@@ -8,6 +8,14 @@ export interface RevenueReportResponse {
   breakdown: RevenueByPeriod[];
   byOrderType: RevenueByType[];
   comparison: ComparisonData | null;
+  byBranch?: RevenueByBranch[];
+}
+
+export interface RevenueByBranch {
+  branchId: string;
+  branchName: string;
+  revenue: number;
+  orderCount: number;
 }
 
 export interface RevenueByPeriod {
@@ -112,6 +120,13 @@ export interface InventoryAlert {
   severity: "CRITICAL" | "WARNING";
 }
 
+export interface StockForecastResponse {
+  menuItemId: string;
+  productName: string;
+  averageDailySales: number;
+  projected7DayDemand: number;
+}
+
 // Top Products Report Types - matching backend structure
 export interface TopProductsReportResponse {
   topProducts: TopProduct[];
@@ -152,11 +167,13 @@ export interface ReportQueryParams {
   startDate?: string;
   endDate?: string;
   groupBy?: "DAY" | "WEEK" | "MONTH";
+  branchId?: string;
 }
 
 export interface TopProductsQueryParams extends ReportQueryParams {
   sortBy?: "QUANTITY" | "REVENUE";
   limit?: number;
+  branchId?: string;
 }
 
 export interface InventoryReportQueryParams {
@@ -165,9 +182,10 @@ export interface InventoryReportQueryParams {
   lowStockOnly?: boolean;
   fastMovingOnly?: boolean;
   categoryId?: string;
+  branchId?: string;
 }
 
-const BASE_URL = "/v1/reports";
+const BASE_URL = "/reports";
 
 export const reportService = {
   /**
@@ -199,6 +217,16 @@ export const reportService = {
   getInventoryReport: async (params?: InventoryReportQueryParams) => {
     return axiosClient.get<any, ApiResponse<InventoryReportResponse>>(
       `${BASE_URL}/inventory`,
+      { params },
+    );
+  },
+
+  /**
+   * Get stock forecast for next 7 days based on 30-day velocity
+   */
+  getStockForecast: async (params?: { branchId?: string }) => {
+    return axiosClient.get<any, ApiResponse<StockForecastResponse[]>>(
+      `${BASE_URL}/stock-forecast`,
       { params },
     );
   },

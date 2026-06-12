@@ -21,7 +21,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @EnableWebSecurity
@@ -49,8 +48,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/change-password").authenticated()
                         // Public auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Public storefront endpoints (no token required)
                         .requestMatchers(HttpMethod.GET, "/api/menu/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/branches/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/promotions/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/promotions/calculate").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/address/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/system-config/public/**").permitAll()
+                        .requestMatchers("/api/payment/vnpay-return", "/api/payment/momo-ipn").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        // Swagger — OpenApiConfig bean is @Profile("!prod"); these permitAll rules
+                        // ensure swagger-ui is accessible without JWT in dev. In prod, the bean is absent
+                        // so Swagger 404s, but the permitAll here is harmless.
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )

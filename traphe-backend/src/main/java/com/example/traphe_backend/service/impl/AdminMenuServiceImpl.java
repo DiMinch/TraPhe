@@ -27,6 +27,7 @@ import com.example.traphe_backend.repository.OptionGroupRepository;
 import com.example.traphe_backend.repository.OptionValueRepository;
 import com.example.traphe_backend.repository.ToppingRepository;
 import com.example.traphe_backend.repository.IngredientRepository;
+import com.example.traphe_backend.repository.OrderItemRepository;
 import com.example.traphe_backend.entity.Ingredient;
 import com.example.traphe_backend.service.AdminMenuService;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,7 @@ public class AdminMenuServiceImpl implements AdminMenuService {
     private final OptionValueRepository optionValueRepository;
     private final ToppingRepository toppingRepository;
     private final IngredientRepository ingredientRepository;
+    private final OrderItemRepository orderItemRepository;
 
     private final MenuItemMapper menuItemMapper;
     private final OptionGroupMapper optionGroupMapper;
@@ -300,6 +302,12 @@ public class AdminMenuServiceImpl implements AdminMenuService {
     public void softDeleteMenuItem(UUID id) {
         MenuItem item = menuItemRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
+
+        long pendingCount = orderItemRepository.countByMenuItemIdAndOrderStatusIn(
+                id, List.of(com.example.traphe_backend.enums.OrderStatus.PENDING, com.example.traphe_backend.enums.OrderStatus.CONFIRMED));
+        if (pendingCount > 0) {
+            throw new IllegalArgumentException("Cannot delete menu item with " + pendingCount + " pending or confirmed orders");
+        }
 
         item.setDeleted(true);
         item.setDeletedAt(LocalDateTime.now());

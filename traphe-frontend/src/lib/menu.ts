@@ -1,20 +1,21 @@
 export const navLinks = [
   { title: "Home", path: "/" },
-  { title: "Shop", path: "/shop" },
-  { title: "Product", path: "/products" },
-  { title: "Contact Us", path: "/contact" },
+  { title: "Menu", path: "/menu" },
+  { title: "Merchandise", path: "/merchandise" },
+  { title: "Our Story", path: "/about" },
+  { title: "Locations", path: "/branches" },
+  { title: "Contact", path: "/contact" },
 ];
 
 export const footerLinks = {
   company: [
-    { title: "About Us", path: "/about" },
-    { title: "Careers", path: "/careers" },
-    { title: "Store Location", path: "/stores" },
+    { title: "Về TraPhe", path: "/about" },
+    { title: "Sứ mệnh", path: "/mission" },
+    { title: "Hệ thống chi nhánh", path: "/branches" },
   ],
   support: [
-    { title: "Help Center", path: "/help" },
-    { title: "Returns", path: "/returns" },
-    { title: "Privacy Policy", path: "/privacy" },
-    { title: "Terms of Use", path: "/terms" },
+    { title: "Liên hệ", path: "/contact" },
+    { title: "Chính sách bảo mật", path: "/privacy" },
+    { title: "Điều khoản sử dụng", path: "/terms" },
   ],
 };

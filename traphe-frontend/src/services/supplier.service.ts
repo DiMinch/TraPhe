@@ -26,20 +26,20 @@ export interface SupplierRequest {
 export const supplierService = {
   // Get all suppliers
   getAllSuppliers: async () => {
-    return axiosClient.get<any, ApiResponse<SupplierResponse[]>>("/suppliers");
+    return axiosClient.get<any, ApiResponse<SupplierResponse[]>>("/admin/suppliers");
   },
 
   // Get supplier by ID
   getSupplierById: async (id: string) => {
     return axiosClient.get<any, ApiResponse<SupplierResponse>>(
-      `/suppliers/${id}`,
+      `/admin/suppliers/${id}`,
     );
   },
 
   // Create a new supplier
   createSupplier: async (data: SupplierRequest) => {
     return axiosClient.post<any, ApiResponse<SupplierResponse>>(
-      "/suppliers",
+      "/admin/suppliers",
       data,
     );
   },
@@ -47,13 +47,13 @@ export const supplierService = {
   // Update supplier
   updateSupplier: async (id: string, data: SupplierRequest) => {
     return axiosClient.put<any, ApiResponse<SupplierResponse>>(
-      `/suppliers/${id}`,
+      `/admin/suppliers/${id}`,
       data,
     );
   },
 
   // Delete supplier
   deleteSupplier: async (id: string) => {
-    return axiosClient.delete<any, ApiResponse<void>>(`/suppliers/${id}`);
+    return axiosClient.delete<any, ApiResponse<void>>(`/admin/suppliers/${id}`);
   },
 };

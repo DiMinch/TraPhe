@@ -7,39 +7,63 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronRight, Edit, Trash2, Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { customerService } from "@/services/customer.service";
+import { orderService, type OrderResponse } from "@/services/order.service";
 import type { Customer } from "@/types/customer.types";
 import { toast } from "sonner";
 import { PageContainer, PageHeader } from "@/components/layout/PageLayout";
+import { format } from "date-fns";
+
+const SEGMENT_COLORS: Record<string, { label: string; color: string }> = {
+  CHAMPIONS: { label: "Champions 🏆", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  LOYAL_CUSTOMERS: { label: "Trung thành ❤️", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  POTENTIAL_LOYALIST: { label: "Tiềm năng 🌟", color: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  NEW_CUSTOMERS: { label: "Mới 🆕", color: "bg-teal-100 text-teal-800 border-teal-200" },
+  PROMISING: { label: "Hứa hẹn 👍", color: "bg-amber-100 text-amber-800 border-amber-200" },
+  AT_RISK: { label: "Rủi ro ⚠️", color: "bg-rose-100 text-rose-800 border-rose-200" },
+  HIBERNATING: { label: "Ngủ đông 💤", color: "bg-gray-100 text-gray-800 border-gray-200" },
+  LOST: { label: "Đã mất ❌", color: "bg-red-100 text-red-800 border-red-200" },
+};
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
 
-    const fetchCustomer = async () => {
+    const fetchCustomerAndOrders = async () => {
       setIsLoading(true);
       try {
         const res = await customerService.getCustomerById(id);
         if (res.statusCode === 200 && res.data) {
           setCustomer(res.data);
+          // Fetch orders for this customer
+          setIsOrdersLoading(true);
+          try {
+            const ordersRes = await orderService.getCustomerOrders(id, { size: 50 });
+            if (ordersRes.statusCode === 200 && ordersRes.data) {
+              setOrders(ordersRes.data.content);
+            }
+          } catch (err) {
+            console.error("Failed to fetch customer orders:", err);
+          } finally {
+            setIsOrdersLoading(false);
+          }
         } else {
           toast.error("Customer not found");
-          navigate("/customer");
+          navigate("/admin/loyalty/customers");
         }
       } catch (error) {
         toast.error("Failed to fetch customer details");
@@ -49,7 +73,7 @@ export default function CustomerDetailPage() {
       }
     };
 
-    fetchCustomer();
+    fetchCustomerAndOrders();
   }, [id, navigate]);
 
   if (isLoading) {
@@ -72,7 +96,7 @@ export default function CustomerDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-gray-600">
         <button
-          onClick={() => navigate("/customer")}
+          onClick={() => navigate("/admin/loyalty/customers")}
           className="hover:text-gray-900"
         >
           Customer List
@@ -101,9 +125,25 @@ export default function CustomerDetailPage() {
                 <div className="flex-1 font-medium text-gray-900">
                   {customer.fullName}
                 </div>
-                <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">
-                  {customer.tier?.name || "No Tier"}
-                </Badge>
+                <div className="flex flex-col gap-1 items-end">
+                  <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200">
+                    {customer.tier?.name || "No Tier"}
+                  </Badge>
+                  {customer.rfmSegment && SEGMENT_COLORS[customer.rfmSegment] && (
+                    <>
+                      <Badge className={`${SEGMENT_COLORS[customer.rfmSegment].color} border text-[10px] whitespace-nowrap`}>
+                        {SEGMENT_COLORS[customer.rfmSegment].label}
+                      </Badge>
+                      {customer.rScore !== undefined && customer.rScore !== null && (
+                        <div className="flex gap-1 text-[9px] font-bold text-gray-500 bg-gray-50 border border-gray-200/60 rounded px-1.5 py-0.5 mt-1 justify-center">
+                          <span>R:{customer.rScore}</span>
+                          <span>F:{customer.fScore}</span>
+                          <span>M:{customer.mScore}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -112,7 +152,7 @@ export default function CustomerDetailPage() {
                 Loyalty Points
               </Label>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl font-bold text-indigo-900">
+                <span className="text-2xl font-bold text-roast">
                   {customer.loyaltyPoint?.pointsAvailable || 0}
                 </span>
                 <span className="text-xs text-gray-500">points available</span>
@@ -121,12 +161,12 @@ export default function CustomerDetailPage() {
               <div className="text-xs text-gray-600 mb-1 flex justify-between">
                 <span>Current Spending</span>
                 <span className="font-semibold">
-                  {customer.totalPurchase?.toLocaleString()}₫
+                  {customer.totalPurchase?.toLocaleString()}đ
                 </span>
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-indigo-900 rounded-full"
+                  className="h-full bg-roast rounded-full"
                   style={{ width: "40%" }}
                 ></div>
               </div>
@@ -150,99 +190,66 @@ export default function CustomerDetailPage() {
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm font-medium text-gray-700 mb-2 block">
-                Notes
-              </Label>
-              <Textarea
-                placeholder="Add internal notes about this customer..."
-                className="min-h-[120px] resize-none"
-              />
-            </div>
           </Card>
         </div>
 
         {/* Right Side - Tabs */}
         <div>
-          <Tabs defaultValue="address" className="w-full">
+          <Tabs defaultValue="order-history" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="order-history" className="cursor-pointer">
-                Order History
-              </TabsTrigger>
-              <TabsTrigger value="address" className="cursor-pointer">
-                Address
+                Lịch sử mua hàng
               </TabsTrigger>
               <TabsTrigger value="loyalty" className="cursor-pointer">
-                Loyalty History
+                Lịch sử tích/đổi điểm
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="order-history">
               <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6">
-                  <div className="text-center py-10 text-gray-500">
-                    No orders found for this customer.
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="address">
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  {/* Table */}
-                  <div className="rounded-md border border-slate-200">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
-                          <TableHead className="w-[80px]">Primary</TableHead>
-                          <TableHead>Address</TableHead>
-                          <TableHead className="text-center">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {customer.addresses && customer.addresses.length > 0 ? (
-                          customer.addresses.map((address, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell>
-                                <Checkbox checked={idx === 0} />
+                  {isOrdersLoading ? (
+                    <div className="flex justify-center py-10">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : orders.length > 0 ? (
+                    <div className="rounded-md border border-slate-200">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-slate-100">
+                            <TableHead>Mã ĐH</TableHead>
+                            <TableHead>Ngày đặt</TableHead>
+                            <TableHead>Tổng tiền</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {orders.map((order) => (
+                            <TableRow key={order.orderId}>
+                              <TableCell className="font-medium text-gray-900">
+                                {order.orderNumber}
                               </TableCell>
-                              <TableCell className="text-gray-700">
-                                {address.address}
+                              <TableCell className="text-gray-600">
+                                {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm")}
+                              </TableCell>
+                              <TableCell className="text-gray-900">
+                                {order.finalAmount.toLocaleString()}đ
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center justify-center gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                                  {order.status}
+                                </Badge>
                               </TableCell>
                             </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell
-                              colSpan={3}
-                              className="text-center py-4 text-gray-500"
-                            >
-                              No addresses saved
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 text-gray-500">
+                      Khách hàng này chưa có đơn hàng nào.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -250,12 +257,13 @@ export default function CustomerDetailPage() {
             <TabsContent value="loyalty">
               <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-6">
-                  <p className="text-gray-600">
-                    Total Points Earned:{" "}
-                    {customer.loyaltyPoint?.totalPoints || 0}
+                  <p className="text-gray-600 mb-2">
+                    Tổng điểm đã tích:{" "}
+                    <span className="font-semibold text-roast">{customer.loyaltyPoint?.totalPoints || 0}</span>
                   </p>
                   <p className="text-gray-600">
-                    Total Points Used: {customer.loyaltyPoint?.pointsUsed || 0}
+                    Tổng điểm đã dùng:{" "}
+                    <span className="font-semibold text-rose-600">{customer.loyaltyPoint?.pointsUsed || 0}</span>
                   </p>
                 </CardContent>
               </Card>

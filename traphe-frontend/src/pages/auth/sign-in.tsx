@@ -24,23 +24,26 @@ export default function SignInPage() {
       const response = await authService.login({ email, password });
 
       if (response.statusCode === 200 && response.data) {
-        const { accessToken, refreshToken, ...userInfo } = response.data;
+        const { accessToken, refreshToken, user } = response.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
-        localStorage.setItem("user", JSON.stringify(userInfo));
+        localStorage.setItem("user", JSON.stringify(user));
 
         toast.success("Login Successful", {
           id: toastId,
-          description: `Welcome back, ${userInfo.username || "User"}!`,
+          description: `Welcome back, ${user.fullName || user.username || "User"}!`,
         });
 
-        const roles = userInfo.roles || [];
+        const roles = user.roles || [];
         const userRoles = roles as string[];
-        if (
-          userRoles.includes(UserRole.ADMIN) ||
-          userRoles.includes(UserRole.EMPLOYEE)
-        ) {
-          navigate("/dashboard");
+        if (userRoles.includes(UserRole.CASHIER)) {
+          navigate("/admin/orders/pos");
+        } else if (userRoles.includes(UserRole.BARISTA)) {
+          navigate("/admin/orders/queue");
+        } else if (userRoles.includes(UserRole.BRANCH_MANAGER)) {
+          navigate("/admin/stock/all");
+        } else if (userRoles.includes(UserRole.ADMIN)) {
+          navigate("/admin");
         } else {
           navigate("/");
         }
@@ -95,11 +98,11 @@ export default function SignInPage() {
         {/* Right Section: Login Form */}
         <div className="flex w-full flex-col justify-center px-space-6 py-space-12 lg:w-1/2 xl:px-space-20 bg-foam relative">
           {/* Minimal Back Button */}
-          <div className="absolute top-space-8 left-space-6 xl:left-space-12">
+          <div className="absolute top-space-6 left-space-6 lg:left-space-12">
             <Link
               to="/"
               aria-label="Quay lại"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest text-dust shadow-sm border border-mist hover:text-roast hover:border-roast hover:shadow-md transition-all duration-300"
+              className="flex items-center gap-2 text-dust hover:text-roast transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
@@ -205,7 +208,7 @@ export default function SignInPage() {
                 </label>
                 <Link
                   className="font-ui-body text-ui-body font-medium text-caramel hover:text-roast underline-offset-4 hover:underline transition-colors"
-                  to="#"
+                  to="/forgot-password"
                 >
                   Quên mật khẩu?
                 </Link>

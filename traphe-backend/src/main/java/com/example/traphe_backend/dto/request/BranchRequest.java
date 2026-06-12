@@ -16,5 +16,6 @@ public class BranchRequest {
     private BigDecimal lat;
     private BigDecimal lng;
     private String phone;
+    private String openingHours;
     private Boolean isActive;
 }

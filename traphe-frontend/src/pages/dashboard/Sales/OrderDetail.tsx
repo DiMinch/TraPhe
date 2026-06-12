@@ -29,12 +29,9 @@ import {
   Package,
   User,
   Phone,
-  Mail,
   CreditCard,
   Calendar,
   Hash,
-  Copy,
-  Check,
   Printer,
   ShoppingBag,
   Gift,
@@ -59,7 +56,6 @@ export default function OrderDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [order, setOrder] = useState<OrderResponse | null>(null);
-  const [copiedSerial, setCopiedSerial] = useState<string | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -76,7 +72,7 @@ export default function OrderDetailPage() {
     } catch (error: any) {
       console.error("Error fetching order:", error);
       toast.error(error.response?.data?.message || "Failed to load order");
-      navigate("/sales/orders");
+      navigate("/admin/orders");
     } finally {
       setLoading(false);
     }
@@ -87,7 +83,7 @@ export default function OrderDetailPage() {
 
     setIsProcessing(true);
     try {
-      const response = await orderService.confirmOrder(order.id);
+      const response = await orderService.confirmOrder(order.orderId);
       setOrder(response.data);
       toast.success("Order confirmed successfully");
     } catch (error: any) {
@@ -104,7 +100,7 @@ export default function OrderDetailPage() {
     setIsProcessing(true);
     try {
       const response = await orderService.updateOrderStatus(
-        order.id,
+        order.orderId,
         "COMPLETED",
       );
       setOrder(response.data);
@@ -125,7 +121,7 @@ export default function OrderDetailPage() {
 
     setIsProcessing(true);
     try {
-      const response = await orderService.cancelOrder(order.id, cancelReason);
+      const response = await orderService.cancelOrder(order.orderId);
       setOrder(response.data);
       toast.success("Order cancelled successfully");
       setIsCancelOpen(false);
@@ -143,9 +139,9 @@ export default function OrderDetailPage() {
 
     setIsProcessing(true);
     try {
-      await orderService.deleteOrder(order.id);
+      await orderService.deleteOrder(order.orderId);
       toast.success("Order deleted successfully");
-      navigate("/sales/orders");
+      navigate("/admin/orders");
     } catch (error: any) {
       console.error("Error deleting order:", error);
       toast.error(error.response?.data?.message || "Failed to delete order");
@@ -155,27 +151,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handleCopySerial = (serial: string) => {
-    navigator.clipboard.writeText(serial);
-    setCopiedSerial(serial);
-    toast.success("Serial number copied!");
-    setTimeout(() => setCopiedSerial(null), 2000);
-  };
 
-  const handleCopyAllSerials = () => {
-    if (!order) return;
-    const serials = order.items
-      .filter((item) => item.serialNumber)
-      .map(
-        (item) =>
-          `${item.productName} - ${item.variantName}: ${item.serialNumber}`,
-      )
-      .join("\n");
-    if (serials) {
-      navigator.clipboard.writeText(serials);
-      toast.success("All serial numbers copied!");
-    }
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
@@ -230,7 +206,7 @@ export default function OrderDetailPage() {
         return (
           <Badge
             variant="outline"
-            className="border-indigo-300 text-indigo-700"
+            className="border-roast/30 text-roast/90"
           >
             In-Store
           </Badge>
@@ -301,7 +277,7 @@ export default function OrderDetailPage() {
           title="Order not found"
           description="The order you're looking for doesn't exist or has been deleted."
           action={
-            <Button onClick={() => navigate("/sales/orders")}>
+            <Button onClick={() => navigate("/admin/orders")}>
               Back to Orders
             </Button>
           }
@@ -310,7 +286,6 @@ export default function OrderDetailPage() {
     );
   }
 
-  const hasSerialNumbers = order.items.some((item) => item.serialNumber);
 
   return (
     <PageContainer>
@@ -323,7 +298,7 @@ export default function OrderDetailPage() {
       >
         <Button
           variant="outline"
-          onClick={() => navigate("/sales/orders")}
+          onClick={() => navigate("/admin/orders")}
           className="gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -405,7 +380,7 @@ export default function OrderDetailPage() {
         <Card className="shadow-md lg:col-span-2">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-indigo-600" />
+              <ShoppingBag className="w-5 h-5 text-roast" />
               Order Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -442,7 +417,7 @@ export default function OrderDetailPage() {
                     Payment Method
                   </Label>
                   <div className="mt-1">
-                    {getPaymentMethodBadge(order.paymentMethod)}
+                    {getPaymentMethodBadge(order.paymentMethod || "N/A")}
                   </div>
                 </div>
                 <div>
@@ -461,52 +436,29 @@ export default function OrderDetailPage() {
         <Card className="shadow-md">
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <User className="w-5 h-5 text-indigo-600" />
+              <User className="w-5 h-5 text-roast" />
               Customer
             </h2>
-            {order.customer ? (
+            {order.customerId || order.customerName ? (
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-500">
                     Name
                   </Label>
-                  <p className="mt-1 font-medium">{order.customer.fullName}</p>
+                  <p className="mt-1 font-medium">{order.customerName || "Anonymous Customer"}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500 flex items-center gap-1">
                     <Phone className="w-3 h-3" />
                     Phone
                   </Label>
-                  <p className="mt-1">{order.customer.phone}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500 flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    Email
-                  </Label>
-                  <p className="mt-1 text-sm">{order.customer.email || "-"}</p>
+                  <p className="mt-1">{order.customerPhone || "N/A"}</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <Badge variant="secondary">Guest Customer</Badge>
-                {order.guestName && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">
-                      Name
-                    </Label>
-                    <p className="mt-1 font-medium">{order.guestName}</p>
-                  </div>
-                )}
-                {order.guestPhone && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500 flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      Phone
-                    </Label>
-                    <p className="mt-1">{order.guestPhone}</p>
-                  </div>
-                )}
+                <p className="text-sm text-gray-500">No customer information registered for this transaction.</p>
               </div>
             )}
           </CardContent>
@@ -518,19 +470,9 @@ export default function OrderDetailPage() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Package className="w-5 h-5 text-indigo-600" />
-              Order Items ({order.items.length})
+              <Package className="w-5 h-5 text-roast" />
+              Order Items ({order.items?.length || 0})
             </h2>
-            {hasSerialNumbers && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyAllSerials}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy All Serials
-              </Button>
-            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -538,84 +480,63 @@ export default function OrderDetailPage() {
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="w-[50px]">#</TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Serial Number</TableHead>
+                  <TableHead>Menu Item</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Options / Toppings</TableHead>
                   <TableHead className="text-right">Unit Price</TableHead>
                   <TableHead className="text-center">Qty</TableHead>
-                  <TableHead className="text-right">Discount</TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map((item, index) => (
+                {order.items?.map((item, index) => (
                   <TableRow key={item.id} className="hover:bg-slate-50/50">
                     <TableCell className="font-medium text-gray-500">
                       {index + 1}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                          {item.productImage ? (
-                            <img
-                              src={item.productImage}
-                              alt={item.productName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Package className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium">{item.productName}</p>
-                          <p className="text-sm text-gray-500">
-                            {item.variantName}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="font-medium">{item.menuItemName}</p>
+                        {item.notes && (
+                          <p className="text-xs text-gray-400 italic mt-1">Note: {item.notes}</p>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                        {item.sku}
-                      </code>
-                    </TableCell>
-                    <TableCell>
-                      {item.serialNumber ? (
-                        <div className="flex items-center gap-2">
-                          <code className="text-sm bg-amber-50 text-amber-800 px-2 py-1 rounded font-semibold">
-                            {item.serialNumber}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => handleCopySerial(item.serialNumber!)}
-                          >
-                            {copiedSerial === item.serialNumber ? (
-                              <Check className="w-3 h-3 text-green-600" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </Button>
-                        </div>
+                      {item.sizeName ? (
+                        <Badge variant="outline" className="bg-slate-50">
+                          {item.sizeName}
+                        </Badge>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {item.options && item.options.length > 0 && (
+                          item.options.map((opt, oIdx) => (
+                            <Badge key={`opt-${oIdx}`} variant="secondary" className="text-xs bg-slate-100 text-slate-700">
+                              {opt}
+                            </Badge>
+                          ))
+                        )}
+                        {item.toppings && item.toppings.length > 0 && (
+                          item.toppings.map((top, tIdx) => (
+                            <Badge key={`top-${tIdx}`} variant="secondary" className="text-xs bg-orange-50 text-orange-700">
+                              +{top}
+                            </Badge>
+                          ))
+                        )}
+                        {(!item.options || item.options.length === 0) && (!item.toppings || item.toppings.length === 0) && (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(item.unitPrice)}
                     </TableCell>
                     <TableCell className="text-center font-medium">
                       {item.quantity}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.discount > 0 ? (
-                        <span className="text-red-600">
-                          -{formatCurrency(item.discount)}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       {formatCurrency(item.subtotal)}
@@ -625,35 +546,6 @@ export default function OrderDetailPage() {
               </TableBody>
             </Table>
           </div>
-
-          {/* Warranty Info */}
-          {order.items.some((item) => item.warrantyExpireDate) && (
-            <div className="mt-6 pt-6 border-t">
-              <h3 className="text-sm font-semibold text-gray-600 mb-3">
-                Warranty Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {order.items
-                  .filter((item) => item.warrantyExpireDate)
-                  .map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-blue-50 rounded-lg p-3 text-sm"
-                    >
-                      <p className="font-medium text-blue-900">
-                        {item.productName}
-                      </p>
-                      <p className="text-blue-700">
-                        Warranty until:{" "}
-                        {new Date(
-                          item.warrantyExpireDate!,
-                        ).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -693,42 +585,9 @@ export default function OrderDetailPage() {
                 {formatCurrency(order.finalAmount)}
               </span>
             </div>
-
-            {order.loyaltyPointsEarned > 0 && (
-              <div className="flex justify-between text-purple-600 pt-2">
-                <span className="flex items-center gap-1">
-                  <Star className="w-4 h-4" />
-                  Points Earned
-                </span>
-                <span>+{order.loyaltyPointsEarned} pts</span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Promotions Applied */}
-      {order.promotions && order.promotions.length > 0 && (
-        <Card className="shadow-md mb-6">
-          <CardContent className="p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Gift className="w-5 h-5 text-indigo-600" />
-              Promotions Applied
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {order.promotions.map((promo: any, index: number) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="bg-purple-100 text-purple-700"
-                >
-                  {promo.name || promo.code || `Promotion ${index + 1}`}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Cancel Order Dialog */}
       <AlertDialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
@@ -742,7 +601,7 @@ export default function OrderDetailPage() {
           </AlertDialogHeader>
           <div className="py-4">
             <textarea
-              className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-roast"
               rows={3}
               placeholder="Enter cancellation reason..."
               value={cancelReason}

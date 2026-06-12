@@ -21,4 +21,13 @@ public class AuditLogResponse {
     private String oldValue;
     private String newValue;
     private LocalDateTime createdAt;
+
+    // Frontend compatibility fields
+    private String actorId;
+    private String actorName;
+    private String module;
+    private String resourceId;
+    private String resourceType;
+    @Builder.Default
+    private String status = "SUCCESS";
 }

@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface Attribute {
   id: number;
@@ -173,7 +172,7 @@ export default function NewAttributeDialog({
             Cancel
           </Button>
           <Button
-            className="bg-indigo-900 hover:bg-indigo-800 text-white"
+            className="bg-roast hover:bg-roast/80 text-white"
             onClick={handleSubmit}
           >
             Add Attribute

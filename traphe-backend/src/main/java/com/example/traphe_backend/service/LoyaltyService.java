@@ -4,50 +4,28 @@ import com.example.traphe_backend.entity.LoyaltyPoint;
 import com.example.traphe_backend.entity.LoyaltyPointTransaction;
 import com.example.traphe_backend.entity.Order;
 import com.example.traphe_backend.entity.User;
-import com.example.traphe_backend.enums.LoyaltyTransactionType;
-import com.example.traphe_backend.repository.LoyaltyPointRepository;
-import com.example.traphe_backend.repository.LoyaltyPointTransactionRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.util.List;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class LoyaltyService {
+public interface LoyaltyService {
+    public void earnPointsForOrder(User customer, Order order);
+    public BigDecimal redeemPoints(User customer, Order order, int pointsToRedeem);
+    public void refundPointsForOrder(User user, Order order, int pointsToRefund);
+    public LoyaltyPoint getOrCreateLoyaltyPoint(User user);
 
-    private final LoyaltyPointRepository loyaltyPointRepository;
-    private final LoyaltyPointTransactionRepository loyaltyPointTransactionRepository;
+    /**
+     * Get transaction history for a user, ordered newest first.
+     */
+    public List<LoyaltyPointTransaction> getTransactionsForUser(User user);
+    /**
+     * Redeem loyalty points for a reward voucher.
+     * Business logic extracted from controller to service layer.
+     */
+    public RedeemRewardResult redeemReward(User user, String rewardId, String rewardName,
+            int pointsCost, String rewardDescription, BigDecimal discountValue, String discountType);
 
-    @Transactional
-    public void refundPointsForOrder(User user, Order order, int pointsToRefund) {
-        if (pointsToRefund <= 0) return;
-
-        // Fetch or create loyalty point
-        LoyaltyPoint loyaltyPoint = loyaltyPointRepository.findByUserId(user.getId())
-                .orElseGet(() -> {
-                    LoyaltyPoint newRecord = LoyaltyPoint.builder()
-                            .user(user)
-                            .pointsAvailable(0)
-                            .build();
-                    return loyaltyPointRepository.save(newRecord);
-                });
-
-        // Update points
-        loyaltyPoint.setPointsAvailable(loyaltyPoint.getPointsAvailable() + pointsToRefund);
-        loyaltyPointRepository.save(loyaltyPoint);
-
-        // Record transaction
-        LoyaltyPointTransaction transaction = LoyaltyPointTransaction.builder()
-                .user(user)
-                .order(order)
-                .type(LoyaltyTransactionType.REFUND)
-                .points(pointsToRefund)
-                .description("Hoàn " + pointsToRefund + " điểm từ đơn huỷ " + order.getOrderNumber())
-                .build();
-        loyaltyPointTransactionRepository.save(transaction);
-
-        log.info("Refunded {} loyalty points for user {} (Order: {})", pointsToRefund, user.getEmail(), order.getOrderNumber());
-    }
+    /**
+     * Simple DTO for redeem reward results.
+     */
+    public record RedeemRewardResult(String voucherCode, String rewardName, int pointsDeducted, int remainingPoints) {}
 }

@@ -1,7 +1,10 @@
 export interface ApiResponse<T> {
   statusCode: number;
+  success: boolean;
   message: string;
   data: T;
+  meta?: any;
+  error?: { code: string; details?: any };
   timestamp: string;
 }
 

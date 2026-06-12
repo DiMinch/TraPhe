@@ -22,6 +22,7 @@ public class StockMapper {
         return IngredientStockResponse.builder()
                 .id(stock.getId())
                 .branchId(stock.getBranch().getId())
+                .branchName(stock.getBranch().getName())
                 .ingredientId(ingredient.getId())
                 .ingredientName(ingredient.getName())
                 .unit(ingredient.getUnit())

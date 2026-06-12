@@ -7,8 +7,14 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
+/**
+ * Swagger/OpenAPI configuration.
+ * Disabled in production profile to prevent public API documentation exposure.
+ */
 @Configuration
+@Profile("!prod")
 public class OpenApiConfig {
 
     @Bean

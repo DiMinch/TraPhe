@@ -9,16 +9,19 @@ interface Category {
   name: string;
   imageUrl: string;
   parentId?: string | null;
+  drinkCategory?: boolean;
 }
 
 interface ShopCategorySectionProps {
   onSelectCategory: (categoryId: string) => void;
   selectedCategoryId?: string;
+  isDrink?: boolean;
 }
 
 export default function ShopCategorySection({
   onSelectCategory,
   selectedCategoryId,
+  isDrink,
 }: ShopCategorySectionProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,11 +29,15 @@ export default function ShopCategorySection({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setIsLoading(true);
         const res = await axiosClient.get<any, ApiResponse<Category[]>>(
           "/categories",
         );
         if (res.statusCode === 200 && res.data) {
-          setCategories(res.data);
+          const filtered = isDrink !== undefined
+            ? res.data.filter((cat) => cat.drinkCategory === isDrink)
+            : res.data;
+          setCategories(filtered);
         }
       } catch (error) {
         console.error("Failed to load categories", error);
@@ -39,71 +46,55 @@ export default function ShopCategorySection({
       }
     };
     fetchCategories();
-  }, []);
+  }, [isDrink]);
 
   if (!isLoading && categories.length === 0) return null;
 
   return (
-    <section className="max-w-[1320px] mx-auto px-2 sm:px-4 py-6">
-      <h2 className="sr-only">Shop by Category</h2>
+    <div className="w-full">
+      <h2 className="sr-only">Categories</h2>
 
       {isLoading ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="flex flex-col items-center gap-2">
-              <Skeleton className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl" />
-              <Skeleton className="w-16 h-3" />
-            </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="w-24 h-9 rounded-full flex-shrink-0 bg-mist/20" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-x-2 gap-y-6 place-items-center">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth">
+          {/* "Tất cả" Pill */}
+          <button
+            onClick={() => onSelectCategory("")}
+            className={cn(
+              "px-6 py-2 rounded-full font-ui-body text-sm font-medium whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 cursor-pointer",
+              !selectedCategoryId
+                ? "bg-roast text-white shadow-sm"
+                : "bg-white text-roast border border-roast hover:bg-cream",
+            )}
+          >
+            Tất cả
+          </button>
+
           {categories.map((category) => {
             const isSelected = selectedCategoryId === category.id;
 
             return (
-              <div
+              <button
                 key={category.id}
                 onClick={() => onSelectCategory(category.id)}
-                className="flex flex-col items-center group cursor-pointer w-full"
+                className={cn(
+                  "px-6 py-2 rounded-full font-ui-body text-sm font-medium whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 cursor-pointer",
+                  isSelected
+                    ? "bg-roast text-white shadow-sm"
+                    : "bg-white text-roast border border-roast hover:bg-cream",
+                )}
               >
-                <div
-                  className={cn(
-                    "w-20 h-20 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center p-1.5 transition-all duration-300 border mb-2 overflow-hidden bg-white relative",
-                    isSelected
-                      ? "border-black ring-1 ring-black shadow-md bg-gray-50"
-                      : "border-transparent bg-gray-50 hover:bg-white hover:shadow-lg hover:border-gray-200",
-                  )}
-                >
-                  {category.imageUrl ? (
-                    <img
-                      src={category.imageUrl}
-                      alt={category.name}
-                      className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110"
-                    />
-                  ) : (
-                    <span className="text-2xl text-gray-300 font-bold select-none uppercase">
-                      {category.name.charAt(0)}
-                    </span>
-                  )}
-                </div>
-
-                <span
-                  className={cn(
-                    "text-[11px] sm:text-sm font-medium text-center line-clamp-2 px-0.5 transition-colors leading-tight max-w-[110px]",
-                    isSelected
-                      ? "text-black font-bold"
-                      : "text-gray-600 group-hover:text-black",
-                  )}
-                  title={category.name}
-                >
-                  {category.name}
-                </span>
-              </div>
+                {category.name}
+              </button>
             );
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

@@ -31,7 +31,6 @@ import {
   DollarSign,
   Package,
   ShoppingCart,
-  Wrench,
   AlertTriangle,
   Activity,
   BarChart3,
@@ -46,11 +45,10 @@ import { useNavigate } from "react-router";
 import { format, subDays } from "date-fns";
 import { reportService } from "@/services/report.service";
 import { orderService, type OrderResponse } from "@/services/order.service";
-import { warrantyService } from "@/services/warranty.service";
 import { customerService } from "@/services/customer.service";
 import { auditLogService } from "@/services/audit-log.service";
 import { authService } from "@/services/auth.service";
-import type { WarrantyTicket } from "@/types/warranty.types";
+import { branchStockService, type IngredientStockResponse } from "@/services/branch-stock.service";
 import type { Customer } from "@/types/customer.types";
 
 const chartConfig = {
@@ -91,9 +89,8 @@ interface TopProduct {
 
 interface LowStockItem {
   id: string;
-  productName: string;
-  variantName: string;
-  sku: string;
+  ingredientName: string;
+  unit: string;
   quantityAvailable: number;
   minThreshold: number;
   isOutOfStock: boolean;
@@ -104,14 +101,6 @@ interface PendingOrder {
   orderNumber: string;
   customer: string;
   total: number;
-  createdAt: string;
-}
-
-interface WarrantyTicketDisplay {
-  id: string;
-  ticketNumber: string;
-  customerName: string;
-  status: string;
   createdAt: string;
 }
 
@@ -157,9 +146,6 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
-  const [warrantyTickets, setWarrantyTickets] = useState<
-    WarrantyTicketDisplay[]
-  >([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogDisplay[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [orderStats, setOrderStats] = useState({
@@ -218,7 +204,6 @@ export default function DashboardPage() {
         inventoryResponse,
         ordersResponse,
         customersResponse,
-        warrantyResponse,
         auditLogsResponse,
       ] = await Promise.allSettled([
         reportService.getRevenueReport(dateRange),
@@ -228,10 +213,9 @@ export default function DashboardPage() {
           limit: 5,
           sortBy: "REVENUE",
         }),
-        reportService.getInventoryReport({}), // Get all inventory, not just low stock
+        branchStockService.getStock("", "", false), // Get all inventory to find low stock ingredients
         orderService.getAllOrders({ page: 0, size: 100 }),
         customerService.getCustomers(),
-        warrantyService.getAllTickets(),
         auditLogService.getAllAuditLogs({ size: 5 }),
       ]);
 
@@ -289,9 +273,9 @@ export default function DashboardPage() {
           .filter((order: OrderResponse) => order.status === "PENDING")
           .slice(0, 5)
           .map((order: OrderResponse) => ({
-            id: order.id,
+            id: order.orderId,
             orderNumber: order.orderNumber,
-            customer: order.customer?.fullName || order.guestName || "Guest",
+            customer: order.customerName || "Guest",
             total: order.finalAmount || 0,
             createdAt: order.createdAt,
           }));
@@ -316,11 +300,11 @@ export default function DashboardPage() {
         ordersData.forEach((order: OrderResponse) => {
           if (order.items && order.items.length > 0) {
             order.items.forEach((item) => {
-              const key = item.productVariantId || item.sku;
+              const key = item.id || item.menuItemName;
               const existing = productSales.get(key) || {
-                productName: item.productName,
-                variantName: item.variantName || "",
-                sku: item.sku,
+                productName: item.menuItemName,
+                variantName: item.sizeName || "",
+                sku: item.sizeName || "Standard",
                 quantitySold: 0,
                 totalRevenue: 0,
               };
@@ -472,41 +456,39 @@ export default function DashboardPage() {
         // If API returns empty, the calculated products from orders will be used (set earlier)
       }
 
-      // Process inventory (low stock items first, then all items if none are low)
+      // Process inventory (low stock ingredients first, then all items if none are low)
       if (
         inventoryResponse.status === "fulfilled" &&
         inventoryResponse.value.data
       ) {
-        const inventoryData = inventoryResponse.value.data;
-        const allItems = inventoryData.items || [];
+        const inventoryData = inventoryResponse.value.data as any;
+        const allItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.content || []);
 
         // First try to get low stock items
         let lowStock = allItems
-          .filter((item) => item.isLowStock || item.isOutOfStock)
+          .filter((item: IngredientStockResponse) => item.isLowStock || item.quantityAvailable <= 0)
           .slice(0, 5)
-          .map((item) => ({
-            id: item.productVariantId,
-            productName: item.productName,
-            variantName: item.variantName,
-            sku: item.sku,
+          .map((item: IngredientStockResponse) => ({
+            id: item.id,
+            ingredientName: item.ingredientName,
+            unit: item.unit,
             quantityAvailable: item.quantityAvailable,
-            minThreshold: item.minThreshold,
-            isOutOfStock: item.isOutOfStock,
+            minThreshold: item.minStockAlert,
+            isOutOfStock: item.quantityAvailable <= 0,
           }));
 
         // If no low stock items, show items with lowest stock
         if (lowStock.length === 0 && allItems.length > 0) {
           lowStock = allItems
-            .sort((a, b) => a.quantityAvailable - b.quantityAvailable)
+            .sort((a: IngredientStockResponse, b: IngredientStockResponse) => a.quantityAvailable - b.quantityAvailable)
             .slice(0, 5)
-            .map((item) => ({
-              id: item.productVariantId,
-              productName: item.productName,
-              variantName: item.variantName,
-              sku: item.sku,
+            .map((item: IngredientStockResponse) => ({
+              id: item.id,
+              ingredientName: item.ingredientName,
+              unit: item.unit,
               quantityAvailable: item.quantityAvailable,
-              minThreshold: item.minThreshold,
-              isOutOfStock: item.quantityAvailable === 0,
+              minThreshold: item.minStockAlert,
+              isOutOfStock: item.quantityAvailable <= 0,
             }));
         }
 
@@ -528,25 +510,6 @@ export default function DashboardPage() {
         }));
       }
 
-      // Process warranty tickets
-      if (
-        warrantyResponse.status === "fulfilled" &&
-        warrantyResponse.value.data
-      ) {
-        const ticketsData = Array.isArray(warrantyResponse.value.data)
-          ? warrantyResponse.value.data
-          : [];
-        const tickets = ticketsData
-          .slice(0, 5)
-          .map((ticket: WarrantyTicket) => ({
-            id: ticket.id,
-            ticketNumber: ticket.ticketNumber,
-            customerName: ticket.customerName || "Unknown",
-            status: ticket.status?.replace(/_/g, " ") || "Unknown",
-            createdAt: ticket.createdAt,
-          }));
-        setWarrantyTickets(tickets);
-      }
 
       // Process audit logs
       if (
@@ -671,8 +634,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-6 mb-space-8">
         {/* Revenue Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel flex-shrink-0">
               <DollarSign className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -696,8 +659,8 @@ export default function DashboardPage() {
 
         {/* Gross Profit Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast flex-shrink-0">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -714,8 +677,8 @@ export default function DashboardPage() {
 
         {/* Orders Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-roast/10 flex items-center justify-center text-roast flex-shrink-0">
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -732,8 +695,8 @@ export default function DashboardPage() {
 
         {/* Customers Card */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardContent className="p-space-6 flex items-center gap-space-4">
-            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel">
+          <CardContent className="p-space-6 flex flex-row sm:flex-col xl:flex-row items-center sm:items-start xl:items-center justify-between gap-space-4">
+            <div className="w-10 h-10 rounded-full bg-caramel/10 flex items-center justify-center text-caramel flex-shrink-0">
               <Users className="w-5 h-5" />
             </div>
             <div className="flex-1">
@@ -909,7 +872,7 @@ export default function DashboardPage() {
             <Button
               variant="outline"
               className="w-full mt-3 rounded-lg border-admin-border hover:bg-surface-container-low text-dust hover:text-roast"
-              onClick={() => navigate("/sales/orders")}
+              onClick={() => navigate("/admin/orders")}
             >
               <Eye className="w-4 h-4 mr-2" />
               View All Orders
@@ -938,21 +901,21 @@ export default function DashboardPage() {
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-space-6 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
-                    <TableHead className="py-3 text-xs font-semibold text-dust w-12">
+                    <TableHead className="py-4 text-xs font-semibold text-dust w-12">
                       #
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
                       Product
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Sold
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Revenue
                     </TableHead>
                   </TableRow>
@@ -963,7 +926,7 @@ export default function DashboardPage() {
                       key={product.sku}
                       className="border-admin-border/60 hover:bg-surface-container-low transition-colors"
                     >
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <Badge
                           variant={product.rank === 1 ? "default" : "outline"}
                           className={`font-bold ${product.rank === 1 ? "bg-roast text-white border-0" : product.rank === 2 ? "bg-cream text-roast border-0" : product.rank === 3 ? "bg-parchment text-roast border-0" : ""}`}
@@ -971,7 +934,7 @@ export default function DashboardPage() {
                           {product.rank}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <div>
                           <p className="font-semibold text-ink text-sm line-clamp-1">
                             {product.productName}
@@ -981,10 +944,10 @@ export default function DashboardPage() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-ink">
+                      <TableCell className="py-4 text-right font-bold text-ink">
                         {product.quantitySold.toLocaleString()}
                       </TableCell>
-                      <TableCell className="py-3 text-right font-bold text-roast">
+                      <TableCell className="py-4 text-right font-bold text-roast">
                         {formatCurrency(product.totalRevenue)}
                       </TableCell>
                     </TableRow>
@@ -1029,23 +992,23 @@ export default function DashboardPage() {
               variant="ghost"
               size="sm"
               className="text-caramel hover:text-roast hover:bg-surface-container-low rounded-lg font-medium"
-              onClick={() => navigate("/inventory/all")}
+              onClick={() => navigate("/admin/stock/all")}
             >
               View All
             </Button>
           </CardHeader>
-          <CardContent className="p-0 px-space-6 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="rounded-lg border border-admin-border overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-surface-container-low hover:bg-surface-container-low border-b border-admin-border">
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
-                      Product
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
+                      Ingredient
                     </TableHead>
-                    <TableHead className="py-3 text-xs font-semibold text-dust">
-                      SKU
+                    <TableHead className="py-4 text-xs font-semibold text-dust">
+                      Unit
                     </TableHead>
-                    <TableHead className="py-3 text-right text-xs font-semibold text-dust">
+                    <TableHead className="py-4 text-right text-xs font-semibold text-dust">
                       Stock
                     </TableHead>
                   </TableRow>
@@ -1056,25 +1019,20 @@ export default function DashboardPage() {
                       key={item.id}
                       className="border-admin-border/60 hover:bg-error-container/40 transition-colors"
                     >
-                      <TableCell className="py-3">
-                        <div>
-                          <p className="font-semibold text-ink text-sm line-clamp-1">
-                            {item.productName}
-                          </p>
-                          <p className="text-xs text-dust">
-                            {item.variantName}
-                          </p>
-                        </div>
+                      <TableCell className="py-4">
+                        <p className="font-semibold text-ink text-sm line-clamp-1">
+                          {item.ingredientName}
+                        </p>
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-4">
                         <Badge
                           variant="outline"
                           className="font-mono text-xs bg-surface-container-low"
                         >
-                          {item.sku}
+                          {item.unit}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-3 text-right">
+                      <TableCell className="py-4 text-right">
                         <Badge
                           variant={
                             item.isOutOfStock ? "destructive" : "secondary"
@@ -1108,8 +1066,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Pending Orders + Warranty Tickets + Audit Logs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-6">
+      {/* Pending Orders + Audit Logs Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-6">
         {/* Pending Orders */}
         <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -1120,7 +1078,7 @@ export default function DashboardPage() {
               Pending Orders
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="space-y-space-3">
               {pendingOrders.map((order) => (
                 <div
@@ -1160,61 +1118,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Warranty Tickets */}
-        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
-              <div className="p-2 bg-cream rounded-lg">
-                <Wrench className="w-5 h-5 text-roast" />
-              </div>
-              Recent Warranty Tickets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
-            <div className="space-y-space-3">
-              {warrantyTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-center justify-between p-space-4 bg-surface-container-low rounded-lg border border-admin-border hover:shadow-md transition-all duration-200 cursor-pointer"
-                  onClick={() => navigate(`/warranty/tickets`)}
-                >
-                  <div>
-                    <p className="font-semibold text-ink text-sm">
-                      {ticket.ticketNumber}
-                    </p>
-                    <p className="text-xs text-dust">
-                      {ticket.customerName}
-                    </p>
-                  </div>
-                  <Badge
-                    className={`text-xs font-medium ${
-                      ticket.status.toLowerCase().includes("completed")
-                        ? "bg-cream text-roast"
-                        : ticket.status.toLowerCase().includes("progress")
-                          ? "bg-parchment text-roast"
-                          : ticket.status.toLowerCase().includes("pending")
-                            ? "bg-cream text-roast"
-                            : "bg-surface-container-high text-dust"
-                    } border-0`}
-                  >
-                    {ticket.status}
-                  </Badge>
-                </div>
-              ))}
-              {warrantyTickets.length === 0 && (
-                <div className="py-10 text-center text-dust">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-container-high flex items-center justify-center mx-auto mb-3">
-                    <Wrench className="w-7 h-7 text-dust" />
-                  </div>
-                  <p className="font-medium">No warranty tickets</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Audit Logs */}
-        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm md:col-span-2 lg:col-span-1">
+        <Card className="bg-admin-surface border border-admin-border rounded-lg shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg font-semibold text-ink flex items-center gap-2">
               <div className="p-2 bg-cream rounded-lg">
@@ -1223,7 +1128,7 @@ export default function DashboardPage() {
               Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 px-space-5 pb-space-5">
+          <CardContent className="px-space-6 pb-space-6 pt-0">
             <div className="space-y-space-3">
               {auditLogs.map((log) => (
                 <div

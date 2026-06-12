@@ -1,6 +1,8 @@
 import axiosClient from "@/lib/axios-client";
 import type { ApiResponse } from "@/types/api.types";
 
+// ---- Legacy interfaces (kept for backwards compat with other pages) ----
+
 export interface UserListItem {
   id: string;
   username: string;
@@ -10,15 +12,6 @@ export interface UserListItem {
   avatar: string;
   status: string;
   isFirstLogin: boolean;
-}
-
-export interface CreateEmployeeRequest {
-  username: string;
-  email: string;
-  password: string;
-  fullName: string;
-  phone?: string;
-  roleName: string;
 }
 
 export interface Role {
@@ -61,148 +54,177 @@ export interface UserFilterParams {
   sortDir?: string;
 }
 
+// ---- Staff interfaces (aligned with AdminStaffController) ----
+
+export interface StaffMember {
+  id: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string;
+  avatarUrl: string;
+  isActive: boolean; // JSON: "active" (Jackson auto-strips "is" prefix on boolean)
+  active?: boolean;  // Jackson may serialize as "active" instead of "isActive"
+  roles: string[];   // e.g. ["ROLE_CASHIER", "ROLE_BARISTA"]
+  branchId: string | null;
+  branchName: string | null;
+}
+
+export interface CreateStaffRequest {
+  email: string;
+  fullName: string;
+  phoneNumber?: string;
+  password: string;
+  roles?: string[];  // e.g. ["ROLE_CASHIER"]
+  branchId?: string;
+}
+
+export interface UpdateStaffRequest {
+  fullName: string;
+  phoneNumber?: string;
+  avatarUrl?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateStaffRoleRequest {
+  roles: string[]; // e.g. ["ROLE_BARISTA"]
+}
+
+export interface UpdateStaffBranchRequest {
+  branchId: string | null;
+}
+
+// ---- Branch interface (for the branch dropdown) ----
+
+export interface BranchOption {
+  id: string;
+  name: string;
+  address?: string;
+}
+
+// =====================================================================
+// Admin Service — uses /api/admin/staff (AdminStaffController)
+// =====================================================================
+
 export const adminService = {
-  // Create employee account
-  createEmployee: async (data: CreateEmployeeRequest) => {
-    return axiosClient.post<unknown, ApiResponse<void>>(
-      "/admin/create-employee",
-      data,
-    );
+  // ---- Staff CRUD (AdminStaffController: /api/admin/staff) ----
+
+  /** GET /api/admin/staff — List all staff (scoped by branch for BM) */
+  getAllStaff: async () => {
+    return axiosClient.get<unknown, ApiResponse<StaffMember[]>>("/admin/staff");
   },
 
-  // Get all users (for admin) with pagination
-  getAllUsers: async (params?: {
-    role?: string;
-    status?: string;
-    page?: number;
-    size?: number;
-  }) => {
-    const queryParams: any = {};
-
-    if (params?.role && params.role !== "all-roles") {
-      queryParams.role = params.role.toUpperCase();
-    }
-    if (params?.status && params.status !== "all-status") {
-      queryParams.status = params.status.toUpperCase();
-    }
-    if (params?.page !== undefined) queryParams.page = params.page;
-    if (params?.size !== undefined) queryParams.size = params.size;
-
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
-      "/admin/users",
-      { params: queryParams },
-    );
+  /** GET /api/admin/staff/{id} */
+  getStaffById: async (id: string) => {
+    return axiosClient.get<unknown, ApiResponse<StaffMember>>(`/admin/staff/${id}`);
   },
 
-  // Get user detail by ID
+  /** POST /api/admin/staff — Create a new staff member */
+  createStaff: async (data: CreateStaffRequest) => {
+    return axiosClient.post<unknown, ApiResponse<StaffMember>>("/admin/staff", data);
+  },
+
+  /** PUT /api/admin/staff/{id} — Update staff info (name, phone, active) */
+  updateStaff: async (id: string, data: UpdateStaffRequest) => {
+    return axiosClient.put<unknown, ApiResponse<StaffMember>>(`/admin/staff/${id}`, data);
+  },
+
+  /** PUT /api/admin/staff/{id}/role — Replace staff roles */
+  updateStaffRole: async (id: string, data: UpdateStaffRoleRequest) => {
+    return axiosClient.put<unknown, ApiResponse<StaffMember>>(`/admin/staff/${id}/role`, data);
+  },
+
+  /** PUT /api/admin/staff/{id}/branch — Change staff branch */
+  updateStaffBranch: async (id: string, data: UpdateStaffBranchRequest) => {
+    return axiosClient.put<unknown, ApiResponse<StaffMember>>(`/admin/staff/${id}/branch`, data);
+  },
+
+  /** DELETE /api/admin/staff/{id} — Soft-delete (disable) staff */
+  deleteStaff: async (id: string) => {
+    return axiosClient.delete<unknown, ApiResponse<void>>(`/admin/staff/${id}`);
+  },
+
+  // ---- Branch listing (for dropdowns) ----
+
+  /** GET /api/admin/branches */
+  getAllBranches: async () => {
+    return axiosClient.get<unknown, ApiResponse<BranchOption[]>>("/admin/branches");
+  },
+
+  // ---- Legacy user admin methods (kept for other pages that may still use them) ----
+
+  createEmployee: async (data: { username: string; email: string; password: string; fullName: string; phone?: string; roleName: string }) => {
+    // Redirect to the new Staff API
+    return adminService.createStaff({
+      email: data.email,
+      fullName: data.fullName,
+      phoneNumber: data.phone,
+      password: data.password,
+      roles: [data.roleName],
+    });
+  },
+
+  getAllUsers: async () => {
+    // Map to getAllStaff — returns StaffMember[] which is close enough
+    return adminService.getAllStaff();
+  },
+
   getUserById: async (userId: string) => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}`,
-    );
+    return adminService.getStaffById(userId);
   },
 
-  // Get user statistics
   getUserStats: async () => {
-    return axiosClient.get<unknown, ApiResponse<UserStats>>(
-      "/admin/users/stats",
-    );
+    return axiosClient.get<unknown, ApiResponse<UserStats>>("/admin/users/stats");
   },
 
-  // Search users by keyword
   searchUsers: async (keyword: string) => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
-      "/admin/users/search",
-      { params: { keyword } },
-    );
+    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>("/admin/users/search", { params: { keyword } });
   },
 
-  // Search users with filters
   filterUsers: async (params: UserFilterParams) => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
-      "/admin/users/filter",
-      { params },
-    );
+    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>("/admin/users/filter", { params });
   },
 
-  // Get users by status
   getUsersByStatus: async (status: string) => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
-      "/admin/users/by-status",
-      { params: { status } },
-    );
+    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>("/admin/users/by-status", { params: { status } });
   },
 
-  // Get users by role
   getUsersByRole: async (role: string) => {
-    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>(
-      "/admin/users/by-role",
-      { params: { role } },
-    );
+    return axiosClient.get<unknown, ApiResponse<UserAccount[]>>("/admin/users/by-role", { params: { role } });
   },
 
-  // Update user status
   updateUserStatus: async (userId: string, status: string) => {
-    return axiosClient.put<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/status`,
-      null,
-      { params: { status } },
-    );
+    return axiosClient.put<unknown, ApiResponse<UserAccount>>(`/admin/users/${userId}/status`, null, { params: { status } });
   },
 
-  // Activate user
   activateUser: async (userId: string) => {
-    return axiosClient.post<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/activate`,
-    );
+    return adminService.updateStaff(userId, { fullName: "", isActive: true });
   },
 
-  // Suspend user
   suspendUser: async (userId: string) => {
-    return axiosClient.post<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/suspend`,
-    );
+    return adminService.updateStaff(userId, { fullName: "", isActive: false });
   },
 
-  // Terminate user
   terminateUser: async (userId: string) => {
-    return axiosClient.post<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/terminate`,
-    );
+    return adminService.deleteStaff(userId);
   },
 
-  // Replace all user roles
   replaceUserRoles: async (userId: string, roleIds: string[]) => {
-    return axiosClient.put<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/roles/replace`,
-      roleIds,
-    );
+    return axiosClient.put<unknown, ApiResponse<UserAccount>>(`/admin/users/${userId}/roles/replace`, roleIds);
   },
 
-  // Add multiple roles to user
   addRolesToUser: async (userId: string, roleIds: string[]) => {
-    return axiosClient.post<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/roles/batch-add`,
-      roleIds,
-    );
+    return axiosClient.post<unknown, ApiResponse<UserAccount>>(`/admin/users/${userId}/roles/batch-add`, roleIds);
   },
 
-  // Remove multiple roles from user
   removeRolesFromUser: async (userId: string, roleIds: string[]) => {
-    return axiosClient.post<unknown, ApiResponse<UserAccount>>(
-      `/admin/users/${userId}/roles/batch-remove`,
-      roleIds,
-    );
+    return axiosClient.post<unknown, ApiResponse<UserAccount>>(`/admin/users/${userId}/roles/batch-remove`, roleIds);
   },
 
-  // Get all roles
   getAllRoles: async () => {
     return axiosClient.get<unknown, ApiResponse<Role[]>>("/admin/roles");
   },
 
-  // Delete user
   deleteUser: async (userId: string) => {
-    return axiosClient.delete<unknown, ApiResponse<void>>(
-      `/admin/users/${userId}`,
-    );
+    return adminService.deleteStaff(userId);
   },
 };

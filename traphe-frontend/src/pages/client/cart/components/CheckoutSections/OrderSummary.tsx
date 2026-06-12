@@ -3,9 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Tag, X, Ticket } from "lucide-react";
+import { Loader2, Tag, X, Ticket, ArrowRight } from "lucide-react";
 import type { CartItem } from "@/types/cart.types";
-import type { PromotionResponse } from "@/services/promotion.service";
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -15,7 +14,7 @@ interface OrderSummaryProps {
   couponCode: string;
   onChangeCoupon: (code: string) => void;
   isApplyingCoupon: boolean;
-  availablePromotions: PromotionResponse[];
+  availablePromotions: any[];
   isLoadingPromotions: boolean;
   displayTotal: number;
   onApplyCoupon: (code?: string) => void;
@@ -23,6 +22,9 @@ interface OrderSummaryProps {
   onPlaceOrder: () => void;
   isPlacingOrder: boolean;
   isGuest?: boolean;
+  pointsAvailable?: number;
+  pointsUsed?: number;
+  onChangePointsUsed?: (points: number) => void;
 }
 
 export default function OrderSummary({
@@ -41,38 +43,78 @@ export default function OrderSummary({
   onPlaceOrder,
   isPlacingOrder,
   isGuest = false,
+  pointsAvailable = 0,
+  pointsUsed = 0,
+  onChangePointsUsed,
 }: OrderSummaryProps) {
-  return (
-    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 lg:p-8 sticky top-24">
-      <h2 className="text-xl font-bold mb-6 text-gray-900">Order Summary</h2>
+  const itemsCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-      <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-        {items.map((item) => (
+  /**
+   * For authenticated users, the server already provides `isEligible` + `reason`
+   * via the /checkout-eligible API. We just pass them through.
+   * For guests, we do a simple client-side fallback check.
+   */
+  const processPromotions = (promos: any[]) => {
+    return promos.map((promo) => {
+      // If server already provided eligibility (authenticated user)
+      if (promo.isEligible !== undefined) {
+        return promo;
+      }
+      // Guest fallback: simple local checks only
+      if (!promo.discountValue || promo.discountValue === 0) {
+        return { ...promo, isEligible: false, reason: "Voucher không có giá trị" };
+      }
+      if (promo.minOrderValue && subtotal < promo.minOrderValue) {
+        return { ...promo, isEligible: false, reason: `Đơn tối thiểu ${(promo.minOrderValue).toLocaleString()}₫` };
+      }
+      return { ...promo, isEligible: true, reason: null };
+    }).sort((a, b) => {
+      if (a.isEligible && !b.isEligible) return -1;
+      if (!a.isEligible && b.isEligible) return 1;
+      return 0;
+    });
+  };
+
+  const publicPromotions = processPromotions(availablePromotions.filter((p) => !p.isMyVoucher));
+  const myVouchers = processPromotions(availablePromotions.filter((p) => p.isMyVoucher));
+
+  return (
+    <div className="bg-surface-container-lowest border border-admin-border rounded-xl p-6 lg:p-8 sticky top-24 shadow-sm font-ui-body">
+      <h2 className="font-heading-lg text-heading-lg text-roast mb-6 pb-4 border-b border-mist">Order Summary</h2>
+
+      <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar divide-y divide-mist/30">
+        {items.map((item, idx) => (
           <div
             key={item.id}
-            className="flex gap-4 items-start py-2 border-b border-gray-200 last:border-0 border-dashed"
+            className={`flex gap-4 items-start ${idx > 0 ? "pt-4" : ""}`}
           >
-            <div className="relative w-12 h-12 bg-white border border-gray-200 rounded-md flex items-center justify-center overflow-hidden">
-              {item.productImageUrl ? (
+            <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-mist shadow-sm bg-foam flex items-center justify-center text-xs text-dust">
+              {item.menuItemImageUrl ? (
                 <img
-                  src={item.productImageUrl}
+                  src={item.menuItemImageUrl}
+                  alt={item.menuItemName}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-[10px] text-gray-400">Img</span>
+                "Img"
               )}
-              <span className="absolute -top-1.5 -right-1.5 bg-gray-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">
-                {item.quantity}
-              </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-xs font-semibold text-gray-900 truncate">
-                {item.productName}
-              </h4>
-              <p className="text-[10px] text-gray-500">{item.variantName}</p>
-            </div>
-            <div className="text-xs font-bold text-gray-900">
-              {item.subtotal.toLocaleString("vi-VN")}₫
+            <div className="flex-1 flex flex-col justify-between min-h-[64px]">
+              <div className="flex justify-between items-start gap-2">
+                <span className="font-ui-heading text-[15px] text-roast leading-tight">{item.menuItemName}</span>
+                <span className="font-ui-body text-sm font-bold text-roast shrink-0">
+                  {item.subtotal.toLocaleString("vi-VN")}₫
+                </span>
+              </div>
+              <div className="text-[12px] text-smoke leading-snug">
+                {item.sizeName && <span>Size: {item.sizeName}</span>}
+                {item.selectedToppings && item.selectedToppings.length > 0 && (
+                  <span className="block mt-0.5">
+                    +{item.selectedToppings.map(t => t.toppingName).join(", ")}
+                  </span>
+                )}
+              </div>
+              <div className="font-ui-body text-[12px] text-roast mt-1 font-medium">Qty: {item.quantity}</div>
             </div>
           </div>
         ))}
@@ -80,19 +122,19 @@ export default function OrderSummary({
 
       {/* Coupon Input */}
       {!isGuest && (
-        <div className="mb-6 space-y-3">
-          <label className="text-xs font-bold text-gray-500 uppercase block">
-            Coupon Code
+        <div className="mb-6 space-y-3 pt-4 border-t border-mist/30">
+          <label className="font-ui-heading text-xs font-bold text-smoke uppercase tracking-wider block">
+            Voucher / Coupon Code
           </label>
           {discountAmount > 0 ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg p-3 animate-in fade-in zoom-in duration-300">
-              <div className="flex items-center gap-2 text-green-700">
+            <div className="flex items-center justify-between bg-cream border border-roast/20 rounded-lg p-3 animate-in fade-in zoom-in duration-300">
+              <div className="flex items-center gap-2 text-roast">
                 <Tag className="w-4 h-4" />
-                <span className="text-sm font-medium">{couponCode}</span>
+                <span className="text-sm font-semibold">{couponCode}</span>
               </div>
               <button
                 onClick={onRemoveCoupon}
-                className="text-green-700 hover:text-green-900 cursor-pointer"
+                className="text-roast hover:text-espresso cursor-pointer p-1 hover:bg-foam rounded-full transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -103,15 +145,16 @@ export default function OrderSummary({
                 placeholder="Enter code"
                 value={couponCode}
                 onChange={(e) => onChangeCoupon(e.target.value)}
-                className="bg-white"
+                className="bg-foam border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body"
               />
               <Button
                 variant="outline"
                 onClick={() => onApplyCoupon()}
                 disabled={isApplyingCoupon || !couponCode}
+                className="border-roast text-roast hover:bg-cream rounded-lg transition-colors cursor-pointer"
               >
                 {isApplyingCoupon ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-roast" />
                 ) : (
                   "Apply"
                 )}
@@ -121,40 +164,94 @@ export default function OrderSummary({
 
           {!discountAmount && availablePromotions.length > 0 && (
             <div className="mt-4">
-              <p className="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1">
-                <Ticket className="w-3 h-3" /> Available Vouchers
+              <p className="font-ui-heading text-xs font-bold text-smoke uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Ticket className="w-3.5 h-3.5" /> Available Vouchers
               </p>
-              <ScrollArea className="h-[120px] rounded-md border p-2 bg-white">
+              <ScrollArea className="h-[120px] rounded-lg border border-mist/30 p-2 bg-foam">
                 <div className="space-y-2">
                   {isLoadingPromotions ? (
                     <div className="text-center py-2">
-                      <Loader2 className="w-4 h-4 animate-spin mx-auto text-gray-400" />
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto text-roast" />
                     </div>
                   ) : (
-                    availablePromotions.map((promo) => (
-                      <div
-                        key={promo.id}
-                        onClick={() => onApplyCoupon(promo.code)}
-                        className="flex items-center justify-between p-2 rounded-md border border-dashed border-gray-200 hover:border-black hover:bg-gray-50 cursor-pointer transition-all group"
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-bold text-gray-900 group-hover:text-black">
-                            {promo.code}
-                          </span>
-                          <span className="text-[10px] text-gray-500">
-                            {promo.type === "PERCENTAGE"
-                              ? `Giảm ${promo.value}%`
-                              : `Giảm ${promo.value.toLocaleString()}₫`}
-                          </span>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] bg-gray-100 group-hover:bg-black group-hover:text-white pointer-events-none"
+                    <>
+                      {publicPromotions.map((promo) => (
+                        <div
+                          key={promo.id}
+                          onClick={() => promo.isEligible && onApplyCoupon(promo.code)}
+                          className={`flex items-center justify-between p-2 rounded-md border border-dashed border-mist/50 transition-all group ${
+                            promo.isEligible ? "hover:border-roast hover:bg-cream cursor-pointer" : "opacity-60 cursor-not-allowed bg-mist/10"
+                          }`}
                         >
-                          Apply
-                        </Badge>
-                      </div>
-                    ))
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-xs font-bold ${promo.isEligible ? "text-roast group-hover:text-espresso" : "text-dust"}`}>
+                              {promo.code}
+                            </span>
+                            <span className="text-[10px] text-smoke">
+                              {promo.discountType === "PERCENTAGE"
+                                ? `Giảm ${promo.discountValue ?? 0}%`
+                                : `Giảm ${(promo.discountValue ?? 0).toLocaleString()}₫`}
+                            </span>
+                            {!promo.isEligible && promo.reason && (
+                              <span className="text-[10px] text-red-500 font-medium mt-0.5">
+                                {promo.reason}
+                              </span>
+                            )}
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] pointer-events-none transition-colors ${
+                              promo.isEligible ? "bg-cream text-roast border border-roast/10 group-hover:bg-roast group-hover:text-white" : "bg-mist/30 text-dust border-none"
+                            }`}
+                          >
+                            Apply
+                          </Badge>
+                        </div>
+                      ))}
+
+                      {myVouchers.length > 0 && (
+                        <>
+                          <div className="flex items-center gap-2 py-1">
+                            <div className="h-px bg-mist/50 flex-1"></div>
+                            <span className="text-[10px] font-bold text-dust uppercase tracking-wider">My Vouchers</span>
+                            <div className="h-px bg-mist/50 flex-1"></div>
+                          </div>
+                          {myVouchers.map((promo) => (
+                            <div
+                              key={promo.id}
+                              onClick={() => promo.isEligible && onApplyCoupon(promo.code)}
+                              className={`flex items-center justify-between p-2 rounded-md border border-solid transition-all group ${
+                                promo.isEligible ? "border-roast/30 bg-white hover:border-roast hover:bg-cream cursor-pointer" : "border-mist/30 bg-mist/5 opacity-60 cursor-not-allowed"
+                              }`}
+                            >
+                              <div className="flex flex-col gap-0.5">
+                                <span className={`text-xs font-bold ${promo.isEligible ? "text-roast group-hover:text-espresso" : "text-dust"}`}>
+                                  {promo.code}
+                                </span>
+                                <span className="text-[10px] text-smoke">
+                                  {promo.discountType === "PERCENTAGE"
+                                    ? `Giảm ${promo.discountValue ?? 0}%`
+                                    : `Giảm ${(promo.discountValue ?? 0).toLocaleString()}₫`}
+                                </span>
+                                {!promo.isEligible && promo.reason && (
+                                  <span className="text-[10px] text-red-500 font-medium mt-0.5">
+                                    {promo.reason}
+                                  </span>
+                                )}
+                              </div>
+                              <Badge
+                                variant="secondary"
+                                className={`text-[10px] pointer-events-none transition-colors ${
+                                  promo.isEligible ? "bg-roast text-white border border-roast/10 group-hover:bg-espresso" : "bg-mist/30 text-dust border-none"
+                                }`}
+                              >
+                                Apply
+                              </Badge>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </>
                   )}
                 </div>
               </ScrollArea>
@@ -163,40 +260,112 @@ export default function OrderSummary({
         </div>
       )}
 
-      <Separator className="bg-gray-200 mb-6" />
+      {/* Loyalty Points Section */}
+      {!isGuest && pointsAvailable > 0 && (
+        <div className="mb-6 space-y-3 pt-4 border-t border-mist/30">
+          <label className="font-ui-heading text-xs font-bold text-smoke uppercase tracking-wider block">
+            Redeem Loyalty Points
+          </label>
+          <div className="bg-foam border border-mist/50 rounded-lg p-4 space-y-3">
+            <div className="flex justify-between items-center text-sm font-medium">
+              <span className="text-smoke">Available Points:</span>
+              <span className="text-roast font-bold">{pointsAvailable} pts</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                max={Math.min(pointsAvailable, Math.floor(Math.max(0, subtotal + shippingFee - discountAmount) / 1000))}
+                placeholder="Points to use"
+                value={pointsUsed || ""}
+                onChange={(e) => {
+                  const maxPointsAllowed = Math.min(pointsAvailable, Math.floor(Math.max(0, subtotal + shippingFee - discountAmount) / 1000));
+                  const val = Math.min(maxPointsAllowed, Math.max(0, parseInt(e.target.value) || 0));
+                  onChangePointsUsed?.(val);
+                }}
+                className="bg-white border-mist focus:border-roast focus:ring-roast rounded-lg text-sm text-roast font-ui-body"
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const maxPointsAllowed = Math.min(pointsAvailable, Math.floor(Math.max(0, subtotal + shippingFee - discountAmount) / 1000));
+                  onChangePointsUsed?.(maxPointsAllowed);
+                }}
+                className="border-roast text-roast hover:bg-cream rounded-lg transition-colors cursor-pointer text-xs shrink-0"
+              >
+                Use Max
+              </Button>
+            </div>
+            {pointsUsed > 0 && (
+              <div className="text-[12px] text-latte font-medium animate-in fade-in duration-300">
+                Redeeming {pointsUsed} points = -{(pointsUsed * 1000).toLocaleString("vi-VN")}₫ discount
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      <div className="space-y-3 text-sm text-gray-600 mb-6">
+      <Separator className="bg-mist/30 mb-6" />
+
+      {/* Calculations */}
+      <div className="space-y-3 text-sm font-ui-body text-smoke mb-6">
         <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span>{subtotal.toLocaleString("vi-VN")}₫</span>
+          <span>Subtotal ({itemsCount} items)</span>
+          <span className="text-roast font-medium">{subtotal.toLocaleString("vi-VN")}₫</span>
         </div>
         <div className="flex justify-between">
-          <span>Shipping</span>
-          <span>
-            {shippingFee ? shippingFee.toLocaleString("vi-VN") + "₫" : "Free"}
+          <span>Delivery Fee</span>
+          <span className="text-roast font-medium">
+            {shippingFee ? `${shippingFee.toLocaleString("vi-VN")}₫` : "Free"}
           </span>
         </div>
         {discountAmount > 0 && (
-          <div className="flex justify-between text-green-600 font-medium">
-            <span>Discount</span>
+          <div className="flex justify-between text-latte">
+            <span>Promo Discount</span>
             <span>-{discountAmount.toLocaleString("vi-VN")}₫</span>
           </div>
         )}
-      </div>
-      <div className="flex justify-between items-end mb-8">
-        <span className="text-base font-medium text-gray-900">Total</span>
-        <span className="text-2xl font-bold text-gray-900">
-          {displayTotal.toLocaleString("vi-VN")}₫
-        </span>
+        {pointsUsed > 0 && (
+          <div className="flex justify-between text-latte">
+            <span>Loyalty Discount</span>
+            <span>-{(pointsUsed * 1000).toLocaleString("vi-VN")}₫</span>
+          </div>
+        )}
       </div>
 
+      <Separator className="bg-mist/30 mb-6" />
+
+      {/* Total */}
+      <div className="flex justify-between items-end mb-6">
+        <span className="font-ui-heading text-ui-heading text-smoke">Total</span>
+        <div className="flex flex-col items-end font-ui-body">
+          <span className="text-[11px] text-smoke mb-0.5">VAT included</span>
+          <span className="font-pos-total text-pos-total text-roast">
+            {displayTotal.toLocaleString("vi-VN")}₫
+          </span>
+        </div>
+      </div>
+
+      {/* Checkout Button */}
       <Button
         onClick={onPlaceOrder}
         disabled={isPlacingOrder}
-        className="w-full bg-black hover:bg-gray-800 text-white h-14 text-lg font-medium rounded-lg cursor-pointer"
+        className="w-full bg-roast text-white font-ui-body text-[15px] font-bold py-[14px] rounded-full hover:bg-espresso transition-all duration-200 flex items-center justify-center gap-2 group shadow-sm cursor-pointer disabled:opacity-50 h-auto"
       >
-        {isPlacingOrder ? <Loader2 className="animate-spin" /> : "Place Order"}
+        {isPlacingOrder ? (
+          <Loader2 className="animate-spin text-white" />
+        ) : (
+          <>
+            Place Order
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </>
+        )}
       </Button>
+
+      <p className="text-center text-[11px] text-smoke mt-4 leading-relaxed font-ui-body">
+        By placing your order, you agree to TraPhe's <a className="underline hover:text-roast" href="#">Terms of Service</a> and <a className="underline hover:text-roast" href="#">Privacy Policy</a>.
+      </p>
     </div>
   );
 }
+

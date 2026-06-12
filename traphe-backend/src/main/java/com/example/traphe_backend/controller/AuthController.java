@@ -8,6 +8,7 @@ import com.example.traphe_backend.dto.request.RefreshTokenRequest;
 import com.example.traphe_backend.dto.request.RegisterRequest;
 import com.example.traphe_backend.dto.request.ResendOtpRequest;
 import com.example.traphe_backend.dto.request.ResetPasswordRequest;
+import com.example.traphe_backend.dto.request.UpdateProfileRequest;
 import com.example.traphe_backend.dto.request.VerifyOtpRequest;
 import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.dto.response.AuthResponse;
@@ -26,7 +27,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -117,6 +121,26 @@ public class AuthController {
         String email = authentication.getName();
         UserResponse user = authService.getCurrentUser(email);
         return ResponseEntity.ok(ApiResponse.success(user, "Lấy thông tin thành công."));
+    }
+
+    // ======================== UPDATE PROFILE ========================
+
+    /**
+     * PUT /api/auth/me — Cập nhật thông tin profile.
+     * Hỗ trợ multipart/form-data để upload avatar.
+     */
+    @PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Cập nhật profile", description = "Cập nhật thông tin cá nhân (tên, SĐT) và upload avatar. Gửi dạng multipart/form-data.")
+    public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
+            Authentication authentication,
+            @RequestParam(value = "fullName", required = false) String fullName,
+            @RequestParam(value = "phone", required = false) String phone,
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar
+    ) {
+        String email = authentication.getName();
+        UpdateProfileRequest request = new UpdateProfileRequest(fullName, phone);
+        UserResponse updated = authService.updateProfile(email, request, avatar);
+        return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật profile thành công."));
     }
 
     // ======================== REFRESH TOKEN ========================

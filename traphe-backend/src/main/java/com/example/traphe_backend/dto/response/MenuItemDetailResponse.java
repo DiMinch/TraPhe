@@ -1,5 +1,6 @@
 package com.example.traphe_backend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class MenuItemDetailResponse {
     private String imageUrl;
     private String description;
     private String status;
+    @JsonProperty("isDrink")
     private boolean isDrink;
     private BigDecimal basePrice;
     private Integer preparationTime;

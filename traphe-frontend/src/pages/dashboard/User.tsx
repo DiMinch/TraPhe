@@ -18,8 +18,8 @@ export default function UserPage() {
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <Users className="w-5 h-5 text-indigo-600" />
+            <div className="p-2 bg-roast/20 rounded-lg">
+              <Users className="w-5 h-5 text-roast" />
             </div>
             <div>
               <CardTitle className="text-slate-800">User Directory</CardTitle>

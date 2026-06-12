@@ -1,29 +1,41 @@
 import { Outlet } from "react-router";
 import Navigation from "@/components/Navigation";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import NotificationDropdown from "../common/NotificationDropdown";
+import NotificationDropdown from "../common/NotificationDropDown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authService } from "@/services/auth.service";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { UserInfo } from "@/types/user.types";
 import { HelpCircle } from "lucide-react";
 
 export default function AdminLayout() {
   const [user] = useState<UserInfo | null>(() => authService.getCurrentUser());
+  
+  useEffect(() => {
+    document.body.setAttribute("data-context", "admin");
+    return () => {
+      document.body.removeAttribute("data-context");
+    };
+  }, []);
+
   const getInitials = (name?: string) => {
     return name ? name.charAt(0).toUpperCase() : "A";
   };
 
   return (
     <NotificationProvider>
-      <div className="flex h-screen overflow-hidden bg-admin-bg">
+      <div className="flex h-screen overflow-hidden bg-admin-bg font-ui-body">
         <Navigation />
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-admin-border shadow-sm">
             <div className="h-16 w-full flex items-center justify-between px-8">
               <div className="flex items-center gap-space-4">
                 <span className="text-xl font-black text-roast tracking-wide">
-                  Branch: Central Square
+                  {user?.branchName
+                    ? `Branch: ${user.branchName}`
+                    : user?.roles?.includes("ROLE_ADMIN" as any)
+                      ? "Admin Panel"
+                      : "TraPhe Dashboard"}
                 </span>
               </div>
               <div className="flex items-center gap-space-6">

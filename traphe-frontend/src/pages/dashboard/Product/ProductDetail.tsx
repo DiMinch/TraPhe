@@ -134,7 +134,7 @@ export default function ProductDetailPage() {
       const errorMsg =
         error instanceof Error ? error.message : "Failed to load product";
       toast.error(errorMsg);
-      navigate("/product/productlist");
+      navigate("/admin/menu/items");
     } finally {
       setLoading(false);
     }
@@ -168,11 +168,11 @@ export default function ProductDetailPage() {
 
   const handleSaveVariant = async () => {
     // Validate required fields
-    if (!variantFormData.sku.trim()) {
+    if (!(variantFormData.sku || "").trim()) {
       toast.error("SKU is required");
       return;
     }
-    if (!variantFormData.variantName.trim()) {
+    if (!(variantFormData.variantName || "").trim()) {
       toast.error("Variant name is required");
       return;
     }
@@ -244,7 +244,7 @@ export default function ProductDetailPage() {
     return (
       <PageContainer>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-roast" />
         </div>
       </PageContainer>
     );
@@ -254,13 +254,14 @@ export default function ProductDetailPage() {
     return (
       <PageContainer>
         <EmptyState
-          icon={Package}
+          icon={<Package className="w-10 h-10 text-slate-400" />}
           title="Product not found"
           description="The product you're looking for doesn't exist."
-          action={{
-            label: "Back to Products",
-            onClick: () => navigate("/product/productlist"),
-          }}
+          action={
+            <Button onClick={() => navigate("/admin/menu/items")}>
+              Back to Products
+            </Button>
+          }
         />
       </PageContainer>
     );
@@ -276,14 +277,14 @@ export default function ProductDetailPage() {
       <div className="flex gap-3 mb-6">
         <Button
           variant="outline"
-          onClick={() => navigate("/product/productlist")}
+          onClick={() => navigate("/admin/menu/items")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Products
         </Button>
         <Button
-          onClick={() => navigate(`/product/edit/${product.id}`)}
-          className="bg-indigo-600 hover:bg-indigo-700"
+          onClick={() => navigate(`/admin/menu/items/${product.id}/edit`)}
+          className="bg-roast hover:bg-roast/90"
         >
           <Edit className="w-4 h-4 mr-2" />
           Edit Product
@@ -325,19 +326,21 @@ export default function ProductDetailPage() {
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Supplier</p>
-                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0">
-                      {product.supplierName}
-                    </Badge>
+                    <p className="text-sm text-slate-500 mb-1">Base Price</p>
+                    <p className="text-base font-semibold text-slate-800">
+                      {product.basePrice !== null && product.basePrice !== undefined
+                        ? `${product.basePrice.toLocaleString()}đ`
+                        : "-"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500 mb-1">
-                      Warranty Period
+                      Preparation Time
                     </p>
                     <p className="text-base font-medium text-slate-700">
-                      {product.warrantyPeriod
-                        ? `${product.warrantyPeriod} months`
-                        : "No warranty"}
+                      {product.preparationTime
+                        ? `${product.preparationTime} minutes`
+                        : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -387,7 +390,7 @@ export default function ProductDetailPage() {
               <Button
                 onClick={handleAddVariantClick}
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-roast hover:bg-roast/90"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Variant
@@ -399,7 +402,7 @@ export default function ProductDetailPage() {
                 {product.variants.map((variant) => (
                   <div
                     key={variant.id}
-                    className="p-5 bg-slate-50 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all"
+                    className="p-5 bg-slate-50 rounded-lg border border-slate-200 hover:border-roast/30 hover:shadow-md transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -465,13 +468,46 @@ export default function ProductDetailPage() {
               </div>
             ) : (
               <EmptyState
-                icon={Package}
+                icon={<Package className="w-10 h-10 text-slate-400" />}
                 title="No variants available"
                 description="This product doesn't have any variants yet."
               />
             )}
           </CardContent>
         </Card>
+
+        {/* Toppings Card */}
+        {product.allowToppings && (
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold text-slate-800 mb-4">
+                Available Toppings
+              </h3>
+              {product.availableToppings && product.availableToppings.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {product.availableToppings.map((topping) => (
+                    <div
+                      key={topping.id}
+                      className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-slate-800">{topping.name}</p>
+                        <p className="text-sm text-green-600 mt-1">
+                          +{topping.extraPrice.toLocaleString()}đ
+                        </p>
+                      </div>
+                      <Badge className={topping.available ? "bg-green-100 text-green-700 border-0" : "bg-red-100 text-red-700 border-0"}>
+                        {topping.available ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-sm italic">No toppings assigned to this product.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Edit Variant Dialog */}
@@ -771,7 +807,7 @@ export default function ProductDetailPage() {
             <Button
               onClick={handleSaveVariant}
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-roast hover:bg-roast/90"
             >
               {saving ? "Adding..." : "Add Variant"}
             </Button>
