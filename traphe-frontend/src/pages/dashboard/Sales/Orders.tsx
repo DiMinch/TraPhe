@@ -29,7 +29,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { orderService, type OrderResponse } from "@/services/order.service";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ export default function OrdersPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   
   // For sound notification tracking
-  const [previousOrderIds, setPreviousOrderIds] = useState<string[]>([]);
+  const previousOrderIdsRef = useRef<string[]>([]);
   
   // Real-time counter tick for elapsed time display
   const [, setTick] = useState(0);
@@ -131,8 +131,8 @@ export default function OrdersPage() {
 
       // Check if new orders arrived in the queue to trigger sound
       const currentIds = queueItems.map((o) => o.orderId);
-      if (previousOrderIds.length > 0) {
-        const hasNewOrder = currentIds.some((id) => !previousOrderIds.includes(id));
+      if (previousOrderIdsRef.current.length > 0) {
+        const hasNewOrder = currentIds.some((id) => !previousOrderIdsRef.current.includes(id));
         if (hasNewOrder && soundEnabled) {
           playAlertSound();
           toast.info("Đơn hàng mới đã được thêm vào hàng đợi pha chế!", {
@@ -141,7 +141,7 @@ export default function OrdersPage() {
         }
       }
       
-      setPreviousOrderIds(currentIds);
+      previousOrderIdsRef.current = currentIds;
       setOrders(queueItems);
     } catch (err: unknown) {
       console.error("Error loading brewing queue:", err);
@@ -149,7 +149,7 @@ export default function OrdersPage() {
     } finally {
       if (!isSilent) setLoading(false);
     }
-  }, [previousOrderIds, soundEnabled, playAlertSound]);
+  }, [soundEnabled, playAlertSound]);
 
   // Initial fetch on mount
   useEffect(() => {

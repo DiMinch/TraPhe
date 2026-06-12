@@ -48,5 +48,5 @@ public abstract class BaseEntity {
 
     @Version
     @Column(name = "version", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
-    private Long version = 0L;
+    private Long version;
 }

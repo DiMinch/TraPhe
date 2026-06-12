@@ -171,7 +171,7 @@
 			<version>3.0.2</version>
 		</dependency>
 
-		<!-- Automatically load .env file -->
+		<!-- Automatically load ..env file -->
 		<dependency>
 			<groupId>me.paulschwarz</groupId>
 			<artifactId>spring-dotenv</artifactId>

@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Collections.singleton(userRole))
                 .build();
 
-        userRepository.save(user);
+        user = userRepository.save(user);
 
         // Generate email verification OTP
         String otp = otpService.generateAndSaveOtp(user.getEmail(), OtpService.OtpType.EMAIL_VERIFY);

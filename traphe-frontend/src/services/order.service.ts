@@ -170,7 +170,8 @@ export const orderService = {
   // Confirm order (shortcut)
   confirmOrder: async (id: string) => {
     return axiosClient.put<any, ApiResponse<OrderResponse>>(
-      `/orders/${id}/confirm`,
+      `/orders/${id}/status`,
+      { status: "CONFIRMED" }
     );
   },
 

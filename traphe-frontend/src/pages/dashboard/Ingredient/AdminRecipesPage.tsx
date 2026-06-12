@@ -102,15 +102,20 @@ export default function AdminRecipesPage() {
       const res = await axiosClient.get<any, any>(`/admin/recipes/menu-item/${productId}`);
       const rawRecipe = res.data || [];
 
+      let itemsToMap = [];
+      if (rawRecipe.length > 0 && rawRecipe[0].items) {
+        itemsToMap = rawRecipe[0].items;
+      }
+
       // Map backend fields to frontend RecipeItem structure
-      const mapped: RecipeItem[] = rawRecipe.map((r: any) => {
+      const mapped: RecipeItem[] = itemsToMap.map((r: any) => {
         const ing = currentIngredients.find((i) => i.id === r.ingredientId);
         return {
           id: r.id || "rec-" + Math.random().toString(36).substring(2, 9),
           ingredientId: r.ingredientId,
-          ingredientName: ing ? ing.name : "Nguyên liệu không xác định",
+          ingredientName: ing ? ing.name : (r.ingredientName || "Nguyên liệu không xác định"),
           amount: r.amount || r.quantity || 0,
-          unit: ing ? ing.unit : "g",
+          unit: ing ? ing.unit : (r.unit || "g"),
         };
       });
 
@@ -199,7 +204,7 @@ export default function AdminRecipesPage() {
     try {
       const payload = recipeItems.map((item) => ({
         ingredientId: item.ingredientId,
-        amount: item.amount,
+        quantity: item.amount,
       }));
 
       // PUT /admin/recipes/menu-item/:menuItemId
@@ -207,8 +212,7 @@ export default function AdminRecipesPage() {
       toast.success("Cập nhật công thức pha chế thành công!");
     } catch (err: any) {
       console.error("Error saving recipe:", err);
-      // Fallback simulating success if BE endpoint isn't fully set up yet
-      toast.success("Cập nhật công thức pha chế thành công! (Simulated)");
+      toast.error(err.response?.data?.message || "Cập nhật công thức thất bại");
     } finally {
       setSaving(false);
     }
