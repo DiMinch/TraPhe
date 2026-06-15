@@ -17,4 +17,5 @@ public interface ReportService {
     public ByteArrayInputStream exportProfitReport(LocalDate startDate, LocalDate endDate, UUID branchId);
     public ByteArrayInputStream exportTopProductsReport(String sortBy, int limit, LocalDate startDate, LocalDate endDate, UUID branchId);
     public ByteArrayInputStream exportInventoryReport(UUID branchId, Boolean lowStockOnly, Boolean fastMovingOnly);
+    public DashboardResponse getDashboardSummary(String period, UUID branchId);
 }

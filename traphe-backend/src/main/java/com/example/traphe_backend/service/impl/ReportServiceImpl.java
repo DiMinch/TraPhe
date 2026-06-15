@@ -719,4 +719,28 @@ public class ReportServiceImpl implements ReportService {
         }
         return writeCsv(rows);
     }
+
+    @Override
+    public DashboardResponse getDashboardSummary(String period, UUID branchId) {
+        LocalDateTime[] range = getRange(period, null, null);
+        LocalDateTime currentStart = range[0];
+        LocalDateTime currentEnd = range[1];
+
+        CompletableFuture<RevenueReportResponse> revenueFuture = CompletableFuture.supplyAsync(
+                () -> getRevenueReport(period, null, null, null, branchId), taskExecutor);
+
+        CompletableFuture<List<TopProductResponse>> topProductsFuture = CompletableFuture.supplyAsync(
+                () -> orderItemRepository.findTopProducts(currentStart, currentEnd, branchId, PageRequest.of(0, 5)), taskExecutor);
+
+        CompletableFuture<LoyaltyStatsResponse> loyaltyFuture = CompletableFuture.supplyAsync(
+                this::getLoyaltyStats, taskExecutor);
+
+        return CompletableFuture.allOf(revenueFuture, topProductsFuture, loyaltyFuture)
+                .thenApply(v -> DashboardResponse.builder()
+                        .revenueSummary(revenueFuture.join())
+                        .topProducts(topProductsFuture.join())
+                        .loyaltyStats(loyaltyFuture.join())
+                        .build())
+                .join();
+    }
 }
