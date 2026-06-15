@@ -57,6 +57,7 @@ export default function AdminRecipesPage() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [recipeItems, setRecipeItems] = useState<RecipeItem[]>([]);
+  const [activeRecipeId, setActiveRecipeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -100,28 +101,28 @@ export default function AdminRecipesPage() {
     try {
       // Try GET /admin/recipes/menu-item/:menuItemId
       const res = await axiosClient.get<any, any>(`/admin/recipes/menu-item/${productId}`);
-      const rawRecipe = res.data || [];
+      const recipes = res.data || [];
 
-      let itemsToMap = [];
-      if (rawRecipe.length > 0 && rawRecipe[0].items) {
-        itemsToMap = rawRecipe[0].items;
+      if (recipes.length > 0) {
+        const firstRecipe = recipes[0];
+        const mapped: RecipeItem[] = (firstRecipe.items || []).map((r: any) => {
+          const ing = currentIngredients.find((i) => i.id === r.ingredientId);
+          return {
+            id: r.id || "rec-" + Math.random().toString(36).substring(2, 9),
+            ingredientId: r.ingredientId,
+            ingredientName: ing ? ing.name : (r.ingredientName || "Nguyên liệu không xác định"),
+            amount: r.quantity || r.amount || 0,
+            unit: ing ? ing.unit : (r.unit || "g"),
+          };
+        });
+        setRecipeItems(mapped);
+        setActiveRecipeId(firstRecipe.id);
+      } else {
+        setRecipeItems([]);
+        setActiveRecipeId(null);
       }
-
-      // Map backend fields to frontend RecipeItem structure
-      const mapped: RecipeItem[] = itemsToMap.map((r: any) => {
-        const ing = currentIngredients.find((i) => i.id === r.ingredientId);
-        return {
-          id: r.id || "rec-" + Math.random().toString(36).substring(2, 9),
-          ingredientId: r.ingredientId,
-          ingredientName: ing ? ing.name : (r.ingredientName || "Nguyên liệu không xác định"),
-          amount: r.amount || r.quantity || 0,
-          unit: ing ? ing.unit : (r.unit || "g"),
-        };
-      });
-
-      setRecipeItems(mapped);
     } catch (err) {
-      console.log("No recipe found or API failed, using mock/empty state for product:", productId);
+      console.log("No recipe found or API failed, using empty/mock state for product:", productId);
       // Generate some mock ingredients for demo consistency if empty
       const prod = products.find((p) => p.id === productId);
       if (prod && currentIngredients.length > 0) {
@@ -148,6 +149,7 @@ export default function AdminRecipesPage() {
       } else {
         setRecipeItems([]);
       }
+      setActiveRecipeId(null);
     } finally {
       setLoadingRecipe(false);
     }
@@ -202,17 +204,34 @@ export default function AdminRecipesPage() {
 
     setSaving(true);
     try {
-      const payload = recipeItems.map((item) => ({
+      const itemsPayload = recipeItems.map((item) => ({
         ingredientId: item.ingredientId,
         quantity: item.amount,
       }));
 
-      // PUT /admin/recipes/menu-item/:menuItemId
-      await axiosClient.put(`/admin/recipes/menu-item/${selectedProductId}`, payload);
+      if (activeRecipeId) {
+        // Update existing recipe
+        const payload = {
+          isActive: true,
+          items: itemsPayload,
+        };
+        await axiosClient.put(`/admin/recipes/${activeRecipeId}`, payload);
+      } else {
+        // Create new recipe
+        const payload = {
+          menuItemId: selectedProductId,
+          size: null,
+          items: itemsPayload,
+        };
+        const res = await axiosClient.post<any, any>("/admin/recipes", payload);
+        if (res.data && res.data.id) {
+          setActiveRecipeId(res.data.id);
+        }
+      }
       toast.success("Cập nhật công thức pha chế thành công!");
     } catch (err: any) {
       console.error("Error saving recipe:", err);
-      toast.error(err.response?.data?.message || "Cập nhật công thức thất bại");
+      toast.error(err.response?.data?.message || "Không thể lưu công thức pha chế.");
     } finally {
       setSaving(false);
     }

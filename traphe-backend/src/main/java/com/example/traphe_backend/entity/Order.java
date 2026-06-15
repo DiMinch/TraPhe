@@ -100,7 +100,11 @@ public class Order extends BaseEntity {
 
     @Column(name = "loyalty_points_used")
     @Builder.Default
-    private int loyaltyPointsUsed = 0;
+    private Integer loyaltyPointsUsed = 0;
+
+    public Integer getLoyaltyPointsUsed() {
+        return loyaltyPointsUsed == null ? 0 : loyaltyPointsUsed;
+    }
 
     @Column(name = "estimated_ready_time")
     private LocalDateTime estimatedReadyTime;

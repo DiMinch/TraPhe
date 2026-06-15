@@ -29,7 +29,7 @@ export default function SignUpPage() {
     try {
       const response = await authService.register(formData);
 
-      if (response.statusCode === 200) {
+      if (response.success) {
         toast.success("Registration successful!", {
           id: toastId,
           description: response.message || "Please check your email for OTP.",
@@ -60,7 +60,7 @@ export default function SignUpPage() {
         otp: otp,
       });
 
-      if (response.statusCode === 200) {
+      if (response.success) {
         toast.success("Account Verified!", {
           id: toastId,
           description: "You can now login.",
@@ -83,24 +83,38 @@ export default function SignUpPage() {
   return (
     <div className="bg-foam font-ui-body text-on-surface antialiased selection:bg-roast selection:text-white">
       <main className="flex min-h-screen w-full">
-        {/* Left Side: Atmospheric Background Image */}
-        <div className="hidden lg:flex lg:w-1/2 relative bg-surface-variant overflow-hidden">
+        {/* Left Section: Cinematic Imagery (Hidden on small screens) */}
+        <div className="relative hidden w-1/2 flex-col justify-end bg-surface-container-high lg:flex overflow-hidden">
           <div
-            className="absolute inset-0 bg-cover bg-center"
-            title="A beautiful, atmospheric top-down shot of a rustic wooden table in a Vietnamese coffee shop"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] ease-out hover:scale-105"
+            title="A warm, inviting close-up shot of a steaming ceramic cup of Vietnamese coffee"
             style={{
               backgroundImage:
-                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBPHaUjCN2b-Hn6h8Mt_oqMGIZGq7jA7eYiUgiYc31a0CA18AMYVX5LfPTe7dQovUxVjJ3OxLz5CMbhLYkvVvrpfir4NVVAMFq0aInEHZo8pDi2H7_RJkAESuwFCDbIBuMDuY4Nhp_b2V-ZSD_Y6x748b_MHG2qVmF7tY7l7x7HfVmJR39aUJC_PdbqvkfvFC5xakMkdgDwDb3lKbtBT2yezfIh03hr_JgLXDnoELjHowz3VJepIPzAGrgS1mBhYHdzmL3h8Mwi1cY')",
+                "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBHA3Nrl9AaJ_2SybDk8KCqdU-ZGAQofMIyAF6CW8drT3rwEM9GJRRL-snYptMfFwtBAF-WsGohcYa9ZYT0vvPPJQsFAdVffcRe5jcOqYPoxpjc1ag_Hj99ONChsSyzMXVY8Z6y1e3LGqmCc4LehtN-6s6w_s5AIO819lgWdjLvZbfeeyHeZ1KCmT_NFp-2Un5fBH31SrO-nPzl51G362mGhafK3D0HK9_eoTmZ8UeoTvA1LCqtmrTgDOYrD2swVllvzPTs2y1EUfE')",
             }}
           ></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-foam/30"></div>
+          {/* Subtle gradient overlay for text readability if needed, and to anchor the brand feel */}
+          <div className="absolute inset-0 bg-gradient-to-t from-espresso/80 via-espresso/20 to-transparent"></div>
+          {/* Atmospheric Brand Anchor */}
+          <div className="relative z-10 p-space-12 text-white/90">
+            <div className="space-y-space-4 max-w-lg">
+              <h2 className="font-display-md text-[36px] text-parchment leading-tight">
+                Hương vị của sự <br />
+                tĩnh lặng.
+              </h2>
+              <p className="font-body-md text-[16px] text-cloud opacity-90">
+                Khám phá bộ sưu tập cà phê rang mộc nguyên bản, được tuyển chọn
+                từ những vùng nguyên liệu trứ danh nhất Việt Nam.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Registration Form */}
-        <div className="w-full lg:w-1/2 flex flex-col px-space-6 py-space-8 lg:px-space-20 relative bg-surface-container-lowest lg:bg-transparent justify-center items-center">
+        <div className="flex w-full flex-col justify-center px-space-6 py-space-12 lg:w-1/2 xl:px-space-20 bg-foam relative">
           <div className="absolute top-space-6 left-space-6 lg:left-space-12">
             <Link
-              to="/"
+              to="/sign-in"
               aria-label="Quay lại"
               className="flex items-center gap-2 text-dust hover:text-roast transition-colors"
             >
@@ -108,12 +122,16 @@ export default function SignUpPage() {
             </Link>
           </div>
 
-          <div className="w-full max-w-[480px]">
-            <div className="mb-space-8 text-center lg:text-left">
-              <h1 className="text-[36px] font-display-md text-espresso mb-space-2">
-                {step === 1 ? "Đăng ký tài khoản" : "Xác thực email"}
+          <div className="mx-auto w-full max-w-[420px]">
+            {/* Header */}
+            <div className="mb-space-8 text-center">
+              <h1 className="font-display-lg text-[48px] text-espresso mb-space-2">
+                TraPhe
               </h1>
-              <p className="text-[16px] font-body-md text-dust">
+              <p className="font-body-md text-[16px] text-dust">
+                {step === 1 ? "Đăng ký tài khoản" : "Xác thực email"}
+              </p>
+              <p className="font-body-sm text-[14px] text-outline mt-1">
                 {step === 1
                   ? "Tạo tài khoản mới để trải nghiệm dịch vụ của TraPhe"
                   : `Nhập OTP đã gửi đến ${formData.email}`}
@@ -121,13 +139,13 @@ export default function SignUpPage() {
             </div>
 
             {step === 1 && (
-              <form className="flex flex-col gap-space-4" onSubmit={handleRegister}>
-                <label className="flex flex-col w-full group">
-                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+              <form className="space-y-space-4" onSubmit={handleRegister}>
+                <div className="space-y-space-2">
+                  <label className="block font-ui-body text-[14px] text-on-surface-variant font-medium" htmlFor="fullName">
                     Họ và tên
-                  </span>
+                  </label>
                   <input
-                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                    className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist px-space-4 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none"
                     id="fullName"
                     name="fullName"
                     placeholder="Nhập họ và tên của bạn"
@@ -136,14 +154,14 @@ export default function SignUpPage() {
                     required
                     disabled={isLoading}
                   />
-                </label>
+                </div>
 
-                <label className="flex flex-col w-full group">
-                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                <div className="space-y-space-2">
+                  <label className="block font-ui-body text-[14px] text-on-surface-variant font-medium" htmlFor="username">
                     Tên đăng nhập
-                  </span>
+                  </label>
                   <input
-                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                    className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist px-space-4 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none"
                     id="username"
                     name="username"
                     placeholder="Nhập tên đăng nhập"
@@ -152,49 +170,49 @@ export default function SignUpPage() {
                     required
                     disabled={isLoading}
                   />
-                </label>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-4">
-                  <label className="flex flex-col w-full group">
-                    <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                  <div className="space-y-space-2">
+                    <label className="block font-ui-body text-[14px] text-on-surface-variant font-medium" htmlFor="email">
                       Email
-                    </span>
+                    </label>
                     <input
-                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist px-space-4 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none"
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="Nhập địa chỉ email"
+                      placeholder="Nhập email"
                       value={formData.email}
                       onChange={handleChange}
                       required
                       disabled={isLoading}
                     />
-                  </label>
-                  <label className="flex flex-col w-full group">
-                    <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                  </div>
+                  <div className="space-y-space-2">
+                    <label className="block font-ui-body text-[14px] text-on-surface-variant font-medium" htmlFor="phone">
                       Số điện thoại
-                    </span>
+                    </label>
                     <input
-                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist px-space-4 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none"
                       id="phone"
                       name="phone"
-                      placeholder="Nhập số điện thoại"
+                      placeholder="Nhập SĐT"
                       value={formData.phone}
                       onChange={handleChange}
                       required
                       disabled={isLoading}
                     />
-                  </label>
+                  </div>
                 </div>
 
-                <label className="flex flex-col w-full group">
-                  <span className="text-[14px] font-ui-body text-ink font-medium pb-2">
+                <div className="space-y-space-2">
+                  <label className="block font-ui-body text-[14px] text-on-surface-variant font-medium" htmlFor="password">
                     Mật khẩu
-                  </span>
-                  <div className="relative">
+                  </label>
+                  <div className="relative flex items-center">
                     <input
-                      className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 pr-12 text-[14px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none"
+                      className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist pl-space-4 pr-12 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none"
                       id="password"
                       name="password"
                       placeholder="Tạo mật khẩu"
@@ -205,8 +223,8 @@ export default function SignUpPage() {
                       disabled={isLoading}
                     />
                     <button
-                      aria-label="Hiện mật khẩu"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-dust hover:text-roast"
+                      aria-label="Hiển thị mật khẩu"
+                      className="absolute right-3 flex items-center justify-center text-outline hover:text-roast transition-colors p-1"
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
@@ -218,80 +236,84 @@ export default function SignUpPage() {
                       )}
                     </button>
                   </div>
-                </label>
+                </div>
 
-                <button
-                  className="w-full bg-roast hover:bg-espresso text-white font-heading-lg text-[15px] rounded-full py-[14px] transition-colors duration-300 shadow-sm mt-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  type="submit"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Đăng ký"
-                  )}
-                </button>
+                <div className="pt-space-4">
+                  <button
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-roast px-space-6 py-[14px] font-body-md text-body-md font-semibold text-parchment shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-roast focus:ring-offset-2 focus:ring-offset-foam disabled:opacity-70 disabled:cursor-not-allowed"
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      "Đăng ký"
+                    )}
+                  </button>
+                </div>
               </form>
             )}
 
             {step === 2 && (
               <form
-                className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-300"
+                className="space-y-space-6 animate-in fade-in slide-in-from-right-8 duration-300"
                 onSubmit={handleVerifyOtp}
               >
                 <div className="space-y-space-2">
                   <label
-                    className="block text-[14px] font-ui-body text-ink font-medium"
+                    className="block font-ui-body text-[14px] text-on-surface-variant font-medium"
                     htmlFor="otp"
                   >
-                    Mã OTP
+                    Mã xác nhận OTP (6 số)
                   </label>
                   <input
                     id="otp"
                     placeholder="Nhập 6 chữ số"
-                    className="w-full rounded-lg border-[1.5px] border-mist bg-surface-container-lowest px-4 py-3 text-[16px] font-ui-body text-ink placeholder:text-dust/70 focus:border-roast focus:ring-1 focus:ring-roast transition-all duration-200 outline-none text-center tracking-widest"
+                    className="block w-full rounded bg-surface-container-lowest border-[1.5px] border-mist px-space-4 py-[14px] font-ui-body text-on-surface placeholder:text-outline focus:border-roast focus:ring-1 focus:ring-roast transition-colors outline-none text-center tracking-widest text-[16px]"
                     maxLength={6}
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
                     required
                     disabled={isLoading}
                   />
-                  <p className="text-[12px] text-dust text-center">
+                  <p className="text-[12px] text-dust text-center mt-1">
                     Vui lòng kiểm tra hộp thư hoặc thư rác.
                   </p>
                 </div>
 
-                <button
-                  className="w-full bg-roast hover:bg-espresso text-white font-heading-lg text-[15px] rounded-full py-[14px] transition-colors duration-300 shadow-sm mt-2 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  type="submit"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Xác thực"
-                  )}
-                </button>
+                <div className="space-y-space-4">
+                  <button
+                    className="w-full flex items-center justify-center gap-2 rounded-full bg-roast px-space-6 py-[14px] font-body-md text-body-md font-semibold text-parchment shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-roast focus:ring-offset-2 focus:ring-offset-foam disabled:opacity-70 disabled:cursor-not-allowed"
+                    type="submit"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      "Xác thực email"
+                    )}
+                  </button>
 
-                <button
-                  type="button"
-                  className="w-full rounded-full border border-mist text-dust hover:text-roast hover:border-roast py-[12px] transition-colors"
-                  onClick={() => setStep(1)}
-                  disabled={isLoading}
-                >
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <ArrowLeft className="w-4 h-4" /> Quay lại đăng ký
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    className="w-full rounded-full border-[1.5px] border-mist text-dust hover:text-roast hover:border-roast py-[12px] transition-colors font-medium text-[14px] focus:outline-none"
+                    onClick={() => setStep(1)}
+                    disabled={isLoading}
+                  >
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <ArrowLeft className="w-4 h-4" /> Quay lại đăng ký
+                    </span>
+                  </button>
+                </div>
               </form>
             )}
 
             {step === 1 && (
-              <div className="mt-space-8 text-center">
-                <p className="text-[14px] font-ui-body text-dust">
+              <div className="mt-space-8 border-t border-mist/40 pt-space-8 text-center">
+                <p className="font-ui-body text-ui-body text-on-surface-variant">
                   Đã có tài khoản?{" "}
                   <Link
-                    className="text-caramel hover:text-roast font-medium ml-1"
+                    className="font-medium text-caramel hover:text-roast underline-offset-4 hover:underline transition-colors"
                     to="/sign-in"
                   >
                     Đăng nhập ngay

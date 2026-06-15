@@ -19,6 +19,10 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_batch_fetch_size: 30
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
   servlet:
     multipart:
       max-file-size: 5MB
@@ -27,6 +31,8 @@ spring:
   # Redis — Upstash free tier (or local)
   data:
     redis:
+      repositories:
+        enabled: false
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}

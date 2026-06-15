@@ -417,13 +417,13 @@ public class OrderServiceImpl implements OrderService {
 
         // ========== 11. Build response & generate payment gateway URLs ==========
         OrderResponse response = mapToOrderResponse(savedOrder);
-        if (savedOrder.getPaymentStatus() == PaymentStatus.PENDING) {
+        if (savedOrder.getPaymentStatus() == PaymentStatus.PENDING && savedOrder.getPaymentMethod() != null) {
+            Map<String, Object> context = new java.util.HashMap<>();
             if (savedOrder.getPaymentMethod() == PaymentMethod.VNPAY) {
                 String ipAddress = com.example.traphe_backend.util.VnPayUtil.getIpAddress(httpServletRequest);
-                response.setPaymentUrl(paymentService.createVnPayPaymentUrl(savedOrder, ipAddress));
-            } else if (savedOrder.getPaymentMethod() == PaymentMethod.MOMO) {
-                response.setPaymentUrl(paymentService.createMoMoPaymentUrl(savedOrder));
+                context.put("ipAddress", ipAddress);
             }
+            response.setPaymentUrl(paymentService.createPaymentUrl(savedOrder, context));
         }
         return response;
     }

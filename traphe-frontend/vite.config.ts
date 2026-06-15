@@ -12,6 +12,10 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    watch: {
+      usePolling: true,
+    },
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
       "Referrer-Policy": "strict-origin-when-cross-origin",

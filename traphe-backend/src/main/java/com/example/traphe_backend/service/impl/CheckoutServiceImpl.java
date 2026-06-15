@@ -14,11 +14,9 @@ import com.example.traphe_backend.repository.CombinedCheckoutRepository;
 import com.example.traphe_backend.repository.OrderRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.CheckoutService;
-import com.example.traphe_backend.service.LoyaltyService;
-import com.example.traphe_backend.service.PaymentService;
 import com.example.traphe_backend.service.PromotionService;
+import com.example.traphe_backend.service.LoyaltyService;
 import com.example.traphe_backend.repository.PromotionUsageRepository;
-import com.example.traphe_backend.util.VnPayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -37,7 +35,6 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final UserRepository userRepository;
     private final PromotionService promotionService;
     private final LoyaltyService loyaltyService;
-    private final PaymentService paymentService;
     private final PromotionUsageRepository promotionUsageRepository;
 
     @Override

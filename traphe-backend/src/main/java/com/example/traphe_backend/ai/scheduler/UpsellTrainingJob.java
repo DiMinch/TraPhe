@@ -104,45 +104,47 @@ public class UpsellTrainingJob {
             }
         }
 
-        // Generate rules
-        List<AiAssociationRule> rules = new ArrayList<>();
+        // Generate rules using parallelStream()
         double minSupportCount = transactionArray.length * 0.01;
         double minConfidence = 0.25;
+        List<AiAssociationRule> rules = coOccurrence.entrySet().parallelStream()
+                .flatMap(entryA -> {
+                    String antecedentId = entryA.getKey();
+                    int freqA = itemFreq.get(antecedentId);
+                    List<AiAssociationRule> localRules = new ArrayList<>();
 
-        for (Map.Entry<String, Map<String, Integer>> entryA : coOccurrence.entrySet()) {
-            String antecedentId = entryA.getKey();
-            int freqA = itemFreq.get(antecedentId);
-
-            for (Map.Entry<String, Integer> entryB : entryA.getValue().entrySet()) {
-                String consequentId = entryB.getKey();
-                int coFreq = entryB.getValue();
-                
-                if (coFreq >= minSupportCount) {
-                    double support = (double) coFreq / transactionArray.length;
-                    double confidence = (double) coFreq / freqA;
-                    
-                    if (confidence >= minConfidence) {
-                        int freqB = itemFreq.get(consequentId);
-                        double supportB = (double) freqB / transactionArray.length;
-                        double lift = confidence / supportB;
+                    for (Map.Entry<String, Integer> entryB : entryA.getValue().entrySet()) {
+                        String consequentId = entryB.getKey();
+                        int coFreq = entryB.getValue();
                         
-                        if (lift >= 1.5) {
-                            AiAssociationRule rule = AiAssociationRule.builder()
-                                    .antecedentId(antecedentId)
-                                    .antecedentName(uuidToNameMap.get(antecedentId))
-                                    .consequentId(consequentId)
-                                    .consequentName(uuidToNameMap.get(consequentId))
-                                    .consequentType("MENU_ITEM")
-                                    .support(support)
-                                    .confidence(confidence)
-                                    .lift(lift)
-                                    .build();
-                            rules.add(rule);
+                        if (coFreq >= minSupportCount) {
+                            double support = (double) coFreq / transactionArray.length;
+                            double confidence = (double) coFreq / freqA;
+                            
+                            if (confidence >= minConfidence) {
+                                int freqB = itemFreq.get(consequentId);
+                                double supportB = (double) freqB / transactionArray.length;
+                                double lift = confidence / supportB;
+                                
+                                if (lift >= 1.5) {
+                                    AiAssociationRule rule = AiAssociationRule.builder()
+                                            .antecedentId(antecedentId)
+                                            .antecedentName(uuidToNameMap.get(antecedentId))
+                                            .consequentId(consequentId)
+                                            .consequentName(uuidToNameMap.get(consequentId))
+                                            .consequentType("MENU_ITEM")
+                                            .support(support)
+                                            .confidence(confidence)
+                                            .lift(lift)
+                                            .build();
+                                    localRules.add(rule);
+                                }
+                            }
                         }
                     }
-                }
-            }
-        }
+                    return localRules.stream();
+                })
+                .collect(Collectors.toList());
 
         log.info("Generated {} valid association rules.", rules.size());
         
