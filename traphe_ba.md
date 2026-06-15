@@ -381,3 +381,49 @@ Hệ thống TraPhe được phát triển dựa trên nền tảng kiến trúc
 | FE Developer | Toàn bộ giao diện người dùng: Customer Web, POS interface, Admin dashboard. Đảm bảo UX nhất quán và responsive. | UC07–UC13 (Customer), UC14–UC18 (POS), UC26–UC29 (KM), UC30–UC33 (Báo cáo), UC35 (Thương hiệu) |
 | BE Developer 1 | Core business logic: Auth, Order flow, Inventory/Recipe, POS backend, Loyalty engine. | UC01–UC04, UC08–UC13, UC14–UC18, UC20–UC22, UC24–UC25 |
 | BE Developer 2 | Support & Integration: Menu/Branch management, Promotions, Reports, System config, Deploy. | UC05–UC06, UC19, UC23, UC27–UC29, UC30–UC34, UC36, DevOps |
+
+# 8. MẪU THIẾT KẾ, TỐI ƯU HÓA HỆ THỐNG & DOCKERIZATION (SPRINT 2)
+
+Nhằm đáp ứng yêu cầu môn học về áp dụng các chủ đề nâng cao trong lập trình ứng dụng và chuẩn hóa môi trường vận hành, hệ thống đã tích hợp các nội dung kỹ thuật sau:
+
+## 8.1. Mẫu Thiết kế Strategy Pattern (Phân hệ Thanh toán - UC11/16)
+* **Đặt vấn đề:** Hệ thống ban đầu dùng cấu trúc điều kiện cứng (`if/else` hoặc `switch/case`) để phân chia cổng thanh toán (VNPay, MoMo, Tiền mặt, QR code), gây khó khăn khi tích hợp thêm cổng thanh toán mới (vi phạm nguyên tắc Open/Closed).
+* **Giải pháp:** Thiết lập interface `PaymentStrategy` định nghĩa phương thức `createPaymentUrl(Order order, Map<String, Object> context)`. Các cổng thanh toán cụ thể được tách thành 4 lớp riêng biệt:
+  * `VnPayPaymentStrategy`
+  * `MoMoPaymentStrategy`
+  * `CashPaymentStrategy`
+  * `QrPaymentStrategy`
+* **Cơ chế hoạt động:** `PaymentServiceImpl` sử dụng Spring `@Autowired` nạp toàn bộ danh sách `PaymentStrategy`, sau đó dùng khối `@PostConstruct` nhóm chúng vào một `Map<PaymentMethod, PaymentStrategy>` sử dụng Java Streams. Khi có yêu cầu, hệ thống sẽ lấy chính xác Strategy tương ứng để xử lý.
+
+## 8.2. Tối ưu hóa Truy vấn JPA/Hibernate tránh N+1 SELECT (Phân hệ Đặt hàng & Báo cáo)
+* **Đặt vấn đề:** Khi hiển thị danh sách đơn hàng hoặc xuất báo cáo doanh thu, Hibernate mặc định thực thi câu lệnh SQL SELECT cho từng đơn hàng để lấy thông tin chi nhánh (`Branch`) và khách hàng (`Customer`), tạo ra hàng chục truy vấn dư thừa (vấn đề N+1 query).
+* **Giải pháp:** Sử dụng `@EntityGraph(attributePaths = {"branch", "customer"})` trực tiếp trên các phương thức truy vấn như `findByIdAndIsDeletedFalse` và `findAllWithFilters` trong `OrderRepository`.
+* **Kết quả:** Hibernate tự động chuyển đổi từ nhiều truy vấn riêng lẻ thành một câu lệnh SQL duy nhất sử dụng `LEFT OUTER JOIN`, giảm thiểu tải tối đa cho cơ sở dữ liệu PostgreSQL (Supabase).
+
+## 8.3. Lập trình Bất đồng bộ với Virtual Threads (Phân hệ Loyalty - UC24)
+* **Đặt vấn đề:** Quy trình cộng điểm tích lũy và xét hạng thành viên sau khi đơn hàng hoàn thành bao gồm nhiều câu lệnh đọc/ghi cơ sở dữ liệu. Nếu chạy đồng bộ trên luồng chính sẽ làm chậm thời gian phản hồi giao dịch thanh toán hoặc thao tác tại quầy POS.
+* **Giải pháp:** Sử dụng annotation `@Async("taskExecutor")` trên phương thức `earnPointsForOrder` của `LoyaltyServiceImpl`.
+* **Cơ chế hoạt động:** Executor sử dụng công nghệ Java Virtual Threads (Virtual Thread Per Task Executor) giúp xử lý hàng nghìn luồng bất đồng bộ song song siêu nhẹ, không block tài nguyên và phản hồi client tức thì.
+
+## 8.4. Xử lý Song song Dữ liệu lớn (Phân hệ AI gợi ý bán chéo - UC40)
+* **Đặt vấn đề:** Thuật toán khai phá luật kết hợp Apriori chạy định kỳ hàng đêm (`UpsellTrainingJob`) để tính toán ma trận đồng xuất hiện giữa hàng nghìn cặp sản phẩm và toppings trong các hóa đơn lịch sử. Tiến trình duyệt vòng lặp tuần tự gây nghẽn và chậm.
+* **Giải pháp:** Áp dụng Java Parallel Streams (`coOccurrence.entrySet().parallelStream()`) để tính toán chỉ số Support, Confidence và Lift.
+* **Kết quả:** Chia tải xử lý đồng thời lên toàn bộ các lõi CPU có sẵn của máy chủ, rút ngắn đáng kể thời gian huấn luyện mô hình gợi ý Upsell.
+
+## 8.5. Dockerization & Khống chế RAM tối ưu hóa Môi trường Phát triển
+* **Docker Container:** Cung cấp môi trường dev đồng bộ qua `Dockerfile.dev` riêng cho từng phân hệ và root `docker-compose.yml`.
+* **Cơ chế tự động Hot-Reload (Dev):** 
+  * Frontend: Cấu hình Vite dev server với `watch: { usePolling: true }` để lắng nghe thay đổi file qua volume mount trên Windows/WSL2.
+  * Backend: Tích hợp `spring-boot-devtools` và đồng bộ mã nguồn qua mount folder.
+* **Tối ưu RAM khi chạy Dev:** Để khắc phục tình trạng chạy đồng thời Maven compiler và Spring Boot làm ngốn hơn 1GB RAM trong container, hệ thống được cấu hình giới hạn cứng:
+  * Giới hạn RAM của container: `768MB` (hard limit).
+  * Giới hạn RAM tiến trình build của Maven: `MAVEN_OPTS=-Xmx256m`.
+  * Giới hạn RAM tiến trình chạy của Spring Boot: `SPRING_BOOT_RUN_JVM_ARGUMENTS="-Xmx384m"`.
+
+## 8.6. Cơ sở dữ liệu & Mô phỏng Dữ liệu Lịch sử (Rich Data Seeding)
+* **Đặt vấn đề:** Hệ thống ban đầu bị trống công thức cho nhiều món uống chính và thiếu dữ liệu đơn hàng lịch sử thực tế, gây ảnh hưởng trực tiếp đến tính đúng đắn của logic trừ kho tự động khi hoàn thành đơn (`UC22`) và độ trực quan của các biểu đồ báo cáo doanh thu (`UC30`), phân tích Apriori Upsell (`UC40`).
+* **Giải pháp:** Xây dựng và thực thi tập lệnh SQL nâng cao (`seed_advanced_data.sql`) trực tiếp trên DB PostgreSQL (Supabase):
+  * Khởi tạo đầy đủ 6 công thức đồ uống chi tiết cho tất cả đồ uống chính.
+  * Phân bổ kho tồn đầy đủ dồi dào cho 27 loại nguyên liệu tại tất cả 5 chi nhánh đang hoạt động (tổng 135 bản ghi tồn kho).
+  * Viết khối lệnh PL/pgSQL mô phỏng ngẫu nhiên có kiểm soát sinh 65 đơn hàng lịch sử thực tế trải rộng trong 30 ngày qua với đầy đủ các thuộc tính (đối tượng mua hàng, size, option đường/đá, topping, phương thức thanh toán, giao dịch thanh toán kèm theo, tích/đổi điểm loyalty, nâng hạng thành viên tự động).
+* **Kết quả:** Seed thành công 125 chi tiết đơn hàng (`order_items`), 65 đơn hàng (`orders`), 62 giao dịch thanh toán (`payment_transactions`), 33 giao dịch loyalty và 135 tồn kho nguyên liệu. Dữ liệu hoạt động đồng bộ, không xung đột khóa ngoại và giúp hiển thị các biểu đồ báo cáo kinh doanh, thuật toán gợi ý AI vô cùng trực quan và chuẩn xác.
