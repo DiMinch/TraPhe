@@ -13,9 +13,9 @@ public interface ReportService {
     public List<StockForecastResponse> getStockForecast(UUID branchId);
     public LoyaltyStatsResponse getLoyaltyStats();
     public InventoryReportResponse getInventoryReport(UUID branchId);
-    public ByteArrayInputStream exportRevenueReport(LocalDate startDate, LocalDate endDate, UUID branchId);
-    public ByteArrayInputStream exportProfitReport(LocalDate startDate, LocalDate endDate, UUID branchId);
-    public ByteArrayInputStream exportTopProductsReport(String sortBy, int limit, LocalDate startDate, LocalDate endDate, UUID branchId);
-    public ByteArrayInputStream exportInventoryReport(UUID branchId, Boolean lowStockOnly, Boolean fastMovingOnly);
+    public ByteArrayInputStream exportRevenueReport(LocalDate startDate, LocalDate endDate, UUID branchId, String format);
+    public ByteArrayInputStream exportProfitReport(LocalDate startDate, LocalDate endDate, UUID branchId, String format);
+    public ByteArrayInputStream exportTopProductsReport(String sortBy, int limit, LocalDate startDate, LocalDate endDate, UUID branchId, String format);
+    public ByteArrayInputStream exportInventoryReport(UUID branchId, Boolean lowStockOnly, Boolean fastMovingOnly, String format);
     public DashboardResponse getDashboardSummary(String period, UUID branchId);
 }

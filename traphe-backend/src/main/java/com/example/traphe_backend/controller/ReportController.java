@@ -107,8 +107,16 @@ public class ReportController {
             @RequestBody(required = false) ReportFilterRequest filter) {
 
         ByteArrayInputStream stream;
-        String fileName = type.toLowerCase() + "_report." + format.toLowerCase();
-        String contentType = "text/csv";
+        String fileName;
+        String contentType;
+
+        if ("PDF".equalsIgnoreCase(format)) {
+            fileName = type.toLowerCase() + "_report.pdf";
+            contentType = "application/pdf";
+        } else {
+            fileName = type.toLowerCase() + "_report.csv";
+            contentType = "text/csv";
+        }
 
         LocalDate start = filter != null ? filter.getStartDate() : null;
         LocalDate end = filter != null ? filter.getEndDate() : null;
@@ -117,11 +125,11 @@ public class ReportController {
         int limit = (filter != null && filter.getLimit() != null) ? filter.getLimit() : 10;
 
         if ("REVENUE".equalsIgnoreCase(type)) {
-            stream = reportService.exportRevenueReport(start, end, branchId);
+            stream = reportService.exportRevenueReport(start, end, branchId, format);
         } else if ("PROFIT".equalsIgnoreCase(type)) {
-            stream = reportService.exportProfitReport(start, end, branchId);
+            stream = reportService.exportProfitReport(start, end, branchId, format);
         } else if ("TOP_PRODUCTS".equalsIgnoreCase(type)) {
-            stream = reportService.exportTopProductsReport(sortBy, limit, start, end, branchId);
+            stream = reportService.exportTopProductsReport(sortBy, limit, start, end, branchId, format);
         } else {
             throw new IllegalArgumentException("Unsupported report type: " + type);
         }
@@ -146,12 +154,15 @@ public class ReportController {
             branchId = UUID.fromString(body.get("branchId").toString());
         }
 
-        ByteArrayInputStream stream = reportService.exportInventoryReport(branchId, lowStockOnly, fastMovingOnly);
+        ByteArrayInputStream stream = reportService.exportInventoryReport(branchId, lowStockOnly, fastMovingOnly, format);
         InputStreamResource file = new InputStreamResource(stream);
 
+        String fileName = "PDF".equalsIgnoreCase(format) ? "inventory_report.pdf" : "inventory_report.csv";
+        String contentType = "PDF".equalsIgnoreCase(format) ? "application/pdf" : "text/csv";
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=inventory_report." + format.toLowerCase())
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(file);
     }
 }
