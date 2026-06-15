@@ -18,4 +18,6 @@ public interface MenuCategoryRepository extends JpaRepository<MenuCategory, UUID
     List<MenuCategory> findAllByParentIdAndIsDeletedFalse(UUID parentId, Sort sort);
 
     Optional<MenuCategory> findByIdAndIsDeletedFalse(UUID id);
+
+    Optional<MenuCategory> findByNameAndIsDeletedFalse(String name);
 }

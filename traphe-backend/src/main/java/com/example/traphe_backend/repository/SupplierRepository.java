@@ -12,4 +12,6 @@ public interface SupplierRepository extends JpaRepository<Supplier, UUID> {
     List<Supplier> findByIsDeletedFalseOrderByNameAsc();
 
     Optional<Supplier> findByIdAndIsDeletedFalse(UUID id);
+
+    Optional<Supplier> findByNameAndIsDeletedFalse(String name);
 }
