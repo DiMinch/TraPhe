@@ -13,10 +13,12 @@ import com.example.traphe_backend.repository.LoyaltyPointTransactionRepository;
 import com.example.traphe_backend.repository.MembershipTierRepository;
 import com.example.traphe_backend.repository.PromotionRepository;
 import com.example.traphe_backend.repository.UserVoucherRepository;
+import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.event.TierUpgradeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         private final MembershipTierRepository membershipTierRepository;
         private final PromotionRepository promotionRepository;
         private final UserVoucherRepository userVoucherRepository;
+        private final UserRepository userRepository;
         private final ApplicationEventPublisher eventPublisher;
 
         private static final BigDecimal POINT_UNIT = new BigDecimal("1000"); // 1 point per 1,000 VND (base rate)
@@ -45,6 +48,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
          * Công thức: points = (finalAmount / 1000) × pointEarningRate
          * Đồng thời cộng dồn totalSpending và kiểm tra nâng hạng.
          */
+        @Async("taskExecutor")
         @Transactional
         public void earnPointsForOrder(User customer, Order order) {
                 if (customer == null || order.getFinalAmount() == null)
@@ -272,16 +276,19 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 return new RedeemRewardResult(voucherCode, rewardName, pointsCost, loyaltyPoint.getPointsAvailable());
         }
 
+        @Transactional
         public LoyaltyPoint getOrCreateLoyaltyPoint(User user) {
                 LoyaltyPoint lp = loyaltyPointRepository.findByUserId(user.getId()).orElse(null);
                 if (lp == null) {
+                        User managedUser = userRepository.findById(user.getId())
+                                        .orElseThrow(() -> new IllegalArgumentException("User not found: " + user.getId()));
                         // Find lowest tier (if any) as default
                         MembershipTier defaultTier = membershipTierRepository
                                         .findByIsActiveTrueAndIsDeletedFalseOrderByTierLevelAsc()
                                         .stream().findFirst().orElse(null);
 
                         LoyaltyPoint newRecord = LoyaltyPoint.builder()
-                                        .user(user)
+                                        .user(managedUser)
                                         .pointsAvailable(0)
                                         .totalSpending(BigDecimal.ZERO)
                                         .membershipTier(defaultTier)
