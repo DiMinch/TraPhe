@@ -1,0 +1,20 @@
+FROM eclipse-temurin:21-jdk-jammy
+
+WORKDIR /app
+
+# Copy Maven wrapper files first to cache dependencies
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+
+# Convert line endings of mvnw script (crucial for running on Windows hosts)
+RUN apt-get update && apt-get install -y dos2unix && dos2unix mvnw && chmod +x mvnw
+
+# Resolve dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source
+COPY src ./src
+
+EXPOSE 8080
+
+CMD ["./mvnw", "spring-boot:run"]

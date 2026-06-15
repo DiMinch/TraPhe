@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: traphe-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./traphe-backend
+      dockerfile: Dockerfile.dev
+    container_name: traphe-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./traphe-backend:/app
+      - maven-repo:/root/.m2
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_SSL=false
+      - MAVEN_OPTS=-Xmx512m -Dspring-boot.run.jvmArguments="-Xmx384m -Dfile.encoding=UTF-8"
+    command: ["./mvnw", "spring-boot:run", "-T", "1C", "-DskipTests"]
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./traphe-frontend
+      dockerfile: Dockerfile.dev
+    container_name: traphe-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./traphe-frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8080/api
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  maven-repo:
