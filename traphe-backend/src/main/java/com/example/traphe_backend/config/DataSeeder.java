@@ -61,12 +61,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@SuppressWarnings("unused")
 public class DataSeeder implements CommandLineRunner {
 
         private final BranchRepository branchRepository;
@@ -94,7 +94,6 @@ public class DataSeeder implements CommandLineRunner {
 
         @Override
         @Transactional
-        @SuppressWarnings("unused")
         public void run(String... args) {
                 // Fix old categories isDrinkCategory field if they exist
                 menuCategoryRepository.findAll().forEach(cat -> {
@@ -549,13 +548,14 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         /**
-         * Auto-assign staff test accounts to Quận 1 branch if they don't have a branch yet.
+         * Auto-assign staff test accounts to Quận 1 branch if they don't have a branch
+         * yet.
          * This ensures Branch Manager and other staff can function correctly.
          */
         private void assignStaffToBranchIfNeeded() {
                 Branch branchQ1 = branchRepository.findAll().stream()
-                        .filter(b -> b.getName().contains("Quận 1"))
-                        .findFirst().orElse(null);
+                                .filter(b -> b.getName().contains("Quận 1"))
+                                .findFirst().orElse(null);
 
                 if (branchQ1 == null) {
                         log.warn("Quận 1 branch not found — skipping staff branch assignment.");
@@ -563,7 +563,7 @@ public class DataSeeder implements CommandLineRunner {
                 }
 
                 // Assign staff accounts that have no branch
-                String[] staffEmails = {"manager@traphe.vn", "cashier@traphe.vn", "barista@traphe.vn"};
+                String[] staffEmails = { "manager@traphe.vn", "cashier@traphe.vn", "barista@traphe.vn" };
                 for (String email : staffEmails) {
                         userRepository.findByEmail(email).ifPresent(user -> {
                                 if (user.getBranch() == null) {
@@ -597,16 +597,17 @@ public class DataSeeder implements CommandLineRunner {
                 }
         }
 
-        private Ingredient getOrCreateIngredient(String name, String unit, double minAlert, String sku, String barcode) {
+        private Ingredient getOrCreateIngredient(String name, String unit, double minAlert, String sku,
+                        String barcode) {
                 return ingredientRepository.findBySkuAndIsDeletedFalse(sku)
-                        .orElseGet(() -> ingredientRepository.save(Ingredient.builder()
-                                .name(name)
-                                .unit(unit)
-                                .minStockAlert(BigDecimal.valueOf(minAlert))
-                                .sku(sku)
-                                .barcode(barcode)
-                                .isActive(true)
-                                .build()));
+                                .orElseGet(() -> ingredientRepository.save(Ingredient.builder()
+                                                .name(name)
+                                                .unit(unit)
+                                                .minStockAlert(BigDecimal.valueOf(minAlert))
+                                                .sku(sku)
+                                                .barcode(barcode)
+                                                .isActive(true)
+                                                .build()));
         }
 
         private void updateMenuItemDetails(String name, String desc, String imageUrl, BigDecimal basePrice) {
@@ -632,27 +633,28 @@ public class DataSeeder implements CommandLineRunner {
 
         private void createRecipeIfNotExists(MenuItem item, String size, String notes, List<RecipeItemConfig> configs) {
                 boolean exists = (size == null)
-                        ? recipeRepository.existsByMenuItemIdAndSizeIsNullAndIsDeletedFalse(item.getId())
-                        : recipeRepository.existsByMenuItemIdAndSizeAndIsDeletedFalse(item.getId(), size);
+                                ? recipeRepository.existsByMenuItemIdAndSizeIsNullAndIsDeletedFalse(item.getId())
+                                : recipeRepository.existsByMenuItemIdAndSizeAndIsDeletedFalse(item.getId(), size);
                 if (!exists) {
                         Recipe recipe = recipeRepository.save(Recipe.builder()
-                                .menuItem(item)
-                                .size(size)
-                                .notes(notes)
-                                .isActive(true)
-                                .build());
+                                        .menuItem(item)
+                                        .size(size)
+                                        .notes(notes)
+                                        .isActive(true)
+                                        .build());
 
                         for (RecipeItemConfig cfg : configs) {
                                 recipeItemRepository.save(RecipeItem.builder()
-                                        .recipe(recipe)
-                                        .ingredient(cfg.ingredient)
-                                        .quantity(BigDecimal.valueOf(cfg.qty))
-                                        .build());
+                                                .recipe(recipe)
+                                                .ingredient(cfg.ingredient)
+                                                .quantity(BigDecimal.valueOf(cfg.qty))
+                                                .build());
                         }
                 }
         }
 
-        private void seedPurchaseOrderForBranch(Branch branch, Supplier supplier, List<PoItemConfig> items, UUID creatorId) {
+        private void seedPurchaseOrderForBranch(Branch branch, Supplier supplier, List<PoItemConfig> items,
+                        UUID creatorId) {
                 boolean hasStock = !ingredientStockRepository.findByBranchId(branch.getId()).isEmpty();
                 if (hasStock) {
                         return; // Stocks already seeded, skip PO simulation to avoid duplicating stock
@@ -667,14 +669,14 @@ public class DataSeeder implements CommandLineRunner {
                 String poNumber = String.format("PO-%06d", nextSeq);
 
                 PurchaseOrder po = purchaseOrderRepository.save(PurchaseOrder.builder()
-                        .poNumber(poNumber)
-                        .supplier(supplier)
-                        .branch(branch)
-                        .status(PurchaseOrderStatus.CLOSED)
-                        .expectedDeliveryDate(LocalDate.now().minusDays(5))
-                        .actualDeliveryDate(LocalDate.now().minusDays(5))
-                        .note("Đơn nhập kho mẫu hệ thống tự động sinh khi khởi tạo")
-                        .build());
+                                .poNumber(poNumber)
+                                .supplier(supplier)
+                                .branch(branch)
+                                .status(PurchaseOrderStatus.CLOSED)
+                                .expectedDeliveryDate(LocalDate.now().minusDays(5))
+                                .actualDeliveryDate(LocalDate.now().minusDays(5))
+                                .note("Đơn nhập kho mẫu hệ thống tự động sinh khi khởi tạo")
+                                .build());
                 po.setCreatedAt(LocalDateTime.now().minusDays(5));
                 po.setCreatedBy(creatorId);
                 purchaseOrderRepository.save(po);
@@ -682,46 +684,49 @@ public class DataSeeder implements CommandLineRunner {
                 BigDecimal total = BigDecimal.ZERO;
                 for (PoItemConfig cfg : items) {
                         PurchaseOrderItem item = purchaseOrderItemRepository.save(PurchaseOrderItem.builder()
-                                .purchaseOrder(po)
-                                .ingredient(cfg.ingredient)
-                                .quantityOrdered(BigDecimal.valueOf(cfg.qty))
-                                .quantityReceived(BigDecimal.valueOf(cfg.qty))
-                                .unitPrice(BigDecimal.valueOf(cfg.unitPrice))
-                                .build());
+                                        .purchaseOrder(po)
+                                        .ingredient(cfg.ingredient)
+                                        .quantityOrdered(BigDecimal.valueOf(cfg.qty))
+                                        .quantityReceived(BigDecimal.valueOf(cfg.qty))
+                                        .unitPrice(BigDecimal.valueOf(cfg.unitPrice))
+                                        .build());
                         total = total.add(item.getSubtotal());
 
                         // Update stock
                         IngredientStock stock = IngredientStock.builder()
-                                .branch(branch)
-                                .ingredient(cfg.ingredient)
-                                .quantityAvailable(BigDecimal.valueOf(cfg.qty))
-                                .lastUpdated(LocalDateTime.now().minusDays(5))
-                                .build();
+                                        .branch(branch)
+                                        .ingredient(cfg.ingredient)
+                                        .quantityAvailable(BigDecimal.valueOf(cfg.qty))
+                                        .lastUpdated(LocalDateTime.now().minusDays(5))
+                                        .build();
                         ingredientStockRepository.save(stock);
 
                         // Save transaction
                         stockTransactionRepository.save(StockTransaction.builder()
-                                .branch(branch)
-                                .ingredient(cfg.ingredient)
-                                .type(StockTransactionType.IMPORT)
-                                .quantityChange(BigDecimal.valueOf(cfg.qty))
-                                .quantityBefore(BigDecimal.ZERO)
-                                .quantityAfter(BigDecimal.valueOf(cfg.qty))
-                                .referenceType(StockReferenceType.PURCHASE_ORDER)
-                                .referenceId(po.getId())
-                                .createdAt(LocalDateTime.now().minusDays(5))
-                                .createdBy(creatorId)
-                                .build());
+                                        .branch(branch)
+                                        .ingredient(cfg.ingredient)
+                                        .type(StockTransactionType.IMPORT)
+                                        .quantityChange(BigDecimal.valueOf(cfg.qty))
+                                        .quantityBefore(BigDecimal.ZERO)
+                                        .quantityAfter(BigDecimal.valueOf(cfg.qty))
+                                        .referenceType(StockReferenceType.PURCHASE_ORDER)
+                                        .referenceId(po.getId())
+                                        .createdAt(LocalDateTime.now().minusDays(5))
+                                        .createdBy(creatorId)
+                                        .build());
                 }
 
                 po.setTotalAmount(total);
                 purchaseOrderRepository.save(po);
         }
 
-        private void seedAdjustmentForBranch(Branch branch, Ingredient ingredient, double changeQty, String reason, UUID creatorId) {
-                IngredientStock stock = ingredientStockRepository.findByBranchIdAndIngredientId(branch.getId(), ingredient.getId())
-                        .orElse(null);
-                if (stock == null) return;
+        private void seedAdjustmentForBranch(Branch branch, Ingredient ingredient, double changeQty, String reason,
+                        UUID creatorId) {
+                IngredientStock stock = ingredientStockRepository
+                                .findByBranchIdAndIngredientId(branch.getId(), ingredient.getId())
+                                .orElse(null);
+                if (stock == null)
+                        return;
 
                 BigDecimal before = stock.getQuantityAvailable();
                 BigDecimal change = BigDecimal.valueOf(changeQty);
@@ -736,51 +741,54 @@ public class DataSeeder implements CommandLineRunner {
                 ingredientStockRepository.save(stock);
 
                 stockTransactionRepository.save(StockTransaction.builder()
-                        .branch(branch)
-                        .ingredient(ingredient)
-                        .type(StockTransactionType.ADJUST)
-                        .quantityChange(change)
-                        .quantityBefore(before)
-                        .quantityAfter(after)
-                        .referenceType(StockReferenceType.MANUAL)
-                        .reason(reason)
-                        .createdAt(LocalDateTime.now().minusDays(2))
-                        .createdBy(creatorId)
-                        .build());
+                                .branch(branch)
+                                .ingredient(ingredient)
+                                .type(StockTransactionType.ADJUST)
+                                .quantityChange(change)
+                                .quantityBefore(before)
+                                .quantityAfter(after)
+                                .referenceType(StockReferenceType.MANUAL)
+                                .reason(reason)
+                                .createdAt(LocalDateTime.now().minusDays(2))
+                                .createdBy(creatorId)
+                                .build());
         }
 
         private void seedOrderForBranch(Branch branch, MenuItem item, int quantity, int minusDays, String sizeStr) {
-                String orderNumber = "ORD-" + branch.getId().toString().substring(0, 4).toUpperCase() + "-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                String orderNumber = "ORD-" + branch.getId().toString().substring(0, 4).toUpperCase() + "-"
+                                + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
                 MenuItemSize itemSize = menuItemSizeRepository.findAll().stream()
-                        .filter(s -> s.getMenuItem().getId().equals(item.getId()) && s.getSizeName().equalsIgnoreCase(sizeStr))
-                        .findFirst().orElse(null);
+                                .filter(s -> s.getMenuItem().getId().equals(item.getId())
+                                                && s.getSizeName().equalsIgnoreCase(sizeStr))
+                                .findFirst().orElse(null);
 
-                BigDecimal price = (itemSize != null) ? itemSize.getSellingPrice() : (item.getBasePrice() != null ? item.getBasePrice() : BigDecimal.valueOf(35000));
+                BigDecimal price = (itemSize != null) ? itemSize.getSellingPrice()
+                                : (item.getBasePrice() != null ? item.getBasePrice() : BigDecimal.valueOf(35000));
                 BigDecimal subtotal = price.multiply(BigDecimal.valueOf(quantity));
 
                 Order order = orderRepository.save(Order.builder()
-                        .orderNumber(orderNumber)
-                        .orderType(OrderType.DRINK_PICKUP)
-                        .branch(branch)
-                        .status(OrderStatus.COMPLETED)
-                        .brewingStatus(BrewingStatus.COMPLETED)
-                        .paymentMethod(PaymentMethod.CASH)
-                        .paymentStatus(PaymentStatus.COMPLETED)
-                        .subtotal(subtotal)
-                        .finalAmount(subtotal)
-                        .build());
+                                .orderNumber(orderNumber)
+                                .orderType(OrderType.DRINK_PICKUP)
+                                .branch(branch)
+                                .status(OrderStatus.COMPLETED)
+                                .brewingStatus(BrewingStatus.COMPLETED)
+                                .paymentMethod(PaymentMethod.CASH)
+                                .paymentStatus(PaymentStatus.COMPLETED)
+                                .subtotal(subtotal)
+                                .finalAmount(subtotal)
+                                .build());
                 order.setCreatedAt(LocalDateTime.now().minusDays(minusDays));
                 orderRepository.save(order);
 
                 orderItemRepository.save(OrderItem.builder()
-                        .order(order)
-                        .menuItem(item)
-                        .menuItemSize(itemSize)
-                        .quantity(quantity)
-                        .unitPrice(price)
-                        .subtotal(subtotal)
-                        .build());
+                                .order(order)
+                                .menuItem(item)
+                                .menuItemSize(itemSize)
+                                .quantity(quantity)
+                                .unitPrice(price)
+                                .subtotal(subtotal)
+                                .build());
         }
 
         private void seedAdvancedData() {
@@ -788,60 +796,90 @@ public class DataSeeder implements CommandLineRunner {
 
                 // Find manager user
                 User user = userRepository.findByEmail("manager@traphe.vn")
-                        .orElseGet(() -> userRepository.findAll().stream().findFirst().orElse(null));
+                                .orElseGet(() -> userRepository.findAll().stream().findFirst().orElse(null));
                 UUID creatorId = (user != null) ? user.getId() : null;
 
                 // --- 1. Suppliers ---
-                Supplier supDaiThinh = supplierRepository.findByNameAndIsDeletedFalse("Nhà cung cấp Nguyên liệu trà sữa Đại Thịnh")
-                        .orElseGet(() -> supplierRepository.save(Supplier.builder()
-                                .name("Nhà cung cấp Nguyên liệu trà sữa Đại Thịnh")
-                                .contactName("Nguyễn Văn A")
-                                .phone("0901234567")
-                                .email("daithinh@gmail.com")
-                                .address("123 Đường 3/2, Quận 10, TP. HCM")
-                                .build()));
+                Supplier supDaiThinh = supplierRepository
+                                .findByNameAndIsDeletedFalse("Nhà cung cấp Nguyên liệu trà sữa Đại Thịnh")
+                                .orElseGet(() -> supplierRepository.save(Supplier.builder()
+                                                .name("Nhà cung cấp Nguyên liệu trà sữa Đại Thịnh")
+                                                .contactName("Nguyễn Văn A")
+                                                .phone("0901234567")
+                                                .email("daithinh@gmail.com")
+                                                .address("123 Đường 3/2, Quận 10, TP. HCM")
+                                                .build()));
 
-                Supplier supCaoNguyen = supplierRepository.findByNameAndIsDeletedFalse("Nhà cung cấp Trà & Cà phê Cao Nguyên")
-                        .orElseGet(() -> supplierRepository.save(Supplier.builder()
-                                .name("Nhà cung cấp Trà & Cà phê Cao Nguyên")
-                                .contactName("Trần Thị B")
-                                .phone("0907654321")
-                                .email("caonguyen@gmail.com")
-                                .address("456 Lê Lợi, TP. Đà Lạt")
-                                .build()));
+                Supplier supCaoNguyen = supplierRepository
+                                .findByNameAndIsDeletedFalse("Nhà cung cấp Trà & Cà phê Cao Nguyên")
+                                .orElseGet(() -> supplierRepository.save(Supplier.builder()
+                                                .name("Nhà cung cấp Trà & Cà phê Cao Nguyên")
+                                                .contactName("Trần Thị B")
+                                                .phone("0907654321")
+                                                .email("caonguyen@gmail.com")
+                                                .address("456 Lê Lợi, TP. Đà Lạt")
+                                                .build()));
 
-                Supplier supMienTay = supplierRepository.findByNameAndIsDeletedFalse("Nhà cung cấp Trái cây tươi Miền Tây")
-                        .orElseGet(() -> supplierRepository.save(Supplier.builder()
-                                .name("Nhà cung cấp Trái cây tươi Miền Tây")
-                                .contactName("Lê Văn C")
-                                .phone("0908889999")
-                                .email("mientayfresh@gmail.com")
-                                .address("789 Nguyễn Trung Trực, TP. Cần Thơ")
-                                .build()));
+                Supplier supMienTay = supplierRepository
+                                .findByNameAndIsDeletedFalse("Nhà cung cấp Trái cây tươi Miền Tây")
+                                .orElseGet(() -> supplierRepository.save(Supplier.builder()
+                                                .name("Nhà cung cấp Trái cây tươi Miền Tây")
+                                                .contactName("Lê Văn C")
+                                                .phone("0908889999")
+                                                .email("mientayfresh@gmail.com")
+                                                .address("789 Nguyễn Trung Trực, TP. Cần Thơ")
+                                                .build()));
 
                 // --- 2. Ingredients ---
-                // Unit unit prices matches recipe unit (g, ml) to ensure logical cost calculation.
-                Ingredient ingBotTraSua = getOrCreateIngredient("Bột trà sữa", "g", 1000.0, "ING-MILK-POWDER", "8930000000001");
+                // Unit unit prices matches recipe unit (g, ml) to ensure logical cost
+                // calculation.
+                Ingredient ingBotTraSua = getOrCreateIngredient("Bột trà sữa", "g", 1000.0, "ING-MILK-POWDER",
+                                "8930000000001");
                 Ingredient ingSuaDac = getOrCreateIngredient("Sữa đặc", "ml", 1000.0, "ING-COND-MILK", "8930000000002");
-                Ingredient ingBotKhoaiMon = getOrCreateIngredient("Bột khoai môn", "g", 1000.0, "ING-TARO-POWDER", "8930000000003");
-                Ingredient ingBotMatcha = getOrCreateIngredient("Bột matcha", "g", 1000.0, "ING-MATCHA", "8930000000004");
-                Ingredient ingHongTra = getOrCreateIngredient("Hồng trà", "g", 1000.0, "ING-BLACK-TEA", "8930000000005");
-                Ingredient ingTraLai = getOrCreateIngredient("Trà lài", "g", 1000.0, "ING-JASMINE-TEA", "8930000000006");
-                Ingredient ingSuaTuoi = getOrCreateIngredient("Sữa tươi", "ml", 2000.0, "ING-FRESH-MILK", "8930000000007");
-                Ingredient ingDuongNuoc = getOrCreateIngredient("Đường nước", "ml", 2000.0, "ING-SUGAR-SYRUP", "8930000000008");
-                Ingredient ingHatCaPhe = getOrCreateIngredient("Hạt cà phê", "g", 2000.0, "ING-COFFEE-BEANS", "8930000000009");
-                Ingredient ingNuocCotDua = getOrCreateIngredient("Nước cốt dừa", "ml", 1000.0, "ING-COCONUT-CREAM", "8930000000010");
-                Ingredient ingDaoNgam = getOrCreateIngredient("Đào ngâm", "g", 2000.0, "ING-PEACH-SLICE", "8930000000011");
+                Ingredient ingBotKhoaiMon = getOrCreateIngredient("Bột khoai môn", "g", 1000.0, "ING-TARO-POWDER",
+                                "8930000000003");
+                Ingredient ingBotMatcha = getOrCreateIngredient("Bột matcha", "g", 1000.0, "ING-MATCHA",
+                                "8930000000004");
+                Ingredient ingHongTra = getOrCreateIngredient("Hồng trà", "g", 1000.0, "ING-BLACK-TEA",
+                                "8930000000005");
+                Ingredient ingTraLai = getOrCreateIngredient("Trà lài", "g", 1000.0, "ING-JASMINE-TEA",
+                                "8930000000006");
+                Ingredient ingSuaTuoi = getOrCreateIngredient("Sữa tươi", "ml", 2000.0, "ING-FRESH-MILK",
+                                "8930000000007");
+                Ingredient ingDuongNuoc = getOrCreateIngredient("Đường nước", "ml", 2000.0, "ING-SUGAR-SYRUP",
+                                "8930000000008");
+                Ingredient ingHatCaPhe = getOrCreateIngredient("Hạt cà phê", "g", 2000.0, "ING-COFFEE-BEANS",
+                                "8930000000009");
+                Ingredient ingNuocCotDua = getOrCreateIngredient("Nước cốt dừa", "ml", 1000.0, "ING-COCONUT-CREAM",
+                                "8930000000010");
+                Ingredient ingDaoNgam = getOrCreateIngredient("Đào ngâm", "g", 2000.0, "ING-PEACH-SLICE",
+                                "8930000000011");
                 Ingredient ingCamTuoi = getOrCreateIngredient("Cam tươi", "g", 2000.0, "ING-ORANGE", "8930000000012");
                 Ingredient ingSaTuoi = getOrCreateIngredient("Sả tươi", "g", 1000.0, "ING-LEMONGRASS", "8930000000013");
-                Ingredient ingDuaHau = getOrCreateIngredient("Dưa hấu tươi", "g", 3000.0, "ING-WATERMELON", "8930000000014");
+                Ingredient ingDuaHau = getOrCreateIngredient("Dưa hấu tươi", "g", 3000.0, "ING-WATERMELON",
+                                "8930000000014");
 
                 // --- 3. Update active Menu Item Images & Descriptions ---
-                updateMenuItemDetails("Trà Sữa Trà Đen", "Trà sữa trà đen truyền thống đậm vị trà cùng sữa béo thơm ngon", "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500", BigDecimal.valueOf(35000));
-                updateMenuItemDetails("Trà Sữa Matcha", "Hương vị matcha Nhật Bản kết hợp cùng sữa tươi béo ngậy tuyệt hảo", "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500", BigDecimal.valueOf(40000));
-                updateMenuItemDetails("Trà Sữa Khoai Môn", "Trà sữa khoai môn bùi béo kết hợp màu tím bắt mắt dễ thương", "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500", BigDecimal.valueOf(38000));
-                updateMenuItemDetails("Cà Phê Dừa", "Cà phê phin Việt Nam hòa quyện nước cốt dừa đá xay mát lạnh cực ngon", "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500", BigDecimal.valueOf(45000));
-                updateMenuItemDetails("Trà Đào Cam Sả", "Trà đào thơm nồng kết hợp cam tươi mọng nước cùng sả thanh mát", "https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=500", BigDecimal.valueOf(42000));
+                updateMenuItemDetails("Trà Sữa Trà Đen",
+                                "Trà sữa trà đen truyền thống đậm vị trà cùng sữa béo thơm ngon",
+                                "https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=500",
+                                BigDecimal.valueOf(35000));
+                updateMenuItemDetails("Trà Sữa Matcha",
+                                "Hương vị matcha Nhật Bản kết hợp cùng sữa tươi béo ngậy tuyệt hảo",
+                                "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=500",
+                                BigDecimal.valueOf(40000));
+                updateMenuItemDetails("Trà Sữa Khoai Môn",
+                                "Trà sữa khoai môn bùi béo kết hợp màu tím bắt mắt dễ thương",
+                                "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500",
+                                BigDecimal.valueOf(38000));
+                updateMenuItemDetails("Cà Phê Dừa",
+                                "Cà phê phin Việt Nam hòa quyện nước cốt dừa đá xay mát lạnh cực ngon",
+                                "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500",
+                                BigDecimal.valueOf(45000));
+                updateMenuItemDetails("Trà Đào Cam Sả",
+                                "Trà đào thơm nồng kết hợp cam tươi mọng nước cùng sả thanh mát",
+                                "https://images.unsplash.com/photo-1497515114629-f71d768fd07c?w=500",
+                                BigDecimal.valueOf(42000));
 
                 // --- 4. Add new drinks if not present ---
                 MenuCategory catCaPhe = menuCategoryRepository.findByNameAndIsDeletedFalse("Cà Phê & Trà").orElse(null);
@@ -850,16 +888,16 @@ public class DataSeeder implements CommandLineRunner {
                         matchaLatte = menuItemRepository.findByNameAndIsDeletedFalse("Matcha Latte").orElse(null);
                         if (matchaLatte == null) {
                                 matchaLatte = menuItemRepository.save(MenuItem.builder()
-                                        .name("Matcha Latte")
-                                        .description("Bột matcha tinh khiết hòa quyện sữa tươi thơm béo ngọt ngào")
-                                        .category(catCaPhe)
-                                        .isDrink(true)
-                                        .allowToppings(true)
-                                        .preparationTime(5)
-                                        .imageUrl("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=500")
-                                        .status(MenuItemStatus.ACTIVE)
-                                        .basePrice(new BigDecimal("45000"))
-                                        .build());
+                                                .name("Matcha Latte")
+                                                .description("Bột matcha tinh khiết hòa quyện sữa tươi thơm béo ngọt ngào")
+                                                .category(catCaPhe)
+                                                .isDrink(true)
+                                                .allowToppings(true)
+                                                .preparationTime(5)
+                                                .imageUrl("https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=500")
+                                                .status(MenuItemStatus.ACTIVE)
+                                                .basePrice(new BigDecimal("45000"))
+                                                .build());
                                 createSize(matchaLatte, "S", "45000", 1);
                                 createSize(matchaLatte, "M", "50000", 2);
                                 createSize(matchaLatte, "L", "55000", 3);
@@ -870,22 +908,23 @@ public class DataSeeder implements CommandLineRunner {
                         }
                 }
 
-                MenuCategory catSinhTo = menuCategoryRepository.findByNameAndIsDeletedFalse("Sinh Tố & Nước Ép").orElse(null);
+                MenuCategory catSinhTo = menuCategoryRepository.findByNameAndIsDeletedFalse("Sinh Tố & Nước Ép")
+                                .orElse(null);
                 MenuItem duaHau = null;
                 if (catSinhTo != null) {
                         duaHau = menuItemRepository.findByNameAndIsDeletedFalse("Nước Ép Dưa Hấu").orElse(null);
                         if (duaHau == null) {
                                 duaHau = menuItemRepository.save(MenuItem.builder()
-                                        .name("Nước Ép Dưa Hấu")
-                                        .description("Dưa hấu tươi ép nguyên chất ngọt mát lạnh giải nhiệt mùa hè")
-                                        .category(catSinhTo)
-                                        .isDrink(true)
-                                        .allowToppings(false)
-                                        .preparationTime(4)
-                                        .imageUrl("https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=500")
-                                        .status(MenuItemStatus.ACTIVE)
-                                        .basePrice(new BigDecimal("35000"))
-                                        .build());
+                                                .name("Nước Ép Dưa Hấu")
+                                                .description("Dưa hấu tươi ép nguyên chất ngọt mát lạnh giải nhiệt mùa hè")
+                                                .category(catSinhTo)
+                                                .isDrink(true)
+                                                .allowToppings(false)
+                                                .preparationTime(4)
+                                                .imageUrl("https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=500")
+                                                .status(MenuItemStatus.ACTIVE)
+                                                .basePrice(new BigDecimal("35000"))
+                                                .build());
                                 createSize(duaHau, "S", "35000", 1);
                                 createSize(duaHau, "L", "45000", 2);
 
@@ -899,167 +938,150 @@ public class DataSeeder implements CommandLineRunner {
                 MenuItem traSuaTraDen = menuItemRepository.findByNameAndIsDeletedFalse("Trà Sữa Trà Đen").orElse(null);
                 if (traSuaTraDen != null) {
                         createRecipeIfNotExists(traSuaTraDen, "S", "Công thức Trà Sữa Trà Đen Size S", List.of(
-                                new RecipeItemConfig(ingHongTra, 15),
-                                new RecipeItemConfig(ingSuaDac, 25),
-                                new RecipeItemConfig(ingBotTraSua, 12),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingHongTra, 15),
+                                        new RecipeItemConfig(ingSuaDac, 25),
+                                        new RecipeItemConfig(ingBotTraSua, 12),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                         createRecipeIfNotExists(traSuaTraDen, "M", "Công thức Trà Sữa Trà Đen Size M", List.of(
-                                new RecipeItemConfig(ingHongTra, 20),
-                                new RecipeItemConfig(ingSuaDac, 30),
-                                new RecipeItemConfig(ingBotTraSua, 15),
-                                new RecipeItemConfig(ingDuongNuoc, 20)
-                        ));
+                                        new RecipeItemConfig(ingHongTra, 20),
+                                        new RecipeItemConfig(ingSuaDac, 30),
+                                        new RecipeItemConfig(ingBotTraSua, 15),
+                                        new RecipeItemConfig(ingDuongNuoc, 20)));
                         createRecipeIfNotExists(traSuaTraDen, "L", "Công thức Trà Sữa Trà Đen Size L", List.of(
-                                new RecipeItemConfig(ingHongTra, 25),
-                                new RecipeItemConfig(ingSuaDac, 35),
-                                new RecipeItemConfig(ingBotTraSua, 18),
-                                new RecipeItemConfig(ingDuongNuoc, 25)
-                        ));
+                                        new RecipeItemConfig(ingHongTra, 25),
+                                        new RecipeItemConfig(ingSuaDac, 35),
+                                        new RecipeItemConfig(ingBotTraSua, 18),
+                                        new RecipeItemConfig(ingDuongNuoc, 25)));
                 }
 
                 MenuItem traSuaMatcha = menuItemRepository.findByNameAndIsDeletedFalse("Trà Sữa Matcha").orElse(null);
                 if (traSuaMatcha != null) {
                         createRecipeIfNotExists(traSuaMatcha, "S", "Công thức Trà Sữa Matcha Size S", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 8),
-                                new RecipeItemConfig(ingSuaTuoi, 120),
-                                new RecipeItemConfig(ingSuaDac, 20),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 8),
+                                        new RecipeItemConfig(ingSuaTuoi, 120),
+                                        new RecipeItemConfig(ingSuaDac, 20),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                         createRecipeIfNotExists(traSuaMatcha, "M", "Công thức Trà Sữa Matcha Size M", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 10),
-                                new RecipeItemConfig(ingSuaTuoi, 150),
-                                new RecipeItemConfig(ingSuaDac, 25),
-                                new RecipeItemConfig(ingDuongNuoc, 20)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 10),
+                                        new RecipeItemConfig(ingSuaTuoi, 150),
+                                        new RecipeItemConfig(ingSuaDac, 25),
+                                        new RecipeItemConfig(ingDuongNuoc, 20)));
                         createRecipeIfNotExists(traSuaMatcha, "L", "Công thức Trà Sữa Matcha Size L", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 12),
-                                new RecipeItemConfig(ingSuaTuoi, 180),
-                                new RecipeItemConfig(ingSuaDac, 30),
-                                new RecipeItemConfig(ingDuongNuoc, 25)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 12),
+                                        new RecipeItemConfig(ingSuaTuoi, 180),
+                                        new RecipeItemConfig(ingSuaDac, 30),
+                                        new RecipeItemConfig(ingDuongNuoc, 25)));
                 }
 
-                MenuItem traSuaKhoaiMon = menuItemRepository.findByNameAndIsDeletedFalse("Trà Sữa Khoai Môn").orElse(null);
+                MenuItem traSuaKhoaiMon = menuItemRepository.findByNameAndIsDeletedFalse("Trà Sữa Khoai Môn")
+                                .orElse(null);
                 if (traSuaKhoaiMon != null) {
                         createRecipeIfNotExists(traSuaKhoaiMon, "S", "Công thức Trà Sữa Khoai Môn Size S", List.of(
-                                new RecipeItemConfig(ingBotKhoaiMon, 12),
-                                new RecipeItemConfig(ingHongTra, 10),
-                                new RecipeItemConfig(ingSuaDac, 20),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingBotKhoaiMon, 12),
+                                        new RecipeItemConfig(ingHongTra, 10),
+                                        new RecipeItemConfig(ingSuaDac, 20),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                         createRecipeIfNotExists(traSuaKhoaiMon, "M", "Công thức Trà Sữa Khoai Môn Size M", List.of(
-                                new RecipeItemConfig(ingBotKhoaiMon, 15),
-                                new RecipeItemConfig(ingHongTra, 15),
-                                new RecipeItemConfig(ingSuaDac, 25),
-                                new RecipeItemConfig(ingDuongNuoc, 20)
-                        ));
+                                        new RecipeItemConfig(ingBotKhoaiMon, 15),
+                                        new RecipeItemConfig(ingHongTra, 15),
+                                        new RecipeItemConfig(ingSuaDac, 25),
+                                        new RecipeItemConfig(ingDuongNuoc, 20)));
                         createRecipeIfNotExists(traSuaKhoaiMon, "L", "Công thức Trà Sữa Khoai Môn Size L", List.of(
-                                new RecipeItemConfig(ingBotKhoaiMon, 18),
-                                new RecipeItemConfig(ingHongTra, 20),
-                                new RecipeItemConfig(ingSuaDac, 30),
-                                new RecipeItemConfig(ingDuongNuoc, 25)
-                        ));
+                                        new RecipeItemConfig(ingBotKhoaiMon, 18),
+                                        new RecipeItemConfig(ingHongTra, 20),
+                                        new RecipeItemConfig(ingSuaDac, 30),
+                                        new RecipeItemConfig(ingDuongNuoc, 25)));
                 }
 
                 MenuItem caPheCoconut = menuItemRepository.findByNameAndIsDeletedFalse("Cà Phê Dừa").orElse(null);
                 if (caPheCoconut != null) {
                         createRecipeIfNotExists(caPheCoconut, "S", "Công thức Cà Phê Dừa Size S", List.of(
-                                new RecipeItemConfig(ingHatCaPhe, 15),
-                                new RecipeItemConfig(ingNuocCotDua, 60),
-                                new RecipeItemConfig(ingSuaDac, 20)
-                        ));
+                                        new RecipeItemConfig(ingHatCaPhe, 15),
+                                        new RecipeItemConfig(ingNuocCotDua, 60),
+                                        new RecipeItemConfig(ingSuaDac, 20)));
                         createRecipeIfNotExists(caPheCoconut, "L", "Công thức Cà Phê Dừa Size L", List.of(
-                                new RecipeItemConfig(ingHatCaPhe, 22),
-                                new RecipeItemConfig(ingNuocCotDua, 90),
-                                new RecipeItemConfig(ingSuaDac, 30)
-                        ));
+                                        new RecipeItemConfig(ingHatCaPhe, 22),
+                                        new RecipeItemConfig(ingNuocCotDua, 90),
+                                        new RecipeItemConfig(ingSuaDac, 30)));
                 }
 
                 MenuItem traDaoCamSa = menuItemRepository.findByNameAndIsDeletedFalse("Trà Đào Cam Sả").orElse(null);
                 if (traDaoCamSa != null) {
                         createRecipeIfNotExists(traDaoCamSa, "S", "Công thức Trà Đào Cam Sả Size S", List.of(
-                                new RecipeItemConfig(ingTraLai, 10),
-                                new RecipeItemConfig(ingDaoNgam, 30),
-                                new RecipeItemConfig(ingCamTuoi, 40),
-                                new RecipeItemConfig(ingSaTuoi, 10),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingTraLai, 10),
+                                        new RecipeItemConfig(ingDaoNgam, 30),
+                                        new RecipeItemConfig(ingCamTuoi, 40),
+                                        new RecipeItemConfig(ingSaTuoi, 10),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                         createRecipeIfNotExists(traDaoCamSa, "L", "Công thức Trà Đào Cam Sả Size L", List.of(
-                                new RecipeItemConfig(ingTraLai, 15),
-                                new RecipeItemConfig(ingDaoNgam, 50),
-                                new RecipeItemConfig(ingCamTuoi, 60),
-                                new RecipeItemConfig(ingSaTuoi, 15),
-                                new RecipeItemConfig(ingDuongNuoc, 25)
-                        ));
+                                        new RecipeItemConfig(ingTraLai, 15),
+                                        new RecipeItemConfig(ingDaoNgam, 50),
+                                        new RecipeItemConfig(ingCamTuoi, 60),
+                                        new RecipeItemConfig(ingSaTuoi, 15),
+                                        new RecipeItemConfig(ingDuongNuoc, 25)));
                 }
 
                 if (matchaLatte != null) {
                         createRecipeIfNotExists(matchaLatte, "S", "Công thức Matcha Latte Size S", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 6),
-                                new RecipeItemConfig(ingSuaTuoi, 150),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 6),
+                                        new RecipeItemConfig(ingSuaTuoi, 150),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                         createRecipeIfNotExists(matchaLatte, "M", "Công thức Matcha Latte Size M", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 8),
-                                new RecipeItemConfig(ingSuaTuoi, 180),
-                                new RecipeItemConfig(ingDuongNuoc, 20)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 8),
+                                        new RecipeItemConfig(ingSuaTuoi, 180),
+                                        new RecipeItemConfig(ingDuongNuoc, 20)));
                         createRecipeIfNotExists(matchaLatte, "L", "Công thức Matcha Latte Size L", List.of(
-                                new RecipeItemConfig(ingBotMatcha, 10),
-                                new RecipeItemConfig(ingSuaTuoi, 210),
-                                new RecipeItemConfig(ingDuongNuoc, 25)
-                        ));
+                                        new RecipeItemConfig(ingBotMatcha, 10),
+                                        new RecipeItemConfig(ingSuaTuoi, 210),
+                                        new RecipeItemConfig(ingDuongNuoc, 25)));
                 }
 
                 if (duaHau != null) {
                         createRecipeIfNotExists(duaHau, "S", "Công thức Nước Ép Dưa Hấu Size S", List.of(
-                                new RecipeItemConfig(ingDuaHau, 150),
-                                new RecipeItemConfig(ingDuongNuoc, 10)
-                        ));
+                                        new RecipeItemConfig(ingDuaHau, 150),
+                                        new RecipeItemConfig(ingDuongNuoc, 10)));
                         createRecipeIfNotExists(duaHau, "L", "Công thức Nước Ép Dưa Hấu Size L", List.of(
-                                new RecipeItemConfig(ingDuaHau, 220),
-                                new RecipeItemConfig(ingDuongNuoc, 15)
-                        ));
+                                        new RecipeItemConfig(ingDuaHau, 220),
+                                        new RecipeItemConfig(ingDuongNuoc, 15)));
                 }
 
                 // --- 6. Stock Levels, POs & Adjustments per Branch ---
                 List<Branch> branches = branchRepository.findAll();
                 for (Branch branch : branches) {
-                        if (!branch.isActive()) continue;
+                        if (!branch.isActive())
+                                continue;
 
                         // Simulation of Purchase Orders to establish stock
                         List<PoItemConfig> poItems = List.of(
-                                new PoItemConfig(ingBotTraSua, 20000, 150),
-                                new PoItemConfig(ingSuaDac, 15000, 80),
-                                new PoItemConfig(ingBotKhoaiMon, 500, 200), // LOW STOCK ALERT
-                                new PoItemConfig(ingBotMatcha, 400, 300),   // LOW STOCK ALERT
-                                new PoItemConfig(ingHongTra, 15000, 120),
-                                new PoItemConfig(ingTraLai, 15000, 120),
-                                new PoItemConfig(ingSuaTuoi, 25000, 40),
-                                new PoItemConfig(ingDuongNuoc, 30000, 30),
-                                new PoItemConfig(ingHatCaPhe, 25000, 250),
-                                new PoItemConfig(ingNuocCotDua, 8000, 60),
-                                new PoItemConfig(ingDaoNgam, 1200, 100),   // LOW STOCK ALERT
-                                new PoItemConfig(ingCamTuoi, 8000, 80),
-                                new PoItemConfig(ingSaTuoi, 350, 50),       // LOW STOCK ALERT
-                                new PoItemConfig(ingDuaHau, 12000, 30)
-                        );
+                                        new PoItemConfig(ingBotTraSua, 20000, 150),
+                                        new PoItemConfig(ingSuaDac, 15000, 80),
+                                        new PoItemConfig(ingBotKhoaiMon, 500, 200), // LOW STOCK ALERT
+                                        new PoItemConfig(ingBotMatcha, 400, 300), // LOW STOCK ALERT
+                                        new PoItemConfig(ingHongTra, 15000, 120),
+                                        new PoItemConfig(ingTraLai, 15000, 120),
+                                        new PoItemConfig(ingSuaTuoi, 25000, 40),
+                                        new PoItemConfig(ingDuongNuoc, 30000, 30),
+                                        new PoItemConfig(ingHatCaPhe, 25000, 250),
+                                        new PoItemConfig(ingNuocCotDua, 8000, 60),
+                                        new PoItemConfig(ingDaoNgam, 1200, 100), // LOW STOCK ALERT
+                                        new PoItemConfig(ingCamTuoi, 8000, 80),
+                                        new PoItemConfig(ingSaTuoi, 350, 50), // LOW STOCK ALERT
+                                        new PoItemConfig(ingDuaHau, 12000, 30));
 
                         // Seed PO and stock
                         seedPurchaseOrderForBranch(branch, supDaiThinh, poItems, creatorId);
 
                         // Seed a manual adjustment to show transaction log diversity
-                        seedAdjustmentForBranch(branch, ingDuongNuoc, -500, "Hao hụt trong quá trình pha chế", creatorId);
+                        seedAdjustmentForBranch(branch, ingDuongNuoc, -500, "Hao hụt trong quá trình pha chế",
+                                        creatorId);
                         seedAdjustmentForBranch(branch, ingHongTra, -200, "Cân chỉnh cuối tuần", creatorId);
 
                         // --- 7. Seed Sales Orders (distribute to branches) ---
                         // Check if this branch already has any sales orders
                         long orderCount = orderRepository.countOrdersByDateRangeAndBranch(
-                                LocalDateTime.now().minusDays(365),
-                                LocalDateTime.now().plusDays(1),
-                                branch.getId()
-                        );
+                                        LocalDateTime.now().minusDays(365),
+                                        LocalDateTime.now().plusDays(1),
+                                        branch.getId());
                         if (orderCount == 0) {
                                 log.info("Seeding sample sales orders for branch '{}'", branch.getName());
                                 if (traSuaTraDen != null) {
@@ -1069,7 +1091,8 @@ public class DataSeeder implements CommandLineRunner {
                                         seedOrderForBranch(branch, traSuaTraDen, 10, 4, "S");
                                         seedOrderForBranch(branch, traSuaTraDen, 14, 5, "M");
                                 }
-                                if (traSuaMatcha != null && branch.getName().contains("Quận 1")) { // Matcha is active in Q1
+                                if (traSuaMatcha != null && branch.getName().contains("Quận 1")) { // Matcha is active
+                                                                                                   // in Q1
                                         seedOrderForBranch(branch, traSuaMatcha, 6, 1, "M");
                                         seedOrderForBranch(branch, traSuaMatcha, 5, 3, "L");
                                         seedOrderForBranch(branch, traSuaMatcha, 4, 4, "M");
