@@ -2,6 +2,9 @@ package com.example.traphe_backend.ai.repository;
 
 import com.example.traphe_backend.ai.entity.AiForecastCache;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -20,7 +23,11 @@ public interface AiForecastCacheRepository extends JpaRepository<AiForecastCache
             LocalDate from, LocalDate to);
 
     /** Xoá cache cũ trước khi rebuild */
-    void deleteByBranchIdAndForecastDateBetween(UUID branchId, LocalDate from, LocalDate to);
+    @Modifying
+    @Query("DELETE FROM AiForecastCache c WHERE c.branchId = :branchId AND c.forecastDate BETWEEN :from AND :to")
+    void deleteByBranchIdAndForecastDateBetween(@Param("branchId") UUID branchId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
-    void deleteByForecastDateBetween(LocalDate from, LocalDate to);
+    @Modifying
+    @Query("DELETE FROM AiForecastCache c WHERE c.forecastDate BETWEEN :from AND :to")
+    void deleteByForecastDateBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }
