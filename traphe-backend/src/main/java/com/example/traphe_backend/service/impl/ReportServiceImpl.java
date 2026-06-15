@@ -248,7 +248,7 @@ public class ReportServiceImpl implements ReportService {
                 BigDecimal totalRecipeCost = BigDecimal.ZERO;
                 for (RecipeItem ri : riList) {
                     BigDecimal qty = ri.getQuantity();
-                    BigDecimal price = ingredientPrices.getOrDefault(ri.getIngredient().getId(), BigDecimal.valueOf(10000));
+                    BigDecimal price = ingredientPrices.getOrDefault(ri.getIngredient().getId(), BigDecimal.valueOf(100));
                     totalRecipeCost = totalRecipeCost.add(qty.multiply(price));
                 }
                 return totalRecipeCost;
@@ -256,7 +256,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if (mi.getIngredient() != null) {
-            return ingredientPrices.getOrDefault(mi.getIngredient().getId(), BigDecimal.valueOf(10000));
+            return ingredientPrices.getOrDefault(mi.getIngredient().getId(), BigDecimal.valueOf(100));
         }
 
         BigDecimal price = oi.getUnitPrice() != null ? oi.getUnitPrice() : BigDecimal.ZERO;
