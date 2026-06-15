@@ -27,6 +27,14 @@ public class ReportController {
 
     private final ReportService reportService;
 
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
+    public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(required = false) UUID branchId) {
+        return ResponseEntity.ok(ApiResponse.success(reportService.getDashboardSummary(period, branchId), "Dashboard summary retrieved"));
+    }
+
     @GetMapping("/revenue")
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     public ResponseEntity<ApiResponse<RevenueReportResponse>> getRevenueReport(

@@ -106,12 +106,13 @@ export default function AdminRecipesPage() {
       if (recipes.length > 0) {
         const firstRecipe = recipes[0];
         const mapped: RecipeItem[] = (firstRecipe.items || []).map((r: any) => {
+          const ing = currentIngredients.find((i) => i.id === r.ingredientId);
           return {
             id: r.id || "rec-" + Math.random().toString(36).substring(2, 9),
             ingredientId: r.ingredientId,
-            ingredientName: r.ingredientName || "Nguyên liệu không xác định",
+            ingredientName: ing ? ing.name : (r.ingredientName || "Nguyên liệu không xác định"),
             amount: r.quantity || r.amount || 0,
-            unit: r.unit || "g",
+            unit: ing ? ing.unit : (r.unit || "g"),
           };
         });
         setRecipeItems(mapped);
