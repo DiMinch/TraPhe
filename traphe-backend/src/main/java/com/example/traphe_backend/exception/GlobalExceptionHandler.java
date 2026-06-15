@@ -95,11 +95,28 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("CONFLICT", "Hệ thống đang xử lý giao dịch hoặc có quá nhiều tương tác cùng lúc. Vui lòng thử lại."));
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex) {
+        String message = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
+        String userMessage = "Yêu cầu không thể thực hiện do vi phạm ràng buộc dữ liệu hoặc trùng lặp khoá.";
+        
+        if (message != null) {
+            if (message.contains("users_phone_number_key") || message.contains("phone_number")) {
+                userMessage = "Số điện thoại đã được đăng ký trong hệ thống.";
+            } else if (message.contains("users_email_key") || message.contains("email")) {
+                userMessage = "Địa chỉ email đã được đăng ký trong hệ thống.";
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error("CONFLICT", userMessage));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         ex.printStackTrace(); // Print stack trace to console for developer
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("INTERNAL_SERVER_ERROR", 
-                        "An unexpected error occurred: [" + ex.getClass().getSimpleName() + "] " + ex.getMessage()));
+                        "Đã xảy ra lỗi hệ thống không mong muốn. Vui lòng thử lại sau."));
     }
 }

@@ -25,9 +25,10 @@ export default function SignInPage() {
 
       if (response.statusCode === 200 && response.data) {
         const { accessToken, refreshToken, user } = response.data;
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-        localStorage.setItem("user", JSON.stringify(user));
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem("accessToken", accessToken);
+        storage.setItem("refreshToken", refreshToken);
+        storage.setItem("user", JSON.stringify(user));
 
         toast.success("Login Successful", {
           id: toastId,

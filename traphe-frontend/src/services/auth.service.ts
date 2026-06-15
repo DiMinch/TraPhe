@@ -20,25 +20,30 @@ export const authService = {
   },
 
   register: async (payload: RegisterRequest) => {
-    return axiosClient.post<any, ApiResponse<null>>("/auth/register", payload);
+    const { phone, ...rest } = payload;
+    const body = {
+      ...rest,
+      phoneNumber: phone,
+    };
+    return axiosClient.post<any, ApiResponse<null>>("/auth/register", body);
   },
 
   verifySignup: async (payload: VerifyOtpRequest) => {
     return axiosClient.post<any, ApiResponse<null>>(
-      "/auth/verify-signup",
+      "/auth/verify-email",
       payload,
     );
   },
 
   changePassword: async (payload: ChangePasswordRequest) => {
-    return axiosClient.post<any, ApiResponse<null>>(
+    return axiosClient.put<any, ApiResponse<null>>(
       "/auth/change-password",
       payload,
     );
   },
 
   getCurrentUser: (): UserInfo | null => {
-    const userStr = localStorage.getItem("user");
+    const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (userStr) {
       try {
         return JSON.parse(userStr);
@@ -69,12 +74,13 @@ export const authService = {
 
   logout: async () => {
     try {
-      const refreshToken = localStorage.getItem("refreshToken");
+      const refreshToken = localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
       await axiosClient.post("/auth/logout", { refreshToken });
     } catch (error) {
       console.error("Logout API failed:", error);
     } finally {
       localStorage.clear();
+      sessionStorage.clear();
     }
   },
 };

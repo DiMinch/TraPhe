@@ -69,6 +69,11 @@ public class AuthServiceImpl implements AuthService {
             throw new EmailAlreadyExistsException("Email đã được đăng ký.");
         }
 
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank() 
+                && userRepository.findByPhoneNumber(request.getPhoneNumber()).isPresent()) {
+            throw new IllegalArgumentException("Số điện thoại đã được đăng ký.");
+        }
+
         Role userRole = roleRepository.findByName(RoleName.ROLE_CUSTOMER)
                 .orElseGet(() -> {
                     Role role = Role.builder().name(RoleName.ROLE_CUSTOMER).build();
@@ -83,21 +88,21 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Collections.singleton(userRole))
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         // Generate email verification OTP
-        String otp = otpService.generateAndSaveOtp(user.getEmail(), OtpService.OtpType.EMAIL_VERIFY);
-        emailService.sendVerificationOtp(user.getEmail(), otp);
+        String otp = otpService.generateAndSaveOtp(savedUser.getEmail(), OtpService.OtpType.EMAIL_VERIFY);
+        emailService.sendVerificationOtp(savedUser.getEmail(), otp);
 
         // Return tokens immediately (user can login but isEmailVerified=false)
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(savedUser.getEmail());
         String accessToken = jwtUtil.generateAccessToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .user(mapToUserResponse(user))
+                .user(mapToUserResponse(savedUser))
                 .build();
     }
 
