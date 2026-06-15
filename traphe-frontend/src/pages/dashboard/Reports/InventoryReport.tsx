@@ -295,9 +295,9 @@ export default function InventoryReportPage() {
                 <div className="space-y-3">
                   {report.items
                     .filter((item) => item.isLowStock || item.isOutOfStock)
-                    .map((item) => (
+                    .map((item, index) => (
                       <div
-                        key={`${item.productVariantId}-${item.variantName}`}
+                        key={`${item.productVariantId || ""}-${item.variantName || ""}-${index}`}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
                         <div className="flex-1">
@@ -424,8 +424,8 @@ export default function InventoryReportPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      report.items.map((item) => (
-                        <TableRow key={`${item.productVariantId}-${item.variantName}`}>
+                      report.items.map((item, index) => (
+                        <TableRow key={`${item.productVariantId || ""}-${item.variantName || ""}-${index}`}>
                           <TableCell className="font-mono text-sm">
                             {item.sku}
                           </TableCell>

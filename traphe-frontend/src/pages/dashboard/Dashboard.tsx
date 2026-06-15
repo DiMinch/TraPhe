@@ -90,6 +90,7 @@ interface TopProduct {
 interface LowStockItem {
   id: string;
   ingredientName: string;
+  branchName?: string;
   unit: string;
   quantityAvailable: number;
   minThreshold: number;
@@ -416,31 +417,39 @@ export default function DashboardPage() {
       // Process profit data (use calculated if API returns 0)
       if (profitResponse.status === "fulfilled" && profitResponse.value.data) {
         const profitData = profitResponse.value.data;
-        const apiProfit = profitData.grossProfit || 0;
+        const apiProfit = profitData.grossProfit ?? 0;
+        const totalRev = profitData.totalRevenue || calculatedRevenue || 1;
+        const marginRatio = apiProfit !== 0 ? (apiProfit / totalRev) : (calculatedRevenue > 0 ? calculatedProfit / calculatedRevenue : 0.3);
 
         setStats((prev) => ({
           ...prev,
-          grossProfit: apiProfit > 0 ? apiProfit : calculatedProfit,
+          grossProfit: apiProfit !== 0 ? apiProfit : calculatedProfit,
           profitMargin:
-            profitData.profitMargin || (calculatedRevenue > 0 ? 30 : 0),
+            profitData.profitMargin !== 0 ? profitData.profitMargin : (calculatedRevenue > 0 ? Math.round((calculatedProfit / calculatedRevenue) * 100) : 30),
         }));
 
-        // Update chart data with gross profit
-        if (apiProfit > 0) {
-          setChartData((prev) =>
-            prev.map((point) => ({
-              ...point,
-              grossProfit:
-                prev.length > 0 ? Math.round(apiProfit / prev.length) : 0,
-            })),
-          );
-        }
+        // Update chart data with gross profit proportional to daily revenue
+        setChartData((prev) =>
+          prev.map((point) => ({
+            ...point,
+            grossProfit: Math.round(point.revenue * marginRatio),
+          })),
+        );
       } else {
+        const marginRatio = calculatedRevenue > 0 ? (calculatedProfit / calculatedRevenue) : 0.3;
         setStats((prev) => ({
           ...prev,
           grossProfit: calculatedProfit,
-          profitMargin: calculatedRevenue > 0 ? 30 : 0,
+          profitMargin: calculatedRevenue > 0 ? Math.round((calculatedProfit / calculatedRevenue) * 100) : 30,
         }));
+
+        // Update chart data with gross profit proportional to daily revenue
+        setChartData((prev) =>
+          prev.map((point) => ({
+            ...point,
+            grossProfit: Math.round(point.revenue * marginRatio),
+          })),
+        );
       }
 
       // Process top products (use calculated from orders if API returns empty)
@@ -456,7 +465,7 @@ export default function DashboardPage() {
         // If API returns empty, the calculated products from orders will be used (set earlier)
       }
 
-      // Process inventory (low stock ingredients first, then all items if none are low)
+      // Process inventory (low stock ingredients first)
       if (
         inventoryResponse.status === "fulfilled" &&
         inventoryResponse.value.data
@@ -464,33 +473,19 @@ export default function DashboardPage() {
         const inventoryData = inventoryResponse.value.data as any;
         const allItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.content || []);
 
-        // First try to get low stock items
-        let lowStock = allItems
+        // Get actual low stock items only
+        const lowStock = allItems
           .filter((item: IngredientStockResponse) => item.isLowStock || item.quantityAvailable <= 0)
           .slice(0, 5)
           .map((item: IngredientStockResponse) => ({
             id: item.id,
             ingredientName: item.ingredientName,
+            branchName: item.branchName,
             unit: item.unit,
             quantityAvailable: item.quantityAvailable,
             minThreshold: item.minStockAlert,
             isOutOfStock: item.quantityAvailable <= 0,
           }));
-
-        // If no low stock items, show items with lowest stock
-        if (lowStock.length === 0 && allItems.length > 0) {
-          lowStock = allItems
-            .sort((a: IngredientStockResponse, b: IngredientStockResponse) => a.quantityAvailable - b.quantityAvailable)
-            .slice(0, 5)
-            .map((item: IngredientStockResponse) => ({
-              id: item.id,
-              ingredientName: item.ingredientName,
-              unit: item.unit,
-              quantityAvailable: item.quantityAvailable,
-              minThreshold: item.minStockAlert,
-              isOutOfStock: item.quantityAvailable <= 0,
-            }));
-        }
 
         setLowStockItems(lowStock);
       }
@@ -921,9 +916,9 @@ export default function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topProducts.map((product) => (
+                  {topProducts.map((product, index) => (
                     <TableRow
-                      key={product.sku}
+                      key={`${product.productName}-${product.sku || ""}-${index}`}
                       className="border-admin-border/60 hover:bg-surface-container-low transition-colors"
                     >
                       <TableCell className="py-4">
@@ -1023,6 +1018,11 @@ export default function DashboardPage() {
                         <p className="font-semibold text-ink text-sm line-clamp-1">
                           {item.ingredientName}
                         </p>
+                        {item.branchName && (
+                          <p className="text-xs text-dust">
+                            {item.branchName}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell className="py-4">
                         <Badge

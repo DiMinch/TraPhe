@@ -61,7 +61,7 @@ export default function AdminLoyaltyPage() {
     setRecalculating(true);
     try {
       await customerTierService.recalculateAll();
-      toast.success("Đã tính toán lại toàn bộ hạng thành viên thành công!");
+      toast.success("Đã tính toán lại toàn bộ hạng thành viên thành công!");
       fetchData();
     } catch (err: any) {
       console.error("Error recalculating loyalty tiers:", err);
@@ -101,7 +101,7 @@ export default function AdminLoyaltyPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-10 h-10 animate-spin text-roast mb-4" />
-          <span className="text-slate-600 font-medium">Đang tải thông tin loyalty...</span>
+          <span className="text-slate-600 font-medium">Đang tải thông tin loyalty...</span>
         </div>
       ) : (
         <div className="space-y-6 mt-4">
@@ -126,7 +126,7 @@ export default function AdminLoyaltyPage() {
             <Card className="shadow-md border border-slate-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-500">Điểm đã phát hành</span>
+                  <span className="text-sm font-medium text-slate-500">Điểm đã phát hành</span>
                   <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
                     <Coins className="w-5 h-5" />
                   </div>
@@ -139,7 +139,7 @@ export default function AdminLoyaltyPage() {
             <Card className="shadow-md border border-slate-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-500">Điểm đã quy đổi quà</span>
+                  <span className="text-sm font-medium text-slate-500">Điểm đã quy đổi quà</span>
                   <div className="p-2 bg-rose-50 rounded-lg text-rose-600">
                     <Gift className="w-5 h-5" />
                   </div>
@@ -154,13 +154,13 @@ export default function AdminLoyaltyPage() {
             <Card className="shadow-md border border-slate-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-500">Điểm khả dụng hiện tại</span>
+                  <span className="text-sm font-medium text-slate-500">Điểm khả dụng hiện tại</span>
                   <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-slate-900">{totalPointsAvailable.toLocaleString()}</div>
-                <div className="text-xs text-slate-400 mt-2">Điểm chưa quy đổi của khách hàng</div>
+                <div className="text-xs text-slate-400 mt-2">Điểm chưa quy đổi của khách hàng</div>
               </CardContent>
             </Card>
           </div>
@@ -172,7 +172,7 @@ export default function AdminLoyaltyPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">Danh sách hạng thành viên</CardTitle>
-                    <CardDescription>Cấu hình điáÂ»Âu kiện chi tiêu tối thiểu và ưu đãi của từng hạng</CardDescription>
+                    <CardDescription>Cấu hình điều kiện chi tiêu tối thiểu và ưu đãi của từng hạng</CardDescription>
                   </div>
                   <Button
                     onClick={handleRecalculate}
@@ -185,7 +185,7 @@ export default function AdminLoyaltyPage() {
                     ) : (
                       <RefreshCw className="w-4 h-4 mr-2" />
                     )}
-                    Cập nhật lại hạng (Đồng bộ)
+                    Cập nhật lại hạng (Đồng bộ)
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -209,7 +209,7 @@ export default function AdminLoyaltyPage() {
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-3 text-slate-600">
                               <div>
-                                <span className="text-xs text-slate-400 block">Điểm tối thiểu</span>
+                                <span className="text-xs text-slate-400 block">Chi tiêu tối thiểu</span>
                                 <span className="font-semibold">{tier.minSpending?.toLocaleString("vi-VN") || 0} VND</span>
                               </div>
                               <div>
@@ -219,7 +219,7 @@ export default function AdminLoyaltyPage() {
                               <div>
                                 <span className="text-xs text-slate-400 block">Trạng thái</span>
                                 <Badge className={tier.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}>
-                                  {tier.active ? "Đang áp dụng" : "Ngừng áp dụng"}
+                                  {tier.active ? "Đang áp dụng" : "Ngừng áp dụng"}
                                 </Badge>
                               </div>
                             </div>
@@ -238,7 +238,7 @@ export default function AdminLoyaltyPage() {
               <Card className="shadow-md border border-slate-200">
                 <CardHeader>
                   <CardTitle className="text-lg">Cấu hình quy định tích điểm</CardTitle>
-                  <CardDescription>Thiết lập tỷ lệ quy đổi số tiáÂ»Ân mua hàng sang điểm thưởng khách hàng</CardDescription>
+                  <CardDescription>Thiết lập tỷ lệ quy đổi số tiền mua hàng sang điểm thưởng khách hàng</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -251,10 +251,10 @@ export default function AdminLoyaltyPage() {
                         onChange={(e) => setPointRate(e.target.value)}
                         className="bg-white"
                       />
-                      <span className="text-sm font-medium text-slate-600 whitespace-nowrap">VND = 1 Điểm</span>
+                      <span className="text-sm font-medium text-slate-600 whitespace-nowrap">VND = 1 Điểm</span>
                     </div>
                     <span className="text-xs text-slate-400 block mt-1">
-                      Mặc định: 1,000 VND chi tiêu sáÂºÂ½ tương ứng tích lũy được 1 điểm thưởng.
+                      Mặc định: 1,000 VND chi tiêu sẽ tương ứng tích lũy được 1 điểm thưởng.
                     </span>
                   </div>
 
@@ -269,8 +269,8 @@ export default function AdminLoyaltyPage() {
                         <span>45,000đ</span>
                       </div>
                       <div className="flex justify-between font-medium text-slate-700">
-                        <span>Điểm nhận được:</span>
-                        <span className="text-roast">+{Math.floor(45000 / parseInt(pointRate || "1000"))} Điểm</span>
+                        <span>Điểm nhận được:</span>
+                        <span className="text-roast">+{Math.floor(45000 / parseInt(pointRate || "1000"))} Điểm</span>
                       </div>
                     </div>
                   </div>

@@ -88,7 +88,7 @@ const INITIAL_BATCHES: VoucherBatch[] = [
   },
   {
     id: "b3",
-    batchName: "Đồng giá khai trương chi nhánh 3",
+    batchName: "Đồng giá khai trương chi nhánh 3",
     prefix: "OPENING3",
     quantity: 200,
     discountType: "PERCENTAGE",
@@ -196,7 +196,7 @@ export default function AdminVouchersPage() {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success(`Đã sao chép mã: ${code}`);
+    toast.success(`Đã sao chép mã: ${code}`);
   };
 
   const handleDownloadCSV = (batch: VoucherBatch) => {
@@ -216,7 +216,7 @@ export default function AdminVouchersPage() {
   const handleDeleteBatch = (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa đợt voucher này?")) return;
     setBatches(batches.filter((b) => b.id !== id));
-    toast.success("Đã xóa đợt voucher thành công.");
+    toast.success("Đã xóa đợt voucher thành công.");
   };
 
   const filteredBatches = batches.filter((b) => {
@@ -232,7 +232,7 @@ export default function AdminVouchersPage() {
       <PageHeader
         title="Phát hành Voucher hàng loạt"
         subtitle="Tạo đợt phát hành mã ưu đãi ngẫu nhiên số lượng lớn cho chiến dịch marketing hoặc sự kiện"
-        onRefresh={() => toast.success("Đã tải lại danh sách đợt voucher!")}
+        onRefresh={() => toast.success("Đã tải lại danh sách đợt voucher!")}
       />
 
       {/* Filter Bar */}
@@ -241,7 +241,7 @@ export default function AdminVouchersPage() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Tìm kiếm đợt voucher, tiáÂ»Ân tố..."
+              placeholder="Tìm kiếm đợt voucher, tiền tố..."
               className="pl-9 bg-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -254,8 +254,8 @@ export default function AdminVouchersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
-              <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
+              <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+              <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
               <SelectItem value="DRAFT">Bản nháp</SelectItem>
             </SelectContent>
           </Select>
@@ -276,7 +276,7 @@ export default function AdminVouchersPage() {
           <Table>
             <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead>Tên đợt / TiáÂ»Ân tố</TableHead>
+                <TableHead>Tên đợt / Tiền tố</TableHead>
                 <TableHead className="text-center">Số lượng mã</TableHead>
                 <TableHead>Trị giá ưu đãi</TableHead>
                 <TableHead>Hạn sử dụng</TableHead>
@@ -297,7 +297,7 @@ export default function AdminVouchersPage() {
                   <TableRow key={batch.id} className="hover:bg-slate-50/50">
                     <TableCell>
                       <div className="font-semibold text-slate-800">{batch.batchName}</div>
-                      <div className="text-xs text-roast font-mono">TiáÂ»Ân tố: {batch.prefix}-XXXX</div>
+                      <div className="text-xs text-roast font-mono">Tiền tố: {batch.prefix}-XXXX</div>
                     </TableCell>
                     <TableCell className="text-center font-semibold text-slate-600">
                       {batch.quantity} mã
@@ -329,7 +329,7 @@ export default function AdminVouchersPage() {
                             : "bg-red-50 text-red-700 hover:bg-red-50 border-red-100"
                         }
                       >
-                        {batch.status === "ACTIVE" ? "Đang áp dụng" : "Đã hết hạn"}
+                        {batch.status === "ACTIVE" ? "Đang áp dụng" : "Đã hết hạn"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
@@ -393,7 +393,7 @@ export default function AdminVouchersPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label htmlFor="prefix">TiáÂ»Ân tố mã *</Label>
+                <Label htmlFor="prefix">Tiền tố mã *</Label>
                 <Input
                   id="prefix"
                   placeholder="Ví dụ: SVIEN22"
@@ -430,7 +430,7 @@ export default function AdminVouchersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PERCENTAGE">Theo Phần trăm (%)</SelectItem>
-                    <SelectItem value="FIXED_AMOUNT">Số tiáÂ»Ân cố định (đ)</SelectItem>
+                    <SelectItem value="FIXED_AMOUNT">Số tiền cố định (đ)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -502,7 +502,7 @@ export default function AdminVouchersPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-              Hủy báÂ»Â
+              Hủy bỏ
             </Button>
             <Button
               onClick={handleCreateBatch}
@@ -552,7 +552,7 @@ export default function AdminVouchersPage() {
               <Download className="w-4 h-4 mr-2" />
               Tải file CSV
             </Button>
-            <Button onClick={() => setIsViewCodesOpen(false)}>Đóng</Button>
+            <Button onClick={() => setIsViewCodesOpen(false)}>Đóng</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
