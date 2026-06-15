@@ -27,6 +27,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import com.example.traphe_backend.service.payment.PaymentStrategy;
+import jakarta.annotation.PostConstruct;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +44,27 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrderRepository orderRepository;
+    private final List<PaymentStrategy> paymentStrategies;
+    private Map<PaymentMethod, PaymentStrategy> strategyMap;
+
+    @PostConstruct
+    public void init() {
+        strategyMap = paymentStrategies.stream()
+                .collect(Collectors.toMap(PaymentStrategy::getMethod, s -> s));
+    }
+
+    @Override
+    public String createPaymentUrl(Order order, Map<String, Object> context) {
+        if (order == null || order.getPaymentMethod() == null) {
+            return "";
+        }
+        PaymentStrategy strategy = strategyMap.get(order.getPaymentMethod());
+        if (strategy == null) {
+            log.warn("No payment strategy found for method: {}", order.getPaymentMethod());
+            return "";
+        }
+        return strategy.createPaymentUrl(order, context);
+    }
 
     @Value("${app.vnpay.tmn-code}")
     private String vnpayTmnCode;
