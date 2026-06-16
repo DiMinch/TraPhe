@@ -10,6 +10,8 @@ import com.example.traphe_backend.repository.BranchHourRepository;
 import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.MenuItemRepository;
 import com.example.traphe_backend.repository.OrderRepository;
+import com.example.traphe_backend.entity.BranchMenuItem;
+import com.example.traphe_backend.repository.BranchMenuItemRepository;
 import com.example.traphe_backend.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class SmartBranchSelectionService {
     private final MenuItemRepository menuItemRepository;
     private final BranchHourRepository branchHourRepository;
     private final SystemConfigService systemConfigService;
+    private final BranchMenuItemRepository branchMenuItemRepository;
 
     private static final double MAX_RADIUS_KM = 10.0;
     private static final int MAX_CAPACITY = 20;
@@ -45,9 +48,28 @@ public class SmartBranchSelectionService {
         double wHours = getWeight("ai.branch.w_hours", 0.10);
         double wStock = getWeight("ai.branch.w_stock", 0.10);
 
+        List<UUID> menuItemIds = request.getItems() == null ? Collections.emptyList() :
+                request.getItems().stream()
+                        .map(BranchSuggestRequest.OrderItemRequest::getMenuItemId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+        // Filter active branches by availability of items first
+        List<Branch> eligibleBranches = new ArrayList<>();
+        if (!menuItemIds.isEmpty()) {
+            for (Branch branch : activeBranches) {
+                if (branchHasAllItems(branch.getId(), menuItemIds)) {
+                    eligibleBranches.add(branch);
+                }
+            }
+        }
+
+        // Fallback: if no active branch has all items, use all active branches
+        List<Branch> branchesToEvaluate = eligibleBranches.isEmpty() ? activeBranches : eligibleBranches;
+
         List<BranchSuggestionResponse> suggestions = new ArrayList<>();
 
-        for (Branch branch : activeBranches) {
+        for (Branch branch : branchesToEvaluate) {
             double distanceKm = haversine(
                     request.getCustomerLat().doubleValue(),
                     request.getCustomerLng().doubleValue(),
@@ -65,7 +87,9 @@ public class SmartBranchSelectionService {
             double loadScore = Math.max(0, 1.0 - ((double) currentOrders / MAX_CAPACITY));
             double prepScore = Math.max(0, 1.0 - ((double) prepMinutes / MAX_PREP_MINUTES));
             double hoursScore = calculateHoursScore(closingTime);
-            double stockScore = 1.0; // Simplified for now
+
+            boolean hasAllItems = branchHasAllItems(branch.getId(), menuItemIds);
+            double stockScore = hasAllItems ? 1.0 : 0.0;
 
             if (hoursScore == 0) continue; // Closed
 
@@ -83,6 +107,9 @@ public class SmartBranchSelectionService {
             scores.put("stock", stockScore);
 
             String reason = generateReason(distanceKm, currentOrders, hoursScore);
+            if (!hasAllItems && !menuItemIds.isEmpty()) {
+                reason += " (Thiếu một số món trong giỏ hàng)";
+            }
 
             suggestions.add(BranchSuggestionResponse.builder()
                     .branchId(branch.getId())
@@ -106,6 +133,22 @@ public class SmartBranchSelectionService {
         }
 
         return suggestions.stream().limit(3).collect(Collectors.toList());
+    }
+
+    private boolean branchHasAllItems(UUID branchId, List<UUID> menuItemIds) {
+        if (menuItemIds == null || menuItemIds.isEmpty()) {
+            return true;
+        }
+        List<BranchMenuItem> items = branchMenuItemRepository.findAllByBranchIdAndMenuItemIdIn(branchId, menuItemIds);
+        if (items.size() < menuItemIds.size()) {
+            return false;
+        }
+        for (BranchMenuItem item : items) {
+            if (!item.isAvailable()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private double getWeight(String key, double defaultValue) {
