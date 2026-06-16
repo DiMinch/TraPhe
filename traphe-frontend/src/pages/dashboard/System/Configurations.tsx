@@ -18,8 +18,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Plus, Edit, Trash2, Settings, Loader2, Save, Key, FileText } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Settings, Loader2, Save, Key, FileText, Brain } from "lucide-react";
 import { useState, useEffect } from "react";
+import axiosClient from "@/lib/axios-client";
 import {
   systemConfigService,
   type SystemConfigResponse,
@@ -68,19 +69,30 @@ export default function ConfigurationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SystemConfigRequest>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [trainingAI, setTrainingAI] = useState(false);
+
+  const handleTrainAI = async () => {
+    try {
+      setTrainingAI(true);
+      const res = await axiosClient.post("/ai/upsell/train");
+      toast.success(res.data?.message || "Kích hoạt huấn luyện mô hình gợi ý AI thành công!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Huấn luyện AI thất bại.");
+    } finally {
+      setTrainingAI(false);
+    }
+  };
 
   const fetchConfigurations = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await systemConfigService.getAllConfigs();
-      if (response.statusCode === 200) {
-        // Handle both direct array and paginated response
-        const configsData = Array.isArray(response.data)
-          ? response.data
-          : (response.data as any)?.content || [];
-        setConfigurations(configsData);
-      }
+      const rawData = (response as any)?.data ?? response;
+      const configsData = Array.isArray(rawData)
+        ? rawData
+        : (rawData as any)?.content || [];
+      setConfigurations(configsData);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       const errorMsg =
@@ -207,6 +219,19 @@ export default function ConfigurationsPage() {
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mb-6">
         <Button
+          onClick={handleTrainAI}
+          disabled={trainingAI}
+          variant="outline"
+          className="border-roast text-roast hover:bg-cream shadow-sm"
+        >
+          {trainingAI ? (
+            <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+          ) : (
+            <Brain className="mr-2 w-4 h-4" />
+          )}
+          Huấn luyện AI Upsell
+        </Button>
+        <Button
           onClick={handleOpenCreate}
           className="bg-gradient-to-r from-roast to-roast/90 hover:from-roast/90 hover:to-roast/80 text-white shadow-lg"
         >
@@ -281,7 +306,7 @@ export default function ConfigurationsPage() {
                           {config.configKey}
                         </span>
                         {getFriendlyLabel(config.configKey) && (
-                          <Badge variant="secondary" className="text-xs block w-fit">
+                          <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-200/60 text-xs block w-fit hover:bg-amber-100/50 hover:text-amber-900 transition-colors">
                             {getFriendlyLabel(config.configKey)}
                           </Badge>
                         )}

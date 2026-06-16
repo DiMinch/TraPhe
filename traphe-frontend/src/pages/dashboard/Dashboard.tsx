@@ -49,7 +49,8 @@ import { customerService } from "@/services/customer.service";
 import { auditLogService } from "@/services/audit-log.service";
 import { authService } from "@/services/auth.service";
 import { branchStockService, type IngredientStockResponse } from "@/services/branch-stock.service";
-import type { Customer } from "@/types/customer.types";
+import axiosClient from "@/lib/axios-client";
+import { UserRole } from "@/enums/roles.enum";
 
 const chartConfig = {
   revenue: {
@@ -158,6 +159,24 @@ export default function DashboardPage() {
 
   // Get current user
   const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+  const [branchName, setBranchName] = useState<string>(currentUser?.branchName || "");
+
+  useEffect(() => {
+    const fetchBranchName = async () => {
+      if (isBranchManager && currentUser?.branchId && !currentUser.branchName) {
+        try {
+          const res = await axiosClient.get(`/branches`);
+          const all = Array.isArray(res.data) ? res.data : res.data?.content || [];
+          const myBranch = all.find((b: any) => b.id === currentUser.branchId);
+          if (myBranch) {
+            setBranchName(myBranch.name);
+          }
+        } catch { /* ignore */ }
+      }
+    };
+    fetchBranchName();
+  }, [isBranchManager, currentUser?.branchId, currentUser?.branchName]);
 
   // Calculate date range based on selection
   const getDateRange = (range: "week" | "month" | "year") => {
@@ -207,16 +226,31 @@ export default function DashboardPage() {
         customersResponse,
         auditLogsResponse,
       ] = await Promise.allSettled([
-        reportService.getRevenueReport(dateRange),
-        reportService.getProfitReport(dateRange),
+        reportService.getRevenueReport({
+          ...dateRange,
+          branchId: isBranchManager && currentUser?.branchId ? currentUser.branchId : undefined,
+        }),
+        reportService.getProfitReport({
+          ...dateRange,
+          branchId: isBranchManager && currentUser?.branchId ? currentUser.branchId : undefined,
+        }),
         reportService.getTopProductsReport({
           ...dateRange,
           limit: 5,
           sortBy: "REVENUE",
+          branchId: isBranchManager && currentUser?.branchId ? currentUser.branchId : undefined,
         }),
-        branchStockService.getStock("", "", false), // Get all inventory to find low stock ingredients
-        orderService.getAllOrders({ page: 0, size: 100 }),
-        customerService.getCustomers(),
+        branchStockService.getStock(
+          isBranchManager && currentUser?.branchId ? currentUser.branchId : undefined,
+          "",
+          false
+        ), // Get all inventory to find low stock ingredients
+        orderService.getAllOrders({
+          page: 0,
+          size: 100,
+          branchId: isBranchManager && currentUser?.branchId ? currentUser.branchId : undefined,
+        }),
+        customerService.getCustomerCount(),
         auditLogService.getAllAuditLogs({ size: 5 }),
       ]);
 
@@ -493,15 +527,14 @@ export default function DashboardPage() {
       // Process customers
       if (
         customersResponse.status === "fulfilled" &&
-        customersResponse.value.data
+        customersResponse.value.data !== undefined
       ) {
-        const customersData = Array.isArray(customersResponse.value.data)
+        const count = typeof customersResponse.value.data === "number"
           ? customersResponse.value.data
-          : (customersResponse.value.data as { content?: Customer[] })
-              ?.content || [];
+          : (customersResponse.value.data as any)?.data || 0;
         setStats((prev) => ({
           ...prev,
-          totalCustomers: customersData.length,
+          totalCustomers: count,
         }));
       }
 
@@ -593,7 +626,8 @@ export default function DashboardPage() {
             Dashboard Overview
           </h2>
           <p className="text-sm text-dust mt-1">
-            Welcome back, {currentUser?.fullName || "User"}.
+            Welcome back, {currentUser?.fullName || "User"}
+            {isBranchManager && branchName && ` (${branchName})`}.
           </p>
         </div>
 

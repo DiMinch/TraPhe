@@ -266,6 +266,13 @@ export const promotionService = {
       data,
     );
   },
+
+  /** Lấy danh sách phần thưởng có thể đổi bằng điểm loyalty */
+  getLoyaltyRewards: async () => {
+    return axiosClient.get<any, ApiResponse<LoyaltyRewardResponse[]>>(
+      "/loyalty/rewards",
+    );
+  },
 };
 
 // ======================== Customer Voucher Types ========================
@@ -293,6 +300,17 @@ export interface RedeemRewardResponse {
   rewardName: string;
   pointsDeducted: number;
   remainingPoints: number;
+}
+
+export interface LoyaltyRewardResponse {
+  id: string;
+  name: string;
+  points: number;
+  description: string;
+  category: string;
+  discountValue?: number;
+  discountType?: string;
+  imageUrl?: string;
 }
 
 // ======================== Checkout Eligible Types ========================

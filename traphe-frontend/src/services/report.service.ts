@@ -153,6 +153,7 @@ export interface ExportReportRequest {
   endDate?: string;
   sortBy?: string;
   limit?: number;
+  branchId?: string;
 }
 
 export interface ExportInventoryRequest {
@@ -160,6 +161,7 @@ export interface ExportInventoryRequest {
   lowStockOnly?: boolean;
   fastMovingOnly?: boolean;
   status?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  branchId?: string;
 }
 
 // Query Parameters
@@ -248,7 +250,7 @@ export const reportService = {
    * @returns Blob data for file download
    */
   exportReport: async (data: ExportReportRequest) => {
-    const { reportType, format, startDate, endDate, sortBy, limit } = data;
+    const { reportType, format, startDate, endDate, sortBy, limit, branchId } = data;
 
     // Build request body matching ReportFilterRequest
     const requestBody: Record<string, unknown> = {};
@@ -256,6 +258,7 @@ export const reportService = {
     if (endDate) requestBody.endDate = endDate;
     if (sortBy) requestBody.sortBy = sortBy.toUpperCase();
     if (limit) requestBody.limit = limit;
+    if (branchId) requestBody.branchId = branchId;
 
     const response = await axiosClient.post(`${BASE_URL}/export`, requestBody, {
       params: {
@@ -315,12 +318,14 @@ export const reportService = {
     format: ExportFormat,
     startDate?: string,
     endDate?: string,
+    branchId?: string,
   ) => {
     const blob = await reportService.exportReport({
       reportType: "REVENUE",
       format,
       startDate,
       endDate,
+      branchId,
     });
     const filename = `revenue-report-${new Date().toISOString().split("T")[0]}.${format.toLowerCase()}`;
     reportService.downloadFile(blob, filename);
@@ -333,12 +338,14 @@ export const reportService = {
     format: ExportFormat,
     startDate?: string,
     endDate?: string,
+    branchId?: string,
   ) => {
     const blob = await reportService.exportReport({
       reportType: "PROFIT",
       format,
       startDate,
       endDate,
+      branchId,
     });
     const filename = `profit-report-${new Date().toISOString().split("T")[0]}.${format.toLowerCase()}`;
     reportService.downloadFile(blob, filename);
@@ -353,6 +360,7 @@ export const reportService = {
     limit?: number,
     startDate?: string,
     endDate?: string,
+    branchId?: string,
   ) => {
     const blob = await reportService.exportReport({
       reportType: "TOP_PRODUCTS",
@@ -361,6 +369,7 @@ export const reportService = {
       limit,
       startDate,
       endDate,
+      branchId,
     });
     const filename = `top-products-report-${new Date().toISOString().split("T")[0]}.${format.toLowerCase()}`;
     reportService.downloadFile(blob, filename);
@@ -373,11 +382,13 @@ export const reportService = {
     format: ExportFormat,
     lowStockOnly?: boolean,
     fastMovingOnly?: boolean,
+    branchId?: string,
   ) => {
     const blob = await reportService.exportInventoryReport({
       format,
       lowStockOnly,
       fastMovingOnly,
+      branchId,
     });
     const filename = `inventory-report-${new Date().toISOString().split("T")[0]}.${format.toLowerCase()}`;
     reportService.downloadFile(blob, filename);

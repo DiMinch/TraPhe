@@ -90,6 +90,9 @@ function staffToUserAccount(s: StaffMember): UserAccount {
 }
 
 export default function UserAccountsPage() {
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{
     id: string;
@@ -102,7 +105,9 @@ export default function UserAccountsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all-status");
   const [roleFilter, setRoleFilter] = useState("all-role");
-  const [branchFilter, setBranchFilter] = useState("all-branch");
+  const [branchFilter, setBranchFilter] = useState(
+    isBranchManager && currentUser?.branchId ? currentUser.branchId : "all-branch"
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -130,8 +135,6 @@ export default function UserAccountsPage() {
 
   // Branch data
   const [branches, setBranches] = useState<BranchOption[]>([]);
-  const currentUser = authService.getCurrentUser();
-  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
 
   useEffect(() => {
     fetchUsers();
@@ -517,7 +520,7 @@ export default function UserAccountsPage() {
         fullName: newEmployee.fullName.trim(),
         phoneNumber: newEmployee.phone.trim() || undefined,
         roles: [newEmployee.roleName],
-        branchId: isBranchManager ? undefined : (newEmployee.branchId || undefined),
+        branchId: isBranchManager ? (currentUser?.branchId || undefined) : (newEmployee.branchId || undefined),
       });
       toast.success("Tạo nhân viên thành công!");
       setIsCreateDialogOpen(false);
@@ -579,12 +582,12 @@ export default function UserAccountsPage() {
             />
           </div>
           <div className="flex gap-3">
-            <Select value={branchFilter} onValueChange={setBranchFilter}>
+            <Select value={branchFilter} onValueChange={setBranchFilter} disabled={isBranchManager}>
               <SelectTrigger className="py-2.5 pl-4 pr-8 bg-admin-bg border border-admin-border rounded-lg text-sm focus:outline-none focus:border-roast focus:ring-1 focus:ring-roast text-espresso appearance-none font-medium h-10 w-48 shadow-none">
                 <SelectValue placeholder="All Branches" />
               </SelectTrigger>
               <SelectContent className="bg-white border border-admin-border rounded-lg">
-                <SelectItem value="all-branch">All Branches</SelectItem>
+                {!isBranchManager && <SelectItem value="all-branch">All Branches</SelectItem>}
                 {branches.map((b) => (
                   <SelectItem key={b.id} value={b.id}>
                     {b.name}
@@ -910,11 +913,13 @@ export default function UserAccountsPage() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableRoles.map((role) => (
-                    <SelectItem key={role.id} value={role.name}>
-                      {role.name.replace("ROLE_", "")}
-                    </SelectItem>
-                  ))}
+                  {availableRoles
+                    .filter((role) => !isBranchManager || (role.name !== "ROLE_ADMIN" && role.name !== "ROLE_BRANCH_MANAGER"))
+                    .map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {role.name.replace("ROLE_", "")}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -994,31 +999,33 @@ export default function UserAccountsPage() {
           <div className="py-4">
             <Label className="mb-3 block">Select Roles</Label>
             <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {availableRoles.map((role) => (
-                <div
-                  key={role.id}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50"
-                >
-                  <Checkbox
-                    id={role.id}
-                    checked={selectedRoleIds.includes(role.id)}
-                    onCheckedChange={() => handleRoleToggle(role.id)}
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={role.id}
-                      className="font-medium cursor-pointer"
-                    >
-                      {role.name}
-                    </Label>
-                    {role.description && (
-                      <p className="text-sm text-slate-500">
-                        {role.description}
-                      </p>
-                    )}
+              {availableRoles
+                .filter((role) => !isBranchManager || (role.name !== "ROLE_ADMIN" && role.name !== "ROLE_BRANCH_MANAGER"))
+                .map((role) => (
+                  <div
+                    key={role.id}
+                    className="flex items-center space-x-3 p-2 rounded-lg hover:bg-slate-50"
+                  >
+                    <Checkbox
+                      id={role.id}
+                      checked={selectedRoleIds.includes(role.id)}
+                      onCheckedChange={() => handleRoleToggle(role.id)}
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={role.id}
+                        className="font-medium cursor-pointer"
+                      >
+                        {role.name}
+                      </Label>
+                      {role.description && (
+                        <p className="text-sm text-slate-500">
+                          {role.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
           <DialogFooter>
@@ -1048,6 +1055,9 @@ export default function UserAccountsPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
+            <DialogDescription className="sr-only">
+              Show detailed information of the staff member.
+            </DialogDescription>
           </DialogHeader>
           {userDetails && (
             <div className="py-4 space-y-4">

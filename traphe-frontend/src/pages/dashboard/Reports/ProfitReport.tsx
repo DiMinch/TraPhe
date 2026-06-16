@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authService } from "@/services/auth.service";
+import { UserRole } from "@/enums/roles.enum";
+import axiosClient from "@/lib/axios-client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -42,12 +52,37 @@ export default function ProfitReport() {
     new Date().toISOString().split("T")[0],
   );
 
+  // Branch scoping for BRANCH_MANAGER
+  const currentUser = authService.getCurrentUser();
+  const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(
+    isBranchManager && currentUser?.branchId ? currentUser.branchId : ""
+  );
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        if (isBranchManager && currentUser?.branchId) {
+          setBranches([{ id: currentUser.branchId, name: "Chi nhánh của tôi" }]);
+          setSelectedBranchId(currentUser.branchId);
+          return;
+        }
+        const branchRes = await axiosClient.get("/branches");
+        const allBranches = Array.isArray(branchRes.data) ? branchRes.data : branchRes.data?.content || [];
+        setBranches(allBranches);
+      } catch { /* ignore */ }
+    };
+    fetchBranches();
+  }, []);
+
   const fetchReport = async () => {
     try {
       setLoading(true);
       const response = await reportService.getProfitReport({
         startDate,
         endDate,
+        branchId: selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined,
       });
       // axios interceptor returns response.data, so use response directly or response.data if wrapped
       const reportData = (response as any).data ?? response;
@@ -67,12 +102,17 @@ export default function ProfitReport() {
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedBranchId]);
 
   const handleExport = async (format: "CSV" | "PDF") => {
     try {
       setExporting(true);
-      await reportService.exportAndDownloadProfit(format, startDate, endDate);
+      await reportService.exportAndDownloadProfit(
+        format,
+        startDate,
+        endDate,
+        selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined
+      );
       toast.success(`Report exported as ${format}`);
     } catch (error) {
       toast.error("Export failed", {
@@ -125,7 +165,19 @@ export default function ProfitReport() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {branches.length > 0 && (
+              <div className="space-y-2">
+                <Label>Chi nhánh</Label>
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId} disabled={isBranchManager}>
+                  <SelectTrigger><SelectValue placeholder="Tất cả chi nhánh" /></SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {!isBranchManager && <SelectItem value="all">Tất cả chi nhánh</SelectItem>}
+                    {branches.map((b: any) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
               <Input

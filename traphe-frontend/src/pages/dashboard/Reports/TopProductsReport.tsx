@@ -56,7 +56,9 @@ export default function TopProductsReport() {
   const currentUser = authService.getCurrentUser();
   const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
   const [branches, setBranches] = useState<any[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(
+    isBranchManager && currentUser?.branchId ? currentUser.branchId : ""
+  );
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -102,7 +104,7 @@ export default function TopProductsReport() {
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedBranchId]);
 
   const handleExport = async (format: "CSV" | "PDF") => {
     try {
@@ -113,6 +115,7 @@ export default function TopProductsReport() {
         limit,
         startDate,
         endDate,
+        selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined
       );
       toast.success(`Report exported as ${format}`);
     } catch (error) {
