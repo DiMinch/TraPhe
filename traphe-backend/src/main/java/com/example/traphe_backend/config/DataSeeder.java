@@ -656,9 +656,21 @@ public class DataSeeder implements CommandLineRunner {
 
         private void seedPurchaseOrderForBranch(Branch branch, Supplier supplier, List<PoItemConfig> items,
                         UUID creatorId) {
-                boolean hasStock = !ingredientStockRepository.findByBranchId(branch.getId()).isEmpty();
-                if (hasStock) {
-                        return; // Stocks already seeded, skip PO simulation to avoid duplicating stock
+                List<IngredientStock> existingStocks = ingredientStockRepository.findByBranchId(branch.getId());
+                java.util.Set<UUID> existingIngredientIds = new java.util.HashSet<>();
+                for (IngredientStock s : existingStocks) {
+                        existingIngredientIds.add(s.getIngredient().getId());
+                }
+
+                List<PoItemConfig> itemsToSeed = new java.util.ArrayList<>();
+                for (PoItemConfig item : items) {
+                        if (!existingIngredientIds.contains(item.ingredient.getId())) {
+                                itemsToSeed.add(item);
+                        }
+                }
+
+                if (itemsToSeed.isEmpty()) {
+                        return; // All items in the list already have stock seeded
                 }
 
                 int nextSeq = 1;
@@ -683,7 +695,7 @@ public class DataSeeder implements CommandLineRunner {
                 purchaseOrderRepository.save(po);
 
                 BigDecimal total = BigDecimal.ZERO;
-                for (PoItemConfig cfg : items) {
+                for (PoItemConfig cfg : itemsToSeed) {
                         PurchaseOrderItem item = purchaseOrderItemRepository.save(PurchaseOrderItem.builder()
                                         .purchaseOrder(po)
                                         .ingredient(cfg.ingredient)
