@@ -2,7 +2,6 @@ package com.example.traphe_backend.service.impl;
 
 import com.example.traphe_backend.entity.Ingredient;
 import com.example.traphe_backend.entity.IngredientStock;
-import com.example.traphe_backend.entity.Notification;
 import com.example.traphe_backend.entity.Order;
 import com.example.traphe_backend.entity.OrderItem;
 import com.example.traphe_backend.entity.Recipe;
@@ -15,12 +14,12 @@ import com.example.traphe_backend.enums.StockTransactionType;
 import com.example.traphe_backend.exception.InsufficientStockException;
 import com.example.traphe_backend.repository.IngredientRepository;
 import com.example.traphe_backend.repository.IngredientStockRepository;
-import com.example.traphe_backend.repository.NotificationRepository;
 import com.example.traphe_backend.repository.RecipeItemRepository;
 import com.example.traphe_backend.repository.RecipeRepository;
 import com.example.traphe_backend.repository.StockTransactionRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.service.InventoryDeductionService;
+import com.example.traphe_backend.service.NotificationService;
 import com.example.traphe_backend.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +58,7 @@ public class InventoryDeductionServiceImpl implements InventoryDeductionService 
     private final IngredientStockRepository stockRepository;
     private final StockTransactionRepository transactionRepository;
     private final IngredientRepository ingredientRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
     private final UserRepository userRepository;
     private final SystemConfigService systemConfigService;
 
@@ -225,19 +224,22 @@ public class InventoryDeductionServiceImpl implements InventoryDeductionService 
                             .orElse(null);
                 }
                 if (threshold != null && quantityAfter.compareTo(threshold) < 0) {
-                    Notification notification = Notification.builder()
-                            .branchId(branchId)
-                            .title("Cảnh báo tồn kho thấp")
-                            .message(String.format(
-                                    "Nguyên liệu '%s' còn %s %s sau khi pha đơn %s (ngưỡng: %s %s).",
+                    try {
+                        notificationService.createNotification(
+                            "Cảnh báo tồn kho thấp",
+                            String.format("Nguyên liệu '%s' còn %s %s sau khi pha đơn %s (ngưỡng: %s %s).",
                                     ingredient.getName(),
                                     quantityAfter.toPlainString(), ingredient.getUnit(),
                                     order.getOrderNumber(),
-                                    threshold.toPlainString(), ingredient.getUnit()))
-                            .type(NotificationType.LOW_STOCK)
-                            .createdAt(now)
-                            .build();
-                    notificationRepository.save(notification);
+                                    threshold.toPlainString(), ingredient.getUnit()),
+                            NotificationType.LOW_STOCK,
+                            branchId,
+                            null, // null userId means broadcast to all staff with access to this branch
+                            "LOW_STOCK"
+                        );
+                    } catch (Exception e) {
+                        log.error("Failed to create low stock notification for ingredient {} — {}", ingredient.getName(), e.getMessage());
+                    }
                     log.warn("LOW STOCK after order {}: {} — {} {} remaining",
                             order.getOrderNumber(), ingredient.getName(), quantityAfter, ingredient.getUnit());
                 }

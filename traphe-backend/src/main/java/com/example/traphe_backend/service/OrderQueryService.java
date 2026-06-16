@@ -16,7 +16,7 @@ public interface OrderQueryService {
 
     OrderResponse getOrderById(UUID orderId, String userEmail);
 
-    Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable);
+    Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable);
 
     Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getAllOrders(String statusStr, UUID branchId, Pageable pageable);
 

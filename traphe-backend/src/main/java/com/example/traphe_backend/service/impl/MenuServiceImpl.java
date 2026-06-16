@@ -107,7 +107,7 @@ public class MenuServiceImpl implements MenuService {
                         if (bmi != null) {
                             response.setBranchAvailable(bmi.isAvailable());
                             response.setEffectivePrice(
-                                    bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                    (sizes2.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                             response.setUnavailableReason(bmi.getUnavailableReason());
                         } else {
                             // Not mapped to this branch — treat as available with base price
@@ -158,7 +158,7 @@ public class MenuServiceImpl implements MenuService {
                     .ifPresent(bmi -> {
                         response.setBranchAvailable(bmi.isAvailable());
                         response.setEffectivePrice(
-                                bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                (sizes.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                         response.setUnavailableReason(bmi.getUnavailableReason());
                     });
             if (response.getBranchAvailable() == null) {
@@ -290,7 +290,7 @@ public class MenuServiceImpl implements MenuService {
                         if (bmi != null) {
                             resp.setBranchAvailable(bmi.isAvailable());
                             resp.setEffectivePrice(
-                                    bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                    (sizes.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                             resp.setUnavailableReason(bmi.getUnavailableReason());
                         } else {
                             resp.setBranchAvailable(true);

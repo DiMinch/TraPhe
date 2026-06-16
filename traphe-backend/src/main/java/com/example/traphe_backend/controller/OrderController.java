@@ -34,6 +34,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.example.traphe_backend.annotation.Idempotent;
+import com.example.traphe_backend.repository.UserRepository;
+import com.example.traphe_backend.entity.User;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +47,24 @@ public class OrderController {
         private final OrderService orderService;
         private final MerchandiseOrderService merchandiseOrderService;
         private final CheckoutService checkoutService;
+        private final UserRepository userRepository;
+
+        private UUID resolveBranchIdForCurrentUser(UUID requestedBranchId, Authentication authentication) {
+                if (authentication == null) {
+                        return requestedBranchId;
+                }
+                boolean isAdmin = authentication.getAuthorities().stream()
+                                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                if (isAdmin) {
+                        return requestedBranchId;
+                }
+
+                // Branch Manager or Cashier/Barista -> force to their own branch
+                String email = authentication.getName();
+                return userRepository.findByEmail(email)
+                                .map(User::getBranchId)
+                                .orElse(requestedBranchId);
+        }
 
         // ======================== QUERY ORDERS ========================
 
@@ -60,9 +80,11 @@ public class OrderController {
                         @RequestParam(required = false) UUID branchId,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
+                Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                UUID finalBranchId = resolveBranchIdForCurrentUser(branchId, auth);
                 Pageable pageable = PageRequest.of(page, size);
                 Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> orders = orderService
-                                .getAllOrders(status, branchId, pageable);
+                                .getAllOrders(status, finalBranchId, pageable);
                 return ResponseEntity.ok(ApiResponse.success(orders, "Danh sách đơn hàng"));
         }
 
@@ -74,8 +96,10 @@ public class OrderController {
                         @RequestParam(required = false) UUID branchId,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
+                Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                UUID finalBranchId = resolveBranchIdForCurrentUser(branchId, auth);
                 Pageable pageable = PageRequest.of(page, size);
-                Page<OrderResponse> orders = orderService.getFullOrders(status, branchId, pageable);
+                Page<OrderResponse> orders = orderService.getFullOrders(status, finalBranchId, pageable);
                 return ResponseEntity.ok(ApiResponse.success(orders, "Danh sách đơn hàng chi tiết"));
         }
 
@@ -101,13 +125,13 @@ public class OrderController {
          */
         @GetMapping("/user")
         @Operation(summary = "Lịch sử đơn hàng của tôi", description = "Khách hàng xem danh sách đơn hàng đã đặt. Phân trang, sắp xếp mới nhất.")
-        public ResponseEntity<ApiResponse<Page<com.example.traphe_backend.dto.response.OrderSummaryResponse>>> getMyOrders(
+        public ResponseEntity<ApiResponse<Page<OrderResponse>>> getMyOrders(
                         Authentication authentication,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "20") int size) {
                 Pageable pageable = PageRequest.of(page, size);
                 String userEmail = authentication.getName();
-                Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> orders = orderService
+                Page<OrderResponse> orders = orderService
                                 .getMyOrders(userEmail, pageable);
                 return ResponseEntity.ok(ApiResponse.success(orders, "Lịch sử đơn hàng"));
         }

@@ -45,4 +45,5 @@ public interface BranchService {
     );
 
     NearestBranchResponse getNearestBranch(double lat, double lng);
+    NearestBranchResponse getNearestBranch(double lat, double lng, List<UUID> menuItemIds);
 }

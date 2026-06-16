@@ -70,7 +70,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     Optional<Order> findByIdForUpdate(@Param("id") UUID id);
 
     /** Danh sách đơn hàng của 1 khách hàng (phân trang) */
+    @EntityGraph(attributePaths = {"branch", "customer"})
     Page<Order> findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(UUID customerId, Pageable pageable);
+
 
     /** Danh sách đơn hàng cho Admin (lọc theo trạng thái, chi nhánh) */
     @EntityGraph(attributePaths = {"branch", "customer"})

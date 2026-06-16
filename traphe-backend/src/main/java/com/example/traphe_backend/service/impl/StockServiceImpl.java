@@ -7,7 +7,6 @@ import com.example.traphe_backend.dto.response.IngredientStockResponse;
 import com.example.traphe_backend.entity.Branch;
 import com.example.traphe_backend.entity.Ingredient;
 import com.example.traphe_backend.entity.IngredientStock;
-import com.example.traphe_backend.entity.Notification;
 import com.example.traphe_backend.entity.StockTransaction;
 import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.enums.NotificationType;
@@ -18,10 +17,10 @@ import com.example.traphe_backend.mapper.StockMapper;
 import com.example.traphe_backend.repository.BranchRepository;
 import com.example.traphe_backend.repository.IngredientRepository;
 import com.example.traphe_backend.repository.IngredientStockRepository;
-import com.example.traphe_backend.repository.NotificationRepository;
 import com.example.traphe_backend.repository.StockTransactionRepository;
 import com.example.traphe_backend.repository.SupplierRepository;
 import com.example.traphe_backend.repository.UserRepository;
+import com.example.traphe_backend.service.NotificationService;
 import com.example.traphe_backend.service.StockService;
 import com.example.traphe_backend.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +48,7 @@ public class StockServiceImpl implements StockService {
     private final BranchRepository branchRepository;
     private final SupplierRepository supplierRepository;
     private final UserRepository userRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
     private final StockMapper stockMapper;
     private final SystemConfigService systemConfigService;
 
@@ -293,19 +292,23 @@ public class StockServiceImpl implements StockService {
     }
 
     private void createLowStockNotification(Ingredient ingredient, IngredientStock stock, UUID branchId, BigDecimal threshold) {
-        Notification notification = Notification.builder()
-                .branchId(branchId)
-                .title("Cảnh báo tồn kho thấp")
-                .message(String.format("Nguyên liệu '%s' tại chi nhánh hiện chỉ còn %s %s (ngưỡng: %s %s).",
+        try {
+            notificationService.createNotification(
+                "Cảnh báo tồn kho thấp",
+                String.format("Nguyên liệu '%s' tại chi nhánh hiện chỉ còn %s %s (ngưỡng: %s %s).",
                         ingredient.getName(),
                         stock.getQuantityAvailable().toPlainString(),
                         ingredient.getUnit(),
                         threshold.toPlainString(),
-                        ingredient.getUnit()))
-                .type(NotificationType.LOW_STOCK)
-                .createdAt(LocalDateTime.now())
-                .build();
-        notificationRepository.save(notification);
+                        ingredient.getUnit()),
+                NotificationType.LOW_STOCK,
+                branchId,
+                null, // null userId means broadcast to all staff with access to this branch
+                "LOW_STOCK"
+            );
+        } catch (Exception e) {
+            log.error("Failed to create low stock notification for ingredient {} — {}", ingredient.getName(), e.getMessage());
+        }
         log.warn("LOW STOCK ALERT: {} at branch {} — {} {} (threshold: {})",
                 ingredient.getName(), branchId,
                 stock.getQuantityAvailable(), ingredient.getUnit(), threshold);

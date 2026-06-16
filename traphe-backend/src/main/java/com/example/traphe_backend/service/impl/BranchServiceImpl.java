@@ -218,6 +218,11 @@ public class BranchServiceImpl implements BranchService {
 
     @Override
     public NearestBranchResponse getNearestBranch(double lat, double lng) {
+        return getNearestBranch(lat, lng, null);
+    }
+
+    @Override
+    public NearestBranchResponse getNearestBranch(double lat, double lng, List<UUID> menuItemIds) {
         List<Branch> activeBranches = branchRepository.findAll().stream()
                 .filter(b -> !b.isDeleted() && b.isActive() && b.getLat() != null && b.getLng() != null)
                 .collect(Collectors.toList());
@@ -226,10 +231,23 @@ public class BranchServiceImpl implements BranchService {
             throw new ResourceNotFoundException("No active branches available");
         }
 
+        // Try to filter branches that have all items
+        List<Branch> eligibleBranches = new ArrayList<>();
+        if (menuItemIds != null && !menuItemIds.isEmpty()) {
+            for (Branch branch : activeBranches) {
+                if (branchHasAllItems(branch.getId(), menuItemIds)) {
+                    eligibleBranches.add(branch);
+                }
+            }
+        }
+
+        // If no branches have all items, fall back to all active branches
+        List<Branch> branchesToSearch = eligibleBranches.isEmpty() ? activeBranches : eligibleBranches;
+
         Branch nearestBranch = null;
         double minDistance = Double.MAX_VALUE;
 
-        for (Branch branch : activeBranches) {
+        for (Branch branch : branchesToSearch) {
             double distance = calculateHaversineDistance(lat, lng, branch.getLat().doubleValue(), branch.getLng().doubleValue());
             if (distance < minDistance) {
                 minDistance = distance;
@@ -244,6 +262,22 @@ public class BranchServiceImpl implements BranchService {
                 .distanceKm(Math.round(minDistance * 100.0) / 100.0) // 2 decimal places
                 .shippingFee(shippingFee)
                 .build();
+    }
+
+    private boolean branchHasAllItems(UUID branchId, List<UUID> menuItemIds) {
+        if (menuItemIds == null || menuItemIds.isEmpty()) {
+            return true;
+        }
+        List<BranchMenuItem> items = branchMenuItemRepository.findAllByBranchIdAndMenuItemIdIn(branchId, menuItemIds);
+        if (items.size() < menuItemIds.size()) {
+            return false;
+        }
+        for (BranchMenuItem item : items) {
+            if (!item.isAvailable()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {

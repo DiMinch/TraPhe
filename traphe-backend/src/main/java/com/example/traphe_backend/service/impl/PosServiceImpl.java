@@ -3,6 +3,7 @@ package com.example.traphe_backend.service.impl;
 import com.example.traphe_backend.service.PosService;
 import com.example.traphe_backend.service.InventoryDeductionService;
 import com.example.traphe_backend.service.LoyaltyService;
+import com.example.traphe_backend.service.NotificationService;
 
 import com.example.traphe_backend.dto.request.CreatePosOrderRequest;
 import com.example.traphe_backend.dto.request.OrderItemOptionRequest;
@@ -55,6 +56,7 @@ public class PosServiceImpl implements PosService {
     private final LoyaltyPointRepository loyaltyPointRepository;
     private final InventoryDeductionService inventoryDeductionService;
     private final LoyaltyService loyaltyService;
+    private final NotificationService notificationService;
 
     public List<PosMenuResponse> getMenuByBranch(UUID branchId) {
         List<BranchMenuItem> items = branchMenuItemRepository.findByBranchId(branchId);
@@ -64,7 +66,7 @@ public class PosServiceImpl implements PosService {
                         .menuItemId(bmi.getMenuItem().getId())
                         .name(bmi.getMenuItem().getName())
                         .categoryName(bmi.getMenuItem().getCategory() != null ? bmi.getMenuItem().getCategory().getName() : null)
-                        .price(bmi.getCustomPrice() != null ? bmi.getCustomPrice() : bmi.getMenuItem().getBasePrice())
+                        .price((!bmi.getMenuItem().isDrink() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : bmi.getMenuItem().getBasePrice())
                         .isAvailable(bmi.isAvailable())
                         .build())
                 .collect(Collectors.toList());
@@ -130,8 +132,8 @@ public class PosServiceImpl implements PosService {
                         .orElse(null);
             }
 
-            BigDecimal unitPrice = bmi.getCustomPrice() != null ? bmi.getCustomPrice() : 
-                                  (size != null ? size.getSellingPrice() : menuItem.getBasePrice());
+            BigDecimal unitPrice = (size != null) ? size.getSellingPrice() :
+                                  (bmi.getCustomPrice() != null ? bmi.getCustomPrice() : menuItem.getBasePrice());
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
@@ -279,6 +281,20 @@ public class PosServiceImpl implements PosService {
                 } catch (Exception e) {
                     log.error("POS loyalty earning failed for order {} — {}", saved.getOrderNumber(), e.getMessage());
                     // Non-critical: don't rollback the entire transaction
+                }
+
+                // Notify customer that their order is completed
+                try {
+                    notificationService.createNotification(
+                        "Đơn hàng hoàn thành",
+                        String.format("Đơn hàng #%s của bạn đã hoàn thành. Hãy đến nhận đồ uống nhé!", saved.getOrderNumber()),
+                        com.example.traphe_backend.enums.NotificationType.ORDER,
+                        saved.getBranch() != null ? saved.getBranch().getId() : null,
+                        saved.getCustomer().getId(),
+                        "ORDER_COMPLETED"
+                    );
+                } catch (Exception ex) {
+                    log.error("POS completed notification failed for order {} — {}", saved.getOrderNumber(), ex.getMessage());
                 }
             } else {
                 log.info("POS order {} completed without customer — no loyalty points earned.", saved.getOrderNumber());

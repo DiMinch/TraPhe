@@ -76,10 +76,11 @@ public class OrderQueryServiceImpl implements OrderQueryService {
     // ==========================================
 
     @Override
-    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable) {
+    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return orderRepository.findSummariesByCustomerId(user.getId(), pageable);
+        return orderRepository.findByCustomerIdAndIsDeletedFalseOrderByCreatedAtDesc(user.getId(), pageable)
+                .map(this::mapToOrderResponse);
     }
 
     // ==========================================
