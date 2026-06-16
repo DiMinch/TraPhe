@@ -9,7 +9,8 @@ import {
   Clock, 
   Truck, 
   Info, 
-  ExternalLink
+  ExternalLink,
+  Coffee,
 } from "lucide-react";
 import { orderService, type OrderResponse, type OrderItemDetail } from "@/services/order.service";
 import { format } from "date-fns";
@@ -41,6 +42,54 @@ const getOrderImage = (orderId: string, isMerch: boolean) => {
   }
   const index = Math.abs(hash) % 3;
   return COFFEE_IMAGES[index];
+};
+
+const getActiveOrderStatus = (order: OrderResponse) => {
+  if (order.status === "PENDING") {
+    return {
+      label: "Processing",
+      icon: <Clock className="w-3.5 h-3.5 text-yellow-600" />,
+      classes: "bg-yellow-100/80 text-yellow-800 border-yellow-200"
+    };
+  }
+
+  if (order.status === "CONFIRMED") {
+    const isMerch = order.orderType === "MERCHANDISE";
+    if (!isMerch && (order.brewingStatus === "WAITING" || order.brewingStatus === "BREWING")) {
+      return {
+        label: "Preparing",
+        icon: <Coffee className="w-3.5 h-3.5 animate-pulse text-amber-700" />,
+        classes: "bg-amber-100/80 text-amber-800 border-amber-200"
+      };
+    }
+    if (!isMerch && order.brewingStatus === "COMPLETED") {
+      if (order.orderType === "DRINK_PICKUP") {
+        return {
+          label: "Ready for Pickup",
+          icon: <CheckCircle className="w-3.5 h-3.5 text-green-700" />,
+          classes: "bg-green-100/80 text-green-800 border-green-200"
+        };
+      }
+      return {
+        label: "Delivering",
+        icon: <Truck className="w-3.5 h-3.5 animate-bounce text-yellow-700" />,
+        classes: "bg-yellow-100/80 text-yellow-800 border-yellow-200"
+      };
+    }
+    
+    // Fallback/Merchandise Confirmed
+    return {
+      label: "Delivering",
+      icon: <Truck className="w-3.5 h-3.5 animate-bounce text-yellow-700" />,
+      classes: "bg-yellow-100/80 text-yellow-800 border-yellow-200"
+    };
+  }
+
+  return {
+    label: order.status,
+    icon: <Info className="w-3.5 h-3.5" />,
+    classes: "bg-gray-100 text-gray-800 border-gray-200"
+  };
 };
 
 export default function OrderTab() {
@@ -268,10 +317,15 @@ export default function OrderTab() {
                   <div className="p-6 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-start mb-3">
-                        <span className="px-2.5 py-1 bg-yellow-100/80 text-yellow-800 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                          <Truck className="w-3.5 h-3.5 animate-bounce" />
-                          {order.status === "PENDING" ? "Processing" : "Delivering"}
-                        </span>
+                        {(() => {
+                          const activeStatus = getActiveOrderStatus(order);
+                          return (
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 border ${activeStatus.classes}`}>
+                              {activeStatus.icon}
+                              {activeStatus.label}
+                            </span>
+                          );
+                        })()}
                         <span className="font-sans text-smoke text-xs font-medium">
                           {format(new Date(order.createdAt), "dd MMM yyyy, HH:mm")}
                         </span>
@@ -397,7 +451,15 @@ export default function OrderTab() {
                       <Badge className="bg-red-100 text-red-800 hover:bg-red-100 rounded-full font-bold">CANCELLED</Badge>
                     )}
                     {(selectedOrder.status === "PENDING" || selectedOrder.status === "CONFIRMED") && (
-                      <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 rounded-full font-bold">PROCESSING</Badge>
+                      (() => {
+                        const activeStatus = getActiveOrderStatus(selectedOrder);
+                        return (
+                          <Badge className={`${activeStatus.classes} border rounded-full font-bold uppercase flex items-center gap-1 px-2.5 py-0.5 shadow-sm`}>
+                            {activeStatus.icon}
+                            <span>{activeStatus.label}</span>
+                          </Badge>
+                        );
+                      })()
                     )}
                   </div>
                 </div>
