@@ -794,10 +794,17 @@ export default function DashboardPage() {
                     axisLine={false}
                     tickMargin={8}
                     fontSize={12}
-                    stroke="#8C7B6E"
-                    tickFormatter={(v) =>
-                      `${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}đ`
-                    }
+                    tickFormatter={(v) => {
+                      if (v >= 1000000) {
+                        const div = v / 1000000;
+                        return `${div % 1 === 0 ? div.toFixed(0) : div.toFixed(1)}Mđ`;
+                      }
+                      if (v >= 1000) {
+                        const div = v / 1000;
+                        return `${div % 1 === 0 ? div.toFixed(0) : div.toFixed(1)}Kđ`;
+                      }
+                      return `${v}đ`;
+                    }}
                   />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   {showRevenue && (
