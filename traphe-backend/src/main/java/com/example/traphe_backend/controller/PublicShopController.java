@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,13 +43,15 @@ public class PublicShopController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isDrink,
             @RequestParam(required = false) UUID branchId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         PageResponse<MenuItemResponse> result = menuService.getMenuItems(
-                categoryId, search, "ACTIVE", isDrink, branchId, page, size, sortBy, sortDir);
+                categoryId, search, "ACTIVE", isDrink, branchId, minPrice, maxPrice, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(ApiResponse.successPagination(result, "Products retrieved successfully"));
     }
