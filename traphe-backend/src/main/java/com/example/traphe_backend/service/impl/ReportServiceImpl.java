@@ -19,16 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
-import com.lowagie.text.Document;
-import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Font;
 import com.lowagie.text.FontFactory;
 import com.lowagie.text.Element;
-import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -40,7 +35,6 @@ import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReportServiceImpl implements ReportService {
 
@@ -54,9 +48,32 @@ public class ReportServiceImpl implements ReportService {
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final MenuItemSizeRepository menuItemSizeRepository;
     private final IngredientStockRepository ingredientStockRepository;
-
-    @Qualifier("taskExecutor")
     private final Executor taskExecutor;
+
+    public ReportServiceImpl(
+            OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
+            BranchMenuItemRepository branchMenuItemRepository,
+            LoyaltyPointTransactionRepository loyaltyPointTransactionRepository,
+            LoyaltyPointRepository loyaltyPointRepository,
+            RecipeRepository recipeRepository,
+            RecipeItemRepository recipeItemRepository,
+            PurchaseOrderItemRepository purchaseOrderItemRepository,
+            MenuItemSizeRepository menuItemSizeRepository,
+            IngredientStockRepository ingredientStockRepository,
+            @Qualifier("taskExecutor") Executor taskExecutor) {
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.branchMenuItemRepository = branchMenuItemRepository;
+        this.loyaltyPointTransactionRepository = loyaltyPointTransactionRepository;
+        this.loyaltyPointRepository = loyaltyPointRepository;
+        this.recipeRepository = recipeRepository;
+        this.recipeItemRepository = recipeItemRepository;
+        this.purchaseOrderItemRepository = purchaseOrderItemRepository;
+        this.menuItemSizeRepository = menuItemSizeRepository;
+        this.ingredientStockRepository = ingredientStockRepository;
+        this.taskExecutor = taskExecutor;
+    }
 
     private LocalDateTime[] getRange(String period, LocalDate start, LocalDate end) {
         LocalDateTime currentStart;
