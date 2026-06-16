@@ -448,7 +448,7 @@ export default function ShoppingCartStep({ onNext }: ShoppingCartStepProps) {
                         Home Delivery
                       </Label>
                     </div>
-                    <span className="text-sm font-semibold text-roast">25.000₫</span>
+                    <span className="text-sm font-semibold text-roast">With Fee</span>
                   </div>
                 </RadioGroup>
               </div>

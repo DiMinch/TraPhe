@@ -66,22 +66,37 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
   const isConfirmed = order.status === "CONFIRMED" || order.status === "COMPLETED";
   const isCompleted = order.status === "COMPLETED";
 
+  // Parse date safely, converting UTC string without Z to valid UTC object
+  const parseBackendDate = (dateStr: string | Date | undefined): Date => {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return dateStr;
+    let normalized = dateStr;
+    if (typeof normalized === "string") {
+      if (normalized.includes("T") && !normalized.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(normalized)) {
+        normalized = normalized + "Z";
+      }
+    }
+    return new Date(normalized);
+  };
+
   // Calculate approximate readiness time
   const getReadinessText = () => {
     if (order.estimatedReadyTime) {
       try {
-        return format(new Date(order.estimatedReadyTime), "HH:mm");
+        return format(parseBackendDate(order.estimatedReadyTime), "HH:mm");
       } catch (e) {
         return "15-20 mins";
       }
     }
     // Default fallback
-    const time = new Date(new Date(order.createdAt).getTime() + (order.orderType === "DELIVERY" ? 40 : 20) * 60000);
+    const parsedCreated = parseBackendDate(order.createdAt);
+    const isDelivery = order.orderType === "DELIVERY" || order.orderType === "DRINK_DELIVERY" || (order.orderType && order.orderType.includes("DELIVERY"));
+    const time = new Date(parsedCreated.getTime() + (isDelivery ? 40 : 20) * 60000);
     return format(time, "HH:mm");
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 relative overflow-hidden bg-foam">
+    <div className="min-h-[80vh] flex items-start justify-center pt-8 pb-12 px-4 relative overflow-hidden bg-foam">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cream opacity-50 blur-[100px]"></div>
@@ -121,7 +136,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
               <Button
                 onClick={() => navigate("/account?tab=orders")}
-                className="w-full h-auto bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold py-3.5 rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-12 bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Track Order</span>
                 <Truck className="w-4 h-4" />
@@ -131,7 +146,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                   const el = document.getElementById("order-receipt-section");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="w-full h-auto bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold py-3.5 rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-12 bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>View Receipt</span>
               </Button>
@@ -299,7 +314,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
             variant="link"
             className="text-stone-600 hover:text-[#5C3317] font-semibold flex items-center gap-1.5 mx-auto cursor-pointer"
           >
-            <span>Continue Shopping</span>
+            <span>Back</span>
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>

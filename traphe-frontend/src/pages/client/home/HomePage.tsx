@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { ArrowRight, MapPin, ArrowUpRight, Coffee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import axiosClient from "@/lib/axios-client";
 import { productService } from "@/services/product.service";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 interface Branch {
   id: string;
@@ -18,19 +20,70 @@ interface Branch {
 export default function HomePage() {
   const [branch, setBranch] = useState<Branch | null>(null);
   const [newArrivals, setNewArrivals] = useState<any[]>([]);
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | null>(null);
+
+  const getNearestBranch = (userLat: number, userLng: number, branchList: Branch[]) => {
+    let nearest: Branch | null = null;
+    let minDistance = Infinity;
+
+    branchList.forEach((b) => {
+      const lat = (b as any).lat ?? b.latitude;
+      const lng = (b as any).lng ?? b.longitude;
+      if (lat !== undefined && lng !== undefined) {
+        const dist = Math.sqrt(Math.pow(lat - userLat, 2) + Math.pow(lng - userLng, 2));
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearest = b;
+        }
+      }
+    });
+    return nearest;
+  };
 
   useEffect(() => {
-    const fetchBranch = async () => {
+    const fetchBranchAndLocate = async () => {
+      let fetchedBranches: Branch[] = [];
       try {
         const res = await axiosClient.get<any, any>("/branches");
-        if (res.data && res.data.length > 0) {
-          const central = res.data.find((b: any) =>
-            b.name.toLowerCase().includes("central")
-          );
-          setBranch(central || res.data[0]);
-        }
+        fetchedBranches = Array.isArray(res.data) ? res.data : res.data?.content || [];
+        
+        // Find default branch (Central Square)
+        const central = fetchedBranches.find((b: any) =>
+          b.name.toLowerCase().includes("central")
+        );
+        setBranch(central || fetchedBranches[0] || null);
       } catch (error) {
         console.error("Failed to fetch branch details", error);
+      }
+
+      // Now request GPS
+      if (navigator.geolocation) {
+        setGpsStatus("loading");
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            setGpsStatus("success");
+            
+            if (fetchedBranches.length > 0) {
+              const nearest = getNearestBranch(lat, lng, fetchedBranches);
+              if (nearest) {
+                setBranch(nearest);
+              }
+            }
+          },
+          (error) => {
+            console.warn("GPS access denied or failed:", error);
+            setGpsStatus("error");
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      } else {
+        setGpsStatus("error");
       }
     };
 
@@ -52,8 +105,73 @@ export default function HomePage() {
       }
     };
 
-    fetchBranch();
+    fetchBranchAndLocate();
     fetchNewArrivals();
+  }, []);
+
+  // Sync Mapbox instance
+  useEffect(() => {
+    if (!branch || !mapContainerRef.current) return;
+    const lat = (branch as any).lat ?? branch.latitude;
+    const lng = (branch as any).lng ?? branch.longitude;
+    if (lat === undefined || lng === undefined) return;
+
+    if (!mapboxgl.accessToken) {
+      mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "";
+    }
+
+    try {
+      if (!mapRef.current) {
+        const map = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: "mapbox://styles/mapbox/light-v11",
+          center: [lng, lat],
+          zoom: 15,
+          interactive: false,
+        });
+        mapRef.current = map;
+      } else {
+        mapRef.current.setCenter([lng, lat]);
+      }
+
+      // Re-create marker every time branch changes to keep the text updated
+      if (markerRef.current) {
+        markerRef.current.remove();
+      }
+
+      const el = document.createElement("div");
+      el.className = "flex flex-col items-center";
+      el.innerHTML = `
+        <div class="bg-white px-3 py-1.5 rounded-lg shadow-md border border-[#5C3317] mb-1 whitespace-nowrap z-20">
+          <span class="font-bold text-xs text-[#2C1A0E]">${branch.name}</span>
+        </div>
+        <div class="w-10 h-10 bg-[#A0622A] rounded-full flex items-center justify-center shadow-lg border-2 border-white relative z-10">
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1" /><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+            <line x1="6" y1="2" x2="6" y2="4" /><line x1="10" y1="2" x2="10" y2="4" /><line x1="14" y1="2" x2="14" y2="4" />
+          </svg>
+        </div>
+      `;
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(mapRef.current);
+      markerRef.current = marker;
+    } catch (err) {
+      console.error("Error loading Mapbox in homepage:", err);
+    }
+  }, [branch]);
+
+  // Cleanup map on unmount
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      if (markerRef.current) {
+        markerRef.current = null;
+      }
+    };
   }, []);
 
   const fallbackProducts = [
@@ -99,14 +217,13 @@ export default function HomePage() {
               <span className="font-normal italic text-[#5C3317]">Vietnamese Coffee</span>
             </h1>
             <p className="font-serif text-[#4A3F35] text-lg leading-relaxed max-w-lg">
-              Experience the rich, tactile atmosphere of traditional coffee craft.
-              Slow-dripped perfection, honoring a heritage of bold flavors and sweet
-              resonance.
+              Hãy để cảm xúc thăng hoa với những ly trà và cà phê.
+              Từng giọt trà và cà phê được chắt chiu từ tâm huyết của người pha chế.
             </p>
             <div className="pt-4 flex flex-wrap gap-4">
               <Link to="/menu">
                 <Button className="bg-[#5C3317] hover:bg-[#2C1A0E] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-300">
-                  Explore the Menu <ArrowRight className="w-4 h-4 ml-2" />
+                  Khám phá Menu <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
               <Link to="/about">
@@ -114,7 +231,7 @@ export default function HomePage() {
                   variant="outline"
                   className="border-[#5C3317] text-[#5C3317] hover:bg-[#F5EAD8] rounded-full px-8 py-6 text-base font-medium transition-all duration-300"
                 >
-                  Our Story
+                  Câu chuyện của chúng tôi
                 </Button>
               </Link>
             </div>
@@ -142,7 +259,7 @@ export default function HomePage() {
               New Arrivals
             </h2>
             <p className="font-serif text-[#4A3F35] text-base leading-relaxed">
-              Discover our latest creations, freshly brewed with passion and quality ingredients.
+              Khám phá những hương vị mới nhất, được pha chế bằng cả trái tim và nguyên liệu chất lượng.
             </p>
           </div>
 
@@ -192,7 +309,7 @@ export default function HomePage() {
                         to={productUrl}
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5C3317] hover:text-[#2C1A0E]"
                       >
-                        Order Now <ArrowUpRight className="w-4 h-4" />
+                        Đặt ngay<ArrowUpRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </div>
@@ -204,7 +321,7 @@ export default function HomePage() {
           <div className="flex justify-center">
             <Link to="/menu">
               <Button className="border-2 border-[#5C3317] text-white bg-[#5C3317] hover:bg-[#2C1A0E] font-medium rounded-full px-8 py-5 transition-all duration-300">
-                All Products
+                Tất cả
               </Button>
             </Link>
           </div>
@@ -217,14 +334,18 @@ export default function HomePage() {
           {/* Details */}
           <div className="p-8 md:p-16 lg:w-5/12 flex flex-col justify-center bg-white space-y-6">
             <span className="text-xs font-bold text-[#A0622A] uppercase tracking-widest block">
-              Không gian trải nghiệm
+              {gpsStatus === "loading" && "Đang tìm cửa hàng gần bạn..."}
+              {gpsStatus === "success" && "Cửa hàng gần bạn nhất"}
+              {gpsStatus === "error" && "Không gian trải nghiệm"}
+              {gpsStatus === "idle" && "Không gian trải nghiệm"}
             </span>
             <h2 className="font-serif text-3xl lg:text-4xl text-[#2C1A0E] leading-tight">
-              Find Your Sanctuary
+              {gpsStatus === "success" ? "Cửa Hàng Gần Bạn" : "Find Your Sanctuary"}
             </h2>
             <p className="font-serif text-[#4A3F35] leading-relaxed">
-              Step away from the rush. Our flagship Central Square branch offers a
-              peaceful enclave to savor the craft of true Vietnamese coffee.
+              {gpsStatus === "success"
+                ? "Dựa trên vị trí hiện tại của bạn, đây là chi nhánh thuận tiện nhất để bạn ghé qua thưởng thức trà và cà phê ngon."
+                : "Tạm lánh xa cuộc sống hối hả. Hãy ghé chi nhánh của chúng tôi mang đến một không gian yên tĩnh để thưởng thức hương vị trà và cà phê Việt Nam đích thực."}
             </p>
 
             <div className="flex items-start gap-3.5 p-4 rounded-xl bg-[#FBF5EC] border border-[#F5EAD8]">
@@ -242,21 +363,20 @@ export default function HomePage() {
             <div>
               <Link to={branch ? `/branches/${branch.id}` : "/branches"}>
                 <Button className="border-2 border-[#5C3317] text-[#5C3317] bg-transparent hover:bg-[#F5EAD8] font-medium rounded-full px-8 py-5 transition-all duration-300">
-                  Get Directions
+                  Tìm đường
                 </Button>
               </Link>
             </div>
           </div>
 
           {/* Map Image/Embed */}
-          <div className="w-full lg:w-7/12 h-[350px] lg:h-auto min-h-[400px] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[#2C1A0E]/5 group-hover:bg-transparent transition-colors duration-500 z-10" />
-            <img
-              alt="Map of Central Branch"
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-1000"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXkDknGUmEp7Cwm-Tl0EZ7xKDij-J4q30EhMg4O7eULFjp4nfHVjpQQPHTwwznl9EBwvU7ib-Thd0aQ6u4-0PbQrtHPSHhHNicaxTpYR-xXL-BRsc4UGJM-GlLc2UNrQtIJ3c9ThT4e9CaNsY2D44AUbxLqEfzvGElhmJ7ZXXq1KlgKPU1vKpHgnfuYEGb_VM0FT_SwXciWRMuRC8ezT0gCs562uSMZL9oAlmfb351oSdni3poRfVo9cL_A4cPYcQimkoHlkL6Oz0"
-            />
-          </div>
+          <Link
+            to={branch ? `/branches/${branch.id}` : "/branches"}
+            className="w-full lg:w-7/12 h-[350px] lg:h-auto min-h-[400px] relative overflow-hidden block group"
+          >
+            <div className="absolute inset-0 bg-[#2C1A0E]/5 group-hover:bg-transparent transition-colors duration-500 z-20 pointer-events-none" />
+            <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-10 transition-transform duration-1000 group-hover:scale-[1.02]" />
+          </Link>
         </div>
       </section>
     </div>

@@ -93,24 +93,39 @@ export default function PaymentCallbackPage() {
   const isConfirmed = order ? (order.status === "CONFIRMED" || order.status === "COMPLETED") : false;
   const isCompleted = order ? order.status === "COMPLETED" : false;
 
+  // Parse date safely, converting UTC string without Z to valid UTC object
+  const parseBackendDate = (dateStr: string | Date | undefined): Date => {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return dateStr;
+    let normalized = dateStr;
+    if (typeof normalized === "string") {
+      if (normalized.includes("T") && !normalized.endsWith("Z") && !/[+-]\d{2}:\d{2}$/.test(normalized)) {
+        normalized = normalized + "Z";
+      }
+    }
+    return new Date(normalized);
+  };
+
   // Calculate approximate readiness time
   const getReadinessText = () => {
     if (order?.estimatedReadyTime) {
       try {
-        return format(new Date(order.estimatedReadyTime), "HH:mm");
+        return format(parseBackendDate(order.estimatedReadyTime), "HH:mm");
       } catch (e) {
         return "15-20 mins";
       }
     }
     if (order) {
-      const time = new Date(new Date(order.createdAt).getTime() + (order.orderType === "DELIVERY" ? 40 : 20) * 60000);
+      const parsedCreated = parseBackendDate(order.createdAt);
+      const isDelivery = order.orderType === "DELIVERY" || order.orderType === "DRINK_DELIVERY" || (order.orderType && order.orderType.includes("DELIVERY"));
+      const time = new Date(parsedCreated.getTime() + (isDelivery ? 40 : 20) * 60000);
       return format(time, "HH:mm");
     }
     return "15-20 mins";
   };
 
   return (
-    <div className="min-h-[90vh] flex flex-col items-center justify-center py-16 px-4 bg-foam relative overflow-hidden">
+    <div className="min-h-[90vh] flex flex-col items-center justify-start pt-28 pb-16 px-4 bg-foam relative overflow-hidden">
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-cream opacity-50 blur-[100px]"></div>
@@ -154,7 +169,7 @@ export default function PaymentCallbackPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
                 <Button
                   onClick={() => navigate("/account?tab=orders")}
-                  className="w-full bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold py-6 rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-12 bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Track Order</span>
                   <Truck className="w-4 h-4" />
@@ -164,7 +179,7 @@ export default function PaymentCallbackPage() {
                     const el = document.getElementById("order-receipt-section");
                     if (el) el.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="w-full bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold py-6 rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-12 bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>View Receipt</span>
                 </Button>
@@ -364,14 +379,14 @@ export default function PaymentCallbackPage() {
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <Button
                   onClick={() => navigate("/cart")}
-                  className="flex-1 bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold py-6 rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 h-12 bg-transparent border-[1.5px] border-[#5C3317] text-[#5C3317] hover:bg-cream/40 font-semibold rounded-full transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span>Back to Cart</span>
                 </Button>
                 <Button
                   onClick={() => navigate("/account?tab=orders")}
-                  className="flex-1 bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold py-6 rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 h-12 bg-[#5C3317] hover:bg-[#2C1A0E] text-white font-semibold rounded-full shadow-md transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4" />
                   <span>Retry Payment</span>
@@ -401,7 +416,7 @@ export default function PaymentCallbackPage() {
             variant="link"
             className="text-stone-600 hover:text-[#5C3317] font-semibold flex items-center gap-1.5 mx-auto cursor-pointer"
           >
-            <span>Continue Shopping</span>
+            <span>Back</span>
             <ArrowRight className="w-4 h-4" />
           </Button>
         </div>

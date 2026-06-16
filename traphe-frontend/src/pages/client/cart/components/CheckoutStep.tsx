@@ -260,8 +260,14 @@ export default function CheckoutStep({
           lng = 108.2022;
         }
 
+        const menuItemIds = cart?.items?.map((item: any) => item.menuItemId) || [];
+
         const res = await axiosClient.get(`/branches/nearest`, {
-          params: { lat, lng },
+          params: { 
+            lat, 
+            lng,
+            menuItemIds: menuItemIds.join(",")
+          },
         });
 
         if (res.data) {
@@ -280,7 +286,7 @@ export default function CheckoutStep({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [selectedAddressId, guestInfo.address, shippingMethod, savedAddresses, isGuest, setShippingFee, setSelectedBranchId]);
+  }, [selectedAddressId, guestInfo.address, shippingMethod, savedAddresses, isGuest, setShippingFee, setSelectedBranchId, cart]);
 
   const handleApplyCoupon = async (codeToApply?: string) => {
     const code = codeToApply || couponCode;

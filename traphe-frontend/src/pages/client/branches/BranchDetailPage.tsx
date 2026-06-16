@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router";
-import { MapPin, Phone, Clock, ArrowLeft, Wifi, Loader2, Coffee } from "lucide-react";
+import { MapPin, Phone, Clock, ArrowLeft, Wifi, Coffee } from "lucide-react";
 import axiosClient from "@/lib/axios-client";
 import { Button } from "@/components/ui/button";
+import { ClientSkeleton } from "@/components/ui/skeleton-loaders";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -98,8 +99,43 @@ export default function BranchDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="bg-[#FBF5EC] min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#5C3317]" />
+      <div className="bg-[#FAF6F0] min-h-screen pb-16">
+        {/* Hero Section skeleton */}
+        <section className="bg-gradient-to-br from-[#2C1A0E] to-[#5C3317] py-20 px-6">
+          <div className="max-w-5xl mx-auto space-y-4">
+            <ClientSkeleton className="h-4 w-32 rounded-full opacity-60" />
+            <ClientSkeleton className="h-12 w-1/2 rounded-full" />
+            <ClientSkeleton className="h-4 w-1/3 rounded-full opacity-60" />
+          </div>
+        </section>
+
+        {/* Content skeleton */}
+        <section className="max-w-5xl mx-auto py-16 px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <ClientSkeleton className="h-8 w-48 rounded-full" />
+              <div className="bg-white rounded-2xl p-8 border border-[#F5EAD8]/40 space-y-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex gap-4">
+                    <ClientSkeleton className="w-10 h-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <ClientSkeleton className="h-4 w-24 rounded-full" />
+                      <ClientSkeleton className="h-5 w-3/4 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl p-6 border border-[#F5EAD8]/40 space-y-4">
+                <ClientSkeleton className="h-6 w-24 rounded-full" />
+                <ClientSkeleton className="w-full aspect-video rounded-xl" />
+                <ClientSkeleton className="h-10 w-full rounded-full" />
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
