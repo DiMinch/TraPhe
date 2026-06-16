@@ -68,4 +68,10 @@ public class User extends BaseEntity {
     @jakarta.persistence.ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
+
+    @jakarta.persistence.OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private LoyaltyPoint loyaltyPoint;
+
+    @jakarta.persistence.OneToOne(mappedBy = "customer", fetch = FetchType.LAZY)
+    private com.example.traphe_backend.ai.entity.CustomerSegment customerSegment;
 }

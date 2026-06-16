@@ -3,10 +3,14 @@ package com.example.traphe_backend.config;
 import com.example.traphe_backend.entity.Role;
 import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.entity.MembershipTier;
+import com.example.traphe_backend.entity.LoyaltyReward;
 import com.example.traphe_backend.enums.RoleName;
 import com.example.traphe_backend.repository.RoleRepository;
 import com.example.traphe_backend.repository.UserRepository;
 import com.example.traphe_backend.repository.MembershipTierRepository;
+import com.example.traphe_backend.repository.LoyaltyRewardRepository;
+import com.example.traphe_backend.entity.Branch;
+import com.example.traphe_backend.repository.BranchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -33,7 +37,7 @@ import java.util.Set;
  * </ul>
  */
 @Component
-@Order(1) // Run before DataSeeder
+@Order(2) // Run after DataSeeder
 @RequiredArgsConstructor
 @Slf4j
 public class AccountInitializer implements CommandLineRunner {
@@ -43,6 +47,9 @@ public class AccountInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final MembershipTierRepository membershipTierRepository;
     private final com.example.traphe_backend.repository.LoyaltyPointRepository loyaltyPointRepository;
+    private final com.example.traphe_backend.repository.SystemConfigRepository systemConfigRepository;
+    private final LoyaltyRewardRepository loyaltyRewardRepository;
+    private final BranchRepository branchRepository;
 
     private static final String DEFAULT_PASSWORD = "password123";
 
@@ -56,6 +63,9 @@ public class AccountInitializer implements CommandLineRunner {
 
         // 2. Ensure default membership tiers exist
         initMembershipTiers();
+
+        // Ensure default system configurations exist
+        initSystemConfigs();
 
         // 3. Create test accounts
         createAccountIfNotExists("admin@traphe.vn", "Admin TraPhe",
@@ -92,6 +102,14 @@ public class AccountInitializer implements CommandLineRunner {
                 log.info("Updated loyalty points to 100 for existing customer@traphe.vn");
             }
         });
+
+        // Ensure default loyalty rewards exist
+        initLoyaltyRewards();
+
+        // Ensure manager, cashier, barista have a branch assigned
+        assignBranchToUserIfNull("manager@traphe.vn");
+        assignBranchToUserIfNull("cashier@traphe.vn");
+        assignBranchToUserIfNull("barista@traphe.vn");
 
         log.info("========== Account & Tier Initialization Complete ==========");
     }
@@ -162,10 +180,57 @@ public class AccountInitializer implements CommandLineRunner {
         }
     }
 
+    private void initSystemConfigs() {
+        if (systemConfigRepository.count() == 0) {
+            log.info("Seeding default system configurations...");
+
+            systemConfigRepository.save(com.example.traphe_backend.entity.SystemConfig.builder()
+                    .configKey("DEFAULT_INVENTORY_THRESHOLD")
+                    .configValue("10.0")
+                    .description("Ngưỡng cảnh báo tồn kho mặc định của nguyên liệu")
+                    .build());
+
+            systemConfigRepository.save(com.example.traphe_backend.entity.SystemConfig.builder()
+                    .configKey("SHIPPING_BASE_FEE")
+                    .configValue("15000.0")
+                    .description("Phí giao hàng cơ bản cố định (đ)")
+                    .build());
+
+            systemConfigRepository.save(com.example.traphe_backend.entity.SystemConfig.builder()
+                    .configKey("SHIPPING_PER_KM")
+                    .configValue("5000.0")
+                    .description("Phí giao hàng tăng thêm trên mỗi kilomet (đ/km)")
+                    .build());
+
+            systemConfigRepository.save(com.example.traphe_backend.entity.SystemConfig.builder()
+                    .configKey("BRAND_NAME")
+                    .configValue("TraPhe")
+                    .description("Tên thương hiệu hệ thống")
+                    .build());
+
+            log.info("Default system configurations seeded successfully.");
+        } else {
+            log.info("System configurations already exist.");
+        }
+    }
+
     private void createAccountIfNotExists(String email, String fullName, Set<Role> roles) {
         if (userRepository.existsByEmail(email)) {
             log.info("Account already exists: {}", email);
             return;
+        }
+
+        Branch branch = null;
+        boolean isBranchStaff = roles.stream().anyMatch(r -> 
+            r.getName() == RoleName.ROLE_BRANCH_MANAGER ||
+            r.getName() == RoleName.ROLE_CASHIER ||
+            r.getName() == RoleName.ROLE_BARISTA
+        );
+        if (isBranchStaff) {
+            branch = branchRepository.findAll().stream()
+                    .filter(Branch::isActive)
+                    .findFirst()
+                    .orElse(null);
         }
 
         User user = User.builder()
@@ -174,6 +239,7 @@ public class AccountInitializer implements CommandLineRunner {
                 .fullName(fullName)
                 .isEmailVerified(true) // Seed accounts are pre-verified
                 .roles(roles)
+                .branch(branch)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -197,5 +263,82 @@ public class AccountInitializer implements CommandLineRunner {
                 .orElse("");
 
         log.info("Created test account: {} [{}]", email, roleNames);
+    }
+
+    private void assignBranchToUserIfNull(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (user.getBranch() == null) {
+                branchRepository.findAll().stream()
+                        .filter(Branch::isActive)
+                        .findFirst()
+                        .ifPresent(branch -> {
+                            user.setBranch(branch);
+                            userRepository.save(user);
+                            log.info("Assigned user {} to branch {}", email, branch.getName());
+                        });
+            }
+        });
+    }
+
+    private void initLoyaltyRewards() {
+        if (loyaltyRewardRepository.count() == 0) {
+            log.info("Seeding default loyalty rewards...");
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Free Upsize")
+                    .points(200)
+                    .description("Nâng cấp miễn phí nước uống cỡ vừa (M) lên cỡ lớn (L).")
+                    .category("drink")
+                    .isActive(true)
+                    .build());
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Free Topping")
+                    .points(150)
+                    .description("Thêm trân châu đen, thạch dừa hoặc pudding miễn phí.")
+                    .category("drink")
+                    .isActive(true)
+                    .build());
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Voucher Giảm 20k")
+                    .points(300)
+                    .description("Giảm giá 20,000đ áp dụng cho mọi đơn hàng.")
+                    .category("voucher")
+                    .discountValue(new BigDecimal("20000"))
+                    .discountType("FIXED_AMOUNT")
+                    .isActive(true)
+                    .build());
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Voucher Giảm 50k")
+                    .points(600)
+                    .description("Giảm giá 50,000đ áp dụng cho đơn từ 100,000đ.")
+                    .category("voucher")
+                    .discountValue(new BigDecimal("50000"))
+                    .discountType("FIXED_AMOUNT")
+                    .isActive(true)
+                    .build());
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Free Signature Drink")
+                    .points(800)
+                    .description("Nhận 1 ly Cà Phê Dừa hoặc Trà Đào Cam Sả miễn phí.")
+                    .category("drink")
+                    .isActive(true)
+                    .build());
+
+            loyaltyRewardRepository.save(LoyaltyReward.builder()
+                    .name("Ly Sứ TraPhe")
+                    .points(1500)
+                    .description("Ly sứ TraPhe phiên bản giới hạn chế tác thủ công tinh xảo.")
+                    .category("merchandise")
+                    .isActive(true)
+                    .build());
+
+            log.info("Default loyalty rewards seeded successfully.");
+        } else {
+            log.info("Loyalty rewards already exist.");
+        }
     }
 }

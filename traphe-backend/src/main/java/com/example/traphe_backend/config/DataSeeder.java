@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@org.springframework.core.annotation.Order(1)
 @RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("unused")

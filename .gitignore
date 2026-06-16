@@ -17,6 +17,7 @@ Thumbs.db
 # For coding
 traphe_db.md
 traphe_ba.md
+*.pdf
 
 *.log
 logs/
