@@ -94,7 +94,9 @@ export default function RevenueReport() {
   const currentUser = authService.getCurrentUser();
   const isBranchManager = currentUser?.roles?.includes(UserRole.BRANCH_MANAGER) && !currentUser?.roles?.includes(UserRole.ADMIN);
   const [branches, setBranches] = useState<any[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(
+    isBranchManager && currentUser?.branchId ? currentUser.branchId : ""
+  );
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -144,7 +146,12 @@ export default function RevenueReport() {
   const handleExport = async (format: "CSV" | "PDF") => {
     try {
       setExporting(true);
-      await reportService.exportAndDownloadRevenue(format, startDate, endDate);
+      await reportService.exportAndDownloadRevenue(
+        format,
+        startDate,
+        endDate,
+        selectedBranchId && selectedBranchId !== "all" ? selectedBranchId : undefined
+      );
       toast.success(`Report exported as ${format}`);
     } catch (error) {
       toast.error("Export failed", {
@@ -282,28 +289,30 @@ export default function RevenueReport() {
       </Card>
 
       {/* Tabs */}
-      <div className="flex space-x-1 border-b mb-6">
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
-            activeTab === "overview"
-              ? "border-roast text-roast"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-          }`}
-        >
-          Tổng quan doanh thu
-        </button>
-        <button
-          onClick={() => setActiveTab("comparison")}
-          className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
-            activeTab === "comparison"
-              ? "border-roast text-roast"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-          }`}
-        >
-          So sánh chi nhánh
-        </button>
-      </div>
+      {!isBranchManager && (
+        <div className="flex space-x-1 border-b mb-6">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+              activeTab === "overview"
+                ? "border-roast text-roast"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Tổng quan doanh thu
+          </button>
+          <button
+            onClick={() => setActiveTab("comparison")}
+            className={`py-2.5 px-4 text-sm font-medium border-b-2 transition-all ${
+              activeTab === "comparison"
+                ? "border-roast text-roast"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            So sánh chi nhánh
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
@@ -457,12 +466,19 @@ export default function RevenueReport() {
                       }}
                     />
                     <YAxis
+                      yAxisId="left"
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => formatCurrency(value)}
                     />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => Math.round(value).toString()}
+                    />
                     <Tooltip
                       formatter={(value: number, name: string) => [
-                        name === "revenue" ? formatFullCurrency(value) : value,
+                        name === "revenue" ? `${formatFullCurrency(value)}đ` : `${value} đơn hàng`,
                         name === "revenue" ? "Revenue" : "Orders",
                       ]}
                       labelFormatter={(label) => `Date: ${label}`}
@@ -473,6 +489,7 @@ export default function RevenueReport() {
                       }
                     />
                     <Line
+                      yAxisId="left"
                       type="monotone"
                       dataKey="revenue"
                       stroke="#4f46e5"
@@ -481,12 +498,12 @@ export default function RevenueReport() {
                       activeDot={{ r: 6 }}
                     />
                     <Line
+                      yAxisId="right"
                       type="monotone"
                       dataKey="orderCount"
                       stroke="#10b981"
                       strokeWidth={2}
                       dot={{ fill: "#10b981", strokeWidth: 2, r: 3 }}
-                      yAxisId={0}
                     />
                   </LineChart>
                 </ResponsiveContainer>

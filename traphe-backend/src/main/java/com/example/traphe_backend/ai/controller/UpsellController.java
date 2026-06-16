@@ -28,7 +28,6 @@ public class UpsellController {
     }
 
     @GetMapping("/rules")
-    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     public ResponseEntity<ApiResponse<List<AiAssociationRule>>> getAllRules() {
         return ResponseEntity.ok(ApiResponse.success(ruleRepository.findAllByOrderByLiftDesc(), "Danh sách quy tắc kết hợp"));
     }

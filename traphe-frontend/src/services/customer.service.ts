@@ -7,8 +7,16 @@ import type {
 } from "@/types/customer.types";
 
 export const customerService = {
-  getCustomers: async () => {
-    return axiosClient.get<any, ApiResponse<Customer[]>>("/customers");
+  getCustomers: async (params?: { page?: number; size?: number; search?: string }) => {
+    return axiosClient.get<any, ApiResponse<any>>("/customers", { params });
+  },
+
+  getCustomerCount: async () => {
+    return axiosClient.get<any, ApiResponse<number>>("/customers/count");
+  },
+
+  getCustomerStats: async () => {
+    return axiosClient.get<any, ApiResponse<{ totalCustomers: number; newCustomersCount: number; vipCount: number }>>("/customers/stats");
   },
 
   getCustomerById: async (id: string) => {

@@ -7,12 +7,14 @@ import com.example.traphe_backend.dto.response.MenuTreeResponse;
 import com.example.traphe_backend.dto.response.PageResponse;
 import com.example.traphe_backend.dto.response.ToppingResponse;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public interface MenuService {
 
     PageResponse<MenuItemResponse> getMenuItems(UUID categoryId, String search, String status,
                                                  Boolean isDrink, UUID branchId,
+                                                 BigDecimal minPrice, BigDecimal maxPrice,
                                                  int page, int size, String sortBy, String sortDir);
 
     MenuItemDetailResponse getMenuItemById(UUID id, UUID branchId);

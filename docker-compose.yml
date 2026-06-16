@@ -19,18 +19,19 @@ services:
       - "8080:8080"
     volumes:
       - ./traphe-backend:/app
+      - /app/target
       - maven-repo:/root/.m2
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - REDIS_SSL=false
-      - MAVEN_OPTS=-Xmx512m -Dspring-boot.run.jvmArguments="-Xmx384m -Dfile.encoding=UTF-8"
-    command: ["./mvnw", "spring-boot:run", "-T", "1C", "-DskipTests"]
+      - MAVEN_OPTS=-Xmx512m -Dspring-boot.run.jvmArguments=-Xmx384m
+    command: ["./mvnw", "spring-boot:run", "-DskipTests"]
     deploy:
       resources:
         limits:
-          memory: 1024M
+          memory: 2048M
     depends_on:
       - redis
     restart: unless-stopped

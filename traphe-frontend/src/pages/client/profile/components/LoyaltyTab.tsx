@@ -20,6 +20,8 @@ interface RewardItem {
   description: string;
   image?: string;
   category: "drink" | "voucher" | "merchandise";
+  discountValue?: number;
+  discountType?: string;
 }
 
 interface LoyaltyTransaction {
@@ -38,6 +40,46 @@ export default function LoyaltyTab({ currentUser, onUpdateSuccess }: LoyaltyTabP
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [rewards, setRewards] = useState<RewardItem[]>([]);
+  const [isLoadingRewards, setIsLoadingRewards] = useState(false);
+
+  // Fetch dynamic rewards catalogue on load
+  useEffect(() => {
+    const fetchRewards = async () => {
+      setIsLoadingRewards(true);
+      try {
+        const res = await promotionService.getLoyaltyRewards();
+        if (res.data) {
+          const mapped: RewardItem[] = res.data.map(item => ({
+            id: item.id,
+            name: item.name,
+            points: item.points,
+            description: item.description,
+            category: (item.category === "drink" || item.category === "voucher" || item.category === "merchandise")
+              ? item.category
+              : "voucher",
+            discountValue: item.discountValue,
+            discountType: item.discountType,
+          }));
+          setRewards(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to fetch loyalty rewards catalogue, using static fallback", error);
+        const staticRewards: RewardItem[] = [
+          { id: "rw-1", name: "Free Upsize", points: 200, description: "Upgrade any medium drink to large size for free.", category: "drink" },
+          { id: "rw-2", name: "Free Topping", points: 150, description: "Add golden boba, cheese foam or jelly to your drink.", category: "drink" },
+          { id: "rw-3", name: "20k Discount Voucher", points: 300, description: "Get 20,000₫ off on any order value.", category: "voucher" },
+          { id: "rw-4", name: "50k Discount Voucher", points: 600, description: "Get 50,000₫ off on order from 100,000₫.", category: "voucher" },
+          { id: "rw-5", name: "Free Signature Drink", points: 800, description: "Get one free cup of Egg Coffee or Phin Milk Coffee.", category: "drink" },
+          { id: "rw-6", name: "TraPhe Ceramic Mug", points: 1500, description: "Limited edition luxury TraPhe handcrafted ceramic cup.", category: "merchandise" },
+        ];
+        setRewards(staticRewards);
+      } finally {
+        setIsLoadingRewards(false);
+      }
+    };
+    fetchRewards();
+  }, []);
 
   // Fetch real loyalty transactions when history tab is active
   useEffect(() => {
@@ -68,15 +110,6 @@ export default function LoyaltyTab({ currentUser, onUpdateSuccess }: LoyaltyTabP
     return Math.min(100, Math.max(0, (totalPoints / nextTierGoal) * 100));
   };
 
-  const rewards: RewardItem[] = [
-    { id: "rw-1", name: "Free Upsize", points: 200, description: "Upgrade any medium drink to large size for free.", category: "drink" },
-    { id: "rw-2", name: "Free Topping", points: 150, description: "Add golden boba, cheese foam or jelly to your drink.", category: "drink" },
-    { id: "rw-3", name: "20k Discount Voucher", points: 300, description: "Get 20,000₫ off on any order value.", category: "voucher" },
-    { id: "rw-4", name: "50k Discount Voucher", points: 600, description: "Get 50,000₫ off on order from 100,000₫.", category: "voucher" },
-    { id: "rw-5", name: "Free Signature Drink", points: 800, description: "Get one free cup of Egg Coffee or Phin Milk Coffee.", category: "drink" },
-    { id: "rw-6", name: "TraPhe Ceramic Mug", points: 1500, description: "Limited edition luxury TraPhe handcrafted ceramic cup.", category: "merchandise" },
-  ];
-
   const handleRedeemClick = (reward: RewardItem) => {
     const pointsAvailable = currentUser?.loyaltyPoint?.pointsAvailable || 0;
     if (pointsAvailable < reward.points) {
@@ -91,24 +124,25 @@ export default function LoyaltyTab({ currentUser, onUpdateSuccess }: LoyaltyTabP
     setIsRedeeming(true);
 
     try {
-      // Map reward to discount values for voucher creation
-      const discountMap: Record<string, { value: number; type: string }> = {
-        "rw-1": { value: 10000, type: "FIXED_AMOUNT" }, // Free Upsize (approx 10k)
-        "rw-2": { value: 10000, type: "FIXED_AMOUNT" }, // Free Topping (approx 10k)
-        "rw-3": { value: 20000, type: "FIXED_AMOUNT" },
-        "rw-4": { value: 50000, type: "FIXED_AMOUNT" },
-        "rw-5": { value: 45000, type: "FIXED_AMOUNT" }, // Signature Drink (approx 45k)
-        "rw-6": { value: 150000, type: "FIXED_AMOUNT" }, // Mug (approx 150k)
+      const discount = {
+        value: selectedReward.discountValue ?? (
+          selectedReward.id === "rw-1" ? 10000 :
+          selectedReward.id === "rw-2" ? 10000 :
+          selectedReward.id === "rw-3" ? 20000 :
+          selectedReward.id === "rw-4" ? 50000 :
+          selectedReward.id === "rw-5" ? 45000 :
+          selectedReward.id === "rw-6" ? 150000 : 0
+        ),
+        type: selectedReward.discountType ?? "FIXED_AMOUNT"
       };
-      const discount = discountMap[selectedReward.id];
 
       const res = await promotionService.redeemReward({
         rewardId: selectedReward.id,
         rewardName: selectedReward.name,
         pointsCost: selectedReward.points,
         rewardDescription: selectedReward.description,
-        discountValue: discount?.value,
-        discountType: discount?.type,
+        discountValue: discount.value,
+        discountType: discount.type,
       });
 
       if (res.data) {
@@ -215,43 +249,49 @@ export default function LoyaltyTab({ currentUser, onUpdateSuccess }: LoyaltyTabP
 
       {/* Tab Contents */}
       {activeSubTab === "catalog" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {rewards.map((reward) => {
-            const pointsAvailable = currentUser?.loyaltyPoint?.pointsAvailable || 0;
-            const canAfford = pointsAvailable >= reward.points;
-            return (
-              <div
-                key={reward.id}
-                className="bg-white rounded-xl p-5 border border-[#E2DDD7] flex flex-col justify-between hover:shadow-md transition-shadow relative group"
-              >
-                <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs font-bold text-[#A0622A] uppercase tracking-wider px-2 py-0.5 bg-[#F5EAD8] rounded-md">
-                      {reward.category}
-                    </span>
-                    <span className="font-serif font-bold text-[#5C3317] flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-[#A0622A] text-[#A0622A]" />
-                      {reward.points}
-                    </span>
-                  </div>
-                  <h3 className="font-serif text-lg font-bold text-[#2C1A0E] mb-1">{reward.name}</h3>
-                  <p className="text-gray-500 text-xs leading-relaxed mb-4">{reward.description}</p>
-                </div>
-                
-                <button
-                  onClick={() => handleRedeemClick(reward)}
-                  className={`w-full py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    canAfford
-                      ? "bg-[#5C3317] hover:bg-[#2C1A0E] text-white"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  }`}
+        isLoadingRewards ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-[#5C3317]" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rewards.map((reward) => {
+              const pointsAvailable = currentUser?.loyaltyPoint?.pointsAvailable || 0;
+              const canAfford = pointsAvailable >= reward.points;
+              return (
+                <div
+                  key={reward.id}
+                  className="bg-white rounded-xl p-5 border border-[#E2DDD7] flex flex-col justify-between hover:shadow-md transition-shadow relative group"
                 >
-                  Redeem Reward
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                  <div>
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-bold text-[#A0622A] uppercase tracking-wider px-2 py-0.5 bg-[#F5EAD8] rounded-md">
+                        {reward.category}
+                      </span>
+                      <span className="font-serif font-bold text-[#5C3317] flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-[#A0622A] text-[#A0622A]" />
+                        {reward.points}
+                      </span>
+                    </div>
+                    <h3 className="font-serif text-lg font-bold text-[#2C1A0E] mb-1">{reward.name}</h3>
+                    <p className="text-gray-500 text-xs leading-relaxed mb-4">{reward.description}</p>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleRedeemClick(reward)}
+                    className={`w-full py-2.5 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      canAfford
+                        ? "bg-[#5C3317] hover:bg-[#2C1A0E] text-white"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    Redeem Reward
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )
       ) : (
         isLoadingHistory ? (
           <div className="flex justify-center py-12">

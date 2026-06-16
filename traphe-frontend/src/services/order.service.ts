@@ -81,6 +81,7 @@ export const orderService = {
     startDate?: string;
     endDate?: string;
     sort?: string;
+    branchId?: string;
   }) => {
     const queryParams = {
       page: params?.page || 0,
@@ -96,6 +97,7 @@ export const orderService = {
       ...(params?.startDate && { startDate: params.startDate }),
       ...(params?.endDate && { endDate: params.endDate }),
       ...(params?.sort && { sort: params.sort }),
+      ...(params?.branchId && { branchId: params.branchId }),
     };
 
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(
@@ -112,6 +114,7 @@ export const orderService = {
     startDate?: string;
     endDate?: string;
     sort?: string;
+    branchId?: string;
   }) => {
     const queryParams = {
       page: params?.page || 0,
@@ -127,6 +130,7 @@ export const orderService = {
       ...(params?.startDate && { startDate: params.startDate }),
       ...(params?.endDate && { endDate: params.endDate }),
       ...(params?.sort && { sort: params.sort }),
+      ...(params?.branchId && { branchId: params.branchId }),
     };
 
     return axiosClient.get<any, ApiResponse<PageResponse<OrderResponse>>>(

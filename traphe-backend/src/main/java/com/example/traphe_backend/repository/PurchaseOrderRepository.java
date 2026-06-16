@@ -32,6 +32,24 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UU
     @Query("SELECT COUNT(po) FROM PurchaseOrder po WHERE po.isDeleted = false AND po.status = :status")
     long countByStatus(@Param("status") PurchaseOrderStatus status);
 
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(po.poNumber, 4) AS int)), 0) FROM PurchaseOrder po")
-    int findMaxPoNumberSequence();
+    @Query("SELECT po.poNumber FROM PurchaseOrder po WHERE po.poNumber LIKE 'PO-%'")
+    List<String> findAllPoNumbers();
+
+    default int findMaxPoNumberSequence() {
+        return findAllPoNumbers().stream()
+                .map(poNum -> {
+                    if (poNum != null && poNum.startsWith("PO-")) {
+                        try {
+                            String seqStr = poNum.substring(3);
+                            String digits = seqStr.replaceAll("[^0-9]", "");
+                            return digits.isEmpty() ? 0 : Integer.parseInt(digits);
+                        } catch (NumberFormatException e) {
+                            return 0;
+                        }
+                    }
+                    return 0;
+                })
+                .max(Integer::compare)
+                .orElse(0);
+    }
 }

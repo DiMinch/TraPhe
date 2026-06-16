@@ -5,9 +5,9 @@ import type { Product, ProductVariant } from "@/types/product.types";
 import ProductSection from "./components/ProductSection";
 import ExploreMoreSection from "./components/ExploreMoreSection";
 import SubscribeSection from "@/components/common/subscribe/SubscribeSection";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
+import { ClientProductDetailSkeleton } from "@/components/ui/skeleton-loaders";
 
 export default function ClientProductDetailPage() {
   const { id } = useParams();
@@ -85,11 +85,7 @@ export default function ClientProductDetailPage() {
   }, [id, selectedBranchId]);
 
   if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
+    return <ClientProductDetailSkeleton />;
   }
 
   if (!product) return <div>Product not found</div>;

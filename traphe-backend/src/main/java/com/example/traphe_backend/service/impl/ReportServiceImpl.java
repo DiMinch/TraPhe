@@ -19,6 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Font;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Element;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Duration;
@@ -30,7 +35,6 @@ import java.util.stream.Collectors;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReportServiceImpl implements ReportService {
 
@@ -44,9 +48,32 @@ public class ReportServiceImpl implements ReportService {
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final MenuItemSizeRepository menuItemSizeRepository;
     private final IngredientStockRepository ingredientStockRepository;
-
-    @Qualifier("taskExecutor")
     private final Executor taskExecutor;
+
+    public ReportServiceImpl(
+            OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
+            BranchMenuItemRepository branchMenuItemRepository,
+            LoyaltyPointTransactionRepository loyaltyPointTransactionRepository,
+            LoyaltyPointRepository loyaltyPointRepository,
+            RecipeRepository recipeRepository,
+            RecipeItemRepository recipeItemRepository,
+            PurchaseOrderItemRepository purchaseOrderItemRepository,
+            MenuItemSizeRepository menuItemSizeRepository,
+            IngredientStockRepository ingredientStockRepository,
+            @Qualifier("taskExecutor") Executor taskExecutor) {
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.branchMenuItemRepository = branchMenuItemRepository;
+        this.loyaltyPointTransactionRepository = loyaltyPointTransactionRepository;
+        this.loyaltyPointRepository = loyaltyPointRepository;
+        this.recipeRepository = recipeRepository;
+        this.recipeItemRepository = recipeItemRepository;
+        this.purchaseOrderItemRepository = purchaseOrderItemRepository;
+        this.menuItemSizeRepository = menuItemSizeRepository;
+        this.ingredientStockRepository = ingredientStockRepository;
+        this.taskExecutor = taskExecutor;
+    }
 
     private LocalDateTime[] getRange(String period, LocalDate start, LocalDate end) {
         LocalDateTime currentStart;
@@ -637,11 +664,98 @@ public class ReportServiceImpl implements ReportService {
         return new ByteArrayInputStream(sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
+    private Font getVietnameseFont(float size, int style) {
+        String[] fontPaths = {
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:\\Windows\\Fonts\\arial.ttf",
+            "C:\\Windows\\Fonts\\times.ttf",
+            "/usr/share/fonts/dejavu/DejaVuSans.ttf"
+        };
+        for (String path : fontPaths) {
+            java.io.File file = new java.io.File(path);
+            if (file.exists()) {
+                try {
+                    return FontFactory.getFont(path, com.lowagie.text.pdf.BaseFont.IDENTITY_H, com.lowagie.text.pdf.BaseFont.EMBEDDED, size, style);
+                } catch (Exception e) {
+                    // Ignore and try next
+                }
+            }
+        }
+        return FontFactory.getFont(FontFactory.HELVETICA, size, style);
+    }
+
+    private ByteArrayInputStream generatePdf(String title, String[] headers, List<String[]> dataRows) {
+        com.lowagie.text.Document document = new com.lowagie.text.Document(com.lowagie.text.PageSize.A4);
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try {
+            com.lowagie.text.pdf.PdfWriter.getInstance(document, out);
+            document.open();
+            
+            // Add Title
+            Font titleFont = getVietnameseFont(18, Font.BOLD);
+            titleFont.setColor(new java.awt.Color(92, 51, 23)); // Brand Color (Roast/Espresso)
+            Paragraph titlePara = new Paragraph(title, titleFont);
+            titlePara.setAlignment(Element.ALIGN_CENTER);
+            titlePara.setSpacingAfter(20);
+            document.add(titlePara);
+            
+            // Add Date
+            Font dateFont = getVietnameseFont(10, Font.ITALIC);
+            dateFont.setColor(java.awt.Color.GRAY);
+            Paragraph datePara = new Paragraph("Generated on: " + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), dateFont);
+            datePara.setAlignment(Element.ALIGN_RIGHT);
+            datePara.setSpacingAfter(10);
+            document.add(datePara);
+            
+            // Create Table
+            com.lowagie.text.pdf.PdfPTable table = new com.lowagie.text.pdf.PdfPTable(headers.length);
+            table.setWidthPercentage(100);
+            
+            // Table Header Font
+            Font headerFont = getVietnameseFont(11, Font.BOLD);
+            headerFont.setColor(java.awt.Color.WHITE);
+            
+            // Table Body Font
+            Font bodyFont = getVietnameseFont(10, Font.NORMAL);
+            
+            // Add Headers
+            for (String header : headers) {
+                com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(new Phrase(header, headerFont));
+                cell.setBackgroundColor(new java.awt.Color(92, 51, 23)); // Brand Color
+                cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                cell.setPadding(8);
+                table.addCell(cell);
+            }
+            
+            // Add Rows
+            boolean alternate = false;
+            for (String[] rowData : dataRows) {
+                alternate = !alternate;
+                for (String cellText : rowData) {
+                    com.lowagie.text.pdf.PdfPCell cell = new com.lowagie.text.pdf.PdfPCell(new Phrase(cellText != null ? cellText : "", bodyFont));
+                    cell.setPadding(6);
+                    if (alternate) {
+                        cell.setBackgroundColor(new java.awt.Color(245, 240, 235)); // Warm light tint
+                    } else {
+                        cell.setBackgroundColor(java.awt.Color.WHITE);
+                    }
+                    table.addCell(cell);
+                }
+            }
+            
+            document.add(table);
+            document.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ByteArrayInputStream(out.toByteArray());
+    }
+
     @Override
-    public ByteArrayInputStream exportRevenueReport(LocalDate startDate, LocalDate endDate, UUID branchId) {
+    public ByteArrayInputStream exportRevenueReport(LocalDate startDate, LocalDate endDate, UUID branchId, String format) {
         RevenueReportResponse report = getRevenueReport(null, startDate, endDate, "DAY", branchId);
+        String[] headers = new String[]{"Date/Period", "Revenue (VND)", "Order Count"};
         List<String[]> rows = new ArrayList<>();
-        rows.add(new String[]{"Date/Period", "Revenue (VND)", "Order Count"});
         for (RevenueByPeriod p : report.getBreakdown()) {
             rows.add(new String[]{
                     p.getPeriod(),
@@ -649,14 +763,20 @@ public class ReportServiceImpl implements ReportService {
                     String.valueOf(p.getOrderCount())
             });
         }
-        return writeCsv(rows);
+        if ("PDF".equalsIgnoreCase(format)) {
+            return generatePdf("Revenue Report", headers, rows);
+        }
+        List<String[]> csvRows = new ArrayList<>();
+        csvRows.add(headers);
+        csvRows.addAll(rows);
+        return writeCsv(csvRows);
     }
 
     @Override
-    public ByteArrayInputStream exportProfitReport(LocalDate startDate, LocalDate endDate, UUID branchId) {
+    public ByteArrayInputStream exportProfitReport(LocalDate startDate, LocalDate endDate, UUID branchId, String format) {
         ProfitReportResponse report = getProfitReport(startDate, endDate, branchId);
+        String[] headers = new String[]{"Product Name", "Variant", "Quantity Sold", "Revenue (VND)", "Cost (VND)", "Gross Profit (VND)", "Profit Margin"};
         List<String[]> rows = new ArrayList<>();
-        rows.add(new String[]{"Product Name", "Variant", "Quantity Sold", "Revenue (VND)", "Cost (VND)", "Gross Profit (VND)", "Profit Margin"});
         for (ProfitReportResponse.ProductProfit p : report.getDetails()) {
             rows.add(new String[]{
                     p.getProductName(),
@@ -668,14 +788,20 @@ public class ReportServiceImpl implements ReportService {
                     String.format("%.2f%%", p.getProfitMargin())
             });
         }
-        return writeCsv(rows);
+        if ("PDF".equalsIgnoreCase(format)) {
+            return generatePdf("Profit Report", headers, rows);
+        }
+        List<String[]> csvRows = new ArrayList<>();
+        csvRows.add(headers);
+        csvRows.addAll(rows);
+        return writeCsv(csvRows);
     }
 
     @Override
-    public ByteArrayInputStream exportTopProductsReport(String sortBy, int limit, LocalDate startDate, LocalDate endDate, UUID branchId) {
+    public ByteArrayInputStream exportTopProductsReport(String sortBy, int limit, LocalDate startDate, LocalDate endDate, UUID branchId, String format) {
         TopProductsReportResponse report = getTopProductsReport(null, startDate, endDate, sortBy, limit, branchId);
+        String[] headers = new String[]{"Rank", "Product Name", "Quantity Sold", "Revenue (VND)"};
         List<String[]> rows = new ArrayList<>();
-        rows.add(new String[]{"Rank", "Product Name", "Quantity Sold", "Revenue (VND)"});
         for (TopProductsReportResponse.TopProduct p : report.getTopProducts()) {
             rows.add(new String[]{
                     String.valueOf(p.getRank()),
@@ -684,14 +810,20 @@ public class ReportServiceImpl implements ReportService {
                     String.valueOf(p.getTotalRevenue())
             });
         }
-        return writeCsv(rows);
+        if ("PDF".equalsIgnoreCase(format)) {
+            return generatePdf("Top Products Report", headers, rows);
+        }
+        List<String[]> csvRows = new ArrayList<>();
+        csvRows.add(headers);
+        csvRows.addAll(rows);
+        return writeCsv(csvRows);
     }
 
     @Override
-    public ByteArrayInputStream exportInventoryReport(UUID branchId, Boolean lowStockOnly, Boolean fastMovingOnly) {
+    public ByteArrayInputStream exportInventoryReport(UUID branchId, Boolean lowStockOnly, Boolean fastMovingOnly, String format) {
         InventoryReportResponse report = getInventoryReport(branchId);
+        String[] headers = new String[]{"SKU", "Product Name", "Variant", "Physical Qty", "Reserved Qty", "Available Qty", "Min Threshold", "Status"};
         List<String[]> rows = new ArrayList<>();
-        rows.add(new String[]{"SKU", "Product Name", "Variant", "Physical Qty", "Reserved Qty", "Available Qty", "Min Threshold", "Status"});
 
         List<InventoryReportItem> items = report.getItems();
         if (Boolean.TRUE.equals(lowStockOnly)) {
@@ -717,7 +849,13 @@ public class ReportServiceImpl implements ReportService {
                     status
             });
         }
-        return writeCsv(rows);
+        if ("PDF".equalsIgnoreCase(format)) {
+            return generatePdf("Inventory Status Report", headers, rows);
+        }
+        List<String[]> csvRows = new ArrayList<>();
+        csvRows.add(headers);
+        csvRows.addAll(rows);
+        return writeCsv(csvRows);
     }
 
     @Override

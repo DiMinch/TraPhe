@@ -44,9 +44,9 @@ export interface StockTransactionResponse {
 }
 
 export const branchStockService = {
-  getStock: async (branchId?: string, searchName?: string, lowStockOnly?: boolean) => {
+  getStock: async (branchId?: string, search?: string, lowStockOnly?: boolean) => {
     return axiosClient.get<any, ApiResponse<IngredientStockResponse[]>>("/branch/stock", {
-      params: { branchId, searchName, lowStockOnly }
+      params: { branchId, search, lowStockOnly }
     });
   },
 

@@ -12,6 +12,8 @@ import java.util.UUID;
 @Repository
 public interface MenuItemRepository extends JpaRepository<MenuItem, UUID>, JpaSpecificationExecutor<MenuItem> {
 
+    Optional<MenuItem> findByNameAndIsDeletedFalse(String name);
+
     Optional<MenuItem> findByIdAndIsDeletedFalse(UUID id);
 
     @Query("SELECT COUNT(m) FROM MenuItem m WHERE m.isDeleted = false AND m.category.id = :categoryId")

@@ -266,6 +266,64 @@ export const promotionService = {
       data,
     );
   },
+
+  /** Lấy danh sách phần thưởng có thể đổi bằng điểm loyalty */
+  getLoyaltyRewards: async () => {
+    return axiosClient.get<any, ApiResponse<LoyaltyRewardResponse[]>>(
+      "/loyalty/rewards",
+    );
+  },
+
+  /** Admin: Lấy tất cả quà tặng */
+  adminGetLoyaltyRewards: async () => {
+    return axiosClient.get<any, ApiResponse<LoyaltyRewardResponse[]>>(
+      "/admin/loyalty/rewards",
+    );
+  },
+
+  /** Admin: Tạo quà tặng mới */
+  adminCreateLoyaltyReward: async (data: {
+    name: string;
+    type: string;
+    pointsRequired: number;
+    description: string;
+    stock?: number;
+    isActive?: boolean;
+    discountValue?: number;
+    discountType?: string;
+  }) => {
+    return axiosClient.post<any, ApiResponse<LoyaltyRewardResponse>>(
+      "/admin/loyalty/rewards",
+      data,
+    );
+  },
+
+  /** Admin: Cập nhật quà tặng */
+  adminUpdateLoyaltyReward: async (
+    id: string,
+    data: {
+      name: string;
+      type: string;
+      pointsRequired: number;
+      description: string;
+      stock?: number;
+      isActive?: boolean;
+      discountValue?: number;
+      discountType?: string;
+    }
+  ) => {
+    return axiosClient.put<any, ApiResponse<LoyaltyRewardResponse>>(
+      `/admin/loyalty/rewards/${id}`,
+      data,
+    );
+  },
+
+  /** Admin: Xóa quà tặng */
+  adminDeleteLoyaltyReward: async (id: string) => {
+    return axiosClient.delete<any, ApiResponse<null>>(
+      `/admin/loyalty/rewards/${id}`,
+    );
+  },
 };
 
 // ======================== Customer Voucher Types ========================
@@ -293,6 +351,17 @@ export interface RedeemRewardResponse {
   rewardName: string;
   pointsDeducted: number;
   remainingPoints: number;
+}
+
+export interface LoyaltyRewardResponse {
+  id: string;
+  name: string;
+  points: number;
+  description: string;
+  category: string;
+  discountValue?: number;
+  discountType?: string;
+  imageUrl?: string;
 }
 
 // ======================== Checkout Eligible Types ========================

@@ -91,6 +91,7 @@ public class OrderServiceImpl implements OrderService {
     private final UserAddressRepository userAddressRepository;
     private final MerchandiseOrderService merchandiseOrderService;
     private final OrderQueryService orderQueryService;
+    private final NotificationService notificationService;
 
     @Transactional
     public OrderResponse createDrinkOrder(CreateDrinkOrderRequest request, String userEmail) {
@@ -250,10 +251,10 @@ public class OrderServiceImpl implements OrderService {
 
             // --- 7d. Calculate unit price ---
             BigDecimal unitPrice;
-            if (branchMenuItem.getCustomPrice() != null) {
-                unitPrice = branchMenuItem.getCustomPrice();
-            } else if (menuItemSize != null) {
+            if (menuItemSize != null) {
                 unitPrice = menuItemSize.getSellingPrice();
+            } else if (branchMenuItem.getCustomPrice() != null) {
+                unitPrice = branchMenuItem.getCustomPrice();
             } else if (menuItem.getBasePrice() != null) {
                 unitPrice = menuItem.getBasePrice();
             } else {
@@ -425,6 +426,23 @@ public class OrderServiceImpl implements OrderService {
             }
             response.setPaymentUrl(paymentService.createPaymentUrl(savedOrder, context));
         }
+
+        if (savedOrder.getPaymentMethod() == com.example.traphe_backend.enums.PaymentMethod.CASH 
+                || savedOrder.getPaymentMethod() == com.example.traphe_backend.enums.PaymentMethod.QR) {
+            String branchName = savedOrder.getBranch() != null ? savedOrder.getBranch().getName() : "Chi nhánh";
+            notificationService.createNotification(
+                "Đơn hàng mới",
+                String.format("Có đơn hàng mới #%s thanh toán bằng %s tại %s.", 
+                              savedOrder.getOrderNumber(), 
+                              savedOrder.getPaymentMethod().name(),
+                              branchName),
+                com.example.traphe_backend.enums.NotificationType.ORDER,
+                savedOrder.getBranch() != null ? savedOrder.getBranch().getId() : null,
+                null,
+                "ORDER_NEW"
+            );
+        }
+
         return response;
     }
 
@@ -485,6 +503,34 @@ public class OrderServiceImpl implements OrderService {
 
         Order saved = orderRepository.save(order);
         log.info("Order {} status updated: {} → {}", saved.getOrderNumber(), currentStatus, newStatus);
+
+        // Trigger notifications for status change
+        if (saved.getCustomer() != null) {
+            String title = "Cập nhật đơn hàng";
+            String msg = "";
+            String sseEvent = "";
+            if (newStatus == OrderStatus.CONFIRMED) {
+                msg = String.format("Đơn hàng #%s của bạn đã được xác nhận và đang được chuẩn bị.", saved.getOrderNumber());
+                sseEvent = "ORDER_CONFIRMED";
+            } else if (newStatus == OrderStatus.COMPLETED) {
+                msg = String.format("Đơn hàng #%s của bạn đã hoàn thành. Hãy đến nhận đồ uống nhé!", saved.getOrderNumber());
+                sseEvent = "ORDER_COMPLETED";
+            }
+            if (!msg.isEmpty()) {
+                try {
+                    notificationService.createNotification(
+                        title,
+                        msg,
+                        com.example.traphe_backend.enums.NotificationType.ORDER,
+                        saved.getBranch() != null ? saved.getBranch().getId() : null,
+                        saved.getCustomer().getId(),
+                        sseEvent
+                    );
+                } catch (Exception e) {
+                    log.error("Failed to create status update notification for order {} — {}", saved.getOrderNumber(), e.getMessage());
+                }
+            }
+        }
 
         // 5. Trigger inventory deduction when order is completed (drink orders only)
         if (newStatus == OrderStatus.COMPLETED) {
@@ -589,6 +635,44 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order {} CANCELLED. Previous status: {}. Points refunded: {}. Amount refunded: {}",
                 saved.getOrderNumber(), currentStatus, pointsRefunded, refundAmount);
 
+        // Create notifications for cancellation
+        if (saved.getCustomer() != null) {
+            try {
+                // If cancelled by staff -> notify customer
+                if (isStaff) {
+                    notificationService.createNotification(
+                        "Đơn hàng đã bị hủy",
+                        String.format("Đơn hàng #%s của bạn đã bị hủy bởi chi nhánh.", saved.getOrderNumber()),
+                        com.example.traphe_backend.enums.NotificationType.ORDER,
+                        saved.getBranch() != null ? saved.getBranch().getId() : null,
+                        saved.getCustomer().getId(),
+                        "ORDER_CANCELLED"
+                    );
+                } else {
+                    // If cancelled by customer themselves -> notify customer of success
+                    notificationService.createNotification(
+                        "Đơn hàng đã bị hủy",
+                        String.format("Đơn hàng #%s của bạn đã được hủy thành công.", saved.getOrderNumber()),
+                        com.example.traphe_backend.enums.NotificationType.ORDER,
+                        saved.getBranch() != null ? saved.getBranch().getId() : null,
+                        saved.getCustomer().getId(),
+                        "ORDER_CANCELLED"
+                    );
+                    // Also notify branch staff
+                    notificationService.createNotification(
+                        "Đơn hàng bị hủy",
+                        String.format("Đơn hàng #%s tại chi nhánh của bạn đã bị khách hàng hủy.", saved.getOrderNumber()),
+                        com.example.traphe_backend.enums.NotificationType.ORDER,
+                        saved.getBranch() != null ? saved.getBranch().getId() : null,
+                        null, // broadcast to branch staff
+                        "ORDER_CANCELLED"
+                    );
+                }
+            } catch (Exception e) {
+                log.error("Failed to create cancellation notification for order {} — {}", saved.getOrderNumber(), e.getMessage());
+            }
+        }
+
         return mapToOrderResponse(saved);
     }
 
@@ -626,7 +710,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<com.example.traphe_backend.dto.response.OrderSummaryResponse> getMyOrders(String userEmail, Pageable pageable) {
+    public Page<OrderResponse> getMyOrders(String userEmail, Pageable pageable) {
         return orderQueryService.getMyOrders(userEmail, pageable);
     }
 

@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,13 +49,15 @@ public class MenuController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean isDrink,
             @RequestParam(required = false) UUID branchId,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         PageResponse<MenuItemResponse> result = menuService.getMenuItems(
-                categoryId, search, status, isDrink, branchId, page, size, sortBy, sortDir);
+                categoryId, search, status, isDrink, branchId, minPrice, maxPrice, page, size, sortBy, sortDir);
 
         return ResponseEntity.ok(ApiResponse.successPagination(result, "Menu items retrieved successfully"));
     }

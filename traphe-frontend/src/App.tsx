@@ -3,7 +3,7 @@ import { Suspense, lazy } from "react";
 import { Toaster } from "./components/ui/sonner";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import { UserRole } from "./enums/roles.enum";
-import { PageSkeleton } from "./components/ui/skeleton-loaders";
+import { CartProvider } from "@/contexts/CartContext";
 
 import "./App.css";
 
@@ -93,6 +93,7 @@ const LoyaltyReportPage = lazy(() => import("./pages/dashboard/Reports/LoyaltyRe
 // Admin — System
 const ConfigurationsPage = lazy(() => import("./pages/dashboard/System/Configurations"));
 const AuditLogsPage = lazy(() => import("./pages/dashboard/AuditLogs"));
+const NotificationsPage = lazy(() => import("./pages/dashboard/Notifications"));
 const UserPage = lazy(() => import("./pages/dashboard/User"));
 
 // Admin — AI Features
@@ -101,10 +102,16 @@ const ForecastPage = lazy(() => import("./pages/dashboard/AI/ForecastPage"));
 // 404
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
 
+const RootSpinner = () => (
+  <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-[#5C3317]" />
+  </div>
+);
+
 function App() {
   return (
-    <>
-      <Suspense fallback={<PageSkeleton />}>
+    <CartProvider>
+      <Suspense fallback={<RootSpinner />}>
         <Routes>
           {/* Auth */}
           <Route path="/sign-up" element={<SignUpPage />} />
@@ -223,6 +230,7 @@ function App() {
 
             {/* User profile (admin side) */}
             <Route path="/admin/user" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]}><UserPage /></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.BRANCH_MANAGER, UserRole.CASHIER, UserRole.BARISTA]}><NotificationsPage /></ProtectedRoute>} />
 
             {/* Legacy admin redirects (kept minimal — will be removed after migration) */}
             <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
@@ -234,7 +242,7 @@ function App() {
       </Suspense>
 
       <Toaster position="top-right" />
-    </>
+    </CartProvider>
   );
 }
 

@@ -264,7 +264,9 @@ export default function OrdersPage() {
   const [adminStatus, setAdminStatus] = useState("all-status");
   const [adminChannel, setAdminChannel] = useState("all-channel"); // all-channel, POS, ONLINE
   const [adminType, setAdminType] = useState("all-type"); // all-type, DRINK_PICKUP, DRINK_DELIVERY, MERCHANDISE
-  const [adminBranch, setAdminBranch] = useState("all-branch");
+  const [adminBranch, setAdminBranch] = useState(
+    isBranchManager && currentUser?.branchId ? currentUser.branchId : "all-branch"
+  );
   const [adminStartDate, setAdminStartDate] = useState("");
   const [adminEndDate, setAdminEndDate] = useState("");
   const [adminPage, setAdminPage] = useState(1);
@@ -879,7 +881,7 @@ export default function OrdersPage() {
                   disabled={isBranchManager}
                   className="w-full h-10 border border-admin-border bg-white text-xs text-espresso rounded-xl px-3 outline-none focus:ring-1 focus:ring-caramel disabled:opacity-60"
                 >
-                  <option value="all-branch">Tất cả chi nhánh</option>
+                  {!isBranchManager && <option value="all-branch">Tất cả chi nhánh</option>}
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}

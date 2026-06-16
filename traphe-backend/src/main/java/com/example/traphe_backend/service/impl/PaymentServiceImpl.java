@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import com.example.traphe_backend.service.NotificationService;
+import com.example.traphe_backend.enums.NotificationType;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,6 +47,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrderRepository orderRepository;
     private final List<PaymentStrategy> paymentStrategies;
+    private final NotificationService notificationService;
     private Map<PaymentMethod, PaymentStrategy> strategyMap;
 
     @PostConstruct
@@ -329,6 +332,18 @@ public class PaymentServiceImpl implements PaymentService {
             paymentTransactionRepository.save(tx);
 
             log.info("VNPAY Payment completed successfully for Order: {}", order.getOrderNumber());
+
+            String branchName = order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh";
+            notificationService.createNotification(
+                "Đơn hàng mới",
+                String.format("Có đơn hàng mới #%s thanh toán thành công qua VNPAY tại %s.", 
+                              order.getOrderNumber(), 
+                              branchName),
+                NotificationType.ORDER,
+                order.getBranch() != null ? order.getBranch().getId() : null,
+                null,
+                "ORDER_NEW"
+            );
         } else {
             order.setPaymentStatus(PaymentStatus.FAILED);
             orderRepository.save(order);
@@ -405,6 +420,18 @@ public class PaymentServiceImpl implements PaymentService {
             paymentTransactionRepository.save(tx);
 
             log.info("MoMo Payment completed successfully for Order: {}", order.getOrderNumber());
+
+            String branchName = order.getBranch() != null ? order.getBranch().getName() : "Chi nhánh";
+            notificationService.createNotification(
+                "Đơn hàng mới",
+                String.format("Có đơn hàng mới #%s thanh toán thành công qua MoMo tại %s.", 
+                              order.getOrderNumber(), 
+                              branchName),
+                NotificationType.ORDER,
+                order.getBranch() != null ? order.getBranch().getId() : null,
+                null,
+                "ORDER_NEW"
+            );
         } else {
             order.setPaymentStatus(PaymentStatus.FAILED);
             orderRepository.save(order);

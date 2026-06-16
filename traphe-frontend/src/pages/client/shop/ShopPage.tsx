@@ -4,7 +4,6 @@ import {
   Grid,
   StretchHorizontal,
   AlignJustify,
-  Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -18,6 +17,7 @@ import type { Product } from "@/types/product.types";
 import { Link, useSearchParams } from "react-router"; // [1] Import useSearchParams
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { ClientProductGridSkeleton } from "@/components/ui/skeleton-loaders";
 
 interface ShopPageProps {
   isDrink?: boolean;
@@ -212,9 +212,7 @@ export default function ShopPage({ isDrink = true }: ShopPageProps) {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-roast" />
-            </div>
+            <ClientProductGridSkeleton count={8} />
           ) : (
             <>
               {products.length === 0 ? (

@@ -77,16 +77,17 @@ export default function AdminRecipesPage() {
       // 1. Fetch Products
       const productRes = await productService.getAllProducts({ size: 100 });
       const productData = productRes.data?.content || [];
-      setProducts(productData);
+      const drinkProducts = productData.filter((p: Product) => p.isDrink === true);
+      setProducts(drinkProducts);
 
       // 2. Fetch Ingredients
       const ingRes = await axiosClient.get<any, any>("/admin/ingredients");
       const ingData = Array.isArray(ingRes.data) ? ingRes.data : ingRes.data?.content || [];
       setIngredients(ingData);
 
-      if (productData.length > 0) {
-        setSelectedProductId(productData[0].id);
-        fetchRecipe(productData[0].id, ingData);
+      if (drinkProducts.length > 0) {
+        setSelectedProductId(drinkProducts[0].id);
+        fetchRecipe(drinkProducts[0].id, ingData);
       }
     } catch (err: any) {
       console.error("Error fetching recipe initial data:", err);

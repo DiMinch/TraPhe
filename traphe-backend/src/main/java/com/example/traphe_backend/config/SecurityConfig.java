@@ -57,6 +57,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/promotions/calculate").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/address/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/system-config/public/**").permitAll()
+                        .requestMatchers("/api/benchmark/**").permitAll()
                         .requestMatchers("/api/payment/vnpay-return", "/api/payment/momo-ipn").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         // Swagger — OpenApiConfig bean is @Profile("!prod"); these permitAll rules

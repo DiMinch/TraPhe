@@ -139,6 +139,7 @@ export default function NotificationDropdown() {
           <Button
             variant="ghost"
             size="sm"
+            onClick={() => navigate("/admin/notifications")}
             className="w-full text-xs h-8 text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200 shadow-sm cursor-pointer"
           >
             View All Notifications

@@ -17,7 +17,7 @@ export default function AboutPage() {
           <div className="relative z-10 text-center px-6 max-w-[800px] mx-auto text-on-primary">
             <h1 className="font-serif text-5xl lg:text-7xl mb-4">A Legacy in Every Drop</h1>
             <p className="font-serif text-2xl font-light opacity-90">
-              The story of TraPhe is the story of Vietnam's enduring coffee heritage.
+              Câu chuyện của TraPhe là câu chuyện về di sản cà phê Việt Nam.
             </p>
           </div>
         </section>
@@ -27,19 +27,20 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 pr-0 md:pr-8">
               <h2 className="font-serif text-4xl lg:text-5xl text-roast">The Awakening</h2>
-              <h3 className="font-serif text-2xl text-caramel">Roots in the Central Highlands</h3>
+              <h3 className="font-serif text-2xl text-caramel">Cội Nguồn Cao Nguyên</h3>
               <div className="space-y-4 text-smoke text-base leading-relaxed">
                 <p>
-                  Our journey begins in the mist-shrouded peaks of Vietnam's Central
-                  Highlands. Here, amidst the rich, volcanic soil and temperate climate,
-                  coffee is not just a crop—it is a rhythm of life.
+                  Hành trình của chúng tôi bắt đầu từ những đỉnh núi cao nguyên Việt Nam.
+                  Ở đây, giữa vùng đất bazan màu mỡ và khí hậu ôn hòa,
+                  cà phê không chỉ là cây trồng; nó là trái tim của sự sống.
                 </p>
                 <p>
-                  For generations, local farmers have cultivated these lands, learning
-                  the subtle language of the seasons. At TraPhe, we honor this ancestral
-                  knowledge, partnering directly with small-hold farmers who harvest each
-                  cherry by hand, ensuring that only the absolute finest make their way to
-                  our roasteries.
+                  Những người nông dân địa phương đã canh tác trên mảnh đất này qua nhiều thế hệ,
+                  học cách lắng nghe ngôn ngữ tinh tế của các mùa. Tại TraPhe,
+                  chúng tôi tôn vinh di sản này,
+                  hợp tác trực tiếp với những nông dân nhỏ lẻ,
+                  người hái từng trái cà phê bằng tay,
+                  đảm bảo chỉ những hạt cà phê tốt nhất mới đến được với xưởng rang của chúng tôi.
                 </p>
               </div>
             </div>
@@ -59,8 +60,8 @@ export default function AboutPage() {
             <div className="text-center mb-12 max-w-[600px] mx-auto">
               <h2 className="font-serif text-4xl lg:text-5xl text-roast mb-4">The Craft</h2>
               <p className="text-smoke text-base leading-relaxed">
-                We believe roasting is an alchemy—a delicate balance of heat, time, and intuition
-                that coaxes the unique soul from every bean.
+                Chúng tôi tin rằng rang là một nghệ thuật, một sự cân bằng tinh tế giữa nhiệt, thời gian và trực giác
+                khơi dậy linh hồn độc đáo của mỗi lá trà và mỗi hạt cà phê.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-auto md:h-[600px]">
@@ -75,7 +76,8 @@ export default function AboutPage() {
                 <div className="absolute bottom-0 left-0 p-8 text-on-primary">
                   <h3 className="font-serif text-3xl mb-2">Traditional Fire Roasting</h3>
                   <p className="opacity-90 max-w-[400px]">
-                    Our master roasters rely on sight, sound, and scent, continuing techniques refined over decades.
+                    Những bậc thầy rang xây của chúng tôi dựa vào thị giác, thính giác và khứu giác,
+                    tiếp nối các kỹ thuật được lưu truyền qua nhiều thập kỷ.
                   </p>
                 </div>
               </div>
@@ -86,7 +88,7 @@ export default function AboutPage() {
                 <div>
                   <h4 className="font-serif text-2xl text-roast mb-2">The Phin Filter</h4>
                   <p className="text-smoke text-sm">
-                    Slow-drip brewing that extracts unparalleled depth, honoring the authentic Vietnamese method.
+                    Phương pháp pha chế chậm nhỏ giọt giúp chiết xuất hương vị sâu lắng, đậm đà, tôn vinh nét truyền thống Việt Nam.
                   </p>
                 </div>
               </div>
@@ -97,7 +99,7 @@ export default function AboutPage() {
                 <div>
                   <h4 className="font-serif text-2xl text-roast mb-2">Curing Process</h4>
                   <p className="text-smoke text-sm">
-                    Patient resting periods allow the complex flavors to mature and stabilize before brewing.
+                    Thời gian ủ nghỉ thong thả giúp các hương vị dậy mùi và ổn định trước khi pha chế.
                   </p>
                 </div>
               </div>

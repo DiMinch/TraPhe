@@ -90,7 +90,17 @@ export default function AdminBranchMenuPage() {
       // 1. Fetch Branches
       let branchData: Branch[] = [];
       if (isBranchManager && currentUser?.branchId) {
-        branchData = [{ id: currentUser.branchId, name: "Chi nhánh của tôi", address: "", isActive: true }];
+        try {
+          const branchDetailRes = await axiosClient.get<any, any>(`/branches/${currentUser.branchId}`);
+          if (branchDetailRes?.data) {
+            branchData = [branchDetailRes.data];
+          } else {
+            branchData = [{ id: currentUser.branchId, name: "Chi nhánh của tôi", address: "", isActive: true }];
+          }
+        } catch (detailErr) {
+          console.error("Error fetching manager branch details", detailErr);
+          branchData = [{ id: currentUser.branchId, name: "Chi nhánh của tôi", address: "", isActive: true }];
+        }
       } else {
         const branchRes = await axiosClient.get<any, any>("/branches");
         const allBranches = Array.isArray(branchRes.data)

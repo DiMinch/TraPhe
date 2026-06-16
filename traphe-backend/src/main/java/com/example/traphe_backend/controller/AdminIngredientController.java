@@ -27,13 +27,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/admin/ingredients")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin Ingredients", description = "CRUD nguyên liệu (Chỉ Admin)")
+@PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
+@Tag(name = "Admin Ingredients", description = "CRUD nguyên liệu")
 public class AdminIngredientController {
 
     private final IngredientService ingredientService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tạo nguyên liệu mới")
     public ResponseEntity<ApiResponse<IngredientResponse>> createIngredient(
             @Valid @RequestBody CreateIngredientRequest request) {
@@ -43,6 +44,7 @@ public class AdminIngredientController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     @Operation(summary = "Danh sách nguyên liệu")
     public ResponseEntity<ApiResponse<List<IngredientResponse>>> getAllIngredients() {
         List<IngredientResponse> result = ingredientService.getAllIngredients();
@@ -50,6 +52,7 @@ public class AdminIngredientController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật nguyên liệu")
     public ResponseEntity<ApiResponse<IngredientResponse>> updateIngredient(
             @PathVariable UUID id,
@@ -59,6 +62,7 @@ public class AdminIngredientController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa nguyên liệu (soft delete)")
     public ResponseEntity<ApiResponse<Void>> deleteIngredient(@PathVariable UUID id) {
         ingredientService.softDeleteIngredient(id);

@@ -315,11 +315,11 @@ public class AuthController {
         return generalAuthBuckets.get(ip, this::newGeneralAuthBucket);
     }
 
-    // 5 attempts per 15 minutes for login
+    // 500 attempts per 15 minutes for login
     private Bucket newLoginBucket(String ip) {
         Bandwidth limit = Bandwidth.builder()
-                .capacity(5)
-                .refillGreedy(5, Duration.ofMinutes(15))
+                .capacity(500)
+                .refillGreedy(500, Duration.ofMinutes(15))
                 .build();
         return Bucket.builder().addLimit(limit).build();
     }

@@ -80,6 +80,9 @@ export default function PosQueuePage() {
       // Filter and map to queue items
       const liveQueueItems: QueueItem[] = orders
         .filter((o) => {
+          // Ignore merchandise orders as they don't need brewing
+          if (o.orderType === "MERCHANDISE") return false;
+
           // 1. Order must be active: status PENDING or CONFIRMED
           const isNotFinished = o.status === "PENDING" || o.status === "CONFIRMED";
           if (!isNotFinished) return false;
@@ -179,9 +182,9 @@ export default function PosQueuePage() {
 
     try {
       await orderService.updateBrewingStatus(id, "BREWING");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Lỗi khi cập nhật trạng thái pha chế.");
+      toast.error(err.response?.data?.message || "Lỗi khi cập nhật trạng thái pha chế.");
       return;
     }
 
@@ -203,9 +206,9 @@ export default function PosQueuePage() {
     try {
       await orderService.updateBrewingStatus(id, "COMPLETED");
       toast.success("Đã hoàn thành pha chế!");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Lỗi khi hoàn thành pha chế.");
+      toast.error(err.response?.data?.message || "Lỗi khi hoàn thành pha chế.");
       return;
     }
 

@@ -23,6 +23,9 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
     Optional<CartItem> findByUserIdAndMenuItemIdAndSelectedOptionsHashAndIsDeletedFalse(
             UUID userId, UUID menuItemId, String selectedOptionsHash);
 
+    Optional<CartItem> findByUserIdAndMenuItemIdAndSelectedOptionsHash(
+            UUID userId, UUID menuItemId, String selectedOptionsHash);
+
     @Modifying
     @Query("UPDATE CartItem c SET c.isDeleted = true WHERE c.user.id = :userId AND c.isDeleted = false")
     int softDeleteAllByUserId(UUID userId);

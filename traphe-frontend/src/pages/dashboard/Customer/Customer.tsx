@@ -42,36 +42,55 @@ export default function CustomerPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Client-side pagination
+  // Server-side pagination
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 10;
+
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    newCustomersCount: 0,
+    vipCount: 0,
+  });
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1); // reset to page 1 on new search
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [custRes, tierRes] = await Promise.all([
-        customerService.getCustomers(),
+      const [custRes, _tierRes, statsRes] = await Promise.all([
+        customerService.getCustomers({
+          page: currentPage - 1,
+          size: itemsPerPage,
+          search: debouncedSearch,
+        }),
         customerTierService.getActiveTiers(),
+        customerService.getCustomerStats(),
       ]);
 
       if (custRes.statusCode === 200 && custRes.data) {
-        // Handle both direct array and paginated response
-        const customersData = Array.isArray(custRes.data)
-          ? custRes.data
-          : (custRes.data as any)?.content || [];
-
-        // Sort by createdAt descending (newest first)
-        customersData.sort((a: Customer, b: Customer) => {
-          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-          return dateB.getTime() - dateA.getTime();
-        });
+        const isPaginated = custRes.data && !Array.isArray(custRes.data) && "content" in custRes.data;
+        const customersData = isPaginated ? custRes.data.content : (custRes.data || []);
 
         setCustomers(customersData);
+        if (isPaginated) {
+          setTotalPages(custRes.data.totalPages || 1);
+        } else {
+          setTotalPages(Math.ceil(customersData.length / itemsPerPage));
+        }
       }
-      if (tierRes.statusCode === 200 && tierRes.data) {
-        // Tiers fetched successfully
+      if (statsRes.statusCode === 200 && statsRes.data) {
+        setStats(statsRes.data);
       }
     } catch (error) {
       toast.error("Không thể tải dữ liệu");
@@ -82,26 +101,14 @@ export default function CustomerPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   // Compute stats from real data
-  const totalCustomers = customers.length;
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const newCustomersCount = customers.filter(c => {
-    if (!c.createdAt) return false;
-    return new Date(c.createdAt) >= thirtyDaysAgo;
-  }).length;
-  const vipCount = customers.filter(c => {
-    if (!c.tier) return false;
-    return c.tier.tierLevel >= 3; // Level 3+ is VIP
-  }).length;
+  const totalCustomers = stats.totalCustomers;
+  const newCustomersCount = stats.newCustomersCount;
+  const vipCount = stats.vipCount;
 
-  const totalPages = Math.ceil(customers.length / itemsPerPage);
-  const currentCustomers = customers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const currentCustomers = customers;
 
   return (
     <PageContainer>
@@ -169,6 +176,8 @@ export default function CustomerPage() {
               <Input
                 placeholder="Tìm theo tên, SĐT hoặc email"
                 className="pl-10 bg-white border-slate-200 focus:border-roast focus:ring-2 focus:ring-roast/20 rounded-lg h-10 shadow-sm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>

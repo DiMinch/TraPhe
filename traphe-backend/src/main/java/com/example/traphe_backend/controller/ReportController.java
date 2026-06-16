@@ -14,6 +14,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.traphe_backend.repository.UserRepository;
+import com.example.traphe_backend.entity.User;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import java.io.ByteArrayInputStream;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,13 +30,33 @@ import java.util.UUID;
 public class ReportController {
 
     private final ReportService reportService;
+    private final UserRepository userRepository;
+
+    private UUID resolveBranchIdForCurrentUser(UUID requestedBranchId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return requestedBranchId;
+        }
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin) {
+            return requestedBranchId;
+        }
+
+        // Branch Manager -> force to their own branch
+        String email = auth.getName();
+        return userRepository.findByEmail(email)
+                .map(User::getBranchId)
+                .orElse(requestedBranchId);
+    }
 
     @GetMapping("/dashboard")
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     public ResponseEntity<ApiResponse<DashboardResponse>> getDashboardSummary(
             @RequestParam(defaultValue = "month") String period,
             @RequestParam(required = false) UUID branchId) {
-        return ResponseEntity.ok(ApiResponse.success(reportService.getDashboardSummary(period, branchId), "Dashboard summary retrieved"));
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
+        return ResponseEntity.ok(ApiResponse.success(reportService.getDashboardSummary(period, finalBranchId), "Dashboard summary retrieved"));
     }
 
     @GetMapping("/revenue")
@@ -43,8 +67,9 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String groupBy,
             @RequestParam(required = false) UUID branchId) {
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         return ResponseEntity.ok(ApiResponse.success(
-                reportService.getRevenueReport(period, startDate, endDate, groupBy, branchId), 
+                reportService.getRevenueReport(period, startDate, endDate, groupBy, finalBranchId), 
                 "Revenue report retrieved"));
     }
 
@@ -54,8 +79,9 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) UUID branchId) {
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         return ResponseEntity.ok(ApiResponse.success(
-                reportService.getProfitReport(startDate, endDate, branchId), 
+                reportService.getProfitReport(startDate, endDate, finalBranchId), 
                 "Profit report retrieved"));
     }
 
@@ -68,8 +94,9 @@ public class ReportController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) UUID branchId) {
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         return ResponseEntity.ok(ApiResponse.success(
-                reportService.getTopProductsReport(period, startDate, endDate, sortBy, limit, branchId), 
+                reportService.getTopProductsReport(period, startDate, endDate, sortBy, limit, finalBranchId), 
                 "Top products retrieved"));
     }
 
@@ -77,8 +104,9 @@ public class ReportController {
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     public ResponseEntity<ApiResponse<List<StockForecastResponse>>> getStockForecast(
             @RequestParam(required = false) UUID branchId) {
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         return ResponseEntity.ok(ApiResponse.success(
-                reportService.getStockForecast(branchId), 
+                reportService.getStockForecast(finalBranchId), 
                 "Stock forecast retrieved"));
     }
 
@@ -94,8 +122,9 @@ public class ReportController {
     @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER')")
     public ResponseEntity<ApiResponse<InventoryReportResponse>> getInventoryStatus(
             @RequestParam(required = false) UUID branchId) {
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         return ResponseEntity.ok(ApiResponse.success(
-                reportService.getInventoryReport(branchId), 
+                reportService.getInventoryReport(finalBranchId), 
                 "Inventory status retrieved"));
     }
 
@@ -107,21 +136,30 @@ public class ReportController {
             @RequestBody(required = false) ReportFilterRequest filter) {
 
         ByteArrayInputStream stream;
-        String fileName = type.toLowerCase() + "_report." + format.toLowerCase();
-        String contentType = "text/csv";
+        String fileName;
+        String contentType;
+
+        if ("PDF".equalsIgnoreCase(format)) {
+            fileName = type.toLowerCase() + "_report.pdf";
+            contentType = "application/pdf";
+        } else {
+            fileName = type.toLowerCase() + "_report.csv";
+            contentType = "text/csv";
+        }
 
         LocalDate start = filter != null ? filter.getStartDate() : null;
         LocalDate end = filter != null ? filter.getEndDate() : null;
         UUID branchId = filter != null ? filter.getBranchId() : null;
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
         String sortBy = filter != null ? filter.getSortBy() : "QUANTITY";
         int limit = (filter != null && filter.getLimit() != null) ? filter.getLimit() : 10;
 
         if ("REVENUE".equalsIgnoreCase(type)) {
-            stream = reportService.exportRevenueReport(start, end, branchId);
+            stream = reportService.exportRevenueReport(start, end, finalBranchId, format);
         } else if ("PROFIT".equalsIgnoreCase(type)) {
-            stream = reportService.exportProfitReport(start, end, branchId);
+            stream = reportService.exportProfitReport(start, end, finalBranchId, format);
         } else if ("TOP_PRODUCTS".equalsIgnoreCase(type)) {
-            stream = reportService.exportTopProductsReport(sortBy, limit, start, end, branchId);
+            stream = reportService.exportTopProductsReport(sortBy, limit, start, end, finalBranchId, format);
         } else {
             throw new IllegalArgumentException("Unsupported report type: " + type);
         }
@@ -145,13 +183,17 @@ public class ReportController {
         if (body != null && body.get("branchId") != null) {
             branchId = UUID.fromString(body.get("branchId").toString());
         }
+        UUID finalBranchId = resolveBranchIdForCurrentUser(branchId);
 
-        ByteArrayInputStream stream = reportService.exportInventoryReport(branchId, lowStockOnly, fastMovingOnly);
+        ByteArrayInputStream stream = reportService.exportInventoryReport(finalBranchId, lowStockOnly, fastMovingOnly, format);
         InputStreamResource file = new InputStreamResource(stream);
 
+        String fileName = "PDF".equalsIgnoreCase(format) ? "inventory_report.pdf" : "inventory_report.csv";
+        String contentType = "PDF".equalsIgnoreCase(format) ? "application/pdf" : "text/csv";
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=inventory_report." + format.toLowerCase())
-                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(file);
     }
 }

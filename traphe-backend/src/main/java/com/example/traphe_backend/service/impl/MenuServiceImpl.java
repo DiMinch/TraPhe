@@ -40,7 +40,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,14 +70,15 @@ public class MenuServiceImpl implements MenuService {
 
     @Override
     @Cacheable(value = "menu:items",
-            key = "T(java.util.Objects).hash(#categoryId, #search, #status, #isDrink, #branchId, #page, #size, #sortBy, #sortDir)")
+            key = "T(java.util.Objects).hash(#categoryId, #search, #status, #isDrink, #branchId, #minPrice, #maxPrice, #page, #size, #sortBy, #sortDir)")
     public PageResponse<MenuItemResponse> getMenuItems(UUID categoryId, String search, String status,
                                                         Boolean isDrink, UUID branchId,
+                                                        BigDecimal minPrice, BigDecimal maxPrice,
                                                         int page, int size, String sortBy, String sortDir) {
         Sort sort = buildSort(sortBy, sortDir, "createdAt");
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Specification<MenuItem> spec = buildMenuItemSpec(categoryId, search, status, isDrink);
+        Specification<MenuItem> spec = buildMenuItemSpec(categoryId, search, status, isDrink, minPrice, maxPrice);
         Page<MenuItem> menuItemPage = menuItemRepository.findAll(spec, pageable);
 
         List<MenuItem> items = menuItemPage.getContent();
@@ -107,7 +108,7 @@ public class MenuServiceImpl implements MenuService {
                         if (bmi != null) {
                             response.setBranchAvailable(bmi.isAvailable());
                             response.setEffectivePrice(
-                                    bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                    (sizes2.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                             response.setUnavailableReason(bmi.getUnavailableReason());
                         } else {
                             // Not mapped to this branch — treat as available with base price
@@ -158,7 +159,7 @@ public class MenuServiceImpl implements MenuService {
                     .ifPresent(bmi -> {
                         response.setBranchAvailable(bmi.isAvailable());
                         response.setEffectivePrice(
-                                bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                (sizes.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                         response.setUnavailableReason(bmi.getUnavailableReason());
                     });
             if (response.getBranchAvailable() == null) {
@@ -240,7 +241,7 @@ public class MenuServiceImpl implements MenuService {
 
         // Get all active menu items
         List<MenuItem> allItems = menuItemRepository
-                .findAll(buildMenuItemSpec(null, null, "ACTIVE", null));
+                .findAll(buildMenuItemSpec(null, null, "ACTIVE", null, null, null));
 
         // Group items by category
         Map<UUID, List<MenuItem>> itemsByCategory = allItems.stream()
@@ -290,7 +291,7 @@ public class MenuServiceImpl implements MenuService {
                         if (bmi != null) {
                             resp.setBranchAvailable(bmi.isAvailable());
                             resp.setEffectivePrice(
-                                    bmi.getCustomPrice() != null ? bmi.getCustomPrice() : item.getBasePrice());
+                                    (sizes.isEmpty() && bmi.getCustomPrice() != null) ? bmi.getCustomPrice() : item.getBasePrice());
                             resp.setUnavailableReason(bmi.getUnavailableReason());
                         } else {
                             resp.setBranchAvailable(true);
@@ -327,7 +328,8 @@ public class MenuServiceImpl implements MenuService {
     }
 
     private Specification<MenuItem> buildMenuItemSpec(UUID categoryId, String search,
-                                                      String status, Boolean isDrink) {
+                                                      String status, Boolean isDrink,
+                                                      BigDecimal minPrice, BigDecimal maxPrice) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isFalse(root.get("isDeleted")));
@@ -343,6 +345,43 @@ public class MenuServiceImpl implements MenuService {
             }
             if (isDrink != null) {
                 predicates.add(cb.equal(root.get("isDrink"), isDrink));
+            }
+
+            // Price filtering (considering both basePrice and sizes sellingPrice)
+            if (minPrice != null) {
+                jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
+                jakarta.persistence.criteria.Root<MenuItemSize> subRoot = subquery.from(MenuItemSize.class);
+                subquery.select(cb.count(subRoot));
+
+                List<Predicate> subPredicates = new ArrayList<>();
+                subPredicates.add(cb.equal(subRoot.get("menuItem"), root));
+                subPredicates.add(cb.isFalse(subRoot.get("isDeleted")));
+                subPredicates.add(cb.greaterThanOrEqualTo(subRoot.get("sellingPrice"), minPrice));
+                if (maxPrice != null) {
+                    subPredicates.add(cb.lessThanOrEqualTo(subRoot.get("sellingPrice"), maxPrice));
+                }
+                subquery.where(subPredicates.toArray(new Predicate[0]));
+
+                Predicate basePricePred = cb.greaterThanOrEqualTo(root.get("basePrice"), minPrice);
+                if (maxPrice != null) {
+                    basePricePred = cb.and(basePricePred, cb.lessThanOrEqualTo(root.get("basePrice"), maxPrice));
+                }
+
+                predicates.add(cb.or(basePricePred, cb.greaterThan(subquery, 0L)));
+            } else if (maxPrice != null) {
+                jakarta.persistence.criteria.Subquery<Long> subquery = query.subquery(Long.class);
+                jakarta.persistence.criteria.Root<MenuItemSize> subRoot = subquery.from(MenuItemSize.class);
+                subquery.select(cb.count(subRoot));
+
+                List<Predicate> subPredicates = new ArrayList<>();
+                subPredicates.add(cb.equal(subRoot.get("menuItem"), root));
+                subPredicates.add(cb.isFalse(subRoot.get("isDeleted")));
+                subPredicates.add(cb.lessThanOrEqualTo(subRoot.get("sellingPrice"), maxPrice));
+                subquery.where(subPredicates.toArray(new Predicate[0]));
+
+                Predicate basePricePred = cb.lessThanOrEqualTo(root.get("basePrice"), maxPrice);
+
+                predicates.add(cb.or(basePricePred, cb.greaterThan(subquery, 0L)));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

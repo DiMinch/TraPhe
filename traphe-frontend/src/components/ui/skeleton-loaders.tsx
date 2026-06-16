@@ -128,3 +128,206 @@ export function PageSkeleton() {
     </div>
   );
 }
+
+/**
+ * Premium warm-toned skeleton shimmer element for customer interface.
+ * Uses soft honey, caramel, and cream tones.
+ */
+export function ClientSkeleton({ className = "" }: SkeletonProps) {
+  return (
+    <div
+      className={`animate-pulse bg-gradient-to-r from-amber-100/40 via-orange-50/50 to-amber-100/40 rounded-xl ${className}`}
+      style={{
+        backgroundSize: "200% 100%",
+        animation: "shimmer 1.8s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+/**
+ * Customer product card skeleton matching client site theme.
+ */
+export function ClientProductCardSkeleton() {
+  return (
+    <div className="bg-[#FBF5EC] rounded-2xl p-4 border border-[#F5EAD8]/40 shadow-xs flex flex-col justify-between h-[360px] animate-pulse">
+      <div className="space-y-4">
+        {/* Product Image Placeholder */}
+        <ClientSkeleton className="h-[200px] w-full rounded-xl" />
+        {/* Category & Title */}
+        <div className="space-y-2">
+          <ClientSkeleton className="h-3 w-1/4 rounded-full" />
+          <ClientSkeleton className="h-5 w-3/4 rounded-full" />
+        </div>
+      </div>
+      {/* Price & Action Button */}
+      <div className="flex justify-between items-center pt-2">
+        <ClientSkeleton className="h-5 w-1/3 rounded-full" />
+        <ClientSkeleton className="h-8 w-20 rounded-full" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Grid of customer product cards.
+ */
+export function ClientProductGridSkeleton({ count = 6 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      {Array.from({ length: count }).map((_, i) => (
+        <ClientProductCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Customer side Shop/Menu main page skeleton.
+ */
+export function ClientPageSkeleton() {
+  return (
+    <div className="bg-[#FAF6F0] min-h-screen pb-16">
+      {/* Page Hero Header Skeleton */}
+      <section className="text-center pt-16 pb-12 px-6 max-w-2xl mx-auto space-y-4">
+        <ClientSkeleton className="h-12 w-3/4 mx-auto rounded-full" />
+        <ClientSkeleton className="h-4 w-full mx-auto rounded-full" />
+        <ClientSkeleton className="h-4 w-5/6 mx-auto rounded-full" />
+      </section>
+
+      {/* Search Bar Skeleton */}
+      <div className="max-w-7xl mx-auto px-6 mb-12">
+        <div className="bg-[#FBF5EC] p-4 rounded-2xl border border-[#F5EAD8]/40 shadow-xs">
+          <ClientSkeleton className="h-10 w-full rounded-xl" />
+        </div>
+      </div>
+
+      {/* Content Layout */}
+      <div className="max-w-7xl mx-auto px-6 flex flex-col lg:flex-row gap-8">
+        {/* Filter Section Skeleton */}
+        <div className="w-full lg:w-64 shrink-0 bg-[#FBF5EC] p-6 rounded-2xl border border-[#F5EAD8]/40 h-[400px] space-y-6">
+          <ClientSkeleton className="h-6 w-1/2 rounded-full" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex justify-between items-center">
+                <ClientSkeleton className="h-4 w-2/3 rounded-full" />
+                <ClientSkeleton className="h-4 w-6 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Product Grid Area */}
+        <div className="flex-1 space-y-6">
+          <div className="flex justify-between items-center pb-4 border-b border-[#F5EAD8]/25">
+            <ClientSkeleton className="h-6 w-1/3 rounded-full" />
+            <div className="flex gap-2">
+              <ClientSkeleton className="h-8 w-24 rounded-full" />
+              <ClientSkeleton className="h-8 w-20 rounded-full" />
+            </div>
+          </div>
+          <ClientProductGridSkeleton count={6} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Customer product detail page skeleton.
+ */
+export function ClientProductDetailSkeleton() {
+  return (
+    <div className="bg-[#FAF6F0] min-h-screen py-16 px-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+        {/* Left Column: Image */}
+        <div className="flex flex-col space-y-4">
+          <ClientSkeleton className="w-full aspect-square rounded-3xl" />
+          <div className="flex gap-4">
+            <ClientSkeleton className="w-20 h-20 rounded-xl" />
+            <ClientSkeleton className="w-20 h-20 rounded-xl" />
+          </div>
+        </div>
+
+        {/* Right Column: Content */}
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <ClientSkeleton className="h-4 w-1/4 rounded-full" />
+            <ClientSkeleton className="h-10 w-3/4 rounded-full" />
+            <ClientSkeleton className="h-6 w-1/3 rounded-full" />
+          </div>
+
+          <div className="space-y-3">
+            <ClientSkeleton className="h-4 w-full rounded-full" />
+            <ClientSkeleton className="h-4 w-full rounded-full" />
+            <ClientSkeleton className="h-4 w-5/6 rounded-full" />
+          </div>
+
+          {/* Configuration selections (Size, Sugar, Ice) */}
+          <div className="space-y-6 pt-4 border-t border-[#F5EAD8]/30">
+            <div className="space-y-3">
+              <ClientSkeleton className="h-5 w-20 rounded-full" />
+              <div className="flex gap-3">
+                <ClientSkeleton className="h-10 w-16 rounded-full" />
+                <ClientSkeleton className="h-10 w-16 rounded-full" />
+                <ClientSkeleton className="h-10 w-16 rounded-full" />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <ClientSkeleton className="h-5 w-24 rounded-full" />
+              <div className="flex gap-3">
+                <ClientSkeleton className="h-10 w-24 rounded-full" />
+                <ClientSkeleton className="h-10 w-24 rounded-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* Add to Cart Actions */}
+          <div className="flex gap-4 pt-6 border-t border-[#F5EAD8]/30">
+            <ClientSkeleton className="h-12 w-28 rounded-full" />
+            <ClientSkeleton className="h-12 flex-1 rounded-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Customer branches location list skeleton.
+ */
+export function ClientBranchesSkeleton() {
+  return (
+    <div className="bg-[#FAF6F0] min-h-screen py-16 px-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="text-center space-y-3 max-w-xl mx-auto">
+          <ClientSkeleton className="h-10 w-1/2 mx-auto rounded-full" />
+          <ClientSkeleton className="h-4 w-full mx-auto rounded-full" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          {/* List of locations */}
+          <div className="md:col-span-1 space-y-4 h-[600px] overflow-hidden">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-[#FBF5EC] p-5 rounded-2xl border border-[#F5EAD8]/40 space-y-3">
+                <ClientSkeleton className="h-6 w-3/4 rounded-full" />
+                <ClientSkeleton className="h-4 w-full rounded-full" />
+                <ClientSkeleton className="h-4 w-1/2 rounded-full" />
+                <div className="flex gap-2 pt-2">
+                  <ClientSkeleton className="h-8 w-20 rounded-full" />
+                  <ClientSkeleton className="h-8 w-20 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Map placeholder */}
+          <div className="md:col-span-2 h-[600px]">
+            <ClientSkeleton className="w-full h-full rounded-3xl" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

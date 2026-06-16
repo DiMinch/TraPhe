@@ -11,10 +11,10 @@ import java.math.BigDecimal;
 public class PricingService {
 
     public BigDecimal calculateItemUnitPrice(MenuItem menuItem, BranchMenuItem branchMenuItem, MenuItemSize menuItemSize) {
-        if (branchMenuItem.getCustomPrice() != null) {
-            return branchMenuItem.getCustomPrice();
-        } else if (menuItemSize != null) {
+        if (menuItemSize != null) {
             return menuItemSize.getSellingPrice();
+        } else if (branchMenuItem.getCustomPrice() != null) {
+            return branchMenuItem.getCustomPrice();
         } else if (menuItem.getBasePrice() != null) {
             return menuItem.getBasePrice();
         } else {
