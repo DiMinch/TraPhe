@@ -95,7 +95,7 @@ public class CartServiceImpl implements CartService {
 
         // Compute config hash for deduplication
         String configHash = computeConfigHash(
-                request.getMenuItemSizeId(),
+                size != null ? size.getId() : null,
                 request.getSelectedOptions(),
                 toppingSelections);
 
@@ -194,7 +194,7 @@ public class CartServiceImpl implements CartService {
 
         // Compute config hash for deduplication
         String configHash = computeConfigHash(
-                request.getMenuItemSizeId(),
+                size != null ? size.getId() : null,
                 request.getSelectedOptions(),
                 toppingSelections);
 
@@ -218,6 +218,7 @@ public class CartServiceImpl implements CartService {
                 // Hard delete the soft-deleted one to avoid unique constraint conflict,
                 // then update current item to this configuration.
                 cartItemRepository.delete(existing);
+                cartItemRepository.flush(); // Force immediate database deletion!
                 item.setMenuItemSize(size);
                 item.setQuantity(request.getQuantity());
                 item.setNote(request.getNote());
