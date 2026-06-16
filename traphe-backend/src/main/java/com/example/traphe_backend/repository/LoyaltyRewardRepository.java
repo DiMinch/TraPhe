@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface LoyaltyRewardRepository extends JpaRepository<LoyaltyReward, UUID> {
     List<LoyaltyReward> findAllByIsDeletedFalseAndIsActiveTrue();
+    List<LoyaltyReward> findAllByIsDeletedFalse();
 }
