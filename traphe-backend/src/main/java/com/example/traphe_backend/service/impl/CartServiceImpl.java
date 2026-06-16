@@ -99,17 +99,27 @@ public class CartServiceImpl implements CartService {
                 request.getSelectedOptions(),
                 toppingSelections);
 
-        // Check if same item+config already exists in cart → merge quantity
+        // Check if same item+config already exists in database (including soft-deleted)
         var existingOpt = cartItemRepository
-                .findByUserIdAndMenuItemIdAndSelectedOptionsHashAndIsDeletedFalse(
+                .findByUserIdAndMenuItemIdAndSelectedOptionsHash(
                         userId, menuItem.getId(), configHash);
 
         if (existingOpt.isPresent()) {
             CartItem existing = existingOpt.get();
-            existing.setQuantity(existing.getQuantity() + request.getQuantity());
+            if (existing.isDeleted()) {
+                // Restore soft-deleted item and set its quantity
+                existing.setDeleted(false);
+                existing.setDeletedAt(null);
+                existing.setQuantity(request.getQuantity());
+            } else {
+                existing.setQuantity(existing.getQuantity() + request.getQuantity());
+            }
             if (request.getNote() != null) {
                 existing.setNote(request.getNote());
             }
+            existing.setMenuItemSize(size);
+            existing.setSelectedOptions(request.getSelectedOptions());
+            existing.setSelectedToppings(toppingSelections);
             cartItemRepository.save(existing);
         } else {
             CartItem cartItem = CartItem.builder()
@@ -188,22 +198,46 @@ public class CartServiceImpl implements CartService {
                 request.getSelectedOptions(),
                 toppingSelections);
 
-        // Check if same item+config already exists in cart -> merge quantity
+        // Check if same item+config already exists in database (including soft-deleted)
         var existingOpt = cartItemRepository
-                .findByUserIdAndMenuItemIdAndSelectedOptionsHashAndIsDeletedFalse(
+                .findByUserIdAndMenuItemIdAndSelectedOptionsHash(
                         userId, menuItem.getId(), configHash);
 
-        if (existingOpt.isPresent() && !existingOpt.get().getId().equals(cartItemId)) {
+        if (existingOpt.isPresent()) {
             CartItem existing = existingOpt.get();
-            existing.setQuantity(existing.getQuantity() + request.getQuantity());
-            if (request.getNote() != null) {
-                existing.setNote(request.getNote());
-            }
-            cartItemRepository.save(existing);
+            if (existing.getId().equals(cartItemId)) {
+                // Same item, just update it
+                item.setMenuItemSize(size);
+                item.setQuantity(request.getQuantity());
+                item.setNote(request.getNote());
+                item.setSelectedOptions(request.getSelectedOptions());
+                item.setSelectedToppings(toppingSelections);
+                item.setSelectedOptionsHash(configHash);
+                cartItemRepository.save(item);
+            } else if (existing.isDeleted()) {
+                // Hard delete the soft-deleted one to avoid unique constraint conflict,
+                // then update current item to this configuration.
+                cartItemRepository.delete(existing);
+                item.setMenuItemSize(size);
+                item.setQuantity(request.getQuantity());
+                item.setNote(request.getNote());
+                item.setSelectedOptions(request.getSelectedOptions());
+                item.setSelectedToppings(toppingSelections);
+                item.setSelectedOptionsHash(configHash);
+                cartItemRepository.save(item);
+            } else {
+                // Merge current item into active existing item
+                existing.setQuantity(existing.getQuantity() + request.getQuantity());
+                if (request.getNote() != null) {
+                    existing.setNote(request.getNote());
+                }
+                cartItemRepository.save(existing);
 
-            // Delete current item since it merged into the other one
-            item.setDeleted(true);
-            cartItemRepository.save(item);
+                // Soft delete the current item
+                item.setDeleted(true);
+                item.setDeletedAt(java.time.LocalDateTime.now());
+                cartItemRepository.save(item);
+            }
         } else {
             item.setMenuItemSize(size);
             item.setQuantity(request.getQuantity());
