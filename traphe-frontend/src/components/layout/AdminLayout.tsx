@@ -1,12 +1,13 @@
 import { Outlet } from "react-router";
+import { Suspense, useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationDropdown from "../common/NotificationDropDown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { authService } from "@/services/auth.service";
-import { useState, useEffect } from "react";
 import type { UserInfo } from "@/types/user.types";
 import { HelpCircle } from "lucide-react";
+import { PageSkeleton } from "@/components/ui/skeleton-loaders";
 
 export default function AdminLayout() {
   const [user] = useState<UserInfo | null>(() => authService.getCurrentUser());
@@ -59,7 +60,9 @@ export default function AdminLayout() {
             </div>
           </header>
           <main className="flex-1 overflow-y-auto p-0">
-            <Outlet />
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>

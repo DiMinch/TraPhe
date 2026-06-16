@@ -47,21 +47,29 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const token = localStorage.getItem("accessToken");
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Check if user has admin role
+  // Check if user has admin or staff dashboard role
   const checkAdminRole = useCallback(() => {
     const user = authService.getCurrentUser();
     if (user && user.roles) {
-      const hasAdminRole = user.roles.some(
-        (role: string) => role === "ROLE_ADMIN" || role === "ADMIN",
+      const hasDashboardRole = user.roles.some(
+        (role: string) =>
+          role === "ROLE_ADMIN" ||
+          role === "ADMIN" ||
+          role === "ROLE_BRANCH_MANAGER" ||
+          role === "BRANCH_MANAGER" ||
+          role === "ROLE_CASHIER" ||
+          role === "CASHIER" ||
+          role === "ROLE_BARISTA" ||
+          role === "BARISTA",
       );
-      setIsAdmin(hasAdminRole);
-      return hasAdminRole;
+      setIsAdmin(hasDashboardRole);
+      return hasDashboardRole;
     }
     return false;
   }, []);
 
   const fetchBasicData = async () => {
-    // Only fetch if user is admin
+    // Only fetch if user has dashboard role
     if (!checkAdminRole()) {
       return;
     }
@@ -150,26 +158,49 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             // Handle "connected" event
             if (event.event === "connected") return;
 
-            // Handle "ORDER_NEW" event
-            if (event.event === "ORDER_NEW") {
-              try {
-                const newNotification: NotificationItem = JSON.parse(
-                  event.data,
-                );
+            try {
+              const newNotification: NotificationItem = JSON.parse(
+                event.data,
+              );
 
-                setNotifications((prev) => [newNotification, ...prev]);
-                setUnreadCount((prev) => prev + 1);
+              setNotifications((prev) => [newNotification, ...prev]);
+              setUnreadCount((prev) => prev + 1);
 
-                toast.info("New Order Received", {
-                  description: newNotification.content,
-                  action: {
-                    label: "View",
-                    onClick: () => navigate("/admin/orders"),
-                  },
-                });
-              } catch (e) {
-                console.error("[SSE] Error parsing notification:", e);
+              let toastTitle = "Thông báo mới";
+              let actionLabel = "Xem";
+              let targetUrl = "/admin/notifications";
+
+              if (event.event === "ORDER_NEW") {
+                toastTitle = "Đơn hàng mới";
+                actionLabel = "Xem đơn";
+                targetUrl = "/admin/orders";
+              } else if (event.event === "ORDER_CONFIRMED") {
+                toastTitle = "Đơn hàng được xác nhận";
+                actionLabel = "Xem đơn";
+                targetUrl = "/admin/orders";
+              } else if (event.event === "ORDER_COMPLETED") {
+                toastTitle = "Đơn hàng hoàn thành";
+                actionLabel = "Xem đơn";
+                targetUrl = "/admin/orders";
+              } else if (event.event === "ORDER_CANCELLED") {
+                toastTitle = "Đơn hàng bị hủy";
+                actionLabel = "Xem đơn";
+                targetUrl = "/admin/orders";
+              } else if (event.event === "LOW_STOCK") {
+                toastTitle = "Cảnh báo tồn kho thấp";
+                actionLabel = "Xem kho";
+                targetUrl = "/admin/stock/all";
               }
+
+              toast.info(toastTitle, {
+                description: newNotification.content,
+                action: {
+                  label: actionLabel,
+                  onClick: () => navigate(targetUrl),
+                },
+              });
+            } catch (e) {
+              console.error("[SSE] Error parsing notification:", e);
             }
           },
           onerror(err) {
