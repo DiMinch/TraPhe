@@ -15,6 +15,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,28 +89,86 @@ public class CustomerController {
         private int pointsUsed;
     }
 
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CustomerStatsResponse {
+        private long totalCustomers;
+        private long newCustomersCount;
+        private long vipCount;
+    }
+
     // ======================== ENDPOINT ========================
+
+    /**
+     * GET /api/customers/count — Count total active customers.
+     * Accessible by ADMIN, CASHIER, and BRANCH_MANAGER.
+     */
+    @GetMapping("/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'BRANCH_MANAGER')")
+    @Operation(summary = "Count total active customers",
+            description = "Returns the total number of active customers in the system.")
+    public ResponseEntity<ApiResponse<Long>> getCustomerCount() {
+        long count = userRepository.countByRoleName(RoleName.ROLE_CUSTOMER);
+        return ResponseEntity.ok(ApiResponse.success(count, "Lấy tổng số lượng khách hàng thành công."));
+    }
+
+    /**
+     * GET /api/customers/stats — Get customer stats.
+     * Accessible by ADMIN, CASHIER, and BRANCH_MANAGER.
+     */
+    @GetMapping("/stats")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'BRANCH_MANAGER')")
+    @Operation(summary = "Get customer statistics",
+            description = "Returns count statistics like total customers, new customers in 30 days, and VIP count.")
+    public ResponseEntity<ApiResponse<CustomerStatsResponse>> getCustomerStats() {
+        long total = userRepository.countByRoleName(RoleName.ROLE_CUSTOMER);
+        java.time.LocalDateTime thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30);
+        long newCount = userRepository.countNewCustomers(RoleName.ROLE_CUSTOMER, thirtyDaysAgo);
+        long vipCount = userRepository.countVipCustomers(RoleName.ROLE_CUSTOMER, 3);
+
+        CustomerStatsResponse stats = CustomerStatsResponse.builder()
+                .totalCustomers(total)
+                .newCustomersCount(newCount)
+                .vipCount(vipCount)
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(stats, "Lấy thống kê khách hàng thành công."));
+    }
 
     /**
      * GET /api/customers — Lists all users with ROLE_CUSTOMER.
      * Accessible by ADMIN, CASHIER, and BRANCH_MANAGER.
+     * Supports optional pagination (page, size) and search query.
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'CASHIER', 'BRANCH_MANAGER')")
     @Operation(summary = "List all customers",
-            description = "Returns a list of all users with the CUSTOMER role, including their loyalty points and tier information.")
-    public ResponseEntity<ApiResponse<List<CustomerResponse>>> getAllCustomers() {
-        List<User> customerUsers = userRepository.findAll().stream()
-                .filter(u -> !u.isDeleted() && u.isActive())
-                .filter(u -> u.getRoles().stream()
-                        .anyMatch(r -> r.getName() == RoleName.ROLE_CUSTOMER))
-                .collect(Collectors.toList());
-
-        List<CustomerResponse> responses = customerUsers.stream()
-                .map(this::toCustomerResponse)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(ApiResponse.success(responses, "Lấy danh sách khách hàng thành công."));
+            description = "Returns a list or page of all users with the CUSTOMER role, including their loyalty points and tier information. Supports page, size, and search parameter.")
+    public ResponseEntity<ApiResponse<Object>> getAllCustomers(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String search) {
+        
+        if (page != null && size != null) {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<User> customerPage = userRepository.findCustomersWithDetails(RoleName.ROLE_CUSTOMER, search, pageable);
+            Page<CustomerResponse> responses = customerPage.map(this::toCustomerResponse);
+            return ResponseEntity.ok(ApiResponse.success(responses, "Lấy danh sách khách hàng phân trang thành công."));
+        } else {
+            List<User> customerUsers;
+            if (search != null && !search.trim().isEmpty()) {
+                Pageable maxPageable = PageRequest.of(0, Integer.MAX_VALUE);
+                Page<User> customerPage = userRepository.findCustomersWithDetails(RoleName.ROLE_CUSTOMER, search, maxPageable);
+                customerUsers = customerPage.getContent();
+            } else {
+                customerUsers = userRepository.findAllCustomersWithDetails(RoleName.ROLE_CUSTOMER);
+            }
+            List<CustomerResponse> responses = customerUsers.stream()
+                    .map(this::toCustomerResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(responses, "Lấy danh sách khách hàng thành công."));
+        }
     }
 
     /**
@@ -188,13 +249,32 @@ public class CustomerController {
     // ---- Helpers ----
 
     private CustomerResponse toCustomerResponse(User user) {
-        LoyaltyPoint lp = loyaltyPointRepository.findByUserId(user.getId()).orElse(null);
+        LoyaltyPoint lp = user.getLoyaltyPoint();
+        if (lp == null) {
+            lp = loyaltyPointRepository.findByUserId(user.getId()).orElse(null);
+        }
         MembershipTier mt = lp != null ? lp.getMembershipTier() : null;
-        var segmentOpt = customerSegmentRepository.findByCustomerId(user.getId());
-        String segmentName = segmentOpt.map(s -> s.getSegment().name()).orElse(null);
-        Integer rScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getRScore).orElse(null);
-        Integer fScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getFScore).orElse(null);
-        Integer mScore = segmentOpt.map(com.example.traphe_backend.ai.entity.CustomerSegment::getMScore).orElse(null);
+        
+        var segment = user.getCustomerSegment();
+        String segmentName = null;
+        Integer rScore = null;
+        Integer fScore = null;
+        Integer mScore = null;
+        if (segment != null) {
+            segmentName = segment.getSegment() != null ? segment.getSegment().name() : null;
+            rScore = segment.getRScore();
+            fScore = segment.getFScore();
+            mScore = segment.getMScore();
+        } else {
+            var segmentOpt = customerSegmentRepository.findByCustomerId(user.getId());
+            if (segmentOpt.isPresent()) {
+                var s = segmentOpt.get();
+                segmentName = s.getSegment() != null ? s.getSegment().name() : null;
+                rScore = s.getRScore();
+                fScore = s.getFScore();
+                mScore = s.getMScore();
+            }
+        }
 
         return CustomerResponse.builder()
                 .id(user.getId())

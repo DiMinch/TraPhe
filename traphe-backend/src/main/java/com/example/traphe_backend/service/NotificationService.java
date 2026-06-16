@@ -15,4 +15,6 @@ public interface NotificationService {
     void markAsRead(UUID notificationId, UUID userId);
 
     void markAllRead(UUID userId);
+
+    void createNotification(String title, String message, com.example.traphe_backend.enums.NotificationType type, UUID branchId, UUID userId, String sseEventName);
 }

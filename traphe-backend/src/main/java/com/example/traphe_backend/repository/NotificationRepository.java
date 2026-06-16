@@ -29,4 +29,30 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE (n.userId = :userId OR n.userId IS NULL) AND n.isRead = false")
     void markAllReadForAdmin(@Param("userId") UUID userId);
+
+    // For branch staff: get notifications for their branch (or global) or explicitly targeted to them
+    @Query("SELECT n FROM Notification n WHERE n.userId = :userId OR (n.userId IS NULL AND (n.branchId = :branchId OR n.branchId IS NULL))")
+    Page<Notification> findAllForBranchStaff(@Param("userId") UUID userId, @Param("branchId") UUID branchId, Pageable pageable);
+
+    // Count unread for branch staff
+    @Query("SELECT COUNT(n) FROM Notification n WHERE (n.userId = :userId OR (n.userId IS NULL AND (n.branchId = :branchId OR n.branchId IS NULL))) AND n.isRead = false")
+    long countUnreadForBranchStaff(@Param("userId") UUID userId, @Param("branchId") UUID branchId);
+
+    // Mark all as read for branch staff
+    @Modifying
+    @Query("UPDATE Notification n SET n.isRead = true WHERE (n.userId = :userId OR (n.userId IS NULL AND (n.branchId = :branchId OR n.branchId IS NULL))) AND n.isRead = false")
+    void markAllReadForBranchStaff(@Param("userId") UUID userId, @Param("branchId") UUID branchId);
+
+    // For non-admin, non-branch user (users only)
+    @Query("SELECT n FROM Notification n WHERE n.userId = :userId OR (n.userId IS NULL AND n.branchId IS NULL)")
+    Page<Notification> findAllForUserOnly(@Param("userId") UUID userId, Pageable pageable);
+
+    // Count unread for user only
+    @Query("SELECT COUNT(n) FROM Notification n WHERE (n.userId = :userId OR (n.userId IS NULL AND n.branchId IS NULL)) AND n.isRead = false")
+    long countUnreadForUserOnly(@Param("userId") UUID userId);
+
+    // Mark all as read for user only
+    @Modifying
+    @Query("UPDATE Notification n SET n.isRead = true WHERE (n.userId = :userId OR (n.userId IS NULL AND n.branchId IS NULL)) AND n.isRead = false")
+    void markAllReadForUserOnly(@Param("userId") UUID userId);
 }

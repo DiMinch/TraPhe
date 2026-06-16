@@ -24,7 +24,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RestController
 @RequestMapping("/api/admin/notifications")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminNotificationController {
 
     private final NotificationService notificationService;
@@ -34,6 +33,7 @@ public class AdminNotificationController {
     private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'BARISTA')")
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getNotifications(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") int page,
@@ -45,6 +45,7 @@ public class AdminNotificationController {
     }
 
     @GetMapping("/unread-count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'BARISTA')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = resolveUserId(userDetails);
@@ -53,6 +54,7 @@ public class AdminNotificationController {
     }
 
     @PatchMapping("/{id}/read")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'BARISTA')")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
@@ -62,6 +64,7 @@ public class AdminNotificationController {
     }
 
     @PatchMapping("/mark-all-read")
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'BARISTA')")
     public ResponseEntity<ApiResponse<Void>> markAllRead(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = resolveUserId(userDetails);
@@ -70,6 +73,7 @@ public class AdminNotificationController {
     }
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'BRANCH_MANAGER', 'CASHIER', 'BARISTA')")
     public SseEmitter streamNotifications(@AuthenticationPrincipal UserDetails userDetails) {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
@@ -105,6 +109,11 @@ public class AdminNotificationController {
                 emitters.remove(emitter);
             }
         }
+    }
+
+    @org.springframework.context.event.EventListener
+    public void handleNotificationEvent(com.example.traphe_backend.event.NotificationEvent event) {
+        broadcastNotification(event.getNotification(), event.getEventName());
     }
 
     // ---- Helper ----

@@ -2,8 +2,10 @@ package com.example.traphe_backend.controller;
 
 import com.example.traphe_backend.dto.response.ApiResponse;
 import com.example.traphe_backend.entity.LoyaltyPointTransaction;
+import com.example.traphe_backend.entity.LoyaltyReward;
 import com.example.traphe_backend.entity.User;
 import com.example.traphe_backend.repository.UserRepository;
+import com.example.traphe_backend.repository.LoyaltyRewardRepository;
 import com.example.traphe_backend.service.LoyaltyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,6 +47,7 @@ public class LoyaltyController {
 
     private final UserRepository userRepository;
     private final LoyaltyService loyaltyService;
+    private final LoyaltyRewardRepository loyaltyRewardRepository;
 
     // ======================== DTOs ========================
 
@@ -79,7 +82,44 @@ public class LoyaltyController {
         private int remainingPoints;
     }
 
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class RewardResponse {
+        private UUID id;
+        private String name;
+        private int points;
+        private String description;
+        private String category;
+        private BigDecimal discountValue;
+        private String discountType;
+        private String imageUrl;
+    }
+
     // ======================== ENDPOINTS ========================
+
+    /**
+     * GET /api/loyalty/rewards — Lấy danh sách phần thưởng có thể đổi.
+     */
+    @GetMapping("/rewards")
+    @Operation(summary = "Danh sách phần thưởng đổi điểm",
+            description = "Trả về danh sách các phần thưởng, voucher có thể dùng điểm để đổi.")
+    public ResponseEntity<ApiResponse<List<RewardResponse>>> getRewards() {
+        List<RewardResponse> list = loyaltyRewardRepository
+                .findAllByIsDeletedFalseAndIsActiveTrue()
+                .stream()
+                .map(r -> RewardResponse.builder()
+                        .id(r.getId())
+                        .name(r.getName())
+                        .points(r.getPoints())
+                        .description(r.getDescription())
+                        .category(r.getCategory())
+                        .discountValue(r.getDiscountValue())
+                        .discountType(r.getDiscountType())
+                        .imageUrl(r.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ApiResponse.success(list, "Danh sách phần thưởng đổi điểm"));
+    }
 
     /**
      * GET /api/loyalty/me/transactions — Lịch sử giao dịch điểm của user hiện tại.
