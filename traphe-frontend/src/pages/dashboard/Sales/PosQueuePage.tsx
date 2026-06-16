@@ -80,6 +80,9 @@ export default function PosQueuePage() {
       // Filter and map to queue items
       const liveQueueItems: QueueItem[] = orders
         .filter((o) => {
+          // Ignore merchandise orders as they don't need brewing
+          if (o.orderType === "MERCHANDISE") return false;
+
           // 1. Order must be active: status PENDING or CONFIRMED
           const isNotFinished = o.status === "PENDING" || o.status === "CONFIRMED";
           if (!isNotFinished) return false;
