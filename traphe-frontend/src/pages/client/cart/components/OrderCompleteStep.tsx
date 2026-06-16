@@ -10,7 +10,7 @@ import {
   Truck,
   ArrowRight,
 } from "lucide-react";
-import type { OrderResponse } from "@/services/order.service";
+import { orderService, type OrderResponse } from "@/services/order.service";
 import { userService } from "@/services/user.service";
 import type { UserInfo } from "@/types/user.types";
 import { format } from "date-fns";
@@ -22,6 +22,8 @@ interface OrderCompleteStepProps {
 export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserInfo | null>(null);
+  const [currentOrder, setCurrentOrder] = useState<OrderResponse | null>(order || null);
+  const [merchandiseOrder, setMerchandiseOrder] = useState<OrderResponse | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,7 +39,46 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
     fetchProfile();
   }, []);
 
-  if (!order) {
+  useEffect(() => {
+    if (order) {
+      setCurrentOrder(order);
+    }
+  }, [order]);
+
+  useEffect(() => {
+    if (!currentOrder) return;
+
+    // 1. Fetch main order if items are missing
+    if (!currentOrder.items || currentOrder.items.length === 0) {
+      orderService.getOrderById(currentOrder.orderId)
+        .then((res) => {
+          if (res.statusCode === 200 && res.data) {
+            setCurrentOrder(prev => ({
+              ...res.data,
+              finalAmount: prev?.finalAmount ?? res.data.finalAmount,
+              totalDiscount: prev?.totalDiscount ?? res.data.totalDiscount,
+              paymentUrl: prev?.paymentUrl ?? res.data.paymentUrl,
+            }));
+          }
+        })
+        .catch(err => console.error("Error fetching main order:", err));
+    }
+
+    // 2. Fetch merchandise order if it's a split mixed order
+    if (currentOrder.merchandiseOrderId) {
+      orderService.getOrderById(currentOrder.merchandiseOrderId)
+        .then((res) => {
+          if (res.statusCode === 200 && res.data) {
+            setMerchandiseOrder(res.data);
+          }
+        })
+        .catch(err => console.error("Error fetching merchandise order:", err));
+    } else {
+      setMerchandiseOrder(null);
+    }
+  }, [currentOrder?.orderId, currentOrder?.merchandiseOrderId]);
+
+  if (!order || !currentOrder) {
     return (
       <div className="text-center py-20 animate-in fade-in duration-500">
         <div className="mb-4 text-[#D4C9BC]">
@@ -60,11 +101,11 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
   }
 
   // Calculate points earned (1 point = 1,000 VND spent)
-  const pointsEarned = Math.floor(order.finalAmount / 1000);
+  const pointsEarned = Math.floor(currentOrder.finalAmount / 1000);
 
   // Status timeline tracking
-  const isConfirmed = order.status === "CONFIRMED" || order.status === "COMPLETED";
-  const isCompleted = order.status === "COMPLETED";
+  const isConfirmed = currentOrder.status === "CONFIRMED" || currentOrder.status === "COMPLETED";
+  const isCompleted = currentOrder.status === "COMPLETED";
 
   // Parse date safely, converting UTC string without Z to valid UTC object
   const parseBackendDate = (dateStr: string | Date | undefined): Date => {
@@ -81,16 +122,16 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
 
   // Calculate approximate readiness time
   const getReadinessText = () => {
-    if (order.estimatedReadyTime) {
+    if (currentOrder.estimatedReadyTime) {
       try {
-        return format(parseBackendDate(order.estimatedReadyTime), "HH:mm");
+        return format(parseBackendDate(currentOrder.estimatedReadyTime), "HH:mm");
       } catch (e) {
         return "15-20 mins";
       }
     }
     // Default fallback
-    const parsedCreated = parseBackendDate(order.createdAt);
-    const isDelivery = order.orderType === "DELIVERY" || order.orderType === "DRINK_DELIVERY" || (order.orderType && order.orderType.includes("DELIVERY"));
+    const parsedCreated = parseBackendDate(currentOrder.createdAt);
+    const isDelivery = currentOrder.orderType === "DELIVERY" || currentOrder.orderType === "DRINK_DELIVERY" || (currentOrder.orderType && currentOrder.orderType.includes("DELIVERY"));
     const time = new Date(parsedCreated.getTime() + (isDelivery ? 40 : 20) * 60000);
     return format(time, "HH:mm");
   };
@@ -129,7 +170,13 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                 Order Number
               </span>
               <span className="font-sans text-xl font-extrabold text-[#1A1410] tracking-tight">
-                #{order.orderNumber}
+                #{currentOrder.orderNumber}
+                {merchandiseOrder?.orderNumber && (
+                  <>
+                    <span className="text-stone-400 mx-2">&</span>
+                    #{merchandiseOrder.orderNumber}
+                  </>
+                )}
               </span>
             </div>
 
@@ -172,7 +219,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                       {getReadinessText()}
                     </div>
                     <div className="text-xs text-[#4A3F35] font-medium">
-                      {order.orderType === "DELIVERY"
+                      {currentOrder.orderType === "DELIVERY" || currentOrder.orderType === "DRINK_DELIVERY"
                         ? "Approx. 35-45 mins delivery time"
                         : "Approx. 15-20 mins preparation time"}
                     </div>
@@ -236,7 +283,10 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                 </h2>
                 <div className="bg-foam p-5 rounded-xl border border-mist/30 flex-grow flex flex-col justify-between shadow-sm">
                   <ul className="space-y-3 mb-4 max-h-[160px] overflow-y-auto pr-1">
-                    {order.items?.map((item) => (
+                    {[
+                      ...(currentOrder.items || []),
+                      ...(merchandiseOrder?.items || []),
+                    ].map((item) => (
                       <li key={item.id} className="flex justify-between items-start text-xs text-[#1A1410]">
                         <div className="min-w-0 pr-2">
                           <span className="font-bold text-sm text-[#2C1A0E]">
@@ -244,7 +294,7 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                           </span>{" "}
                           <span className="font-medium text-[#2C1A0E]">{item.menuItemName}</span>
                           <p className="text-[10px] text-[#4A3F35] mt-0.5">
-                            {[item.sizeName, ...item.toppings].filter(Boolean).join(", ")}
+                            {[item.sizeName, ...(item.toppings || [])].filter(Boolean).join(", ")}
                           </p>
                         </div>
                         <span className="font-semibold text-stone-700 shrink-0">
@@ -255,22 +305,22 @@ export default function OrderCompleteStep({ order }: OrderCompleteStepProps) {
                   </ul>
                   
                   <div className="pt-3 border-t border-mist/40 space-y-1 text-xs">
-                    {order.shippingFee && order.shippingFee > 0 ? (
+                    {currentOrder.shippingFee && currentOrder.shippingFee > 0 ? (
                       <div className="flex justify-between text-[#4A3F35]">
                         <span>Shipping Fee</span>
-                        <span>{order.shippingFee.toLocaleString("vi-VN")}₫</span>
+                        <span>{currentOrder.shippingFee.toLocaleString("vi-VN")}₫</span>
                       </div>
                     ) : null}
-                    {order.totalDiscount > 0 ? (
+                    {currentOrder.totalDiscount > 0 ? (
                       <div className="flex justify-between text-green-700">
                         <span>Discount</span>
-                        <span>-{order.totalDiscount.toLocaleString("vi-VN")}₫</span>
+                        <span>-{currentOrder.totalDiscount.toLocaleString("vi-VN")}₫</span>
                       </div>
                     ) : null}
                     <div className="flex justify-between items-center pt-2">
                       <span className="font-medium text-[#4A3F35]">Total paid</span>
                       <span className="font-sans text-lg font-bold text-[#5C3317]">
-                        {order.finalAmount.toLocaleString("vi-VN")}₫
+                        {currentOrder.finalAmount.toLocaleString("vi-VN")}₫
                       </span>
                     </div>
                   </div>
